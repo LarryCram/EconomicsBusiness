@@ -1,0 +1,178 @@
+source_id,source_name,top_count,freq_dist
+https://openalex.org/S23254222,American Economic Review,71,"[{C=45}, {T=3}, {X=16}, {Y=2}, {Z=5}]"
+https://openalex.org/S94499970,Energy Economics,60,"[{T=41}, {Y=18}, {Z=1}]"
+https://openalex.org/S149240962,Journal of Financial Economics,31,"[{C=10}, {X=7}, {Z=14}]"
+https://openalex.org/S93284759,Journal of Business Research,30,"[{T=9}, {X=5}, {Y=12}, {Z=4}]"
+https://openalex.org/S5353659,The Journal of Finance,27,"[{C=16}, {X=2}, {Z=9}]"
+https://openalex.org/S203860005,The Quarterly Journal of Economics,26,"[{C=10}, {X=4}, {Z=12}]"
+https://openalex.org/S88577320,Finance research letters,22,"[{T=7}, {X=1}, {Y=11}, {Z=3}]"
+https://openalex.org/S170137484,Review of Financial Studies,21,"[{C=18}, {T=2}, {X=1}]"
+https://openalex.org/S95464858,Econometrica,14,"[{C=9}, {Z=5}]"
+https://openalex.org/S127742747,Journal of Econometrics,13,"[{C=5}, {T=1}, {X=3}, {Y=1}, {Z=3}]"
+https://openalex.org/S187626162,Entrepreneurship Theory and Practice,13,"[{T=1}, {X=8}, {Y=2}, {Z=2}]"
+https://openalex.org/S122767448,Journal of Management,11,"[{X=3}, {Y=6}, {Z=2}]"
+https://openalex.org/S102949365,Strategic Management Journal,11,"[{C=3}, {X=6}, {Z=2}]"
+https://openalex.org/S1014724869,Economic Research-Ekonomska Istraživanja,10,"[{T=6}, {Y=4}]"
+https://openalex.org/S201533460,Applied Economics,10,"[{T=3}, {Y=6}, {Z=1}]"
+https://openalex.org/S33323087,Management Science,7,"[{C=3}, {X=3}, {Y=1}]"
+https://openalex.org/S117778295,Academy of Management Journal,7,"[{X=3}, {Z=4}]"
+https://openalex.org/S125608309,Journal of Service Research,7,"[{T=1}, {Z=6}]"
+https://openalex.org/S2876017,Journal of Banking & Finance,6,"[{C=2}, {T=1}, {Y=2}, {Z=1}]"
+https://openalex.org/S27614628,Academy of Management Annals,6,"[{X=1}, {Z=5}]"
+https://openalex.org/S165087003,Journal of the European Economic Association,6,"[{C=5}, {X=1}]"
+https://openalex.org/S96544531,Applied Economics Letters,6,[{Y=6}]
+https://openalex.org/S6711363,Journal of Monetary Economics,6,"[{C=4}, {Z=2}]"
+https://openalex.org/S2898574612,Economic Analysis and Policy,6,"[{T=5}, {Y=1}]"
+https://openalex.org/S4210173904,Brookings Papers on Economic Activity,5,[{C=5}]
+https://openalex.org/S151705444,Journal of Management Studies,5,"[{T=1}, {X=2}, {Z=2}]"
+https://openalex.org/S168273071,International Review of Economics & Finance,5,"[{T=2}, {Y=3}]"
+https://openalex.org/S25235501,Journal of Retailing and Consumer Services,5,"[{T=2}, {X=1}, {Y=2}]"
+https://openalex.org/S107183665,Journal of service management,5,"[{T=3}, {Z=2}]"
+https://openalex.org/S142990027,Journal of Marketing,5,"[{T=1}, {X=1}, {Z=3}]"
+https://openalex.org/S118119388,Journal of Family Business Strategy,5,"[{X=3}, {Y=2}]"
+https://openalex.org/S9435936,Long Range Planning,5,[{Z=5}]
+https://openalex.org/S92522684,Journal of the Academy of Marketing Science,5,"[{X=3}, {Z=2}]"
+https://openalex.org/S88935262,The Review of Economic Studies,5,"[{C=3}, {X=1}, {Z=1}]"
+https://openalex.org/S180061323,The Review of Economics and Statistics,5,"[{C=2}, {X=2}, {Z=1}]"
+https://openalex.org/S113237667,Business Horizons,4,"[{T=2}, {Y=1}, {Z=1}]"
+https://openalex.org/S184846731,The International Journal of Human Resource Management,4,[{Y=4}]
+https://openalex.org/S76633192,Journal of Business Ethics,4,"[{X=2}, {Z=2}]"
+https://openalex.org/S166264140,Emerging Markets Finance and Trade,4,"[{T=2}, {Y=2}]"
+https://openalex.org/S42893225,American Economic Journal Applied Economics,4,"[{C=3}, {Z=1}]"
+https://openalex.org/S38024979,Journal of International Business Studies,4,"[{C=1}, {T=1}, {X=2}]"
+https://openalex.org/S36178057,Economics Letters,4,"[{C=1}, {X=1}, {Y=2}]"
+https://openalex.org/S127060114,NBER Macroeconomics Annual,4,[{C=4}]
+https://openalex.org/S60370010,Journal of the Knowledge Economy,4,"[{T=1}, {Y=3}]"
+https://openalex.org/S152282257,Journal of Corporate Finance,4,"[{C=1}, {X=1}, {Y=1}, {Z=1}]"
+https://openalex.org/S199447588,Journal of Public Economics,3,"[{C=2}, {X=1}]"
+https://openalex.org/S62957338,The Journal of Human Resources,3,"[{C=1}, {Z=2}]"
+https://openalex.org/S85739584,Journal of Applied Econometrics,3,"[{X=1}, {Z=2}]"
+https://openalex.org/S69338747,European Economic Review,3,"[{C=1}, {Z=2}]"
+https://openalex.org/S145572626,International Review of Financial Analysis,3,[{T=3}]
+https://openalex.org/S145429826,Journal of Consumer Research,3,"[{C=1}, {X=1}, {Z=1}]"
+https://openalex.org/S193228710,Journal of Financial and Quantitative Analysis,3,"[{T=1}, {X=1}, {Z=1}]"
+https://openalex.org/S66201313,Journal of Business Venturing,3,"[{X=1}, {Z=2}]"
+https://openalex.org/S154010748,Management Decision,3,[{T=3}]
+https://openalex.org/S10747938,Journal of International Money and Finance,3,"[{C=1}, {Y=1}, {Z=1}]"
+https://openalex.org/S41869786,Small Business Economics,3,"[{T=1}, {Y=2}]"
+https://openalex.org/S119950638,Journal of Marketing Research,3,"[{T=1}, {Z=2}]"
+https://openalex.org/S8133038,Research in International Business and Finance,3,"[{T=1}, {Y=2}]"
+https://openalex.org/S62201805,Journal of Economic Behavior & Organization,3,"[{C=1}, {X=2}]"
+https://openalex.org/S46763546,Academy of Management Review,3,"[{X=2}, {Z=1}]"
+https://openalex.org/S138400101,Managerial and Decision Economics,3,"[{T=2}, {Y=1}]"
+https://openalex.org/S140842003,Review of Environmental Economics and Policy,3,"[{C=1}, {Z=2}]"
+https://openalex.org/S154533451,IEEE Transactions on Engineering Management,3,"[{T=2}, {Y=1}]"
+https://openalex.org/S195188575,Marketing Theory,3,"[{X=2}, {Z=1}]"
+https://openalex.org/S2764372386,Journal of Behavioral and Experimental Finance,3,[{Z=3}]
+https://openalex.org/S143806524,The Journal of Portfolio Management,3,"[{C=1}, {X=1}, {Y=1}]"
+https://openalex.org/S65924262,Contemporary Accounting Research,3,"[{X=2}, {Y=1}]"
+https://openalex.org/S95323914,Journal of Political Economy,3,"[{C=2}, {X=1}]"
+https://openalex.org/S41416626,Harvard business review,2,[{Z=2}]
+https://openalex.org/S160506855,The Accounting Review,2,"[{X=1}, {Z=1}]"
+https://openalex.org/S206124708,Organization Science,2,"[{C=1}, {Z=1}]"
+https://openalex.org/S29049940,Pacific-Basin Finance Journal,2,"[{T=1}, {Y=1}]"
+https://openalex.org/S28882882,Organization Studies,2,"[{Y=1}, {Z=1}]"
+https://openalex.org/S17986141,Journal of Management Inquiry,2,"[{X=1}, {Y=1}]"
+https://openalex.org/S11810700,International Journal of Research in Marketing,2,"[{T=1}, {X=1}]"
+https://openalex.org/S133599136,Organizational Research Methods,2,[{Z=2}]
+https://openalex.org/S82743730,Journal of International Financial Markets Institutions and Money,2,"[{Y=1}, {Z=1}]"
+https://openalex.org/S72880728,The Journal of Economic Perspectives,2,"[{C=1}, {Z=1}]"
+https://openalex.org/S44376543,Business & Society,2,[{Z=2}]
+https://openalex.org/S145507837,Industrial and Corporate Change,2,"[{C=1}, {X=1}]"
+https://openalex.org/S77308338,Corporate Governance An International Review,2,"[{X=1}, {Z=1}]"
+https://openalex.org/S155526628,The North American Journal of Economics and Finance,2,[{Y=2}]
+https://openalex.org/S198098467,Journal of International Economics,2,"[{C=1}, {X=1}]"
+https://openalex.org/S141184754,Economic Modelling,2,[{Y=2}]
+https://openalex.org/S18095783,Journal of Business and Economic Statistics,2,"[{X=1}, {Z=1}]"
+https://openalex.org/S39841227,International Journal of Forecasting,2,[{T=2}]
+https://openalex.org/S127708089,Journal of Economic Literature,2,[{Z=2}]
+https://openalex.org/S31748134,Industrial Marketing Management,2,"[{T=1}, {X=1}]"
+https://openalex.org/S170166683,American Economic Journal Macroeconomics,2,"[{C=1}, {Z=1}]"
+https://openalex.org/S91754907,American Journal of Agricultural Economics,2,"[{C=1}, {Y=1}]"
+https://openalex.org/S4210201861,Applied Economic Perspectives and Policy,2,[{Y=2}]
+https://openalex.org/S87745625,International Journal of Management Reviews,2,[{Z=2}]
+https://openalex.org/S196715598,Annual Review of Economics,2,"[{C=1}, {Z=1}]"
+https://openalex.org/S11394615,Strategic Organization,1,[{X=1}]
+https://openalex.org/S160393188,Journal of the Japanese and International Economies,1,[{C=1}]
+https://openalex.org/S207154782,Journal of Financial Econometrics,1,[{Z=1}]
+https://openalex.org/S76440981,Canadian Journal of Economics/Revue canadienne d économique,1,[{Z=1}]
+https://openalex.org/S93630570,Journal of Product Innovation Management,1,[{T=1}]
+https://openalex.org/S138645024,Journal of Comparative Economics,1,[{T=1}]
+https://openalex.org/S30207186,CESifo Economic Studies,1,[{Z=1}]
+https://openalex.org/S149131268,Journal of Economic Theory,1,[{C=1}]
+https://openalex.org/S115091506,Technological and Economic Development of Economy,1,[{Y=1}]
+https://openalex.org/S34280410,Journal of Productivity Analysis,1,[{Y=1}]
+https://openalex.org/S99606308,Economic Policy,1,[{Z=1}]
+https://openalex.org/S2765008422,Global Strategy Journal,1,[{X=1}]
+https://openalex.org/S34139249,The RAND Journal of Economics,1,[{C=1}]
+https://openalex.org/S73680622,Journal of Pensions Economics and Finance,1,[{X=1}]
+https://openalex.org/S78792899,Journal of Small Business Management,1,[{Y=1}]
+https://openalex.org/S171031257,China Agricultural Economic Review,1,[{Y=1}]
+https://openalex.org/S147692640,Journal of Urban Economics,1,[{C=1}]
+https://openalex.org/S162525099,Financial Analysts Journal,1,[{X=1}]
+https://openalex.org/S159120381,Journal of Retailing,1,[{Y=1}]
+https://openalex.org/S12818680,Corporate Social Responsibility and Environmental Management,1,[{Y=1}]
+https://openalex.org/S62142384,Journal of Accounting and Economics,1,[{Z=1}]
+https://openalex.org/S5984737,Journal of Financial Intermediation,1,[{X=1}]
+https://openalex.org/S35363033,Information and Organization,1,[{T=1}]
+https://openalex.org/S49331332,Service Industries Journal,1,[{T=1}]
+https://openalex.org/S172782825,California Management Review,1,[{T=1}]
+https://openalex.org/S43637407,R and D Management,1,[{T=1}]
+https://openalex.org/S143668711,Administrative Science Quarterly,1,[{Z=1}]
+https://openalex.org/S41302103,International Journal of Physical Distribution & Logistics Management,1,[{Z=1}]
+https://openalex.org/S8124760,Journal of Management & Organization,1,[{Y=1}]
+https://openalex.org/S23343376,International Business Review,1,[{Y=1}]
+https://openalex.org/S45992627,The Economic Journal,1,[{C=1}]
+https://openalex.org/S67638930,Structural Change and Economic Dynamics,1,[{T=1}]
+https://openalex.org/S19358283,International Journal of Advertising,1,[{Z=1}]
+https://openalex.org/S115237062,Journal of Economics & Management Strategy,1,[{Z=1}]
+https://openalex.org/S197396629,The British Accounting Review,1,[{X=1}]
+https://openalex.org/S61992289,Journal of Advertising Research,1,[{Z=1}]
+https://openalex.org/S176795851,Journal of Macroeconomics,1,[{Z=1}]
+https://openalex.org/S4210224898,Journal of Service Theory and Practice,1,[{Z=1}]
+https://openalex.org/S153485742,Socio-Economic Planning Sciences,1,[{T=1}]
+https://openalex.org/S100149336,Negotiation and Conflict Management Research,1,[{Z=1}]
+https://openalex.org/S4210202650,Academy of Management Discoveries,1,[{Z=1}]
+https://openalex.org/S205793605,Business Strategy and the Environment,1,[{T=1}]
+https://openalex.org/S8557221,Journal of Labor Economics,1,[{C=1}]
+https://openalex.org/S106098198,Oxford Review of Economic Policy,1,[{C=1}]
+https://openalex.org/S26073974,Oxford Economic Papers,1,[{C=1}]
+https://openalex.org/S105567970,European Management Journal,1,[{T=1}]
+https://openalex.org/S6772833,Review of Network Economics,1,[{Z=1}]
+https://openalex.org/S44585919,Journal of Economic Dynamics and Control,1,[{C=1}]
+https://openalex.org/S152304618,The Leadership Quarterly,1,[{Z=1}]
+https://openalex.org/S33741590,Academy of Management Perspectives,1,[{Y=1}]
+https://openalex.org/S2058785,Journal of money credit and banking,1,[{Z=1}]
+https://openalex.org/S998097505,The Journal of Law and Economics,1,[{X=1}]
+https://openalex.org/S107036887,Asia Pacific Journal of Management,1,[{Y=1}]
+https://openalex.org/S178258306,Empirical Economics,1,[{Z=1}]
+https://openalex.org/S4210170931,Annual Review of Financial Economics,1,[{C=1}]
+https://openalex.org/S152897404,Research-Technology Management,1,[{Y=1}]
+https://openalex.org/S49857371,European Finance Review,1,[{Z=1}]
+https://openalex.org/S4210220385,Economics,1,[{Z=1}]
+https://openalex.org/S121409115,International Review of Law and Economics,1,[{Y=1}]
+https://openalex.org/S69872077,International Journal of Project Management,1,[{Y=1}]
+https://openalex.org/S119587767,Journal of Business and Industrial Marketing,1,[{Z=1}]
+https://openalex.org/S35298862,Journal of Macromarketing,1,[{X=1}]
+https://openalex.org/S95496512,Review of Development Economics,1,[{Y=1}]
+https://openalex.org/S4210171597,Accounting and Finance,1,[{Y=1}]
+https://openalex.org/S76844451,Annual Review of Resource Economics,1,[{Y=1}]
+https://openalex.org/S165973286,The Journal of Computational Finance,1,[{Y=1}]
+https://openalex.org/S136745531,Macroeconomic Dynamics,1,[{Y=1}]
+https://openalex.org/S96919139,American Economic Journal Microeconomics,1,[{C=1}]
+https://openalex.org/S45372229,World Economy,1,[{Y=1}]
+https://openalex.org/S166621295,Journal of Health Economics,1,[{C=1}]
+https://openalex.org/S143995394,Journal of World Business,1,[{Z=1}]
+https://openalex.org/S62905163,Operations Management Research,1,[{T=1}]
+https://openalex.org/S2735550652,Journal of the Association of Environmental and Resource Economists,1,[{Z=1}]
+https://openalex.org/S81022070,Journal of Policy Modeling,1,[{Y=1}]
+https://openalex.org/S4210168091,The Journal of Law Economics and Organization,1,[{C=1}]
+https://openalex.org/S2735890421,The World Bank Economic Review,1,[{X=1}]
+https://openalex.org/S146099957,International Journal of Finance & Economics,1,[{Y=1}]
+https://openalex.org/S21260181,IMF Economic Review,1,[{X=1}]
+https://openalex.org/S121634618,Journal of Financial Stability,1,[{X=1}]
+https://openalex.org/S948502762,Revista Hacienda Pública Española,1,[{Z=1}]
+https://openalex.org/S4210189271,Leadership & Organization Development Journal,1,[{Z=1}]
+https://openalex.org/S169221615,Information Economics and Policy,1,[{Z=1}]
+https://openalex.org/S183232449,International Journal of Industrial Organization,1,[{C=1}]
+https://openalex.org/S41930762,Japanese Economic Review,1,[{C=1}]
