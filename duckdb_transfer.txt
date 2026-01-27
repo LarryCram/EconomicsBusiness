@@ -1,0 +1,75 @@
+ATTACH IF NOT EXISTS 'C:\Users\LC.RSPE-056310\Dropbox\ZZ_STAGING\SmallTests\DATA\econ_bus.duckdb';
+-- ATTACH IF NOT EXISTS 'C:\Users\LC.RSPE-056310\Dropbox\ECONOMICS_BUSINESS\DATA\econ.duckdb';
+-- ATTACH IF NOT EXISTS 'D:\openalex_nov25\parquet\sources.parquet'
+
+-- SELECT * --DISTINCT category
+--   FROM econ_bus.incites
+--   -- GROUP BY ALL
+--   ORDER BY Category
+
+
+-- SELECT *
+--   FROM econ.sources_oa_incites
+
+-- Create the Econ_Bus source table with ISSN for matching to OpenAlex
+-- ====================================================================
+-- CREATE OR REPLACE TABLE econ_bus.incites_econ_bus AS
+
+  SELECT DISTINCT d.eco_bus_incites, i."Journal name", i.issn AS issn, i.eissn AS eissn, Category-- eco_bus_incites, d.issn, d.eissn, s.issn, id, display_name
+  FROM read_xlsx('C:\Users\LC.RSPE-056310\Dropbox\ECONOMICS_BUSINESS\DATAFILES\ESI_ECO_BUS.xlsx', sheet='ALL') d
+  LEFT JOIN econ_bus.incites i
+  ON lower(eco_bus_incites) = lower("Journal name")
+  WHERE list_contains(['ECONOMICS', 'MANAGEMENT', 'BUSINESS, FINANCE'], Category)
+  ORDER BY eco_bus_incites
+
+  -- Match inCites and OpenAlex on ISSN
+-- ===================================
+CREATE OR REPLACE TABLE econ_bus.incites_oa AS (
+  SELECT "Journal name" AS journal_name, e.issn, j.id AS source_id
+  FROM econ_bus.incites_econ_bus e
+  LEFT JOIN 'D:\openalex_nov25\parquet\sources.parquet' j
+  ON List_contains(j.issn, e.issn) -- OR list_contains(j.issn, e.eissn)
+  ORDER BY e.issn
+  )
+
+  SELECT * 
+  FROM 'D:\openalex_nov25\parquet\authorships\*.parquet' j
+  LIMIT 8
+
+  -- Create the table of works published in the Source set
+-- ======================================================
+SET preserve_insertion_order=false;
+
+CREATE OR REPLACE TABLE econ_bus.works_20_25 AS
+SELECT *
+  FROM 
+    (SELECT idx AS work_idx, source_id[23:]::BIGINT AS source_idx,
+            work_id, title, source_id, source.display_name AS source_name, doi, publication_year,
+            authors_count, institutions_distinct_count, 
+            referenced_works_count, cited_by_count,
+            "type", is_retracted, is_paratext
+      FROM econ_bus.incites_oa i
+      LEFT JOIN 'D:\openalex_nov25\parquet\works\*.parquet' j
+      ON j.source.id = i.source_id AND (publication_year BETWEEN 2020 AND 2025)
+      WHERE is_retracted=false AND is_paratext=false AND list_contains(['article', 'review'], "type")
+      -- LIMIT 256
+      );
+
+-- SELECT * FROM econ_bus.works_20_25 LIMIT 16
+
+-- Create work institution - weight tuples
+-- =======================================
+CREATE OR REPLACE TABLE econ_bus.institution_weights AS
+  SELECT idx AS work_idx, 
+          institution_id[23:]::BIGINT AS institution_idx,
+          1.0/count(DISTINCT idx) AS weight,
+    FROM 'D:\openalex_nov25\parquet\authorships\*.parquet' a
+    GROUP BY idx, institution_id
+    LIMIT 128
+
+  KILLER
+
+  -- JOIN institution weights to works and sources
+-- =============================================
+SELECT *
+  FROM econ_bus.institution_weights

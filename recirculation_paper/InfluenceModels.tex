@@ -1,0 +1,225 @@
+\documentclass[12pt]{article}
+\setlength\parindent{12pt}
+\usepackage{amsmath, amssymb}
+\usepackage[margin=1in]{geometry}
+\usepackage{mathrsfs}
+\usepackage{natbib}
+\pagestyle{empty}
+
+%opening
+\title{Influence models of scholarly reference networks}
+\author{}
+
+\begin{document}
+
+\maketitle
+
+\begin{abstract}
+
+\end{abstract}
+
+\section{Scholarly communications as reference networks}
+
+We model the social system of scholarly communications as a network of entities and their relationships \citep{craneProbabilisticFoundationsStatistical2018}. The entities comprise
+the sets: 
+
+\begin{align}
+	&\text{works:}\ \ \  \mathcal{W} = \{w_1, w_2, \dots, w_N\},\\
+	&\text{sources:}\ \ \  \mathcal{S} = \{s_1, s_2, \dots, s_M\},\\
+	&\text{authors:}\ \ \  \mathcal{A} = \{a_1, a_2, \dots, a_P\},\\
+	&\text{institutions:}\ \ \  \mathcal{I} = \{i_1, i_2, \dots, i_Q\}.
+\end{align}
+Entities have properties, e.g., works have a publication year $T(w_i)$, field and type, journals a publisher, authors an oeuvre, and institutions a country. Works have a reference list to earlier \underline{referenced} works, corresponding to a list of tuples $(w_i, w_j, 1)$ that specify the edge list of a binary directed work-work network ($\mathcal{W \times W}$) with adjacency matrix 
+
+$$
+\mathbf{C}^{\mathcal{W \times W}} = c^{\mathcal{WW}}_{ij}
+$$
+The scholarly communication system forms a multipartite network where $\mathbf{C}^{\mathcal{W \times W}}$ links other entity types through bipartite relations:
+\begin{align}
+	&\text{publication of works} \quad \mathcal{W} \times \mathcal{S} \\
+	&\text{authorship of works} \quad \mathcal{W} \times \mathcal{A} \\
+	&\text{affiliation of authors on a work} \mathcal{W} \quad \mathcal{A} \times \mathcal{I}
+\end{align}
+
+From the directed work-work citation network $\mathbf{C}^{\mathcal{W \times W}}$, we project onto networks formed by the combinations of two or three entities:
+
+\begin{align}
+	&\mathbf{C}^{\mathcal{S \times S}} = \mathbf{B}^\top \mathbf{C}^{\mathcal{W \times W}} \mathbf{B} \\
+	&\mathbf{C}^{\mathcal{A \times A}} = \mathbf{F}^\top \mathbf{C}^{\mathcal{W \times W}} \mathbf{F} \\
+	&\mathbf{C}^{\mathcal{I \times I}} = (\mathbf{F}\mathbf{G})^\top \mathbf{C}^{\mathcal{W \times W}} (\mathbf{F}\mathbf{G}) \\
+	&\mathbf{C}^{\mathcal{S \times A}} = \mathbf{B}^\top \mathbf{C}^{\mathcal{W \times W}} \mathbf{F} \\
+	&\mathbf{C}^{\mathcal{A \times I}} = \mathbf{F}^\top \mathbf{C}^{\mathcal{W \times W}} (\mathbf{F}\mathbf{G}) \\
+	&\mathbf{C}^{\mathcal{S \times I}} = \mathbf{B}^\top \mathbf{C}^{\mathcal{W \times W}} (\mathbf{F}\mathbf{G}) \\
+	&\mathbf{C}^{\mathcal{A \times S \times I}} = \mathbf{F}^\top \mathbf{C}^{\mathcal{W \times W}} (\mathbf{F}\mathbf{G})
+\end{align}
+where
+\begin{align}
+	&\mathbf{B} \in \{0,1\}^{N \times M}, \quad B_{ws} = \mathbf{1}[\text{work $w$ published in source $s$}] \\
+	&\mathbf{F} \in \mathbb{R}^{N \times P}, \quad F_{wa} = \frac{\mathbf{1}[\text{author $a$ contributed to work $w$}]}{n_a(w)} \\
+	&\mathbf{G} \in \mathbb{R}^{P \times Q}, \quad G_{ai} = \frac{\mathbf{1}[\text{author $a$ affiliated with institution $i$}]}{n_i(a)}
+\end{align}
+
+We summarise two approaches to iterative influence ranking over a journal citation matrix.
+
+Let $\mathcal{J}$ be a set of $n$ journals, and $\mathcal{P^C}$ and $\mathcal{P^T}$ two sets of articles published in $\mathcal{J}$. $\mathcal{P_C}$ is the census set published in the census-year window $(Y^c_{start}, Y^c_{end})$ and $\mathcal{P^T}$ the target set published in the target-year window $(Y^t_{start}, Y^t_{end})$. Although $Y^c_{end} \ge Y^t_{end}$, $\mathcal{P^C}$ and $\mathcal{P^T}$ are not necessarily disjoint.
+
+The census articles published in journal $\mathcal{J}_{i}$ have lists of references including some referring to target articles in journal $\mathcal{J}_{j}$. The citation matrix $\mathbf{C} \equiv c_{i,j}$ is an $n \times n$ matrix where element $c_{i,j}$ is the total count of references conferred by census-year articles in  $\mathcal{J}_{i}$ to target-year articles in $\mathcal{J}_{j}$. Equivalently, $c_{i,j}$ counts citations received by  $\mathcal{J}_{j}$ from $\mathcal{J}_{i}$ in the respective years. The citation matrix is fixed throughout the analysis, and can be viewed as a `snapshot' or a `sample' of the acknowledgements from census-year articles in $\mathcal{J}_{i}$ to influence by target-year articles in $\mathcal{J}_{j}$. 
+works, $\mathcal{W} = \{w_1, w_2, \dots, w_N\}$, sources $\mathcal{S} = \{s_1, s_2, \dots, s_M\}$, authors $\mathcal{A} = \{a_1, a_2, \dots, a_P\}$ and institutions $\mathcal{I} = \{i_1, i_2, \dots, i_Q\}$. 
+The row-sum vector is $\mathbf{s = Ce}; s_j = \sum_k c_{j,k}$ where $\mathbf e$ is the $n$-element column vector of ones. Element $s_j$ is the sum of census-window references from journal $\mathcal{J}_{j}$ to all target-window articles in $\mathcal{J}$. It is useful to define the diagonal matrix $\mathbf{\Lambda} = \mathrm{diag}(s_1,\dots,s_n)$ and the total number of references $R = \sum_j s_j$.
+
+Influence ranking aims to compute systematically a quantitative property of journals, the influence vector $\mathbf{w} \equiv w_{i}\ (i = 1\ ...\ n)$, such that a reference from a more influential journal receives a higher weight. Two different approaches have been used to motivate the idea of relative "influence" among journals:
+
+\textit{Closed input-output} 
+\citep{pinskiCitationInfluenceJournal1976}:
+The quantity $\sum_k c_{k,j}/s_j = \mathbf{e^{T}C\Lambda}^{-1}$ is the rworks, $\mathcal{W} = \{w_1, w_2, \dots, w_N\}$, sources $\mathcal{S} = \{s_1, s_2, \dots, s_M\}$, authors $\mathcal{A} = \{a_1, a_2, \dots, a_P\}$ and institutions $\mathcal{I} = \{i_1, i_2, \dots, i_Q\}$. atio of references to target publications in $\mathcal{J}_{j}$ over references from census publications in $\mathcal{J}_{j}$. This is an estimate of the volume ratio of target-year 'input' to census-year 'output' for $\mathcal{J}_{j}$. 
+Define $mathbf{\gamma = C \Lambda^{-1}}$. When the influence weight of every journal modifies the value of citations in all journals we have the reflexive relation $\mathbf{\gamma^{T} w = w}$. 
+If this equation has a solution, they are a family of vectors of unspecified length. A solution of interest can be established by scaling $\mathbf{w}$ so that $\sum_k w_k s_k = \sum_k s_k = R$.
+
+\textit{Probabilistic or Markov Chain} \citep{gellerCitationInfluenceMethodology1978, bergstromEigenfactorMeasuringValue2007}:
+Rather than estimate the ratio of input to output, we can estimate the probability that a publication in $\mathcal{J}_{i}$ will reference publications in $\mathcal{J}_{j}$, which is $\mathbf{\Lambda^{-1} C}$, a stochastic matrix. Define $\mathbf{\gamma^{*} = \Lambda C \Lambda^{-1}}$. When the influence weights of all journals in this model, say $\mathbf{w^{*}}$, modify the value of citations to all journals we have the reflexive relation $\mathbf{{\gamma^{*}}^{T} w^{*} = w^{*}}$. Because $\mathbf{\gamma^{*}}$ is a stochastic matrix we have $\sum_k w^{*}_k = 1$.
+
+Before we solve these relations, note that following \cite{gellerCitationInfluenceMethodology1978}, the two influence weights are simply related, since 
+\[
+\mathbf{\Lambda W = \Lambda \gamma^{T} W = \Lambda \left [\Lambda^{-1} {\gamma^{*}}^{T} \Lambda \right] W = {\gamma^{*}}^{T} \Lambda W}
+\]
+This implies that $w^{*}_k = (s_k/R) w_k$, so $w^{*}_k < w_k$ consistently with the observation that $w^{*}_k$ are probabilities and $w^{*}_k/w_k \sim s_k$ reflects a reduced significance of relative reference volume in the Pinksi-Narin input-output formulation. The journal influence formulations of \cite{pinskiCitationInfluenceJournal1976}, \cite{gellerCitationInfluenceMethodology1978} and \cite{bergstromEigenfactorMeasuringValue2007} thus yield weights that are closely related for a given citation matrix.
+
+The influence weights defined above represent the influence of an entire journal. Journals that publish more articles in a given time frame have a larger influence than those that publish fewer. The idea of influence developed here aims to focus on status and remove size, s per-article influence is obtained by re-scaling the influence of journal $i$ by the relative journal size, $\left (|\mathcal{P^C}_{i}| + |\mathcal{P^T}_{i}| \right ) / \left (|\mathcal{P^C}| + |\mathcal{P^T}| \right)$.
+
+To find the influence vector for a given $\mathbf{C}$, \cite{pinskiCitationInfluenceJournal1976} used the power iteration method. Their journal set $\mathcal{J}$ covers a small and sufficiently coherent field (Physics) so that $\mathbf{C}$ is a \textit{primitive matrix}: $\mathbf{C}$ is non-negative and $\mathbf{C}^n > 0$ for some positive exponent of primitivity $n$. $\mathbf{C}$ is thus also irreducible and has a single positive, greatest, real eigenvalue.  For such a matrix the power iteration method initialises a vector $\mathbf{b^{(k=0)}} = 1/n$, say. It then computes $\mathbf{x^{k} = \gamma^{T} b^{k-1}}$ and normalises $\mathbf{b^{k} = x^{k}/\left| x^{k} \right |}$. Then $\mathbf{b^{k}}$ converges to the dominant eigenvector.
+
+If $\mathbf{C}$ is not primitive, the Katz and PageRank iterations are convenient extensions that yield the dominant eigenvalue albeit with the need to introduce an  \textit{a priori} parameter to regularise the matrix \citep{vignaSpectralRanking2016, franceschetPageRankStandingShoulders2011}.
+
+\section{Journal and Institution Influence}
+
+The article sets $\mathcal{P^C}$ and $\mathcal{P^T}$ associated with the journal set  $\mathcal{J}$ involve authors and institutions listed in the article affiliation metadata.
+
+
+\section{Set-theoretic presentation}
+
+
+Let us define the fundamental sets underlying the citation network:
+
+\begin{align*}
+	&\mathcal{W} = \{w_1, w_2, \dots, w_N\} \quad \text{(set of works/publications)} \\
+	&\mathcal{J} = \{j_1, j_2, \dots, j_M\} \quad \text{(set of journals/venues)} \\
+	&\mathcal{A} = \{a_1, a_2, \dots, a_P\} \quad \text{(set of authors)} \\
+	&\mathcal{I} = \{i_1, i_2, \dots, i_Q\} \quad \text{(set of institutions)} \\
+	&\mathcal{U} = \mathcal{J} \cup \mathcal{A} \cup \mathcal{I} \quad \text{(unified entity set)}
+\end{align*}
+
+\section{Structural Relations}
+
+\begin{align*}
+	&\text{Journal assignment: } J \subset \mathcal{W} \times \mathcal{J}, \quad (w, j) \in J \iff \text{work $w$ published in journal $j$} \\
+	&\text{Authorship: } \alpha \subset \mathcal{W} \times \mathcal{A}, \quad (w, a) \in \alpha \iff \text{author $a$ contributed to work $w$} \\
+	&\text{Affiliation: } \beta \subset \mathcal{A} \times \mathcal{I}, \quad (a, i) \in \beta \iff \text{author $a$ affiliated with institution $i$} \\
+	&\text{Citation: } R \subset \mathcal{W} \times \mathcal{W}, \quad (w_i, w_j) \in R \iff w_i \text{ references } w_j
+\end{align*}
+
+\noindent \textbf{Temporal Constraint:} 
+\[
+(w_i, w_j) \in R \implies T(w_j) < T(w_i)
+\]
+
+\section{Fractional Counting Framework}
+
+\subsection{Work-Level Citation Weights}
+
+The fundamental observable is the \textbf{citation edge list}: a set of tuples $(w_i, w_j, \omega)$ where $\omega = 1$ for whole counting. For fractional counting at the entity level, we define transformation functions.
+
+\subsection{Entity Connection Weights}
+
+For each work $w \in \mathcal{W}$, define its connected entities and their fractional weights:
+
+\begin{align*}
+	&\text{Journal weight: } \omega_J(w, j) = \mathbf{1}[(w, j) \in J] \\
+	&\text{Author weight: } \omega_A(w, a) = \frac{\mathbf{1}[(w, a) \in \alpha]}{n_a(w)}, \quad n_a(w) = |\{a \in \mathcal{A} \mid (w, a) \in \alpha\}| \\
+	&\text{Institution weight: } \omega_I(w, i) = \frac{\sum_{a \in \mathcal{A}} \mathbf{1}[(w, a) \in \alpha] \cdot \mathbf{1}[(a, i) \in \beta]}{n_a(w) \cdot n_i(a)}, \quad n_i(a) = |\{i \in \mathcal{I} \mid (a, i) \in \beta\}|
+\end{align*}
+
+\subsection{Total Entity Weight per Work}
+
+The total entity weight for work $w$ is:
+\[
+\Omega(w) = \sum_{j \in \mathcal{J}} \omega_J(w, j) + \sum_{a \in \mathcal{A}} \omega_A(w, a) + \sum_{i \in \mathcal{I}} \omega_I(w, i)
+\]
+
+\subsection{Normalized Membership Matrix}
+
+Define the normalized membership matrix $\mathbf{M} \in \mathbb{R}^{N \times |\mathcal{U}|}$:
+\[
+M_{wu} = 
+\begin{cases}
+	\frac{\omega_J(w, u)}{\Omega(w)} & \text{if } u \in \mathcal{J} \\
+	\frac{\omega_A(w, u)}{\Omega(w)} & \text{if } u \in \mathcal{A} \\
+	\frac{\omega_I(w, u)}{\Omega(w)} & \text{if } u \in \mathcal{I}
+\end{cases}
+\]
+
+\section{Projected Citation Matrices}
+
+The entity-level citation matrices are obtained by \textbf{projecting} the work-level citation relation through the membership matrix.
+
+\subsection{Work-Level Citation Matrix}
+
+Let $\mathbf{A} \in \mathbb{R}^{N \times N}$ be the work-work citation matrix:
+\[
+A_{ij} = \mathbb{1}[(w_i, w_j) \in R]
+\]
+
+\subsection{Entity-Level Projection}
+
+The unified entity citation matrix is obtained by projection:
+\[
+\mathbf{C}^{\mathcal{U}} = \mathbf{M}^\top \mathbf{A} \mathbf{M}
+\]
+
+Element-wise, this represents the sum of fractional citation weights:
+\[
+C^{\mathcal{U}}_{uv} = \sum_{(w_i, w_j) \in R} M_{w_i u} \cdot M_{w_j v}
+\]
+
+\subsection{Specialized Projections}
+
+\begin{align*}
+	&\text{Journal-Journal: } \mathbf{C}^{\mathcal{JJ}} = \mathbf{M}_\mathcal{J}^\top \mathbf{A} \mathbf{M}_\mathcal{J} \\
+	&\text{Author-Author: } \mathbf{C}^{\mathcal{AA}} = \mathbf{M}_\mathcal{A}^\top \mathbf{A} \mathbf{M}_\mathcal{A} \\
+	&\text{Institution-Institution: } \mathbf{C}^{\mathcal{II}} = \mathbf{M}_\mathcal{I}^\top \mathbf{A} \mathbf{M}_\mathcal{I} \\
+	&\text{Cross-type: } \mathbf{C}^{\mathcal{JA}} = \mathbf{M}_\mathcal{J}^\top \mathbf{A} \mathbf{M}_\mathcal{A}
+\end{align*}
+
+\section{Edge List Representation}
+
+For computational implementation, the citation network can be represented as a \textbf{weighted edge list}:
+
+\begin{verbatim}
+	referencing_work | referenced_work | weight
+	---------------------------------------------
+	w_i             | w_j            | 1.0
+\end{verbatim}
+
+The entity-level citations are then computed by aggregation:
+\[
+\text{EntityCitation}(u, v) = \sum_{\substack{(w_i, w_j) \in R}} M_{w_i u} \cdot M_{w_j v}
+\]
+
+\section{Properties and Guarantees}
+
+\begin{itemize}
+	\item \textbf{Weight Preservation:} Each work-level citation contributes exactly 1.0 total weight:
+	\[
+	\sum_{u,v \in \mathcal{U}} M_{w_i u} \cdot M_{w_j v} = 1 \quad \forall (w_i, w_j) \in R
+	\]
+	\item \textbf{Membership Normalization:} Each work distributes its membership weight completely:
+	\[
+	\sum_{u \in \mathcal{U}} M_{wu} = 1 \quad \forall w \in \mathcal{W}
+	\]
+	\item \textbf{Cross-Type Compatibility:} The framework naturally handles citations between different entity types.
+\end{itemize}
+
+
+\bibliographystyle{spbasic}
+\bibliography{sciomtcs,MyLibrary}
+
+\end{document}
