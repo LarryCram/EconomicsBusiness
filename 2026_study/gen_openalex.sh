@@ -1,0 +1,32 @@
+#!/bin/bash
+# Generate OpenAlex pipeline script
+
+NAME=${1:-openalex_pipeline}
+SAMPLE=${2:-50000}
+
+cat > "${NAME}.sh" << SCRIPT
+#!/bin/bash
+# OpenAlex data pipeline
+# Generated: $(date)
+
+set -euo pipefail
+trap 'echo "Error at \$LINENO"; exit 1' ERR
+
+INPUT="\${1:-econ.txt}"
+OUTPUT="\$(basename "\$INPUT" .txt)_works.parquet"
+
+echo "Processing \$INPUT -> \$OUTPUT"
+
+openalex works \\
+  --filter="publication_year:>2019,primary_location.source.id:\\\$(paste -sd '|' "\$INPUT")" \\
+  --select="id,title,display_name,publication_year,authorships,concepts" \\
+  --rows=200 \\
+  --sample=${SAMPLE} \\
+  --output=jsonl | \\
+duckdb -c "COPY (SELECT * FROM read_json_auto('/dev/stdin')) TO '\$OUTPUT' (FORMAT PARQUET)"
+
+echo "Done: \$OUTPUT (\$(duckdb -c "SELECT COUNT(*) FROM '\$OUTPUT'" 2>/dev/null || echo "?"))"
+SCRIPT
+
+chmod +x "${NAME}.sh"
+echo "Created: ${NAME}.sh"
