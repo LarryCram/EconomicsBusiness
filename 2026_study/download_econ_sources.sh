@@ -7,7 +7,8 @@ while read -r source_id; do
   
   openalex download \
     --filter="publication_year:>2019,primary_location.source.id:$source_id" \
-    --nested=""true" \
+    --nested \
+    --fresh \
     --output="/home/lc/m/openalex_feb2026/data" \
     
   # Respect rate limits - add delay between requests
