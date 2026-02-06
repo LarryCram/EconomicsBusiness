@@ -96,7 +96,7 @@ def main():
     print(f'{df.shape = }\n{df.info()}\n{df.head(99)}')
     df = match_openalex(df)
     print(f'{df.shape = }\n{df.info()}\n{df.head(99)}')
-    df.to_csv('./2026_study/test_ror.csv')
+    df.to_csv('./2026_study/DATA/test_ror.csv')
     return
 
 if __name__ == "__main__":
