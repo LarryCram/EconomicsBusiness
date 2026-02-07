@@ -4,13 +4,13 @@ import pandas as pd
 import numpy as np
 import time
 
-PARQUET_FOLDER = '/home/lc/m/openalex_feb26/parquet'
-JSON_FOLDER = '/home/lc/m/openalex_feb26/data'
+PARQUET_FOLDER = '/home/lc/e/openalex_feb26/parquet'
+JSON_FOLDER = '/home/lc/e/openalex_feb26/data'
 print(f'{Path(PARQUET_FOLDER).exists() = }')
 print(f'{Path(JSON_FOLDER).exists() = }')
 
 def convert_works_to_parquet(db):
-    sql = """
+    sql = f"""
         SET preserve_insertion_order=FALSE;
 
         CREATE OR REPLACE TABLE works AS (
@@ -34,12 +34,12 @@ def convert_works_to_parquet(db):
                 primary_location.source.host_organization AS source_host,
                 referenced_works,
                 authorships,    
-            FROM '/home/lc/m/openalex_feb26/json/**/*.json'   
+            FROM read_json_auto('{JSON_FOLDER}/**/*.json' ,  ignore_errors=true)  
             -- LIMIT 16
             )
         SELECT * FROM loader);
 
-        COPY works TO '/home/lc/m/openalex_feb26/parquet/works.parquet' (FORMAT PARQUET);
+        COPY works TO '{PARQUET_FOLDER}/works.parquet' (FORMAT PARQUET);
 
         COPY (
         WITH 
@@ -51,43 +51,23 @@ def convert_works_to_parquet(db):
                     institution.ror AS ror,
                     institution.country_code
             FROM 
-                (SELECT work_id, 
+                (SELECT work_id, work_idx,
                         authorship.author.id AS author_id, authorship.author.id[23:]::BIGINT AS author_idx, 
                         authorship.author.display_name AS author_name, unnest(authorship.institutions) AS institution
-                    FROM (SELECT work_id, unnest(authorships) AS authorship FROM works))
+                    FROM (SELECT work_id, work_idx, unnest(authorships) AS authorship FROM works))
             )
         SELECT * FROM authorship_reducer)
-        TO '/home/lc/m/openalex_feb26/parquet/authorships.parquet' (FORMAT PARQUET); 
+        TO '{PARQUET_FOLDER}/authorships.parquet' (FORMAT PARQUET); 
         """
-    db.sql(sql)
-    return
-
-def convert_to_parquet(db):
-    
-    for kind in ['topics', 'authors', 'sources', 'institutions']:
-        print(f'{kind = }')
-        sql = f"SELECT * FROM {kind}.{kind}"
-        db.sql(sql).show()
-        sql = f"COPY (SELECT * FROM {kind}.{kind}) TO '/home/lc/m/openalex_june25/parquet/{kind}.parquet' (FORMAT parquet)"
-        db.sql(sql)
-    
+    db.sql(sql).show()
     return
 
 def main():
     with duckdb.connect() as db:
-            
-        db.sql("ATTACH IF NOT EXISTS '/home/lc/m/openalex_june25/authors.duckdb' AS authors")
-        db.sql("ATTACH IF NOT EXISTS '/home/lc/m/openalex_june25/sources.duckdb' AS sources")
-        db.sql("ATTACH IF NOT EXISTS '/home/lc/m/openalex_june25/institutions.duckdb' AS institutions")
-        db.sql("ATTACH IF NOT EXISTS '/home/lc/m/openalex_june25/works.duckdb' AS works")
-        db.sql("ATTACH IF NOT EXISTS '/home/lc/m/openalex_june25/topics.duckdb' AS topics")
-        db.sql("SHOW ALL TABLES").show()
-
-        convert_to_parquet(db)
         convert_works_to_parquet(db)
         return
 
 if __name__ == "__main__":
     start = time.time()
-    # main()
+    main()
     print(f'FINISHED {time.time() - start = }')
