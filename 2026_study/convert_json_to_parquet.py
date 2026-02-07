@@ -59,12 +59,15 @@ def convert_works_to_parquet(db):
         SELECT * FROM authorship_reducer)
         TO '{PARQUET_FOLDER}/authorships.parquet' (FORMAT PARQUET); 
         """
-    db.sql(sql).show()
+    db.sql(sql)
+  
     return
 
 def main():
     with duckdb.connect() as db:
-        convert_works_to_parquet(db)
+        # convert_works_to_parquet(db)
+        db.sql(f"SELECT count(*) FROM '{PARQUET_FOLDER}/works.parquet' GROUP BY ALL LIMIT 5").show()
+        db.sql(f"SELECT * FROM '{PARQUET_FOLDER}/authorships.parquet' LIMIT 5").show()  
         return
 
 if __name__ == "__main__":
