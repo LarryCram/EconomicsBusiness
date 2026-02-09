@@ -6,10 +6,10 @@ while read -r source_id; do
   echo "Processing source: $source_id"
   
   openalex download \
-    --filter="publication_year:>2019,primary_location.source.id:$source_id" \
+    --filter="publication_year:1971,primary_location.source.id:$source_id" \
     --nested \
     --fresh \
-    --output="/home/lc/m/openalex_feb2026/data" \
+    --output="/home/lc/m/openalex_feb26/data" \
     
   # Respect rate limits - add delay between requests
   sleep 1
