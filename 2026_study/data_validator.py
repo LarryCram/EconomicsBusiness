@@ -1,23 +1,111 @@
 from pathlib import Path
 import pandas as pd
 
+# Set pandas display options for wider output
+pd.set_option('display.max_columns', None)  # Show all columns
+pd.set_option('display.width', None)       # Wider display width
+pd.set_option('display.max_colwidth', None)  # Max width per column
+
+DATA_PATH = '/home/lc/Projects/EconomicsBusiness/2026_study/DATA/'
+print(f'{Path(DATA_PATH).exists() = }')
+
 # validate sources
 def validate_sources():
-    source_file = './DATA/journals_institutions_from_dd.xlsx'
-    print(f'{Path(source_file).exists() = }')
-    original = pd.read_excel(source_file, work_sheet='journals')
-    print(f'{original.shape = }')
+
+    # load Domingo sources
+    source_file = f'{DATA_PATH}/journals_institutions_from_dd.xlsx'
+    original = pd.read_excel(source_file, sheet_name='journals', skiprows=1)
+    print(f'Domingo sources: {len(original)} journals ({original['journal'].nunique()} unique)')
+     
+    # load matched list
+    matched_file = f'{DATA_PATH}/econ_bus_journal_oa.csv'
+    matched = pd.read_csv(matched_file).drop_duplicates(['journal'])
+    print(f'Matched sources: {len(matched)} journals ({matched['journal'].nunique()} unique)')
+
+    # Find journals from Domingo's list that are not in the matched list
+    domingo_journals_lower = set(original.journal.str.lower())
+    matched_journals_lower = set(matched.journal.str.lower())
+    
+    successfully_matched = len(domingo_journals_lower & matched_journals_lower)
+    missing_from_domingo = original[~original.journal.str.lower().isin(matched.journal.str.lower())]
+    
+    print(f'Successfully matched from Domingo\'s list: {successfully_matched}')
+    print(f'Missing from Domingo\'s list: {len(missing_from_domingo)}')
+    
+    if len(missing_from_domingo) > 0:
+        print('\nUnmatched journals:')
+        print(f'{missing_from_domingo.shape = }\n{missing_from_domingo['journal'].head(32)}')
+        missing_from_domingo.to_excel('/home/lc/Projects/EconomicsBusiness/2026_study/DATA/unverified_sources.xlsx')
     return
-          
 
 # validate institutions
+def validate_institutions():
+
+# load Domingo institutions
+    source_file = f'{DATA_PATH}/journals_institutions_from_dd.xlsx'
+    original = pd.read_excel(source_file, sheet_name='institutions', skiprows=1)
+    print(f'Domingo institutions: {len(original)} institutions ({original['institution'].nunique()} unique)')
+
+# load matched list
+    matched_file = f'{DATA_PATH}/econ_bus_ror_oa_SAVE.csv'
+    matched = pd.read_csv(matched_file).drop_duplicates(['inCites'])
+    print(f'Matched institutions: {len(matched)} institutions ({matched['inCites'].nunique()} unique)')
+
+# Find institutions from Domingo's list that are not in the matched list
+    domingo_institutions_lower = set(original.institution.str.lower())
+    matched_institutions_lower = set(matched.inCites.str.lower())
+    
+    successfully_matched = len(domingo_institutions_lower & matched_institutions_lower)
+    missing_from_domingo = original[~original.institution.str.lower().isin(matched.inCites.str.lower())]
+    
+    print(f'Successfully matched from Domingo\'s list: {successfully_matched}')
+    print(f'Missing from Domingo\'s list: {len(missing_from_domingo)}')
+    
+    if len(missing_from_domingo) > 0:
+        print('\nUnmatched institutions:')
+        print(f'{missing_from_domingo.shape = }\n{missing_from_domingo['institution'].head(32)}')
+        missing_from_domingo.to_excel('/home/lc/Projects/EconomicsBusiness/2026_study/DATA/unverified_institutions.xlsx')
+    return
+
 
 # validate researchers
+def validate_researchers():
+
+# load Domingo researchers
+    source_file = f'{DATA_PATH}/researchers_results.xlsx'
+    original = pd.read_excel(source_file, sheet_name='average_influence', skiprows=0)
+    print(f'Domingo researchers: {len(original)} researchers ({original['Research_Profile'].nunique()} unique)')
+
+# load matched list
+    matched_file = f'{DATA_PATH}/matched_authors.csv'
+    matched = pd.read_csv(matched_file).drop_duplicates(['NAME'])
+    print(f'Matched authors: {len(matched)} authors ({matched['NAME'].nunique()} unique)')
+
+
+# Find researchers from Domingo's list that are not in the matched list
+    domingo_researchers_lower = set(original.Research_Profile.str.lower())
+    matched_researchers_lower = set(matched.NAME.str.lower())
+    
+    successfully_matched = len(domingo_researchers_lower & matched_researchers_lower)
+    missing_from_domingo = original[~original.Research_Profile.str.lower().isin(matched.NAME.str.lower())]
+    
+    print(f'Successfully matched from Domingo\'s list: {successfully_matched}')
+    print(f'Missing from Domingo\'s list: {len(missing_from_domingo)}')
+    
+    if len(missing_from_domingo) > 0:
+        print('\nUnmatched researchers:')
+        print(f'{missing_from_domingo.shape = }\n{missing_from_domingo['Research_Profile'].head(32)}')
+        missing_from_domingo.to_excel('/home/lc/Projects/EconomicsBusiness/2026_study/DATA/unverified_researchers.xlsx')
+
 
 def main():
-    validate_sources()
+    print("=== Validation Report ===")
+    # validate_sources()
+    # validate_institutions()
+    validate_researchers()
+    print("=== Validation Complete ===")
+    return
 
 
-if __name__ == "__ main__":
+if __name__ == "__main__":
     main()
-    print("FINISHED !")
