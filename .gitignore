@@ -8,7 +8,6 @@ INSTITUTIONAL_FILES
 JOURNAL_FILES
 .ipynb_checkpoints
 .git
-.sql
 *.aux
 *.bbl
 *.synctex.gz

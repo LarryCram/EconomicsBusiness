@@ -11,31 +11,24 @@ print(f'{Path(DATA_PATH).exists() = }')
 
 # validate sources
 def validate_sources():
-
-    # load Domingo sources
     source_file = f'{DATA_PATH}/journals_institutions_from_dd.xlsx'
     original = pd.read_excel(source_file, sheet_name='journals', skiprows=1)
-    print(f'Domingo sources: {len(original)} journals ({original['journal'].nunique()} unique)')
-     
-    # load matched list
+    
     matched_file = f'{DATA_PATH}/econ_bus_journal_oa.csv'
     matched = pd.read_csv(matched_file).drop_duplicates(['journal'])
-    print(f'Matched sources: {len(matched)} journals ({matched['journal'].nunique()} unique)')
-
-    # Find journals from Domingo's list that are not in the matched list
-    domingo_journals_lower = set(original.journal.str.lower())
-    matched_journals_lower = set(matched.journal.str.lower())
     
-    successfully_matched = len(domingo_journals_lower & matched_journals_lower)
-    missing_from_domingo = original[~original.journal.str.lower().isin(matched.journal.str.lower())]
+    # Get unique journals and merge
+    unique_journals = original[['journal']].drop_duplicates()
+    result = unique_journals.merge(matched[['source_id', 'journal', 'journal_name', 'ISSN']], 
+                                  left_on=unique_journals['journal'].str.lower(), 
+                                  right_on=matched['journal'].str.lower(), 
+                                  how='left', suffixes=('', '_matched'))
     
-    print(f'Successfully matched from Domingo\'s list: {successfully_matched}')
-    print(f'Missing from Domingo\'s list: {len(missing_from_domingo)}')
+    result['verified'] = ~result['source_id'].isna()
+    result = result[['journal', 'source_id', 'journal_name', 'ISSN', 'verified']]
     
-    if len(missing_from_domingo) > 0:
-        print('\nUnmatched journals:')
-        print(f'{missing_from_domingo.shape = }\n{missing_from_domingo['journal'].head(32)}')
-        missing_from_domingo.to_excel('/home/lc/Projects/EconomicsBusiness/2026_study/DATA/unverified_sources.xlsx')
+    print(f'Total: {len(result)}, Verified: {result.verified.sum()}, Missing: {(~result.verified).sum()}')
+    result.to_csv(f'{DATA_PATH}/verified_sources.csv', index=False)
     return
 
 # validate institutions
@@ -100,9 +93,9 @@ def validate_researchers():
 
 def main():
     print("=== Validation Report ===")
-    # validate_sources()
+    validate_sources()
     # validate_institutions()
-    validate_researchers()
+    # validate_researchers()
     print("=== Validation Complete ===")
     return
 
