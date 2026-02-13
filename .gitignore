@@ -14,3 +14,4 @@ JOURNAL_FILES
 *.log
 *.blg
 *.pyc
+openalex-downloads

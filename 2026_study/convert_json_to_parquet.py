@@ -4,8 +4,8 @@ import pandas as pd
 import numpy as np
 import time
 
-PARQUET_FOLDER = '/home/lc/m/openalex_feb26/parquet'
-JSON_FOLDER = '/home/lc/m/openalex_feb26/json'
+PARQUET_FOLDER = '/home/lc/m/openalex_feb26/parquet_'
+JSON_FOLDER = '/home/lc/m/openalex_feb26/json_'
 print(f'{Path(PARQUET_FOLDER).exists() = }')
 print(f'{Path(JSON_FOLDER).exists() = }')
 

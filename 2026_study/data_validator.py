@@ -13,12 +13,21 @@ print(f'{Path(DATA_PATH).exists() = }')
 def validate_sources():
     source_file = f'{DATA_PATH}/journals_institutions_from_dd.xlsx'
     original = pd.read_excel(source_file, sheet_name='journals', skiprows=1)
+    print(f'{original.journal.nunique() = }')
     
     matched_file = f'{DATA_PATH}/econ_bus_journal_oa.csv'
     matched = pd.read_csv(matched_file).drop_duplicates(['journal'])
+    print(f'{matched.journal.nunique() = }')
+    from collections import defaultdict
+    dd = defaultdict(list)
+    for row in matched.itertuples():
+        dd[row.source_id].append(row.journal)
+    [print(k, len(v), v) for k, v in dd.items() if len(v) != 1]
     
     # Get unique journals and merge
     unique_journals = original[['journal']].drop_duplicates()
+    print(f'{unique_journals.journal.nunique() = }')
+
     result = unique_journals.merge(matched[['source_id', 'journal', 'journal_name', 'ISSN']], 
                                   left_on=unique_journals['journal'].str.lower(), 
                                   right_on=matched['journal'].str.lower(), 
@@ -29,6 +38,7 @@ def validate_sources():
     
     print(f'Total: {len(result)}, Verified: {result.verified.sum()}, Missing: {(~result.verified).sum()}')
     result.to_csv(f'{DATA_PATH}/verified_sources.csv', index=False)
+    print(f'{result.journal.nunique() = } {result.source_id.nunique() = }')
     return
 
 # validate institutions
