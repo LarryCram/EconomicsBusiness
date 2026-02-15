@@ -22,13 +22,13 @@ with duckdb.connect() as db:
         db.sql(sql)
         db.sql("SELECT * FROM all_data").show()
 
-    # 4. Pack Categories into mulit-category journals
+    # 4. Pack Categories into multi-category journals
     df = db.sql("""SELECT "Journal name" AS journal, ISSN, eISSN, list(Category) AS categories FROM all_data GROUP BY ALL""").df().drop_duplicates('journal')
     print(f'{df.shape = }\n{df.head()}')
 
-    # 4. Save to combined journal spreadsheet
-    out_file = DATA_PATH/'incites_journal_list.csv'
+    # 5. Save to combined journal spreadsheet
+    out_file = DATA_PATH/'journals_incites.csv'
     sql = f"""COPY (
-                SELECT "Journal name" AS journal, ISSN, eISSN, list(Category) AS categories FROM all_data GROUP BY ALL
+                SELECT "Journal name" AS journal, ISSN, eISSN, list_sort(list(Category)) AS categories FROM all_data GROUP BY ALL
                 ) TO '{out_file}' (FORMAT csv)"""
     db.sql(sql)
