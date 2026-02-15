@@ -2,7 +2,6 @@
 # process_econ_sources.sh
 
 # Read each source ID from econ.txt and query OpenAlex
-count=0
 while read -r source_id; do
   echo "Processing source: $source_id"
   
@@ -11,17 +10,9 @@ while read -r source_id; do
     --nested \
     --fresh \
     --quiet \
-    --workers 8 \
     --output="/home/lc/m/openalex_feb26/json" \
     
   # Respect rate limits - add delay between requests
   sleep 1
   
-  # Increment counter and exit after 16 sources
-  count=$((count + 1))
-  echo "Completed $count/16 sources"
-  if [ $count -ge 16 ]; then
-    echo "Processed 16 sources. Exiting normally."
-    break
-  fi
 done < sources.txt
