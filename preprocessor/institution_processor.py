@@ -18,7 +18,7 @@ def load_incites():
         df = db.sql(sql).df()
     return df
 
-def process_df(df):
+def process_ror(df):
     col_keep = []
     for text in ['index', 'inCites', 'substring', 'score', 'matching_type', 'chosen', 'established', 'organization.id', 'links', 'types']:
         for col in df.columns:
@@ -52,26 +52,15 @@ def match_institution_to_ror(institution_name, min_score=80):
         url = f"https://api.ror.org/v2/organizations?affiliation={requests.utils.quote(institution_name)}"
         response = requests.get(url, timeout=10)
         response.raise_for_status()      
-        data = pd.json_normalize(response.json()['items'])
-        data.insert(0, 'inCites', institution_name)
-        data = process_df(data[:3].reset_index())
-        print(f'{data.shape = }\n{data.head()}')
-        return data
+        ror = pd.json_normalize(response.json()['items'])
+        ror.insert(0, 'inCites', institution_name)
+        ror = process_ror(ror[:3].reset_index())
+        print(f'{ror.shape = }\n{ror.loc[:,['inCites', 'organization_id', 'substring', 'score']].head()}')
+        return ror
             
     except Exception as e:
         print(f'ERROR {e = }')
         return
-
-def match_ror_to_oa(matched):
-    sql = """
-        SELECT DISTINCT m.*, institution_id, institution_name, s.country_code
-            FROM matched m
-            LEFT JOIN (SELECT * FROM '/home/lc/m/openalex_feb26/parquet/authorships.parquet') s
-            USING (ror)
-        """
-    with duckdb.connect() as db:
-        db.sql(sql).show()
-    return
 
 def match_openalex(df):
     sql = """
@@ -84,8 +73,9 @@ def match_openalex(df):
             ON organization_id = ror
         """
     with duckdb.connect() as db:
-        ddf = db.sql(sql).df().sort_values(['inCites', 'index']).reset_index(drop=True)
-    return ddf
+        matched = db.sql(sql).df().sort_values(['inCites', 'index']).reset_index(drop=True)
+    matched.to_csv(f'{DATA_PATH}/institution_matched.csv')
+    return matched
 
 def main():
 
@@ -98,13 +88,13 @@ def main():
         # test_affiliation = "Dept. of Physics, Univ. of Oxford, Oxford OX1 3RH, UK"
         results.append(match_institution_to_ror(test_affiliation))
         print(f'Processed {kount = }')
-        if kount > 4:
-            break
-    df = pd.concat(results)
+        # if kount > 4:
+        #     break
+    incites_to_ror = pd.concat(results)
     print("Find ror for inCites names")
-    print(f'{df.shape = }\n{df.info()}\n{df.head(99)}')
-    df = match_openalex(df)
-    print(f'{df.shape = }\n{df.info()}\n{df.head(99)}')
+    print(f'{incites_to_ror.shape = }\n{incites_to_ror.head()}')
+    incites_to_oa = match_openalex(incites_to_ror)
+    print(f'{incites_to_oa.shape = }\n{incites_to_oa.head()}')
     print("=== Validation Complete ===")
     return
 
