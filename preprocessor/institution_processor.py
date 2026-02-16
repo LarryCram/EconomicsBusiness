@@ -1,26 +1,22 @@
-import requests
-import json
+from pathlib import Path
 import pandas as pd
-from typing import Dict, Optional, Union, List
-import time
 import duckdb
 import requests
 import json
-from pyalex import config, Institutions
 
-config.email = "Lawrence.Cram@anu.edu.au"
-config.api_key = "OchtksdohLaziRq08C4IJP"
+DATA_PATH = Path('/home/lc/Projects/EconomicsBusiness/data')
+print(f'{DATA_PATH.exists() = }')
 
-def read_incites():
+def load_incites():
+    # Load Domingos's institution data
     with duckdb.connect() as db:
-        sql = """
+        sql = f"""
             SELECT *
-                FROM read_xlsx('/home/lc/Dropbox/ECONOMICS_BUSINESS/DATAFILES/data_eco_bus.xlsx', sheet='institutions')
-                --LEFT JOIN '/home/lc/m/openalex_june25/parquet/institutions.parquet'
+                FROM read_xlsx('{DATA_PATH}/ecobus_journal_institution_results.xlsx', sheet='eco_bus_institutions')
             """
         db.sql(sql).show()
-        inCites = db.sql(sql).df()
-    return incites
+        df = db.sql(sql).df()
+    return df
 
 def process_df(df):
     col_keep = []
@@ -30,7 +26,6 @@ def process_df(df):
                 col_keep.append(col)
                 break
     col_drop = [c for c in df.columns if c not in col_keep]
-    print(f'{col_drop = }')
     df = df.drop(columns=col_drop)
     df.columns = [c.replace('.', '_') for c in df.columns]
     for row in df.itertuples():
@@ -40,20 +35,6 @@ def process_df(df):
             return df
     df.insert(0, 'selector', len(df))        
     return df
-
-def match_openalex(df):
-    sql = """
-        SELECT index, selector, 
-                inCites, id, ror, display_name, country_code, works_count, cited_by_count, 
-                substring, score, matching_type, chosen, organization_established, 
-                organization_id, organization_types
-            FROM df d 
-            LEFT JOIN '/home/lc/m/openalex_june25/parquet/institutions.parquet' 
-            ON organization_id = ror
-        """
-    with duckdb.connect() as db:
-        ddf = db.sql(sql).df().sort_values(['inCites', 'index']).reset_index(drop=True)
-    return ddf
 
 def match_institution_to_ror(institution_name, min_score=80):
     """Match institution name to ROR ID with fuzzy matching"""
@@ -81,26 +62,51 @@ def match_institution_to_ror(institution_name, min_score=80):
         print(f'ERROR {e = }')
         return
 
+def match_ror_to_oa(matched):
+    sql = """
+        SELECT DISTINCT m.*, institution_id, institution_name, s.country_code
+            FROM matched m
+            LEFT JOIN (SELECT * FROM '/home/lc/m/openalex_feb26/parquet/authorships.parquet') s
+            USING (ror)
+        """
+    with duckdb.connect() as db:
+        db.sql(sql).show()
+    return
+
+def match_openalex(df):
+    sql = """
+        SELECT index, selector, 
+                inCites, id, ror, display_name, country_code, works_count, cited_by_count, 
+                substring, score, matching_type, chosen, organization_established, 
+                organization_id, organization_types
+            FROM df d 
+            LEFT JOIN '/home/lc/m/openalex_feb26/parquet/institutions.parquet' 
+            ON organization_id = ror
+        """
+    with duckdb.connect() as db:
+        ddf = db.sql(sql).df().sort_values(['inCites', 'index']).reset_index(drop=True)
+    return ddf
+
 def main():
 
-    clarivate_org_names = read_incites()
-    print(f'{clarivate_org_names.shape = }\n{clarivate_org_names.head()}')
+    print("=== Validation Report ===")
+    incites = load_incites()
+    print("Load inCites institutions")
+    print(f'{incites.shape = }\n{incites.head()}')
     results = []
-    for kount, test_affiliation in enumerate(clarivate_org_names.institution):
+    for kount, test_affiliation in enumerate(incites.institution):
         # test_affiliation = "Dept. of Physics, Univ. of Oxford, Oxford OX1 3RH, UK"
         results.append(match_institution_to_ror(test_affiliation))
         print(f'Processed {kount = }')
-        # if kount > 4:
-        #     break
+        if kount > 4:
+            break
     df = pd.concat(results)
+    print("Find ror for inCites names")
     print(f'{df.shape = }\n{df.info()}\n{df.head(99)}')
     df = match_openalex(df)
     print(f'{df.shape = }\n{df.info()}\n{df.head(99)}')
-    df.to_csv('./2026_study/DATA/test_ror.csv')
+    print("=== Validation Complete ===")
     return
 
 if __name__ == "__main__":
-    start = time.time()
     main()
-    print(f'FINISHED {time.time() - start = }')
-
