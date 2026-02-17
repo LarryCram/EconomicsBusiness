@@ -1,70 +1,74 @@
 "-- 0 CONVERT THE apenalex CLI return for econ_bus
--- ++++++++++++++++++++++++++++++++++++++++++++https://openalex.org/S83271458
+-- ++++++++++++++++++++++++++++++++++++++++++++
 SET preserve_insertion_order=FALSE;
 
 CREATE OR REPLACE TEMP TABLE works AS (
-  WITH 
+WITH 
     loader AS
     (SELECT id AS work_id,
-         doi,
-         title,
-         institutions_distinct_count,
-         publication_year, 
-         referenced_works_count, 
-         cited_by_count, 
-         type,          
-         is_retracted,  
-         is_paratext,
-         biblio.*, 
-         primary_location.source.id AS source_id,  
-         primary_location.source.display_name AS source_name, 
-         primary_location.source.host_organization AS source_host,
-         referenced_works,
-         authorships,    
-      FROM read_json_auto('/home/lc/m/openalex_feb26/json/**/*.json', ignore_errors = true)  
-      -- LIMIT 16
-      )
+        doi,
+        title,
+        institutions_distinct_count,
+        publication_year, 
+        referenced_works_count, 
+        cited_by_count, 
+        type,          
+        is_retracted,  
+        is_paratext,
+        biblio.*, 
+        primary_location.source.id AS source_id,  
+        primary_location.source.display_name AS source_name, 
+        primary_location.source.host_organization AS source_host,
+        referenced_works,
+        authorships,    
+    FROM read_json_auto('/home/lc/m/openalex_feb26/json/**/*.json', ignore_errors = true)  
+    -- LIMIT 16
+    )
 SELECT * FROM loader);
 
-COPY works TO '/home/lc/m/openalex_feb26/parquet/works.parquet' (FORMAT PARQUET);
+-- Works parquet from filtered works 
+COPY (SELECT * EXCLUDE (referenced_works, authorships) FROM works) TO '/home/lc/m/openalex_feb26/parquet/works.parquet' (FORMAT PARQUET);
 
+-- References parquet from unnested referenced_works
 COPY (
-  WITH 
+        SELECT w.work_id AS citer_work, r.cited_work
+        FROM works w
+        LEFT JOIN LATERAL unnest(w.referenced_works) AS r(cited_work) ON TRUE
+    ) TO '/home/lc/m/openalex_feb26/parquet/references.parquet' (FORMAT PARQUET);
+
+-- Authorships parquet from unnsted authors and unnested institutions
+COPY (
+WITH 
     authorship_reducer AS
     (SELECT work_id, author_id, author_name,
             institution.id AS institution_id,
             institution.display_name AS institution_name,
             institution.ror AS ror,
             institution.country_code
-      FROM 
+    FROM 
         (SELECT work_id,
                 authorship.author.id AS author_id,
                 authorship.author.display_name AS author_name, unnest(authorship.institutions) AS institution
             FROM (SELECT work_id, unnest(authorships) AS authorship FROM works))
     )
-  SELECT * FROM authorship_reducer)
-TO '/home/lc/m/openalex_feb26/parquet/authorships.parquet' (FORMAT PARQUET); 
-
-SELECT * FROM works LIMIT 4;
-SHOW TABLES;"
-"-- 1 SELECT works, sources, authors and instutions in the journal and institution sets
--- =================================================================================
+SELECT * FROM authorship_reducer)
+TO '/home/lc/m/openalex_feb26/parquet/authorships.parquet' (FORMAT PARQUET); "
+"-- 1 SELECT works, sources, authors and institutions in the journal and institution sets
+-- ======================================================================================
 CREATE OR REPLACE TEMP TABLE wsai AS
-  SELECT work_id, source_id, author_id, id AS institution_id, publication_year, title, source_name, author_name, institution_name, country_code, referenced_works
-  FROM '/home/lc/Projects/EconomicsBusiness/2026_study/DATA/econ_bus_ror_oa_SAVE.csv' incites
+  SELECT work_id, source_id, author_id, id AS institution_id, publication_year, title, source_name, author_name, institution_name, country_code
+  FROM '/home/lc/Projects/EconomicsBusiness/data/institutions_matched_SAVE.csv' incites
   LEFT JOIN
-    (SELECT work_id, source_id, author_id, institution_id, title, source_name, author_name, institution_name, institutions_distinct_count, publication_year, referenced_works
+    (SELECT work_id, source_id, author_id, institution_id, title, source_name, author_name, institution_name, institutions_distinct_count, publication_year
       FROM '/home/lc/m/openalex_feb26/parquet/authorships.parquet'
-      JOIN (SELECT * EXCLUDE (authorships) 
+      JOIN (SELECT *
               FROM '/home/lc/m/openalex_feb26/parquet/works.parquet' 
               WHERE (publication_year BETWEEN 2020 AND 2024) AND list_contains(['article', 'report'], type) AND is_retracted=false AND is_paratext=false)
               USING (work_id)
       ) oa
    ON incites.id = oa.institution_id
-   WHERE TRY_CAST(index AS INT) = 0 AND author_id NOT NULL;
-
-SELECT * FROM wsai LIMIT 4;
-SHOW TABLES;"
+   WHERE (TRY_CAST(index AS INT) = 0) AND author_id NOT NULL;
+"
 "-- 2 Compute the full WORK item including the per-row journal, author and institution weight
 -- =======================================================================================
 CREATE OR REPLACE TEMP TABLE work_items AS
@@ -74,7 +78,6 @@ CREATE OR REPLACE TEMP TABLE work_items AS
         author_id,
         institution_id, 
         publication_year,
-        referenced_works,
         
         -- Source weight: 1.0 total per work, split across rows
         1.0 / COUNT(*) OVER (PARTITION BY work_id) AS source_weight,
@@ -88,22 +91,13 @@ CREATE OR REPLACE TEMP TABLE work_items AS
         (1.0 / COUNT(DISTINCT author_id) OVER (PARTITION BY work_id)) 
         / COUNT(*) OVER (PARTITION BY work_id, author_id) AS institution_weight   
     FROM wsai;
-
-SELECT * FROM work_items LIMIT 4;
-SHOW TABLES;
 "
 "-- 3 ASSEMBLE THE unprojected TABLE using the REFERENCE table
 -- =========================================================
 CREATE OR REPLACE TEMP TABLE unprojected AS
 WITH refs AS (
-    SELECT 
-        DISTINCT work_id AS citer_work, 
-        -- User's specific parsing logic
-        r.reference AS cited_work
-    FROM work_items 
-    LEFT JOIN LATERAL UNNEST(referenced_works) AS r(reference) ON true
-    -- Filter: keep only valid cited_idx that exist in our dataset
-    WHERE r.reference IN (SELECT work_id FROM work_items)
+    SELECT citer_work, cited_work 
+      FROM '/home/lc/m/openalex_feb26/parquet/references.parquet'   
   ),
   unprojected AS
     (SELECT 
@@ -121,10 +115,8 @@ WITH refs AS (
       INNER JOIN work_items i2 ON i2.work_id = cited_work
       WHERE i2.publication_year = 2020
     )
-  SELECT * FROM unprojected;
 
-SELECT * FROM unprojected LIMIT 4;
-SHOW TABLES;"
+SELECT * FROM unprojected;"
 "-- 4 BUILD THE edge_list tables 
 -- Includes mono-modal (s, a, i) and the combined (si. sa and ai) super-matrices
 -- ===========================================================================
@@ -175,7 +167,7 @@ CREATE OR REPLACE TEMP TABLE edge_list AS
     AND v.target_id IS NOT NULL
   GROUP BY 1, 2, 3;
  
-  COPY (SELECT * FROM edge_list) TO '/home/lc/m/working/econ_bus_edge_lists.parquet' (FORMAT PARQUET);"
+  COPY (SELECT * FROM edge_list) TO '/home/lc/m/working/econ_bus/econ_bus_edge_lists.parquet' (FORMAT PARQUET);"
 "-- x TRANSFER THIS NOTEBOOK TO AN .sql TEXT FILE FOR INGESTION INTO PYTHON
 -- =====================================================================
 -- SELECT * FROM duckdb_tables();
@@ -236,59 +228,22 @@ SELECT
     END AS status
 FROM matrix_stats m, baseline b
 ORDER BY length(m.projection_type), m.projection_type;"
-"-- x BUILD supporting tables - works counts author filters, cross-matching names
+"-- 5 BUILD supporting tables - works counts author filters, cross-matching names
 -- =============================================================================
--- SELECT * FROM read_csv('/home/lc/Projects/EconomicsBusiness/2026_study/DATA/econ_bus_journal_oa.csv')
-SELECT DISTINCT 's' AS kind, source_id, source_name, work_count
-  FROM wsai
-  JOIN (SELECT source_id, sum(source_weight)::INT AS work_count
-          FROM work_items GROUP BY ALL)
-  USING (source_id)
-  ORDER BY work_count DESC
+COPY (
+    (SELECT DISTINCT 's' AS kind, source_id as id, source_name as name, work_count
+    FROM wsai
+    JOIN (SELECT source_id, sum(source_weight)::INT AS work_count
+            FROM work_items GROUP BY ALL)
+    USING (source_id))
 
--- ATTACH IF NOT EXISTS '/home/lc/m/working/econ_backup.duckdb' AS project;
--- WITH
---     candidates_CTE AS
---     (SELECT author_id,
---             author_name,
---             Research_Profile,
---             ""Group"",
---             ""Class"",
---         FROM project.candidates
---         WHERE list_contains(['endogenous', 'exogenous', 'matched_difficult', 'openalex'], kind)
---     ),
---     works_authors_CTE AS
---     (SELECT DISTINCT work_id,
---             author_id,
---             author_name,
---             Research_Profile,
---             ""Group"",
---             ""Class"",
---         FROM candidates_CTE
---         LEFT JOIN project.authorships
---         USING (author_id)
---     )
-
--- SELECT DISTINCT * EXCLUDE (work_id) FROM works_authors_CTE;
-
--- SELECT DISTINCT 'a' AS kind, author_id AS oa_id, author_name AS oa_name, work_count, ""Group""
---   FROM wsai
---   JOIN (SELECT author_id, sum(author_weight)::INT AS work_count
---           FROM work_items GROUP BY ALL)
---   USING (author_id)
---   LEFT JOIN read_csv('/home/lc/Projects/EconomicsBusiness/2026_study/DATA/matched_authors.csv')
---   ON author_id = id
---   WHERE ""Group"" NOT NULL
---   ORDER BY work_count DESC
+    UNION BY NAME
+    
+    (SELECT DISTINCT 'i' AS kind, institution_id as id, institution_name as name, work_count
+    FROM wsai
+    JOIN (SELECT institution_id, sum(institution_weight)::INT AS work_count
+            FROM work_items GROUP BY ALL)
+    USING (institution_id))
+    ORDER BY kind, work_count DESC
+  ) TO '/home/lc/m/working/econ_bus/work_counts.parquet'
 "
-SELECT DISTINCT source_id FROM works
-"SELECT DISTINCT column0 AS source_id_IN, j.source_id, j.source_name, count(id) AS works_count
-  FROM read_csv('/home/lc/Projects/EconomicsBusiness/2026_study/sources.txt', header=false) s
-  LEFT JOIN
-    (SELECT  DISTINCT primary_location.source.id AS source_id,  
-          primary_location.source.display_name AS source_name,
-          id
-    FROM read_json_auto('/home/lc/m/openalex_feb26/json/**/*.json', ignore_errors = true)) j
-  ON column0 = j.source_id
-  GROUP BY ALL
-  ORDER BY works_count DESC"
