@@ -1,0 +1,28 @@
+# Journal-Institution Ordinal Spectral Ranking — Configuration
+# Built incrementally as we develop the pipeline
+
+# === STEP 1: Basic paths for testing ===
+WORKING_DIR: "/home/lc/m/working/econ_bus"
+JSON_DIR: "/home/lc/m/working/econ_bus/test_json"
+PARQUET_DIR: "/home/lc/m/working/econ_bus/test_parquet"
+
+# === STEP 1: Test source for development ===
+TEST_SOURCE_ID: "https://openalex.org/S137773608"  # Journal of Economic Literature
+
+# === STEP 2: Basic time windows (will expand later) ===
+CENSUS_START: 2020
+CENSUS_END: 2024
+TARGET_START: 2020
+TARGET_END: 2020
+
+# === STEP 3: Katz parameters (will use when we get to spectral ranking) ===
+ALPHA: 0.85
+KATZ_TOL: 1.0e-8
+KATZ_MAX_ITER: 200
+
+# === TODO: Add as we build the pipeline ===
+# - Full production paths
+# - Institution filtering thresholds  
+# - Time series loops
+# - Full source list path
+# - Citation master path
