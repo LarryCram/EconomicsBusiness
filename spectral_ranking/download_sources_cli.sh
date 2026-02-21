@@ -42,11 +42,10 @@ download_source() {
     openalex download \
         --fresh \
         --filter="publication_year:>1999,primary_location.source.id:https://openalex.org/$source_name" \
-        --nested \
         --quiet \
-        --workers 8 \
+        --workers=2 \
         --output="$output_dir" \
-        2>&1 | tee -a "$log_file"
+        >> "$log_file" 2>&1
     
     if [ $? -eq 0 ]; then
         echo "[$source_name] ✓ Completed successfully" | tee -a "$log_file"
