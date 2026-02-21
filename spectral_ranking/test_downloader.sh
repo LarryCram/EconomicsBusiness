@@ -4,35 +4,47 @@
 
 set -e  # Exit on error
 
-BASE_DIR="/home/lc/m/working/econ_bus/json_sources_test"
+# Configuration
+SOURCE_FILE="source_master.txt"
+READ_SOURCES=974
+BASE_DIR="/home/lc/m/working/econ_bus/json"
 LOG_DIR="$BASE_DIR/logs"
+
+# Validate source file exists
+if [ ! -f "$SOURCE_FILE" ]; then
+    echo "Error: Source file '$SOURCE_FILE' not found!"
+    exit 1
+fi
 
 # Create directories
 mkdir -p "$BASE_DIR"
 mkdir -p "$LOG_DIR"
 
-echo "Starting downloads for 10 sources..."
+echo "Reading first $READ_SOURCES sources from $SOURCE_FILE..."
 echo "Base directory: $BASE_DIR"
 echo "Logs directory: $LOG_DIR"
 
 # Function to download a single source
 download_source() {
     local source_id="$1"
+    # Remove any stray carriage returns (if file came from Windows)
+    source_id=$(echo "$source_id" | tr -d '\r')
     local source_name=$(basename "$source_id")
     local output_dir="$BASE_DIR/$source_name"
     local log_file="$LOG_DIR/$source_name.log"
     
-    echo "[$source_name] Starting download..." | tee -a "$log_file"
+    echo "[$source_name] Starting download..." | tee -a "$log_file" 
     
     # Create source-specific directory
     mkdir -p "$output_dir"
     
     # Download with openalex CLI
     openalex download \
-        --filter="publication_year:>1999,primary_location.source.id:$source_id" \
-        --nested \
         --fresh \
+        --filter="publication_year:>1999,primary_location.source.id:https://openalex.org/$source_name" \
+        --nested \
         --quiet \
+        --workers 8 \
         --output="$output_dir" \
         2>&1 | tee -a "$log_file"
     
@@ -45,33 +57,11 @@ download_source() {
 
 # Export function for parallel execution
 export -f download_source
+export BASE_DIR LOG_DIR
 
-# Download sources in parallel (adjust -j value based on your system)
-echo "Downloading sources in parallel..."
-printf '%s\n' \
-    "https://openalex.org/S100134864" \
-    "https://openalex.org/S100149336" \
-    "https://openalex.org/S100711025" \
-    "https://openalex.org/S101163346" \
-    "https://openalex.org/S101209419" \
-    "https://openalex.org/S1014724869" \
-    "https://openalex.org/S1027187413" \
-    "https://openalex.org/S102805530" \
-    "https://openalex.org/S102949365" \
-    "https://openalex.org/S103311983"
-
-# Run downloads in parallel (max 4 concurrent jobs)
-printf '%s\n' \
-    "https://openalex.org/S100134864" \
-    "https://openalex.org/S100149336" \
-    "https://openalex.org/S100711025" \
-    "https://openalex.org/S101163346" \
-    "https://openalex.org/S101209419" \
-    "https://openalex.org/S1014724869" \
-    "https://openalex.org/S1027187413" \
-    "https://openalex.org/S102805530" \
-    "https://openalex.org/S102949365" \
-    "https://openalex.org/S103311983" | \
+# Read sources and run in parallel
+# Uses head to get the first N lines, then xargs for parallel execution
+head -n "$READ_SOURCES" "$SOURCE_FILE" | \
 xargs -I {} -P 4 bash -c 'download_source "$@"' _ {}
 
 echo "All downloads completed!"
@@ -80,12 +70,16 @@ echo "Check logs in: $LOG_DIR"
 # Summary
 echo ""
 echo "=== DOWNLOAD SUMMARY ==="
-success_count=$(grep -l "✓ Completed successfully" "$LOG_DIR"/*.log | wc -l)
-total_count=$(ls "$LOG_DIR"/*.log 2>/dev/null | wc -l)
-echo "Successful downloads: $success_count / $total_count"
+if [ -d "$LOG_DIR" ]; then
+    success_count=$(grep -l "✓ Completed successfully" "$LOG_DIR"/*.log 2>/dev/null | wc -l)
+    total_count=$(ls "$LOG_DIR"/*.log 2>/dev/null | wc -l)
+    echo "Successful downloads: $success_count / $total_count"
 
-if [ $success_count -lt $total_count ]; then
-    echo ""
-    echo "Failed downloads:"
-    grep -l "✗ Failed" "$LOG_DIR"/*.log | sed 's/.*\///' | sed 's/\.log$//'
+    if [ "$success_count" -lt "$total_count" ]; then
+        echo ""
+        echo "Failed downloads:"
+        grep -l "✗ Failed" "$LOG_DIR"/*.log 2>/dev/null | sed 's/.*\///' | sed 's/\.log$//'
+    fi
+else
+    echo "No logs found."
 fi

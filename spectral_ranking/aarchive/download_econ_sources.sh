@@ -6,7 +6,7 @@ while read -r source_id; do
   echo "Processing source: $source_id"
   
   openalex download \
-    --filter="publication_year:>1999,primary_location.source.id:$source_id" \
+    --filter="publication_year:>2010,primary_location.source.id:$source_id" \
     --nested \
     --fresh \
     --quiet \
