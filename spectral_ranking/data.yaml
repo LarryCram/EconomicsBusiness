@@ -3,8 +3,8 @@
 
 # === STEP 1: Basic paths for testing ===
 WORKING_DIR: "/home/lc/m/working/econ_bus"
-JSON_DIR: "/home/lc/m/working/econ_bus/test_json"
-PARQUET_DIR: "/home/lc/m/working/econ_bus/test_parquet"
+JSON_DIR: "/home/lc/m/working/econ_bus/json"
+PARQUET_DIR: "/home/lc/m/working/econ_bus/parquet"
 
 # === STEP 1: Test source for development ===
 TEST_SOURCE_ID: "https://openalex.org/S137773608"  # Journal of Economic Literature

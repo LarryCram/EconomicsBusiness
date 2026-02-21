@@ -1,11 +1,9 @@
 #!/usr/bin/env python3
 """
-Test script to download works for one source and build pipeline incrementally
+Parse OpenAlex JSON files to parquet format using DuckDB SQL
 """
 
-import subprocess
 import os
-import json
 import duckdb
 import yaml
 from pathlib import Path
@@ -17,40 +15,9 @@ config_path = os.path.join(script_dir, 'data.yaml')
 with open(config_path) as f:
     config = yaml.safe_load(f)
 
-# Extract config values
-TEST_SOURCE_ID = config['TEST_SOURCE_ID']
-OUTPUT_DIR = config['WORKING_DIR'] 
-JSON_DIR = config['JSON_DIR']
-
-def download_single_source(source_id, output_dir):
-    """Download works for a single source using openalex CLI"""
-    print(f"Downloading works for source: {source_id}")
-    
-    # Ensure output directory exists
-    os.makedirs(output_dir, exist_ok=True)
-    
-    cmd = [
-        "openalex", "download",
-        f"--filter=publication_year:>1999,primary_location.source.id:{source_id}",
-        "--nested",
-        "--fresh",
-        "--quiet",
-        f"--output={output_dir}"
-    ]
-    
-    print(f"Running: {' '.join(cmd)}")
-    result = subprocess.run(cmd, capture_output=True, text=True)
-    
-    if result.returncode != 0:
-        print(f"Error: {result.stderr}")
-        return False
-    
-    print(f"Download completed. Output: {result.stdout}")
-    return True
-
 def parse_json_to_parquets(json_dir, parquet_dir):
     """Parse OpenAlex JSON using DuckDB SQL to create works, references, and authorships parquet files"""
-    json_files = list(Path(json_dir).glob("*.json"))
+    json_files = list(Path(json_dir).glob("**/*.json"))
     if not json_files:
         print("No JSON files to convert")
         return False
@@ -200,25 +167,22 @@ def verify_parquet_files(parquet_dir):
         conn.close()
 
 if __name__ == "__main__":
-    # Ensure working directory exists
-    os.makedirs(OUTPUT_DIR, exist_ok=True)
+    # Set up paths from config
+    json_dir = config['JSON_DIR']
+    parquet_dir = config['PARQUET_DIR']
     
-    print("=== Step 1: Download works for test source ===")
-    # success = download_single_source(TEST_SOURCE_ID, JSON_DIR)
-    success = True
+    print("=== Parsing JSON to Parquet Files ===")
+    print(f"JSON directory: {json_dir}")
+    print(f"Output directory: {parquet_dir}")
+    
+    # Ensure output directory exists
+    os.makedirs(parquet_dir, exist_ok=True)
+    
+    # Parse JSON to parquet files
+    success = parse_json_to_parquets(json_dir, parquet_dir)
     
     if success:
-        print("\n=== Step 2: Parse JSON to parquet files ===")
-        os.makedirs(config['PARQUET_DIR'], exist_ok=True)
-        success = parse_json_to_parquets(JSON_DIR, config['PARQUET_DIR'])
-        
-        if success:
-            print("\n=== Step 3: Verify parquet files ===")
-            parquet_dir = Path(config['PARQUET_DIR'])
-            parquet_files = list(parquet_dir.glob('*.parquet'))
-            print(f"Created {len(parquet_files)} parquet files:")
-            for pf in parquet_files:
-                print(f"  - {pf.name}")            
-            verify_parquet_files(config['PARQUET_DIR'])
-        else:
-            print("Failed to parse JSON files")
+        print("\n✓ JSON parsing completed successfully")
+        print(f"Parquet files created in: {parquet_dir}")
+    else:
+        print("\n✗ JSON parsing failed")
