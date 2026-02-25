@@ -32,13 +32,21 @@ def assemble_wos_journal_list(db):
                                 "JCR Abbreviation" AS jcr_abrv, 
                                 Category
                             FROM read_xlsx('{file}', range='A3:AZ999', header=true)
-                            WHERE jcr_name NOT NULL
+                            WHERE jcr_name NOT NULL AND 
+                                not list_contains(
+                                    ['ETHNIC STUDIES', 'DEMOGRAPHY', 'DEVELOPMENT STUDIES', 
+                                    'URBAN STUDIES', 'FORESTRY', 'HEALTH POLICY & SERVICES',
+                                    'GEOGRAPHY', 'AREA STUDIES', 'HEALTH CARE SCIENCES & SERVICES',
+                                    'ENVIRONMENTAL STUDIES', 'ECOLOGY', 'COMMUNICATION',
+                                    'PUBLIC ADMINISTRATION'], Category)
                             GROUP BY ALL
                         """)
 
     # Create a view with all data
     create_view_sql = "CREATE OR REPLACE VIEW all_jcr_data AS " + " UNION ALL ".join(union_parts)
     db.execute(create_view_sql)
+
+    db.sql("SELECT Category, count(Category) AS counts FROM all_jcr_data GROUP BY ALL ORDER BY counts DESC").show()
 
     # Create temp table with aggregated WOS data
     db.sql("""
@@ -210,11 +218,11 @@ def load_journals(db):
     print("=== SAVING COMPREHENSIVE JOURNAL LIST ===")
     db.sql(f"""
         COPY comprehensive_journals 
-        TO '{DATA}/comprehensive_journal_list.csv' 
-        (FORMAT 'csv', HEADER true)
+        TO '{DATA}/comprehensive_journal_list.parquet' 
+        (FORMAT PARQUET) --(FORMAT 'csv', HEADER true)
     """)
     
-    print("Results saved to comprehensive_journal_list.csv")
+    print("Results saved to comprehensive_journal_list.parquet")
     return
 
 def main():
