@@ -228,6 +228,7 @@ def load_journals(db):
 def main():
     with duckdb.connect() as db:
         load_journals(db)  # Pass db connection to load_journals
+        db.sql(f"SELECT * FROM '{DATA}/comprehensive_journal_list.parquet'").show() #-- TO '{DATA}/comprehensive_journal_list.csv' (FORMAT CSV)")
     return
 
 if __name__ == "__main__":
