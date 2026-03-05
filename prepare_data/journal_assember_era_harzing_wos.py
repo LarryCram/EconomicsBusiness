@@ -1,3 +1,19 @@
+"""
+Journal Database Assembly Script
+
+This script combines journal data from three major academic sources:
+- WOS/JCR (Web of Science Journal Citation Reports): Economics and Business journals
+- ERA 2023 (Excellence in Research for Australia): Field of Research codes 35 & 38
+- Harzing Journal Quality List: Economics and business journal rankings
+
+The script performs ISSN-based matching to merge overlapping journals across sources,
+creating a comprehensive journal database with metadata from all three sources.
+Uses DuckDB for efficient SQL operations on Excel files and produces a unified
+parquet file containing journal names, abbreviations, ISSN lists, field classifications,
+and category information for downstream bibliometric analysis.
+
+Output: comprehensive_journal_list.parquet in the configured DATA directory
+"""
 from pathlib import Path
 import duckdb
 import yaml
@@ -17,6 +33,7 @@ with open(config_path) as f:
     print(f'{config = }')
     PROJECT_FOLDER = config['PROJECT_ROOT']
     DATA = PROJECT_FOLDER / Path(config.get('DATA'))
+    WORKING = Path(config.get('WORKING'))
 
 def assemble_wos_journal_list(db):
     """Create WOS temp table from xlsx files"""
@@ -218,7 +235,7 @@ def load_journals(db):
     print("=== SAVING COMPREHENSIVE JOURNAL LIST ===")
     db.sql(f"""
         COPY comprehensive_journals 
-        TO '{DATA}/comprehensive_journal_list.parquet' 
+        TO '{WORKING}/parquet/comprehensive_journal_list.parquet' 
         (FORMAT PARQUET) --(FORMAT 'csv', HEADER true)
     """)
     
@@ -228,7 +245,13 @@ def load_journals(db):
 def main():
     with duckdb.connect() as db:
         load_journals(db)  # Pass db connection to load_journals
-        db.sql(f"SELECT * FROM '{DATA}/comprehensive_journal_list.parquet'").show() #-- TO '{DATA}/comprehensive_journal_list.csv' (FORMAT CSV)")
+        sql = f"""
+            COPY (
+            SELECT * 
+                FROM '{WORKING}/parquet/comprehensive_journal_list.parquet' 
+            ) TO '{DATA}/comprehensive_journal_list.csv' (FORMAT CSV)
+        """
+        db.sql(sql)
     return
 
 if __name__ == "__main__":
