@@ -1,0 +1,331 @@
+,Research_Profile,author_id,works_count,display_name,ACR,PUB,CIT,HCP,sum,coc,score,Group,Class
+0,"Guerrieri, Veronica",https://openalex.org/A5021180688,73,Veronica Guerrieri,A58,6,575,1,1933.413023857254,322.235503976209,100.0,C,German_Bernacer_Prize
+1,"Gabaix, Xavier",https://openalex.org/A5069579613,202,Xavier Gabaix,A105,10,1293,1,3180.707981915585,318.0707981915585,99.4,C,Fischer Black Prize
+2,"Dorn, David",https://openalex.org/A5054945129,172,David Dornbos,A49,10,2820,6,3098.345439931735,309.8345439931735,98.1,C,Gossen_Prize
+3,"Holmstrom, Bengt",https://openalex.org/A5003462830,107,Bengt Holmström,A14,2,89,0,517.6921530158731,258.8460765079366,89.6,C,Nobel Prize
+4,"Nakamura, Emi",https://openalex.org/A5055718351,180,Emi Nakamura,A32,14,842,1,3568.92759708819,254.9233997920136,88.9,C,John_Bates_Clark_Medal
+5,"Taylor, Lucian A.",https://openalex.org/A5112890565,47,Lucian A. Taylor,MP4,9,1896,3,2126.447405299423,236.2719339221581,85.6,C,Moskowitz Prize
+6,"Fama, Eugene F.",https://openalex.org/A5068490503,345,Michael C. Jensen,A17,12,4873,4,2797.66531687951,233.1387764066258,85.1,C,Nobel Prize
+7,"Kline, Patrick",https://openalex.org/A5035282458,121,Patrick Kline,H09,11,694,1,2546.473084751082,231.4975531591893,84.8,C,Sherwin Rosen Prize
+8,"Vissing-Jorgensen, Annette",https://openalex.org/A5053979330,120,Tobias J. Moskowitz,S11,5,369,0,1153.435042460318,230.6870084920635,84.6,C,SFI BEST PAPER AWARD
+9,"Stambaugh, Robert F.",https://openalex.org/A5023702151,149,Robert F. Stambaugh,Y57,9,2553,5,2055.040140916861,228.3377934352067,84.2,C,Fama–DFA Prize
+10,"Gennaioli, Nicola",https://openalex.org/A5050249057,182,Nicola Gennaioli,A99,21,2062,1,4470.10284753552,212.8620403588343,81.3,C,ERC
+11,"Hendren, Nathaniel",https://openalex.org/A5008884407,671,Nathaniel Hendren,H05,18,3871,7,3826.454344791875,212.580796932882,81.2,C,Presidential Early Career Award for Scientists and Engineers
+12,"Chetty, Raj",https://openalex.org/A5051484328,295,Raj Chetty,A26,18,4388,7,3773.626351615607,209.6459084230893,80.7,C,John_Bates_Clark_Medal
+13,"Muir, Tyler",https://openalex.org/A5079166372,269,Tobias Adrian,A02,9,468,0,1868.764076926685,207.6404529918538,80.3,C,Fischer Black Prize
+14,"Maggiori, Matteo",https://openalex.org/A5065807417,241,Matteo Maggiori,A65,14,1113,0,2779.642976204351,198.5459268717394,78.5,C,German_Bernacer_Prize
+15,"Autor, David",https://openalex.org/A5029839974,333,David Autor,H06,24,5620,8,4541.747253400212,189.2394688916755,76.6,C,Special Heinz Award
+16,"Karabarbounis, Loukas",https://openalex.org/A5069670842,80,Loukas Karabarbounis,A63,10,601,1,1838.783811031746,183.8783811031746,75.5,C,German_Bernacer_Prize
+17,"Ljungqvist, Alexander",https://openalex.org/A5084233777,160,Alexander Ljungqvist,A91,11,1357,2,2015.598032940115,183.2361848127378,75.4,C,ERC
+18,"Allcott, Hunt",https://openalex.org/A5086150821,435,David Knoke,H07,15,5175,6,2742.941995492841,182.8627996995227,75.3,C,Atkinson Award
+19,"Shleifer, Andrei",https://openalex.org/A5110890240,526,Andrei Shleifer,H08,27,2461,3,4871.161671182984,180.4133952289994,74.8,C,John_Bates_Clark_Medal
+20,"Yang, Cunyi",https://openalex.org/A5078637517,210,Yong Tan,Y56,9,359,5,1597.730918046121,177.5256575606801,74.2,T,HCP
+21,"Krueger, Philipp",https://openalex.org/A5112866317,40,Philipp Krueger,Y58,8,2326,5,1387.304797161172,173.4130996451465,73.4,T,HCP
+22,"Gentzkow, Matthew",https://openalex.org/A5008542297,208,Matthew Gentzkow,A27,17,4615,6,2928.236316624486,172.249195095558,73.1,C,John_Bates_Clark_Medal
+23,"Greenwood, Robin",https://openalex.org/A5110548704,145,Robin Greenwood,S10,14,1074,1,2348.414759287657,167.7439113776898,72.2,C,SFI BEST PAPER AWARD
+24,"Moll, Benjamin",https://openalex.org/A5032528341,85,Benjamin Moll,A80,15,1157,1,2490.969469184982,166.0646312789988,71.8,C,ERC
+25,"Moll, Benjamin",https://openalex.org/A5032528341,85,Benjamin Moll,A61,15,868,1,2485.002553800367,165.6668369200244,71.7,C,German_Bernacer_Prize
+26,"Duflo, Esther",https://openalex.org/A5015565298,1393,Esther Duflo,A11,22,4570,4,3516.101439881507,159.8227927218867,70.4,C,Nobel Prize
+27,"Van Reenen, John",https://openalex.org/A5004443266,674,John Van Reenen,H03,28,2605,4,4375.819724619269,156.2792758792596,69.6,C,Arrow Prize
+28,"Sufi, Amir",https://openalex.org/A5042474653,213,Philip E. Strahan,A30,10,828,1,1530.381919756632,153.0381919756632,68.9,C,Fischer Black Prize
+29,"Schmalz, Martin C.",https://openalex.org/A5088570401,103,Martin C. Schmalz,A83,7,865,1,1058.836541349761,151.2623630499659,68.5,C,ERC
+30,"Bloom, Nicholas",https://openalex.org/A5044421873,558,Nicholas Bloom,A56,33,4807,8,4958.797431586192,150.2665888359452,68.3,C,German_Bernacer_Prize
+31,"Saez, Emmanuel",https://openalex.org/A5017685817,482,Emmanuel Saez,A23,26,2281,3,3816.054311363637,146.7713196678322,67.5,C,John_Bates_Clark_Medal
+32,"Kelly, Bryan",https://openalex.org/A5101435735,87,Bryan Kelly,H01,30,4150,6,4209.873686579532,140.3291228859844,66.0,C,Fama-DFA Prize 
+33,"Flammer, Caroline",https://openalex.org/A5062974091,86,Caroline Flammer,Y22,16,4106,9,2241.402381743811,140.0876488589882,65.9,C,Moskowitz Prize
+34,"Imbens, Guido W.",https://openalex.org/A5052726702,436,Guido W. Imbens,Y21,19,4047,6,2644.042811883672,139.1601479938775,65.7,C,Nobel Prize
+35,"Vayanos, Dimitri",https://openalex.org/A5000113430,125,Dimitri Vayanos,S06,9,467,0,1205.036708766234,133.8929676406927,64.5,C,SFI BEST PAPER AWARD
+36,"Starks, Laura T.",https://openalex.org/A5081692376,175,Laura T. Starks,Y51,12,2122,5,1588.151878463481,132.3459898719567,64.1,C,Swedish Skandia Award and Moskowitz Prize
+37,"He, Zhiguo",https://openalex.org/A5050154269,224,Zhiguo He,S02,21,1794,3,2757.513470937396,131.3101652827332,63.8,C,SFI BEST PAPER AWARD
+38,"Hanson, Gordon",https://openalex.org/A5031353967,327,Gordon Hanson,H11,16,2268,4,2073.563755533356,129.5977347208347,63.4,C,NBER and SLI fellow
+39,"Eeckhout, Jan",https://openalex.org/A5043222365,119,Jan Eeckhout,D02,14,859,1,1763.648803797591,125.9749145569708,62.5,C,ERC
+40,"Mitman, Kurt",https://openalex.org/A5087954992,85,Kurt Mitman,A79,10,374,0,1237.023753455156,123.7023753455156,62.0,C,ERC
+41,"Card, David",https://openalex.org/A5090324651,689,David Card,A09,25,1567,3,3049.699138411033,121.9879655364413,61.5,C,Nobel Prize
+42,"Giglio, Stefano",https://openalex.org/A5013077462,144,Stefano Giglio,MP1,24,2439,4,2918.312381819015,121.5963492424589,61.4,C,Moskowitz Prize
+43,"Philippon, Thomas",https://openalex.org/A5109486762,152,Thomas Philippon,A57,20,1889,1,2420.563218568931,121.0281609284466,61.3,C,German_Bernacer_Prize
+44,"Pastor, Lubos",https://openalex.org/A5078912696,149,Ľuboš Pástor,MP5,11,1199,3,1324.071553535909,120.3701412305371,61.1,C,Moskowitz Prize
+45,"Yogo, Motohiro",https://openalex.org/A5048794076,138,Motohiro Yogo,S18,14,627,0,1684.189761063936,120.299268647424,61.1,C,SFI BEST PAPER AWARD
+46,"Burgess, Robin",https://openalex.org/A5037028831,232,Robin Burgess‐Limerick,A92,10,857,1,1195.605558336386,119.5605558336386,60.9,C,ERC
+47,"Restrepo, Pascual",https://openalex.org/A5011062401,106,Pascual Restrepo,D03,17,5346,8,1997.525764615662,117.5015155656272,60.4,C,Nobel Prize major coauthor
+48,"Itskhoki, Oleg",https://openalex.org/A5088518091,123,Oleg Itskhoki,A34,11,567,0,1287.014821112221,117.0013473738383,60.3,C,John_Bates_Clark_Medal
+49,"Koijen, Ralph S. J.",https://openalex.org/A5083877502,190,Ralph S. J. Koijen,A64,20,936,0,2336.090594073427,116.8045297036713,60.2,C,German_Bernacer_Prize
+50,"Krishnamurthy, Arvin",,0,,S17,16,624,0,1824.850795097403,114.0531746935877,59.5,C,SFI BEST PAPER AWARD
+51,"Smith, Wendy K.",https://openalex.org/A5110746760,120,Wendy K. Smith,B20,12,2180,3,1353.613802807193,112.8011502339327,59.2,T,HCP
+52,"Marquis, Christopher",https://openalex.org/A5018951614,205,Christopher Marquis,B14,11,1663,3,1222.475666796537,111.1341515269579,58.7,C,Several book and paper awards
+53,"Andrews, Isaiah",https://openalex.org/A5114167505,90,Isaiah Andrews,A33,19,950,2,2089.120991945277,109.9537364181725,58.4,C,John_Bates_Clark_Medal
+54,"Malmendier, Ulrike",https://openalex.org/A5051751338,191,Ulrike Malmendier,A89,21,1322,1,2307.236578529249,109.8684085013928,58.4,C,Fischer Black Prize
+55,"Bansal, Pratima",https://openalex.org/A5046485145,142,Pratima Bansal,Y48,15,2664,5,1622.619513833666,108.1746342555777,57.9,T,HCP
+56,"Hartzmark, Samuel M.",https://openalex.org/A5061802063,45,Samuel M. Hartzmark,MP7,10,890,1,1072.137118976579,107.2137118976579,57.7,C,Moskowitz Prize
+57,"Ioannou, Ioannis",https://openalex.org/A5031570888,204,Ioannis Ioannou,Z96,7,923,3,747.3024022444222,106.7574860349174,57.6,T,HCP
+58,"Acemoglu, Daron",https://openalex.org/A5018452472,7,Daron Acemoglu Woodford,A01,63,10018,14,6680.220141319513,106.035240338405,57.4,C,Nobel Prize
+59,"Banerjee, Abhijit",https://openalex.org/A5048028100,1371,Abhijit Banerjee,A10,28,2735,4,2939.199556306749,104.9714127252411,57.1,C,Nobel Prize
+60,"Stroebel, Johannes",https://openalex.org/A5062207917,185,Johannes Ströbel,A28,23,2085,4,2411.340301678599,104.8408826816782,57.0,C,Fischer Black Prize
+61,"Kuchler, Theresa",https://openalex.org/A5006578976,97,Theresa Kuchler,MP3,15,1355,2,1553.726881943612,103.5817921295741,56.7,C,Moskowitz Prize
+62,"Van Nieuwerburgh, Stijn",https://openalex.org/A5064406662,253,Stijn Van Nieuwerburgh,A59,33,1496,0,3382.360345369631,102.495768041504,56.4,C,German_Bernacer_Prize
+63,"Greenstone, Michael",https://openalex.org/A5077574905,445,Michael Greenstone,H04,21,3376,8,2140.50152242008,101.9286439247657,56.2,C,Andrew Carnegie Fellow Award
+64,"Wooldridge, Jeffrey M.",https://openalex.org/A5084771969,230,Jeffrey M. Wooldridge,Y43,24,3496,5,2429.442311522921,101.2267629801217,56.0,T,HCP
+65,"Zucman, Gabriel",https://openalex.org/A5090091703,189,Gabriel Zucman,A35,20,1381,4,2003.815505949606,100.1907752974803,55.8,C,German_Bernacer_Prize
+66,"Hombert, Johan",https://openalex.org/A5089604953,63,Johan Hombert,A100,8,463,0,800.2939319733043,100.036741496663,55.7,C,ERC
+67,"Cantoni, Davide",https://openalex.org/A5061039550,114,Davide Cantoni,A74,10,626,1,982.7819331462981,98.27819331462982,55.2,C,Gossen_Prize
+68,"Kondor, Peter",https://openalex.org/A5005619956,58,Péter Kondor,S03,7,113,0,687.0526494047618,98.15037848639454,55.2,C,SFI BEST PAPER AWARD
+69,"Haddad, Valentin",https://openalex.org/A5010670396,50,Valentin Haddad,S01,8,270,0,775.5958665034966,96.94948331293708,54.9,C,SFI BEST PAPER AWARD
+70,"Bolton, Patrick",https://openalex.org/A5102899198,409,Patrick Bolton,A41,17,1991,2,1641.123298718504,96.53666463050023,54.7,C,ERC
+71,"Coibion, Olivier",https://openalex.org/A5034004951,371,Olivier Coibion,Y18,30,2371,6,2880.245467722,96.00818225740001,54.6,T,HCP
+72,"Sautner, Zacharias",https://openalex.org/A5046526188,103,Zacharias Sautner,Y52,16,2736,8,1534.953361165224,95.93458507282648,54.6,T,HCP
+73,"Barber, Brad M.",https://openalex.org/A5080437782,135,Brad M. Barber,MP10,9,673,2,844.3432237745586,93.81591375272873,54.0,C,Moskowitz Prize
+74,"Finkelstein, Amy",https://openalex.org/A5012244489,380,Amy Finkelstein,A25,31,1512,1,2906.566807659008,93.76021960190347,53.9,C,John_Bates_Clark_Medal
+75,"Murphy, Kevin M.",https://openalex.org/A5103962165,15,Kevin M. Murphy,B09,13,849,0,1204.789790500055,92.67613773077349,53.6,C,John Von Neumann Award
+76,"Koren, Miklos",https://openalex.org/A5066597415,90,Miklós Koren,A52,6,574,1,555.8366127927628,92.63943546546047,53.6,C,ERC
+77,"Rabin, Matthew",https://openalex.org/A5112459695,160,Matthew Rabin,B13,8,390,1,732.3761231751582,91.54701539689478,53.3,C,John Von Neumann Award
+78,"Morse, Adair",https://openalex.org/A5013391291,97,Adair Morse,MP11,12,867,1,1096.886098467366,91.40717487228049,53.3,C,Moskowitz Prize
+79,"Biais, Bruno",https://openalex.org/A5006723379,188,Bruno Biais,D04,10,557,1,908.766791996892,90.8766791996892,53.1,C,ERC
+80,"Venkateswaran, Venky",https://openalex.org/A5011891408,67,Venky Venkateswaran,S09,11,412,0,995.8674344413919,90.53340313103563,53.0,C,SFI BEST PAPER AWARD
+81,"Puga, Diego",https://openalex.org/A5016166651,101,Diego Puga,A86,5,489,1,445.4321398809524,89.08642797619049,52.6,C,ERC
+82,"Casamatta, Catherine",https://openalex.org/A5108073127,36,Catherine Casamatta,S14,4,266,1,353.7358852214452,88.4339713053613,52.4,C,SFI BEST PAPER AWARD
+83,"Athey, Susan",https://openalex.org/A5001211242,370,Susan Athey,H16,18,2462,5,1579.801729226052,87.76676273478067,52.2,C,John Von Neumann Award
+84,"Chaney, Thomas",https://openalex.org/A5020537470,180,Philip Sauré,D01,9,518,0,775.6023727453103,86.17804141614559,51.7,C,ERC
+85,"Robin, Jean-Marc",https://openalex.org/A5076299639,240,Jean‐Marc Robin,Y34,10,338,0,859.1082274314575,85.91082274314576,51.6,C,ERC
+86,"Foss, Nicolai J.",https://openalex.org/A5042599675,516,Nicolai J. Foss,B06,16,3222,4,1361.770531354756,85.11065820967228,51.4,T,HCP
+87,"Aguilera, Ruth V.",https://openalex.org/A5085797169,264,Ruth V. Aguilera,B01,33,4648,5,2791.651688498723,84.59550571208251,51.2,T,HCP
+88,"Gawer, Annabelle",https://openalex.org/A5034801924,107,Annabelle Gawer,B08,13,3261,4,1090.412390051615,83.87787615781654,51.0,T,HCP
+89,"Kostova, Tatiana",https://openalex.org/A5061656331,71,Tatiana Kostova,B12,15,1980,3,1251.951000922411,83.46340006149407,50.9,T,HCP
+90,"Gorodnichenko, Yuriy",https://openalex.org/A5017568125,641,Yuriy Gorodnichenko,A45,46,2852,6,3751.043267488345,81.54441885844228,50.3,C,R._K._Cho_Economics_Prize
+91,"Taylor, Alan M.",https://openalex.org/A5063748244,443,Alan M. Taylor,B22,23,1592,3,1870.133346152736,81.31014548490157,50.2,C,Sanwa Prize in International Economics and Financial Markets
+92,"Veldkamp, Laura",https://openalex.org/A5013719629,234,Justin Wolfers,S08,16,674,0,1296.372688163781,81.0232930102363,50.1,C,SFI BEST PAPER AWARD
+93,"Burke, Marshall",https://openalex.org/A5042407637,308,Marshall Burke,H13,15,4263,5,1215.242148903874,81.01614326025826,50.1,C,bet paper awards
+94,"Moxnes, Andreas",https://openalex.org/A5087528377,106,Andreas Moxnes,A90,9,656,1,725.3156632276057,80.59062924751174,50.0,C,ERC
+95,"Schularick, Moritz",https://openalex.org/A5063748244,443,Alan M. Taylor,A73,28,1949,2,2223.218954273505,79.40067693833944,49.6,C,Gossen_Prize
+96,"Johnson, Simon",https://openalex.org/A5111446264,350,Simon Johnson,A03,5,334,1,391.2399986507936,78.24799973015872,49.3,C,Nobel Prize
+97,"Levin, Jonathan",https://openalex.org/A5069334537,170,Jonathan Levin,A24,11,704,1,847.0919456660007,77.00835869690916,48.9,C,John_Bates_Clark_Medal
+98,"Goldin, Claudia",https://openalex.org/A5000387389,384,Claudia Goldin,A05,12,773,0,908.9246743897768,75.74372286581473,48.5,C,Nobel Prize
+99,"Jackson, Matthew O.",https://openalex.org/A5044618645,436,Matthew O. Jackson,A07,19,1184,2,1405.168754777445,73.95625025144446,47.9,C,John Von Neumann Award
+100,"Miguel, Edward",https://openalex.org/A5111439367,239,Edward Miguel,H10,31,3830,6,2289.892489577922,73.86749966380393,47.9,C,Frisch Medal 
+101,"Hsiang, Solomon",https://openalex.org/A5056371388,240,Solomon Hsiang,H14,13,3341,6,959.4971196281497,73.8074707406269,47.9,C,Andrew Carnegie Fellow Award
+102,"Nekoei, Arash",https://openalex.org/A5057259115,32,Arash Nekoei,A84,6,147,0,441.3949261485737,73.56582102476229,47.8,C,ERC
+103,"Thaler, Richard H.",https://openalex.org/A5081252843,274,Richard H. Thaler,B03,5,1006,2,366.7608441891442,73.35216883782883,47.7,C,John Von Neumann Award
+104,"Foucault, Thierry",https://openalex.org/A5109167594,149,Thierry Foucault,A97,11,601,1,801.7991955944055,72.89083596312777,47.6,C,ERC
+105,"Pedersen, Lasse Heje",https://openalex.org/A5022954104,216,Lasse Heje Pedersen,A55,18,1786,4,1309.971252358752,72.77618068659734,47.5,C,German_Bernacer_Prize
+106,"Kremer, Michael",https://openalex.org/A5035113852,487,Michael Kremer,A12,19,913,0,1357.407995654623,71.44252608708544,47.1,C,Nobel Prize
+107,"Doepke, Matthias",https://openalex.org/A5075247079,232,Matthias Doepke,A102,12,762,0,845.4306366519592,70.45255305432993,46.8,C,ERC
+108,"Bouvard, Matthieu",https://openalex.org/A5069404997,35,Matthieu Bouvard,S13,8,386,1,553.9763959090909,69.24704948863636,46.4,C,SFI BEST PAPER AWARD
+109,"Deschenes, Olivier",https://openalex.org/A5080582136,139,Olivier Deschênes,H19,12,1888,5,826.0242289893439,68.83535241577866,46.2,T,HCP
+110,"Hong, Bryan",https://openalex.org/A5004601906,35,Bryan K. Hong,MP8,5,693,2,334.4307538888889,66.88615077777777,45.6,C,Moskowitz Prize
+111,"Huang, Ming-Hui",https://openalex.org/A5067763065,149,Ming‐Hui Huang,Y10,15,3690,7,1000.843649911478,66.7229099940985,45.5,T,HCP
+112,"Nanda, Ramana",https://openalex.org/A5050841292,172,Ramana Nanda,A53,15,850,1,993.1601392604618,66.21067595069745,45.3,C,ERC
+113,"Rust, Roland T.",https://openalex.org/A5037954003,226,Roland T. Rust,Y45,17,3366,5,1098.231654453602,64.60186202668247,44.8,T,HCP
+114,"Sarstedt, Marko",https://openalex.org/A5053369574,526,Marko Sarstedt,A75,28,28583,10,1807.818986832335,64.56496381544052,44.8,C,Several paper's awards
+115,"Le Barbanchon, Thomas",https://openalex.org/A5032219554,117,Thomas Le Barbanchon,A82,11,350,1,690.3908932367633,62.76280847606939,44.1,C,ERC
+116,"Reis, Ricardo",https://openalex.org/A5054925967,61,Ricardo Reis Soares,A60,15,294,0,938.9690366935843,62.59793577957228,44.1,C,German_Bernacer_Prize
+117,"Tenreyro, Silvana",https://openalex.org/A5110809939,130,Francesco Caselli,A94,13,672,0,812.180553556166,62.47542719662816,44.0,C,ERC
+118,"Shin, Hyun Song",https://openalex.org/A5027298282,488,Hyun Song Shin,A38,28,1902,2,1701.378429567377,60.76351534169203,43.4,C,R._K._Cho_Economics_Prize
+119,"Angrist, Joshua",https://openalex.org/A5052500610,225,Philip Oreopoulos,A08,20,708,0,1210.734658108281,60.53673290541403,43.3,C,Nobel Prize
+120,"Robinson, James A.",https://openalex.org/A5014156593,433,James A. Robinson,A04,22,1645,1,1317.961439680875,59.90733816731249,43.1,C,Nobel Prize
+121,"Gambardella, Alfonso",https://openalex.org/A5069038720,316,Alfonso Gambardella,A76,16,799,1,955.0847778890553,59.69279861806596,43.0,C,ERC
+122,"Tirole, Jean",https://openalex.org/A5110429533,536,Jean Tirole,A16,21,852,1,1242.22509791958,59.15357609140859,42.8,C,Nobel Prize
+123,"Sims, Christopher A.",https://openalex.org/A5003198220,264,Christopher A. Sims,A22,3,114,0,172.6892867857143,57.56309559523809,42.3,C,Nobel Prize
+124,"Kannan, P. K.",https://openalex.org/A5108540278,9,P. K. Kannan,B02,26,3533,5,1492.4995179551,57.4038276136577,42.2,T,HCP
+125,"Pathak, Parag A.",https://openalex.org/A5019266000,228,Parag A. Pathak,A31,26,818,0,1486.779018957154,57.183808421429,42.1,C,John_Bates_Clark_Medal
+126,"Fisher, Greg",https://openalex.org/A5101462655,143,Greg Fisher,B05,34,2041,3,1917.543048033911,56.39832494217384,41.8,T,HCP
+127,"Dimson, Elroy",https://openalex.org/A5074071848,146,Elroy Dimson,MP12,10,886,1,559.2083577960929,55.92083577960928,41.7,C,Moskowitz Prize
+128,"Ringle, Christian M.",https://openalex.org/A5087109003,368,Christian M. Ringle,H15,34,29054,17,1866.985764698912,54.91134602055623,41.3,T,HCP
+129,"Manova, Kalina",https://openalex.org/A5113264418,85,Kalina Manova,A93,9,830,0,494.0539396259296,54.89488218065885,41.3,C,ERC
+130,"Gormsen, Niels",https://openalex.org/A5057300372,48,Niels Joachim Gormsen,MP2,5,110,0,267.4986388888889,53.49972777777778,40.7,C,Moskowitz Prize
+131,"Asher, Sam",https://openalex.org/A5001234997,184,Sam Asher,A85,9,544,1,480.5779433982684,53.39754926647427,40.7,C,ERC
+132,"Nambisan, Satish",https://openalex.org/A5044791619,147,Keld Laursen,B15,13,1780,4,693.6795678626929,53.35996675866868,40.7,T,HCP
+133,"Jiang, Hao",https://openalex.org/A5053349677,381,Hao Jiang,S05,9,390,0,469.5972766433567,52.17747518259519,40.2,C,SFI BEST PAPER AWARD
+134,"Aghion, Philippe",https://openalex.org/A5084984675,685,Philippe Aghion,B04,30,2298,4,1562.119874378954,52.07066247929848,40.2,C,John Von Neumann Award
+135,"Hjort, Jonas",https://openalex.org/A5022127778,59,Jonas Hjort,A67,8,399,1,416.3101392107893,52.03876740134866,40.2,C,ERC
+136,"Xiu, Dacheng",https://openalex.org/A5050253426,99,Dacheng Xiu,S12,21,1934,3,1092.125894353979,52.00599496923711,40.2,C,SFI BEST PAPER AWARD
+137,"Farboodi, Maryan",,0,,S07,8,183,0,408.4607204662005,51.05759005827506,39.8,C,SFI BEST PAPER AWARD
+138,"Sussman, Abigail B.",https://openalex.org/A5027438856,95,Abigail B. Sussman,MP6,11,689,1,555.4281841797092,50.49347128906447,39.6,C,Moskowitz Prize
+139,"Blanchard, Olivier",https://openalex.org/A5022245853,34,Olivier Blanchard,B10,14,916,0,678.9687531920856,48.49776808514897,38.8,C,John Von Neumann Award
+140,"Tian, Xuan",https://openalex.org/A5103000178,50,Xuan Tian,H02,26,3163,7,1239.495004755522,47.67288479828931,38.5,T,HCP
+141,"Strack, Philipp",https://openalex.org/A5020332447,126,Philipp Strack,A36,34,574,0,1599.155725277778,47.03399191993464,38.2,C,John_Bates_Clark_Medal
+142,"Rogerson, Richard",https://openalex.org/A5047967901,295,Richard Rogerson,A43,19,405,0,872.4593017712843,45.91891061954128,37.7,C,R._K._Cho_Economics_Prize
+143,"Aguinis, Herman",https://openalex.org/A5067660877,353,Herman Aguinis,Y15,54,4634,6,2477.351228442114,45.87687460077988,37.7,T,HCP
+144,"Teece, David J.",https://openalex.org/A5028336290,8,David J. Teece,B23,26,4974,6,1185.782631540682,45.60702429002622,37.6,T,HCP
+145,"Serafeim, George",https://openalex.org/A5006610838,272,George Serafeim,B18,25,3184,4,1123.497434040404,44.93989736161616,37.3,T,HCP
+146,"Martin, Alberto",https://openalex.org/A5027612338,1069,Alberto Martini,A103,11,255,0,493.7974383116883,44.89067621015349,37.3,C,ERC
+147,"List, John A.",https://openalex.org/A5083530241,887,John A. List,A46,61,2414,2,2691.739980372683,44.12688492414235,37.0,C,R._K._Cho_Economics_Prize
+148,"Shepherd, Dean A.",https://openalex.org/A5011084627,489,Dean A. Shepherd,B19,63,4679,2,2729.587216950827,43.3267812214417,36.7,T,HCP
+149,"Shepherd, Dean A.",https://openalex.org/A5011084627,489,Dean A. Shepherd,A62,67,4850,4,2853.899710940171,42.5955180737339,36.4,C,Several awards
+150,"Mukoyama, Toshihiko",https://openalex.org/A5022573826,98,Toshihiko Mukoyama,A51,15,236,0,617.3079986904762,41.15386657936508,35.7,C,Nakahara_Prize
+151,"Tertilt, Michele",https://openalex.org/A5042157664,114,Michèle Tertilt,A69,9,288,0,358.4677943972694,39.82975493302993,35.2,C,Gossen_Prize
+152,"Roth, Alvin E.",https://openalex.org/A5075977298,468,Alvin E. Roth,A20,9,264,0,351.9625944139194,39.10695493487994,34.8,C,Nobel Prize
+153,"Minor, Dylan",https://openalex.org/A5023658727,61,Dylan Minor,MP9,7,654,2,268.4819651984127,38.3545664569161,34.5,C,Moskowitz Prize
+154,"Klingler, Sven",https://openalex.org/A5067818890,143,Angelo Ranaldo,S15,6,94,0,229.32541251443,38.22090208573834,34.4,C,SFI BEST PAPER AWARD
+155,"Palmatier, Robert W.",https://openalex.org/A5110487435,178,Robert W. Palmatier,Y07,41,3436,7,1519.952204125597,37.07200497867309,33.9,T,HCP
+156,"Sundaresan, Suresh",https://openalex.org/A5083714704,125,Suresh Sundaresan,S16,7,145,0,256.2676303679654,36.60966148113791,33.7,C,SFI BEST PAPER AWARD
+157,"Haenlein, Michael",https://openalex.org/A5002909072,89,Michael Haenlein,Y42,24,5214,5,858.459910984571,35.76916295769046,33.3,T,HCP
+158,"He, Guojun",https://openalex.org/A5111562659,49,Guojun He,Z84,18,2548,8,642.7729420288044,35.70960789048914,33.3,T,HCP
+159,"Loualiche, Erik",https://openalex.org/A5033873901,31,Erik Loualiche,S04,6,110,0,211.817111547619,35.30285192460317,33.1,C,SFI BEST PAPER AWARD
+160,"Kumar, V.",https://openalex.org/A5009529198,206,Challa V. Kumar,Y14,58,5782,6,2002.221220601066,34.52105552760458,32.7,T,HVP
+161,"Bhalotra, Sonia",https://openalex.org/A5004235086,371,Sonia Bhalotra,A21,20,464,0,690.3995903607504,34.51997951803752,32.7,C,ERC
+162,"Wright, Mike",https://openalex.org/A5076562729,20,Mike Wright,B26,69,5409,4,2333.224565541403,33.81484877596236,32.4,T,HCP
+163,"Che, Yeon-Koo",https://openalex.org/A5060447177,205,Yeon‐Koo Che,A37,20,391,0,674.7447807276058,33.73723903638029,32.4,C,R._K._Cho_Economics_Prize
+164,"Lu, Yi",https://openalex.org/A5071892737,292,Ellen Yi–Luen,Z95,16,3275,6,538.555745930736,33.659734120671,32.3,T,HCP
+165,"Bauer, Rob",https://openalex.org/A5051441410,278,Dariusz Wójcik,MP17,11,788,1,364.0817064391164,33.09833694901059,32.0,C,Moskowitz Prize
+166,"Obstfeld, Maurice",https://openalex.org/A5018047996,440,Maurice Obstfeld,B17,15,369,1,488.9554156143856,32.59702770762571,31.8,C,John Von Neumann Award
+167,"Childe, Stephen J.",https://openalex.org/A5052327280,129,Stephen J. Childe,Y53,10,3398,5,322.6187609213009,32.26187609213009,31.6,T,HCP
+168,"Gali, Jordi",https://openalex.org/A5086849054,70,Jordi Galimany Masclans,A42,17,471,0,546.5108306016206,32.14769591774239,31.6,C,ERC
+169,"Fuchs-Schuendeln, Nicola",https://openalex.org/A5059233879,13,Nicola Fuchs-Schuendeln,A71,13,380,0,417.1137096270396,32.08566997131074,31.6,C,Gossen_Prize
+170,"Kojima, Fuhito",https://openalex.org/A5072023922,113,Fuhito Kojima,A54,13,546,0,413.246898018648,31.78822292451139,31.4,C,Nakahara_Prize
+171,"Lundborg, Petter",https://openalex.org/A5078292365,143,Petter Lundborg,A39,19,570,0,600.2411696364746,31.59164050718288,31.3,C,Assar_Lindbeck_Medal
+172,"Kunz, Werner H.",https://openalex.org/A5053767623,139,Werner H. Kunz,Y49,14,2047,5,436.7062035081585,31.19330025058275,31.1,T,HCP
+173,"Dubois, Pierre",https://openalex.org/A5066829844,186,Pierre Dubois,A87,13,431,0,386.8385296703296,29.75680997464074,30.4,C,ERC
+174,"Rodrik, DanI",https://openalex.org/A5113832316,540,Dani Rodrik,Z60,14,1498,0,416.1077279398379,29.72198056713128,30.4,C,John Von Neumann Award
+175,"Hart, Oliver",https://openalex.org/A5078248239,3,Oliver Hartwich,A13,7,145,0,207.0466716450216,29.57809594928881,30.3,C,Nobel Prize
+176,"Deaton, Angus",https://openalex.org/A5036192906,664,Angus Deaton,A15,13,1048,1,377.9628114579865,29.07406241984512,30.0,C,Nobel Prize
+177,"Besley, Timothy",https://openalex.org/A5110757928,301,Timothy Besley,B28,28,878,0,810.516704034299,28.94702514408211,30.0,C,John Von Neumann Award
+178,"Calvano, Emilio",https://openalex.org/A5030092162,44,Emilio Calvano,A98,11,506,0,316.2091393439894,28.74628539490812,29.9,C,ERC
+179,"Grewal, Dhruv",https://openalex.org/A5076693618,357,Dhruv Grewal,Y03,74,6924,8,2112.387101075314,28.54577163615289,29.8,T,HCP
+180,"Hansen, Lars Peter",https://openalex.org/A5071003992,359,Lars Peter Hansen,A18,16,410,0,454.8428663747363,28.42767914842102,29.7,C,Nobel Prize
+181,"Casalo, Luis, V",,0,,Y02,11,2031,9,304.3351317970918,27.66683016337198,29.3,T,HCP
+182,"Frattini, Federico",https://openalex.org/A5044315503,246,Federico Frattini,Y38,36,2689,5,983.1812797097347,27.31059110304819,29.1,T,HCP
+183,"Svensson, Jakob",https://openalex.org/A5041015513,347,Jakob Svensson,A101,9,342,0,243.6243803571429,27.0693755952381,29.0,C,ERC
+184,"Sunde, Uwe",https://openalex.org/A5021689391,298,Uwe Sunde,A70,36,1561,1,928.7060303934953,25.79738973315265,28.3,C,Gossen_Prize
+185,"Shiller, Robert J.",https://openalex.org/A5099376013,2,Robert J. Shiller,A19,12,434,1,308.1592685364635,25.67993904470529,28.2,C,Nobel Prize
+186,"Zhou, Guofu",https://openalex.org/A5012239666,295,Guofu Zhou,B27,35,2215,4,895.3947366405816,25.58270676115947,28.2,T,HCP
+187,"Zhou, Kevin Zheng",https://openalex.org/A5110749191,184,Kevin Zheng Zhou,Z94,48,3264,4,1196.326657676768,24.92347203493266,27.8,T,HCP
+188,"Hair, Joseph F.",https://openalex.org/A5021051472,289,Joseph F. Hair,Y11,33,11387,11,807.4253546739371,24.46743499011931,27.6,T,HCP
+189,"Zhang, Bohui",https://openalex.org/A5007132849,200,Bohui Zhang,Y44,21,1319,5,503.3892698015873,23.97091760959939,27.3,T,HCP
+190,"Gaechter, Simon",https://openalex.org/A5109907907,198,Simon Gächter,A104,14,907,2,327.5014961602287,23.39296401144491,26.9,C,ERC
+191,"Kwok, Chuck C. Y.",https://openalex.org/A5054813318,111,Chuck C.Y. Kwok,MP15,12,910,0,278.3432253274503,23.19526877728753,26.8,C,Moskowitz Prize
+192,"Harstad, Bard",https://openalex.org/A5112601992,99,Bård Harstad,A06,13,322,0,300.0650808669109,23.08192929745468,26.8,C,ERC
+193,"Strausz, Roland",https://openalex.org/A5021899039,128,Roland Strausz,A95,18,311,0,400.8338546356421,22.2685474797579,26.3,C,ERC
+194,"Donthu, Naveen",https://openalex.org/A5074473734,187,Naveen Donthu,Y37,30,7445,5,615.0117226934177,20.50039075644726,25.2,T,HCP
+195,"Flavian, Carlos",https://openalex.org/A5044113079,293,Carlos Flavián,A72,25,3737,9,511.7178068276168,20.46871227310467,25.2,T,HCP
+196,"Belanche, Daniel",https://openalex.org/A5020041555,281,Simon Bell,A48,16,1855,9,318.4563868043068,19.90352417526918,24.9,T,HCP
+197,"Vismara, Silvio",https://openalex.org/A5007113028,290,Silvio Vismara,Y31,66,4398,5,1274.32818528527,19.30800280735258,24.5,T,HCP
+198,"Mikalef, Patrick",https://openalex.org/A5076679564,190,Patrick Mikalef,Z100,13,1930,5,248.6540528354979,19.12723483349983,24.4,T,HCP
+199,"Kowalkowski, Christian",https://openalex.org/A5001255461,216,Christian Kowalkowski,Y40,25,2631,5,477.1756375385725,19.0870255015429,24.3,T,HCP
+200,"Wincent, Joakim",https://openalex.org/A5019143179,250,Joakim Wincent,Y30,76,3760,5,1448.191231987457,19.05514778930864,24.3,T,HCP
+201,"De Massis, Alfredo",https://openalex.org/A5062289104,485,Alfredo De Massis,A29,85,6651,9,1611.531515032745,18.95919429450288,24.3,T,HCP
+202,"Wirtz, Jochen",https://openalex.org/A5064998398,359,Jochen Wirtz,Y08,40,3619,7,755.0025224403375,18.87506306100844,24.2,T,HCP
+203,"Chesbrough, Henry",https://openalex.org/A5077965593,205,Henry Chesbrough,Y41,25,2402,5,448.3976613702964,17.93590645481186,23.6,T,HCP
+204,"Berg, Tobias",https://openalex.org/A5074576628,136,Tobias Berg,A68,12,786,1,211.5783156746032,17.63152630621693,23.4,C,ERC
+205,"Moon, Hyungsik Roger",https://openalex.org/A5053993503,182,Hyungsik Roger Moon,A44,18,408,0,299.4220659271284,16.6345592181738,22.7,C,R._K._Cho_Economics_Prize
+206,"El Ghoul, Sadok",https://openalex.org/A5091466387,251,Sadok El Ghoul,MP13,74,4713,3,1193.588953998779,16.12958045944296,22.4,C,Moskowitz Prize
+207,"Inoue, Atsushi",https://openalex.org/A5110282172,545,Atsushi Inoue,A47,18,494,0,271.0346940662116,15.05748300367842,21.6,C,Nakahara_Prize
+208,"Guedhami, Omrane",https://openalex.org/A5043790847,308,Omrane Guedhami,MP14,85,5000,4,1271.39775974137,14.95762070283964,21.5,C,Moskowitz Prize
+209,"Rossi, Barbara",https://openalex.org/A5059374703,185,Barbara Rossi,A96,23,884,0,341.3027197804973,14.83924868610858,21.5,C,ERC
+210,"Guedhami, Omrane",https://openalex.org/A5043790847,308,Omrane Guedhami,Z87,85,4759,4,1257.045201892552,14.78876708108885,21.4,T,HCP
+211,"Petruzzelli, Antonio Messeni",https://openalex.org/A5025430409,234,Antonio Messeni Petruzzelli,B16,47,2970,3,659.6280848351648,14.03464010287585,20.9,T,HCP
+212,"Kasahara, Hiroyuki",https://openalex.org/A5062503131,172,Hiroyuki Kasahara,A50,10,334,1,127.0900579304029,12.70900579304029,19.9,C,Nakahara_Prize
+213,"Bresciani, Stefano",https://openalex.org/A5028407190,187,Stefano Bresciani,Y16,42,3551,6,532.1974522807748,12.67136791144702,19.8,T,HCP
+214,"Mishra, Dev R.",https://openalex.org/A5032334749,71,Dev R. Mishra,MP16,7,324,0,85.49864575396825,12.21409225056689,19.5,C,Moskowitz Prize
+215,"Hollebeek, Linda D.",https://openalex.org/A5068350949,176,Linda D. Hollebeek,B11,49,4033,2,595.5579456698856,12.15424378918134,19.4,T,HCP
+216,"Parida, Vinit",https://openalex.org/A5090362709,331,Vinit Parida,A81,89,5946,9,1068.840781915862,12.00944698781868,19.3,T,HCP
+217,"Bouncken, Ricarda B.",https://openalex.org/A5023850919,332,Ricarda B. Bouncken,B29,53,2835,5,623.7772300485625,11.76938169902948,19.1,T,HCP
+218,"Ritala, Paavo",https://openalex.org/A5047360486,260,Paavo Ritala,Z99,45,1953,4,515.1277789055389,11.44728397567864,18.8,T,HCP
+219,"Ribeiro-Soriano, Domingo",https://openalex.org/A5032073164,268,Domingo Ribeiro Soriano,Z78,42,3028,5,478.1601471911422,11.38476540931291,18.8,T,HCP
+220,"Kraus, Sascha",https://openalex.org/A5055158022,585,Sascha Kraus,Y29,151,9147,5,1667.69186950827,11.04431701661106,18.5,T,HCP
+221,"Yue, Pengpeng",https://openalex.org/A5079950477,35,Pengpeng Yue,Y20,19,1153,6,208.1730930555556,10.95647858187135,18.4,T,HCP
+222,"Del Giudice, Manlio",https://openalex.org/A5046384052,276,Manlio Del Giudice,Y32,51,3352,5,552.026598949939,10.82405095980272,18.3,T,HCP
+223,"Zhang, Bing",https://openalex.org/A5100389664,784,Bing Zhang,Z81,46,2827,9,483.7342250743701,10.51596141466022,18.1,T,HCP
+224,"Audretsch, David B.",https://openalex.org/A5118504896,3,David B Audretsch,Y24,98,5681,5,1014.269049896215,10.34968418261444,17.9,T,HCP
+225,"Yarovaya, Larisa",https://openalex.org/A5052979321,163,Larisa Yarovaya,Z69,56,5275,6,532.2654986402487,9.504741047147297,17.2,T,HCP
+226,"Kaur, Puneet",https://openalex.org/A5013967541,101,Puneet Kaur Sahi,Y17,33,3405,6,303.1743129900655,9.187100393638348,16.9,T,HCP
+227,"Ntim, Collins G.",https://openalex.org/A5043169421,271,Collins G. Ntim,Y33,46,3358,5,398.7773567926518,8.6690729737533,16.4,T,HCP
+228,"Paul, Justin",https://openalex.org/A5078843987,292,Justin Paul,Y05,77,5831,7,660.2752610625486,8.575003390422708,16.3,T,HCP
+229,"Reboredo, Juan C.",https://openalex.org/A5067885599,115,Juan C. Reboredo,Y36,31,2950,5,262.9467412296037,8.482152942890442,16.2,T,HCP
+230,"Zhang, Dayong",https://openalex.org/A5050809806,277,Dayong Zhang,Z82,65,5355,9,532.7264327761127,8.195791273478656,15.9,T,HCP
+231,"Kristoufek, Ladislav",https://openalex.org/A5083821951,187,Ladislav Krištoufek,Z75,22,1910,5,179.1655920523921,8.143890547836003,15.9,T,HCP
+232,"Budhwar, Pawan",https://openalex.org/A5055856506,456,Pawan Budhwar,Z80,71,2941,4,577.0421027769453,8.127353560238666,15.9,T,HCP
+233,"Roubaud, David",https://openalex.org/A5050337531,230,David Roubaud,Z29,74,9126,15,597.9845450008326,8.080872229740981,15.8,T,HCP
+234,"Lim, Weng Marc",https://openalex.org/A5045594204,393,Weng Marc Lim,Y01,70,9123,11,545.4726841802641,7.792466916860915,15.6,T,HCP
+235,"Ren, Siyu",https://openalex.org/A5101580897,28,Siyu Ren,Z03,13,2272,7,100.1232243908869,7.701786491606684,15.5,T,HCP
+236,"Mazzucato, Mariana",https://openalex.org/A5069443386,237,Mariana Mazzucato,H18,18,1782,0,136.1214556568432,7.562303092046843,15.3,C,John Von Neumann Award
+237,"Dhir, Amandeep",https://openalex.org/A5008359350,311,Amandeep Dhir,Z52,69,5601,10,480.4888438009212,6.963606431897409,14.7,T,HCP
+238,"Dwivedi, Yogesh K.",https://openalex.org/A5048622877,944,Yogesh K. Dwivedi,A77,81,4900,9,550.9029504034854,6.801270992635622,14.5,T,HCP
+239,"Kumar, Satish",https://openalex.org/A5006505076,275,M. Satish‐Kumar,Y13,79,8890,6,520.879546989122,6.593411987204076,14.3,T,HCP
+240,"Lucey, Brian M.",https://openalex.org/A5010285399,696,Brian M. Lucey,A88,141,9395,11,875.4587365465092,6.20892720954971,13.9,C,ERC
+241,"Boubaker, Sabri",https://openalex.org/A5081676508,360,Sabri Boubaker,Z66,58,3978,9,357.7360040157065,6.167862138201836,13.8,T,HCP
+242,"Gabauer, David",https://openalex.org/A5079473216,131,David Gabauer,Z42,49,3203,7,299.3299445526695,6.108774378625909,13.8,T,HCP
+243,"Demir, Ender",https://openalex.org/A5078880859,199,Ender Demir,Y35,60,3474,5,361.8165939421689,6.030276565702815,13.7,T,HCP
+244,"Wen, Huwei",https://openalex.org/A5071205039,103,Huwei Wen,Z64,27,1581,6,159.6209968564768,5.911888772462105,13.5,T,HCP
+245,"Li, Zhenghui",https://openalex.org/A5088313229,82,Zhenghui Liu,Y50,13,1177,5,74.8210680006105,5.755466769277731,13.4,T,HCP
+246,"Urquhart, Andrew",https://openalex.org/A5087571137,236,Michael P. Clements,B24,66,3423,5,373.854926983017,5.664468590651772,13.3,T,HCP
+247,"He, Feng",https://openalex.org/A5102787568,216,Feng He,Z92,26,781,7,147.0627886111111,5.65626110042735,13.2,T,HCP
+248,"Lau, Chi Keung",https://openalex.org/A5032606372,11,Chi-Keung Lau,Z97,67,3524,6,376.8343982448108,5.624394003653892,13.2,T,HCP
+249,"Yu, Zhang",https://openalex.org/A5029960539,152,Zhang‐Yue Zhou,Y19,20,1693,6,111.7417382109557,5.587086910547786,13.2,T,HCP
+250,"Spiliotis, Evangelos",https://openalex.org/A5015832946,102,Evangelos Spiliotis,Z43,13,1899,4,72.00979561660562,5.539215047431201,13.1,T,HCP
+251,"Yang, Lili",https://openalex.org/A5070434985,231,Lili Yang,Z77,20,2142,5,108.3534166625041,5.417670833125207,13.0,T,HCP
+252,"Zhang, Dongyang",https://openalex.org/A5100716670,188,Dongyang Zhang,Z32,56,2605,17,302.459744506882,5.401066866194321,12.9,T,HCP
+253,"Lee, Chi-Chuan",https://openalex.org/A5082666630,107,Chi‐Chuan Lee,Z26,47,2748,10,245.760680997891,5.228950659529596,12.7,T,HCP
+254,"Ji, Qiang",https://openalex.org/A5101424322,141,Qiang Ji,Z83,128,7246,9,660.4217581801531,5.159544985782446,12.7,T,HCP
+255,"Kong, Dongmin",https://openalex.org/A5056520084,247,Dongmin Kong,Y12,152,3446,6,781.2317871692196,5.139682810323813,12.6,T,HCP
+256,"Sensoy, Ahmet",https://openalex.org/A5090267717,195,Ahmet Şensoy,Y27,85,3435,5,424.5326154212453,4.994501357897004,12.4,T,HCP
+257,"Shahzad, Syed Jawad Hussain",https://openalex.org/A5021804779,303,Syed Jawad Hussain Shahzad,Z70,95,5847,7,470.3139339124765,4.950672988552384,12.4,T,HCP
+258,"Ren, Xiaohang",https://openalex.org/A5077214780,212,Xiaohang Ren,Z37,51,2862,20,249.2257288847264,4.886778997739733,12.3,T,HCP
+259,"Gozgor, Giray",https://openalex.org/A5015669404,1571,Rangan Gupta,Z31,76,4076,10,368.5528084171384,4.849379058120242,12.3,T,HCP
+260,"Makridakis, Spyros",https://openalex.org/A5022353147,208,Spyros Makridakis,Z86,13,2312,5,62.84822606282606,4.834478927909697,12.2,T,HCP
+261,"Razzaq, Asif",https://openalex.org/A5108775223,127,Asif Razzaq,Z65,11,681,4,52.45247863497613,4.768407148634194,12.2,T,HCP
+262,"Vrontis, Demetris",https://openalex.org/A5040844824,767,Demetris Vrontis,Z98,93,2915,3,438.6194868711843,4.716338568507359,12.1,T,HCP
+263,"Corbet, Shaen",https://openalex.org/A5019834648,405,Shaen Corbet,Y23,108,5345,5,479.3718584379509,4.438628318869916,11.7,T,HCP
+264,"Bouri, Elie",https://openalex.org/A5071230295,466,Elie Bouri,Z33,190,12853,12,837.3371611330336,4.407037690173861,11.7,T,HCP
+265,"Sun, Guanglin",https://openalex.org/A5088539082,34,Guanglin Sun,Y09,20,604,7,87.72775871212122,4.386387935606061,11.7,T,HCP
+266,"Dogan, Eyup",https://openalex.org/A5063329602,104,Eyüp Doğan,Z54,12,948,5,52.40376793761794,4.366980661468162,11.6,T,HCP
+267,"Naeem, Muhammad Abubakr",https://openalex.org/A5039331964,255,Muhammad Abubakr Naeem,Z17,74,4506,12,322.9213472702298,4.36380199013824,11.6,T,HCP
+268,"Liu, Xiaoqian",https://openalex.org/A5100683619,236,Xiaoqian Liu,Z63,9,472,5,39.18573061327561,4.353970068141734,11.6,T,HCP
+269,"Shao, Shuai",https://openalex.org/A5000043923,182,Shuai Shao,Z57,45,4042,10,195.3031144172494,4.340069209272209,11.6,T,HCP
+270,"Gong, Xu",https://openalex.org/A5074838225,176,Xu Gong,Z88,36,1780,4,156.1575232256632,4.337708978490645,11.6,T,HCP
+271,"Goodell, John W.",https://openalex.org/A5025970919,299,John W. Goodell,Z71,147,5076,14,633.966638887224,4.312698223722612,11.6,T,HCP
+272,"Du, Kerui",https://openalex.org/A5033994682,80,Kerui Du,Z44,24,2094,5,100.7540969683095,4.198087373679561,11.4,T,HCP
+273,"Wu, Haitao",https://openalex.org/A5064876335,209,Haitao Wu,Z02,44,4242,16,182.1209254559329,4.139111942180294,11.3,T,HCP
+274,"Wen, Fenghua",https://openalex.org/A5010789733,213,Fenghua Wen,Y04,88,4281,7,362.8026988578088,4.122757941566009,11.3,T,HCP
+275,"Irfan, Muhammad",https://openalex.org/A5008426853,337,Muhammad Irfan,Z04,19,1152,5,72.61508506882006,3.821846582569477,10.9,T,HCP
+276,"Hammoudeh, Shawkat",https://openalex.org/A5038883380,427,Shawkat Hammoudeh,Z79,135,6900,7,512.5954808669109,3.797003561977117,10.9,T,HCP
+277,"Rizvi, Syed Kumail Abbas",https://openalex.org/A5087925937,79,Syed Kumail Abbas Rizvi,Z11,24,739,4,90.13577867660118,3.755657444858382,10.8,T,HCP
+278,"Mensi, Walid",https://openalex.org/A5021863807,236,Walid Mensi,Z73,90,3928,4,336.3614504906205,3.737349449895783,10.8,T,HCP
+279,"Dabic, Marina",https://openalex.org/A5017353394,426,Marina Dabić,B25,71,1735,5,263.6201132278832,3.712959341237792,10.7,T,HCP
+280,"Shao, Xuefeng",https://openalex.org/A5090095130,106,Xuefeng Shao,Z67,20,646,4,72.5834283946609,3.629171419733045,10.6,T,HCP
+281,"Smyth, Russell",https://openalex.org/A5087969968,802,Russell Smyth,Z59,113,4734,7,409.0434694494395,3.619853711941942,10.6,T,HCP
+282,"Hao, Yu",https://openalex.org/A5064503231,139,Yu‐Hao Li,Z01,64,5366,17,228.4617622211122,3.569715034704878,10.5,T,HCP
+283,"Uddin, Gazi Salah",https://openalex.org/A5019480291,370,Gazi Salah Uddin,Z55,113,4013,4,401.9635569225219,3.55719961878338,10.5,T,HCP
+284,"Zhao, Shikuan",https://openalex.org/A5109119108,99,Shengfeng Zhao,Y54,10,391,5,34.8538235930736,3.48538235930736,10.4,T,HCP
+285,"Wang, Chih-Wei",https://openalex.org/A5101951923,5,Chih-Wei Wang,Z28,33,566,4,113.704728968254,3.445597847522847,10.3,T,HCP
+286,"Yan, Cheng",https://openalex.org/A5028299718,302,Cheng Yang,Z49,50,1284,6,170.6722466394716,3.413444932789433,10.3,T,HCP
+287,"Feng, Gen-Fu",https://openalex.org/A5100579718,80,Gen‐Fu Feng,Z22,31,1505,6,103.3384011302586,3.333496810653504,10.2,T,HCP
+288,"Khan, Zeeshan",https://openalex.org/A5001456750,44,Muhammad Zeeshan Khan,Z41,10,1324,4,33.06551869408369,3.306551869408369,10.1,T,HCP
+289,"Zhang, Weike",https://openalex.org/A5101610022,76,Weike Zhang,Z61,15,663,4,48.76338670634921,3.250892447089947,10.0,T,HCP
+290,"Kang, Sang Hoon",https://openalex.org/A5101545220,54,Sang Hoon Kang,Z19,115,4969,4,371.1600691267066,3.227478861971362,10.0,T,HCP
+291,"Karim, Sitara",https://openalex.org/A5035670625,142,Sitara Karim,Z18,58,2237,9,182.0427342632368,3.138667832124772,9.9,T,HCP
+292,"Lee, Chien-Chiang",https://openalex.org/A5015591219,5,Chien-Chiang Lee,Z25,195,9713,35,591.2164737112887,3.031879352365583,9.7,T,HCP
+293,"Shahbaz, Muhammad",https://openalex.org/A5052033177,863,Muhammad Shahbaz,Z48,123,9282,6,370.5424895315796,3.012540565297395,9.7,T,HCP
+294,"Yousaf, Imran",https://openalex.org/A5087544432,153,Imran Yousaf,Z50,73,2563,10,217.8917112665113,2.984817962554949,9.6,T,HCP
+295,"Hossain, Mohammad Razib",https://openalex.org/A5047582566,54,Mohammad Razib Hossain,Z62,8,436,4,23.55325778277278,2.944157222846598,9.6,T,HCP
+296,"Umar, Zaghum",https://openalex.org/A5021559309,160,Zaghum Umar,Y26,88,3237,5,257.7419659512709,2.928885976718988,9.5,T,HCP
+297,"Ma, Feng",https://openalex.org/A5034570850,166,Feng Ma,Z12,123,4700,4,343.694116459929,2.794261109430317,9.3,T,HCP
+298,"Tiwari, Aviral Kumar",https://openalex.org/A5062136150,712,Aviral Kumar Tiwari,Z27,189,6239,6,518.8832401506826,2.74541396905123,9.2,T,HCP
+299,"Mohsin, Muhammad",https://openalex.org/A5032315594,108,Muhammad Mohsin,Z16,15,1213,4,41.0135936951937,2.73423957967958,9.2,T,HCP
+300,"Mirza, Nawazish",https://openalex.org/A5030355028,220,Nawazish Mirza,Z09,53,1933,7,144.5566683380509,2.72748430826511,9.2,T,HCP
+301,"Sun, Chuanwang",https://openalex.org/A5072227383,190,Chuanwang Sun,Z39,32,1426,4,85.13720584582083,2.660537682681901,9.1,T,HCP
+302,"Jiang, Qingzhe",https://openalex.org/A5108661898,89,Qingzhe Jiang,Z45,17,1461,5,44.58747724941725,2.622792779377485,9.0,T,HCP
+303,"Zhao, Jun",https://openalex.org/A5100358003,588,Jun Zhao,Z47,22,1672,5,56.30585775446775,2.559357170657625,8.9,T,HCP
+304,"Nepal, Rabindra",https://openalex.org/A5089150146,262,Rabindra Nepal,Z20,39,859,6,98.62408394605396,2.528822665283435,8.9,T,HCP
+305,Xuan Vinh Vo,https://openalex.org/A5001100407,383,Xuan Vinh Vo,Z51,184,5634,6,462.0200465223665,2.510978513708514,8.8,T,HCP
+306,"Churchill, Sefa Awaworyi",https://openalex.org/A5053415289,215,Sefa Awaworyi Churchill,Z93,70,2786,5,174.5461628349428,2.493516611927755,8.8,T,HCP
+307,"Taghizadeh-Hesary, Farhad",https://openalex.org/A5086567248,567,Farhad Taghizadeh–Hesary,Z14,76,3345,11,182.4239881010656,2.400315632908758,8.6,T,HCP
+308,"Managi, Shunsuke",https://openalex.org/A5035555297,1020,Shunsuke Managi,Z91,102,3300,5,243.930664953935,2.391477107391519,8.6,T,HCP
+309,"Lin, Boqiang",https://openalex.org/A5003679114,991,Boqiang Lin,Z36,141,5280,7,333.6682787987012,2.36644169360781,8.6,T,HCP
+310,"Zhao, Xin",https://openalex.org/A5019676309,298,Xin Zhao,Y39,25,613,5,55.89176582778333,2.235670633111333,8.3,T,HCP
+311,"Dong, Xiucheng",https://openalex.org/A5018715180,187,Xiucheng Dong,Z30,36,2854,9,80.31944376290377,2.23109566008066,8.3,T,HCP
+312,"Wang, Shouyang",https://openalex.org/A5111758530,18,Shouyang Wang,Z24,93,2808,4,203.6615047244422,2.189908652950992,8.2,T,HCP
+313,"Gubareva, Mariya",https://openalex.org/A5036032433,114,Mariya Gubareva,Z35,60,1588,4,128.70101501887,2.145016916981167,8.2,T,HCP
+314,"Su, Bin",https://openalex.org/A5035374545,419,Bin Su,B21,48,3093,4,99.79649691447442,2.079093685718217,8.0,T,HCP
+315,"Gupta, Rangan",https://openalex.org/A5018827697,32,Rangan Gupta,Z85,426,12549,10,872.9128156951381,2.049091116655254,8.0,T,HCP
+316,"Umar, Muhammad",https://openalex.org/A5100756987,272,Muhammad Umar,Z06,92,2901,13,182.8527205960706,1.98752957169642,7.9,T,HCP
+317,"Feng, Chao",https://openalex.org/A5017413913,100,Chao Feng,Z46,26,1069,6,51.51111731407482,1.981196819772108,7.8,T,HCP
+318,"Chang, Chun-Ping",https://openalex.org/A5053491075,328,Chun‐Ping Chang,Z21,96,3194,11,183.7297061901987,1.913851106147903,7.7,T,HCP
+319,"Song, Malin",https://openalex.org/A5101459946,37,Malin Song,Z34,73,3091,7,134.8857539607615,1.847750054257006,7.6,T,HCP
+320,"Apergis, Nicholas",https://openalex.org/A5108034146,584,Nicholas Apergis,Y25,100,2512,5,182.4777669241869,1.824777669241869,7.5,T,HCP
+321,"Dong, Kangyin",https://openalex.org/A5033003201,280,Kangyin Dong,Z15,82,4868,18,149.147356532634,1.818870201617488,7.5,T,HCP
+322,"Yang, Xiaodong",https://openalex.org/A5100755418,331,Xiaodong Yang,Z05,14,668,5,25.03428895437895,1.788163496741354,7.4,T,HCP
+323,"Sadiq, Muhammad",https://openalex.org/A5024449095,94,Muhammad Sadiq,Z56,11,639,5,19.11110550616051,1.737373227832773,7.3,T,HCP
+324,"Zhang, Ning",https://openalex.org/A5100404886,1286,Ning Zhang,Z90,26,820,4,44.66148126262626,1.717749279331779,7.3,T,HCP
+325,"Qin, Meng",https://openalex.org/A5101610740,304,Meng Qing,Z10,32,860,8,52.13774835858586,1.629304636205808,7.1,T,HCP
+326,"Abedin, Mohammad Zoynul",https://openalex.org/A5047331779,257,Mohammad Zoynul Abedin,Y06,73,1121,7,108.8152688411589,1.490620121111765,6.8,T,HCP
+327,"Dagar, Vishal",https://openalex.org/A5042457507,89,Vishal Dagar,Y55,10,583,5,14.58683201964702,1.458683201964702,6.7,T,HCP
+328,"Cifuentes-Faura, Javier",https://openalex.org/A5090021185,227,Javier Cifuentes‐Faura,Z72,32,582,6,39.94208176046176,1.24819005501443,6.2,T,HCP
+329,"Su, Chi-Wei",https://openalex.org/A5079462108,439,Chi‐Wei Su,Y28,73,1650,5,85.65706518037518,1.173384454525688,6.0,T,HCP
