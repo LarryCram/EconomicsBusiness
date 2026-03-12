@@ -1,0 +1,120 @@
+% ---------------------------------------------------------------
+\section{Journal--institution citation networks}
+\label{sec:networks}
+% ---------------------------------------------------------------
+
+\paragraph{Corpus construction.}
+
+Following \citet{woutersThesisCitationCulture1999}, a \emph{reference}
+written by a scientist becomes a \emph{citation}---a directed edge
+$(w_i,w_j)$---only after indexer resolution to canonical work records.
+The corpus is built in five steps:
+(i)~select $N_s$ sources $\mathfrak{S}$ by field classification;
+(ii)~collect all works $\mathfrak{W}$ ($|\mathfrak{W}|=N_w$) in
+$\mathfrak{S}$ within the census window $[t^c_0,t^c_1]$;
+(iii)~retain references from $\mathfrak{W}$ to works $\mathfrak{W}^t$
+in $\mathfrak{S}$ within the target window $[t^t_0,t^t_1]$, forming
+$\mathcal{R}=\{(i,j):w_i\in\mathfrak{W},\,w_j\in\mathfrak{W}^t\}$;
+(iv)~induce institution set $\mathfrak{I}'$ from author affiliations
+of $\mathfrak{W}$;
+(v)~retain institutions with $\geq\tau$ census works, giving
+$\mathfrak{I}$, $|\mathfrak{I}|=N_u$.
+Flows crossing any corpus boundary are excluded without renormalisation
+(\emph{open-corpus principle}); the closed-corpus alternative is
+examined in the Supplement.
+
+Each work $w_i$ is assigned an institution weight under
+author-fractional counting,
+\begin{equation}
+  \omega_{ik} \;=\;
+  \sum_{j:\,k\in\mathcal{U}_{ij}}
+  \frac{1}{A_i}\,\frac{1}{U_{ij}},
+  \label{eq:omega}
+\end{equation}
+where $A_i$ is the number of authors and $U_{ij}$ the number of
+retained institutions of author $j$; after filtering,
+$\sum_k\omega_{ik}\leq 1$ and weights are not renormalised.
+Model parameters are
+$\boldsymbol{\theta}=(\mathfrak{S},[t^c_0,t^c_1],[t^t_0,t^t_1],
+\tau,\mathbf{m},\chi,\alpha)$.
+
+\paragraph{The attention matrix $\mathbf{C}(\chi,\mathbf{m})$.}
+
+A reference $(i,j)\in\mathcal{R}$ transfers one unit of attention from
+$w_i$ to $w_j$.
+On each side, a fraction $(1-\chi)$ is attributed to the source and
+$\chi$ to the affiliated institutions (weighted by $\omega_{ik}$), so
+each reference generates four typed edges with weights
+$(1-\chi)^2$, $\chi(1-\chi)$, $\chi(1-\chi)$, $\chi^2$ for the
+$SS$, $SI$, $IS$, $II$ blocks respectively.
+Summing over $\mathcal{R}$ and applying a binary block-mask
+$\mathbf{m}=(m_{SS},m_{SI},m_{IS},m_{II})\in\{0,1\}^4$,
+with $m_{SI}=m_{IS}$, gives
+\begin{equation}
+  \mathbf{C}(\chi,\mathbf{m}) =
+  \begin{pmatrix}
+    m_{SS}(1-\chi)^2\,\mathbf{C}_{SS} &
+    m_{SI}\,\chi(1-\chi)\,\mathbf{C}_{SI} \\[4pt]
+    m_{IS}\,\chi(1-\chi)\,\mathbf{C}_{IS} &
+    m_{II}\,\chi^2\,\mathbf{C}_{II}
+  \end{pmatrix}.
+  \label{eq:C}
+\end{equation}
+Four masks are bibliometrically meaningful: source-only $(1,0,0,0)$,
+institution-only $(0,0,0,1)$, bipartite $(0,1,1,0)$, and full-joint
+$(1,1,1,1)$.
+The parameter $\chi$ controls the source--institution balance in the
+bipartite and full-joint cases and is inert in the single-mode cases.
+Block construction details are in the Supplement.
+
+The Galerkin interpretation is $\mathbf{C}(\chi) =
+\mathbf{B}(\chi)^\top \mathbf{W} \mathbf{B}(\chi)$, a projection of
+the work-level reference structure onto the unit space, where
+$\mathbf{B}(\chi)$ is the work-to-unit incidence matrix and $\chi$
+controls the shape of the basis functions.
+
+\paragraph{Spectral ranking.}
+
+Let $\mathcal{P}=\mathfrak{S}\cup\mathfrak{I}$ be the \emph{unit} set
+\citep{pinskiNarin1976}, $N=N_s+N_u$, $r_p=\sum_q C_{pq}$ the
+outgoing reference flow, $\mathbf{D}_r=\mathrm{diag}(r_p)$, and
+$\mathbf{A}=\mathrm{diag}(a_p)$ the work-count matrix ($a_p=N^s_p$
+for sources, $a_p=M_k$ for institutions).
+The row-stochastic reference matrix is
+$\mathbf{H}=\mathbf{D}_r^{-1}\mathbf{C}$.
+The Katz resolvent \citep{katz1953,franceschetPagerank2010},
+\begin{equation}
+  \boldsymbol{\pi}^*(\alpha)
+  \;=\;(1-\alpha)\bigl(\mathbf{I}-\alpha\mathbf{H}^\top\bigr)^{-1}\mathbf{p},
+  \quad p_p=\frac{a_p}{N_\text{works}},
+  \label{eq:katz}
+\end{equation}
+converges for all $\alpha<1$ and approaches the stationary distribution
+of the Markov chain with transition matrix $\mathbf{H}$ as $\alpha\to
+1$; \citet{geller1978} shows $\pi^*_q$ equals the long-run expected
+share of reference flow received by unit $q$.
+\emph{Prestige per work} \citep{palacioshuertaVolij2004} is
+\begin{equation}
+  \mathbf{v}^*(\alpha)\;=\;\mathbf{A}^{-1}\boldsymbol{\pi}^*(\alpha),
+  \label{eq:vstar}
+\end{equation}
+recovered once after convergence of successive substitution on
+\eqref{eq:katz}. Convergence analysis is in the Supplement.
+We report $\mathbf{v}^*$ over $\alpha\in\{0.50,0.75,0.85,0.95\}$.
+
+\textbf{Critical implementation note.} Applying $\mathbf{A}^{-1}$
+inside the iteration loop iterates on $\mathbf{H}^\top\mathbf{A}$,
+which is not norm-preserving---this ``sums the averages rather than
+averages the sum'' and yields a fixed point with no clean
+interpretation.
+
+\paragraph{Computation.}
+
+$\mathbf{C}(\chi,\mathbf{m})$ is sparse ($\mathrm{nnz}\leq
+4|\mathcal{R}|$) and is built from a weighted edge list $\mathcal{E}$
+accumulated over $\mathcal{R}$, stored in CSR format, and
+row-normalised to $\mathbf{H}$.
+The pipeline
+$\mathcal{R}\!\to\!\mathcal{E}\!\to\!\mathbf{C}\!\to\!\mathbf{H}\!\to\!\boldsymbol{\pi}^*\!\to\!\mathbf{v}^*$
+and its parameter entry points are detailed in the Supplement.
+Implementation uses \texttt{scipy.sparse.csr\_matrix}.

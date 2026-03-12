@@ -1,0 +1,55 @@
+% ---------------------------------------------------------------
+\section{Introduction}
+\label{sec:introduction}
+% ---------------------------------------------------------------
+
+\paragraph{Journal and institution ranking.}
+The research system relies on journals and institutions. Journals filter
+works through editorial and peer review, archive the literature, and
+create metadata for retrieval. Institutions fund individual researchers,
+implement training, oversee compliance, and maintain physical and
+information infrastructure.
+[Placeholder: overview of the joint ranking problem.]
+
+\paragraph{Previous work on journal ranking.}
+\citet{pinskiNarin1976} introduced influence-per-reference weights for
+journal ranking; \citet{vignaSpectralRanking2016} surveys the broader
+lineage; \citet{franceschetPagerank2010} traces the
+Katz--Hubbell--Pinski-Narin--PageRank chain.
+[Placeholder: expand journal ranking literature.]
+
+\paragraph{How institutions are ranked.}
+Institutional rankings, dominated by QS, Times Higher Education (THE),
+and ShanghaiRanking (ARWU), blend bibliometrics with reputational
+surveys, teaching metrics, and internationalisation.
+The Leiden Ranking counters with field-normalised bibliometrics,
+revealing niche leaders but lacking the reputational component of QS
+and THE.
+Spectral methods have not previously been applied jointly to sources
+and institutions.
+[Placeholder: expand institutional ranking literature.]
+
+\paragraph{Theoretical framing.}
+We treat citations as structural relations within a functionally
+differentiated scientific system \citep{woutersThesisCitationCulture1999},
+setting aside authorial intent.
+Dual spectral rankings of journals and institutions treat citations as
+autopoietic communications within science's communicative system
+(Social System of Science Citation Theory, SSCT), where individual
+actors reside in the environment rather than constituting system
+elements \citep{tahamtanSocialSystemsCitation2022}.
+This contrasts with actor-network theory (ANT), which foregrounds
+heterogeneous agents in assembling citation networks; ANT enters only
+in the Discussion.
+The resulting dual rankings are self-referential hierarchies that
+condition future citations.
+Our construction extends \citet{breigerDualityPersonsGroups1974a}:
+all four blocks of the joint attention matrix are primary flows, not
+derived projections.
+
+\paragraph{Paper structure.}
+Section~\ref{sec:networks} develops the mathematical framework.
+Section~\ref{sec:corpus} describes the corpus construction and source
+selection.
+Section~\ref{sec:results} presents results.
+Section~\ref{sec:discussion} discusses validity and prospects.

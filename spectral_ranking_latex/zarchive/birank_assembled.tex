@@ -1,0 +1,292 @@
+\documentclass[10pt]{article}
+\setlength\parindent{10pt}
+
+\title{\vspace{-2cm} \flushleft \normalsize Scientometrics\\[1cm]
+\large\bfseries\centering Dual ordinal spectral ranking of journals and institutions}
+\date{\today}
+\author{\textsc{Docampo, D. and Cram, L.}}
+
+\usepackage{natbib, amsmath, amssymb, mathrsfs}
+\usepackage[margin=1in]{geometry}
+\usepackage{tikz}
+\usetikzlibrary{positioning, arrows.meta}
+\usepackage{hyperref}
+\pagestyle{plain}
+
+\usepackage{filecontents}
+\begin{filecontents}{birank_assembled.bib}
+@phdthesis{woutersThesisCitationCulture1999,
+  author = {Wouters, Paul},
+  title  = {The Citation Culture},
+  school = {University of Amsterdam},
+  year   = {1999}
+}
+@article{pinskiNarin1976,
+  author  = {Pinski, Gabriel and Narin, Francis},
+  title   = {Citation influence for journal aggregates of scientific publications},
+  journal = {Information Processing \& Management},
+  volume  = {12},
+  pages   = {297--312},
+  year    = {1976}
+}
+@article{geller1978,
+  author  = {Geller, Norman L.},
+  title   = {On the citation influence methodology of {Pinski} and {Narin}},
+  journal = {Information Processing \& Management},
+  volume  = {14},
+  pages   = {93--95},
+  year    = {1978}
+}
+@article{palacioshuertaVolij2004,
+  author  = {Palacios-Huerta, Ignacio and Volij, Oscar},
+  title   = {The measurement of intellectual influence},
+  journal = {Econometrica},
+  volume  = {72},
+  pages   = {963--977},
+  year    = {2004}
+}
+@article{breigerDualityPersonsGroups1974a,
+  author  = {Breiger, Ronald L.},
+  title   = {The duality of persons and groups},
+  journal = {Social Forces},
+  volume  = {53},
+  pages   = {181--190},
+  year    = {1974}
+}
+@article{katz1953,
+  author  = {Katz, Leo},
+  title   = {A new status index derived from sociometric analysis},
+  journal = {Psychometrika},
+  volume  = {18},
+  pages   = {39--43},
+  year    = {1953}
+}
+@article{franceschetPagerank2010,
+  author  = {Franceschet, Massimo},
+  title   = {{PageRank}: Standing on the shoulders of giants},
+  journal = {Communications of the {ACM}},
+  volume  = {54},
+  pages   = {92--101},
+  year    = {2011}
+}
+@article{vignaSpectralRanking2016,
+  author  = {Vigna, Sebastiano},
+  title   = {Spectral ranking},
+  journal = {Network Science},
+  volume  = {4},
+  pages   = {433--445},
+  year    = {2016}
+}
+@article{priemOpenAlexFullyopenIndex2022,
+  author  = {Priem, Jason and Piwowar, Heather and Orr, Richard},
+  title   = {{OpenAlex}: A fully-open index of scholarly works, authors, venues, institutions, and concepts},
+  journal = {arXiv preprint arXiv:2205.01833},
+  year    = {2022}
+}
+\end{filecontents}
+
+\begin{document}
+\maketitle
+
+\begin{abstract}
+We develop a dual spectral ranking of journals and institutions that
+jointly determines prestige scores via a Katz resolvent applied to a
+block attention matrix constructed from intra-field citation flows.
+A continuous parameter $\chi$ apportions each reference between source
+and institution channels; a binary block-mask selects among four
+bibliometrically distinct flow structures, nesting conventional
+single-mode rankings as special cases.
+Applied to the economics and commerce literature using OpenAlex data,
+the method produces stable, interpretable joint rankings whose
+sensitivity to model parameters is examined systematically.
+
+\medskip\noindent
+\textbf{Keywords}: Scientometrics, spectral ranking, dual
+journal--institution prestige, Katz resolvent, Pinski--Narin
+\end{abstract}
+
+% ---------------------------------------------------------------
+\section{Introduction}
+% ---------------------------------------------------------------
+
+\paragraph{Journal and institution ranking.}
+[Placeholder.]
+
+\paragraph{Spectral methods.}
+\citet{pinskiNarin1976} introduced influence-per-reference weights for
+journal ranking; \citet{vignaSpectralRanking2016} surveys the broader
+lineage; \citet{franceschetPagerank2010} traces the
+Katz--Hubbell--Pinski-Narin--PageRank chain.
+Institutional rankings (QS, THE, ARWU, Leiden) mix bibliometrics with
+reputational surveys; spectral methods have not previously been applied
+jointly to sources and institutions.
+
+\paragraph{Theoretical framing.}
+We treat citations as structural relations within a functionally
+differentiated scientific system \citep{woutersThesisCitationCulture1999},
+setting aside authorial intent.
+The resulting dual rankings are self-referential hierarchies that
+condition future citations.
+Our construction extends \citet{breigerDualityPersonsGroups1974a}:
+all four blocks of the joint attention matrix are primary flows, not
+derived projections.
+
+\paragraph{Paper structure.}
+Section~\ref{sec:networks} develops the framework.
+Section~\ref{sec:empirical} describes the corpus.
+Section~\ref{sec:results} presents results.
+Section~\ref{sec:discussion} discusses validity.
+
+% ---------------------------------------------------------------
+\section{Journal--institution citation networks}
+\label{sec:networks}
+% ---------------------------------------------------------------
+
+\paragraph{Corpus construction.}
+
+Following \citet{woutersThesisCitationCulture1999}, a \emph{reference}
+written by a scientist becomes a \emph{citation}---a directed edge
+$(w_i,w_j)$---only after indexer resolution to canonical work records.
+The corpus is built in five steps:
+(i)~select $N_s$ sources $\mathfrak{S}$ by field classification;
+(ii)~collect all works $\mathfrak{W}$ ($|\mathfrak{W}|=N_w$) in
+$\mathfrak{S}$ within the census window $[t^c_0,t^c_1]$;
+(iii)~retain references from $\mathfrak{W}$ to works $\mathfrak{W}^t$
+in $\mathfrak{S}$ within the target window $[t^t_0,t^t_1]$, forming
+$\mathcal{R}=\{(i,j):w_i\in\mathfrak{W},\,w_j\in\mathfrak{W}^t\}$;
+(iv)~induce institution set $\mathfrak{I}'$ from author affiliations
+of $\mathfrak{W}$;
+(v)~retain institutions with $\geq\tau$ census works, giving
+$\mathfrak{I}$, $|\mathfrak{I}|=N_u$.
+Flows crossing any corpus boundary are excluded without renormalisation
+(\emph{open-corpus principle}); the closed-corpus alternative is
+examined in the Supplement.
+
+Each work $w_i$ is assigned an institution weight under
+author-fractional counting,
+\begin{equation}
+  \omega_{ik} \;=\;
+  \sum_{j:\,k\in\mathcal{U}_{ij}}
+  \frac{1}{A_i}\,\frac{1}{U_{ij}},
+  \label{eq:omega}
+\end{equation}
+where $A_i$ is the number of authors and $U_{ij}$ the number of
+retained institutions of author $j$; after filtering,
+$\sum_k\omega_{ik}\leq 1$ and weights are not renormalised.
+Model parameters are
+$\boldsymbol{\theta}=(\mathfrak{S},[t^c_0,t^c_1],[t^t_0,t^t_1],
+\tau,\mathbf{m},\chi,\alpha)$.
+
+\paragraph{The attention matrix $\mathbf{C}(\chi,\mathbf{m})$.}
+
+A reference $(i,j)\in\mathcal{R}$ transfers one unit of attention from
+$w_i$ to $w_j$.
+On each side, a fraction $(1-\chi)$ is attributed to the source and
+$\chi$ to the affiliated institutions (weighted by $\omega_{ik}$), so
+each reference generates four typed edges with weights
+$(1-\chi)^2$, $\chi(1-\chi)$, $\chi(1-\chi)$, $\chi^2$ for the
+$SS$, $SI$, $IS$, $II$ blocks respectively.
+Summing over $\mathcal{R}$ and applying a binary block-mask
+$\mathbf{m}=(m_{SS},m_{SI},m_{IS},m_{II})\in\{0,1\}^4$,
+with $m_{SI}=m_{IS}$, gives
+\begin{equation}
+  \mathbf{C}(\chi,\mathbf{m}) =
+  \begin{pmatrix}
+    m_{SS}(1-\chi)^2\,\mathbf{C}_{SS} &
+    m_{SI}\,\chi(1-\chi)\,\mathbf{C}_{SI} \\[4pt]
+    m_{IS}\,\chi(1-\chi)\,\mathbf{C}_{IS} &
+    m_{II}\,\chi^2\,\mathbf{C}_{II}
+  \end{pmatrix}.
+  \label{eq:C}
+\end{equation}
+Four masks are bibliometrically meaningful: source-only $(1,0,0,0)$,
+institution-only $(0,0,0,1)$, bipartite $(0,1,1,0)$, and full-joint
+$(1,1,1,1)$.
+The parameter $\chi$ controls the source--institution balance in the
+bipartite and full-joint cases and is inert in the single-mode cases.
+Block construction details are in the Supplement.
+
+\paragraph{Spectral ranking.}
+
+Let $\mathcal{P}=\mathfrak{S}\cup\mathfrak{I}$ be the \emph{unit} set
+\citep{pinskiNarin1976}, $N=N_s+N_u$, $r_p=\sum_q C_{pq}$ the
+outgoing reference flow, $\mathbf{D}_r=\mathrm{diag}(r_p)$, and
+$\mathbf{A}=\mathrm{diag}(a_p)$ the work-count matrix ($a_p=N^s_p$
+for sources, $a_p=M_k$ for institutions).
+The row-stochastic reference matrix is
+$\mathbf{H}=\mathbf{D}_r^{-1}\mathbf{C}$.
+The Katz resolvent \citep{katz1953,franceschetPagerank2010},
+\begin{equation}
+  \boldsymbol{\pi}^*(\alpha)
+  \;=\;(1-\alpha)\bigl(\mathbf{I}-\alpha\mathbf{H}^\top\bigr)^{-1}\mathbf{p},
+  \quad p_p=\frac{a_p}{N_\text{works}},
+  \label{eq:katz}
+\end{equation}
+converges for all $\alpha<1$ and approaches the stationary distribution
+of the Markov chain with transition matrix $\mathbf{H}$ as $\alpha\to
+1$; \citet{geller1978} shows $\pi^*_q$ equals the long-run expected
+share of reference flow received by unit $q$.
+\emph{Prestige per work} \citep{palacioshuertaVolij2004} is
+\begin{equation}
+  \mathbf{v}^*(\alpha)\;=\;\mathbf{A}^{-1}\boldsymbol{\pi}^*(\alpha),
+  \label{eq:vstar}
+\end{equation}
+recovered once after convergence of successive substitution on
+\eqref{eq:katz}. Convergence analysis is in the Supplement.
+We report $\mathbf{v}^*$ over $\alpha\in\{0.50,0.75,0.85,0.95\}$.
+
+\paragraph{Computation.}
+
+$\mathbf{C}(\chi,\mathbf{m})$ is sparse ($\mathrm{nnz}\leq
+4|\mathcal{R}|$) and is built from a weighted edge list $\mathcal{E}$
+accumulated over $\mathcal{R}$, stored in CSR format, and
+row-normalised to $\mathbf{H}$.
+The pipeline
+$\mathcal{R}\!\to\!\mathcal{E}\!\to\!\mathbf{C}\!\to\!\mathbf{H}\!\to\!\boldsymbol{\pi}^*\!\to\!\mathbf{v}^*$
+and its parameter entry points are detailed in the Supplement.
+
+% ---------------------------------------------------------------
+\section{Example: Economics and Commerce}
+\label{sec:empirical}
+% ---------------------------------------------------------------
+
+\paragraph{Data.}
+\label{sec:data}
+Guided by InCites EC journal categories, we extract OpenAlex data
+\citep{priemOpenAlexFullyopenIndex2022} for approximately 600 journals
+and 350,000 articles and reviews published 2000--2025.
+Network properties and data limitations (reference cross-linking,
+author disambiguation, institution identity) are detailed in the
+Supplement.
+
+% ---------------------------------------------------------------
+\section{Results}
+\label{sec:results}
+% ---------------------------------------------------------------
+
+\paragraph{Baseline model.} [Placeholder.]
+
+\paragraph{Parameter sensitivity.}
+[Placeholder: $\alpha\in\{0.50,0.75,0.85,0.95\}$;
+$\chi\in\{0.00,0.25,0.50,0.75,1.00\}$;
+$\mathbf{m}\in\{(1,0,0,0),(0,1,1,0),(1,1,1,1)\}$; $\tau$ sweep.]
+
+\paragraph{Bootstraps.} [Placeholder.]
+
+% ---------------------------------------------------------------
+\section{Discussion}
+\label{sec:discussion}
+% ---------------------------------------------------------------
+
+\paragraph{Validity.} [Placeholder: face, content, criterion, construct.]
+
+% ---------------------------------------------------------------
+\section{Prospects}
+% ---------------------------------------------------------------
+
+[Placeholder.]
+
+\bibliographystyle{plainnat}
+\bibliography{birank_assembled}
+
+\end{document}

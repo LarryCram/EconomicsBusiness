@@ -1,0 +1,46 @@
+\documentclass[10pt]{article}
+\setlength\parindent{10pt}
+
+\title{\vspace{-2cm} \flushleft \normalsize Scientometrics\\[1cm]
+\large\bfseries\centering Dual ordinal spectral ranking of journals and institutions}
+\date{\today}
+\author{\textsc{Docampo, D. and Cram, L.}}
+
+\usepackage{booktabs, natbib, amsmath, amssymb, mathrsfs}
+\usepackage[margin=1in]{geometry}
+\usepackage{tikz}
+\usetikzlibrary{positioning, arrows.meta}
+\usepackage{hyperref}
+\pagestyle{plain}
+
+\begin{document}
+\maketitle
+
+\begin{abstract}
+We develop a dual spectral ranking of journals and institutions that
+jointly determines prestige scores via a Katz resolvent applied to a
+block attention matrix constructed from intra-field citation flows.
+A continuous parameter $\chi$ apportions each reference between source
+and institution channels; a binary block-mask selects among four
+bibliometrically distinct flow structures, nesting conventional
+single-mode rankings as special cases.
+Applied to the economics and commerce literature using OpenAlex data,
+the method produces stable, interpretable joint rankings whose
+sensitivity to model parameters is examined systematically.
+
+\medskip\noindent
+\textbf{Keywords}: Scientometrics, spectral ranking, dual
+journal--institution prestige, Katz resolvent, Pinski--Narin
+\end{abstract}
+
+\input{sections/01_introduction}
+\input{sections/02_networks}
+\input{sections/03_corpus}
+\input{sections/04_results}
+\input{sections/05_discussion}
+\input{sections/06_prospects}
+
+\bibliographystyle{spbasic}
+\bibliography{MyLibrary,sciomtcs}
+
+\end{document}
