@@ -24,7 +24,7 @@ def filter_and_match(db):
                 unnest(oa.topics).subfield.display_name AS subfield_name,
                 unnest(oa.topics).field.display_name AS field_name
             FROM source_list s
-            LEFT JOIN '/home/lc/s/openalex_feb26/parquet/sources.parquet' oa ON s.source_id = oa.id;
+            LEFT JOIN '/home/lc/m/openalex_feb26/parquet/sources.parquet' oa ON s.source_id = oa.id;
 
         -- 3. Sources whose TOP subfield is approved
         -- =========================================

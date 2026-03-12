@@ -1,0 +1,265 @@
+\documentclass[10pt]{article}
+\setlength\parindent{10pt}
+
+\title{\vspace{-2cm} \flushleft \normalsize Scientometrics\\[1cm]
+\large\bfseries\center Dual ordinal spectral ranking of journals and institutions}
+\date{\today}
+\author{\textsc{Docampo, D. and Cram, L.}}
+\usepackage{booktabs, natbib, amsmath, amssymb, mathrsfs}
+\usepackage[margin=1in]{geometry}
+\pagestyle{empty}
+\begin{document}
+\maketitle
+
+\begin{abstract}
+The research system relies on journals and institutions. Journals filter works through editorial and peer review, archive the literature, and create metadata for retrieval. Institutions fund individual researchers, implement training, oversee compliance, and maintain physical and information infrastructure. 
+{\textbf Keywords}: Scientometrics, spectral ranking, dual journal-institution prestige
+\end{abstract}
+
+\section{Introduction}
+
+\paragraph{Overview of problem: journal and institution influence ranking}
+
+
+\paragraph{Previous work on journal ranking}
+
+
+\paragraph{How institutions are ranked}
+Institutional rankings, dominated by QS, Times Higher Education (THE), and ShanghaiRanking (ARWU), blend bibliometrics with reputational surveys, teaching metrics, and internationalization. QS 2026 ranks MIT \#1, emphasizing academic reputation (30\%) and citations per faculty (20\%); THE prioritizes research income and industry links; ARWU focuses on top-journal pubs and Nobel/Fields winners.
+
+Pluses:
+
+Global visibility drives funding, talent, and policy (e.g., QS influences 80M+ students yearly).
+
+Standardized comparisons spotlight excellence beyond national borders.
+
+Bibliometrics (citations, H-index) reward research volume and impact, though field-normalized in newer versions.
+
+Minuses:
+
+Size bias: Large US/UK unis dominate via sheer output; specialized excellence (e.g., Dutch tech unis in Leiden) gets undervalued.
+
+Reputational feedback loops favour English-language giants, ignoring regional strengths.
+
+%%Opaque aggregation hides trade-offs; no recursive prestige (unlike PageRank for journals).​
+
+%%Gaming via self-cites, predatory pubs, or survey manipulation.​
+
+Leiden Ranking counters with field-normalized bibliometrics (MNC, top 10% pubs), revealing niche leaders but lacks QS/THE's fame due to no reputation scores. Spectral methods remain rare institutionally—your economics dual ranking exploits this gap, offering recursive prestige within feasible disciplinary bounds. (178 words)
+
+
+\paragraph{Social system of citations and actor-network theory}
+In citation analysis, distinguishing the mathematical structure of networks from the motivations of referencing proves analytically fruitful. Dual spectral rankings of journals and institutions—derived from Katz or Pinski-Narin iterations on a bipartite citation matrix—treat citations as structural relations that generate influence scores without presupposing authorial intent. Here we draw on Social System of Science Citation Theory (SSCT), which, building from Luhmann via Lehmann, conceptualizes citations as autopoietic communications within a functionally differentiated scientific system, where individual actors reside in the environment rather than constituting system elements. This contrasts with actor-network theory (ANT; Latour 2005), which foregrounds heterogeneous agents—authors, metrics, instruments—in assembling citation networks. While ANT richly traces local translations yet struggles to formalize emergent macro-structures, SSCT supplies the missing operational closure: once computed, our dual rankings reveal stable, self-referential hierarchies that condition future citations, structurally coupled to (yet autonomous from) the actor-networks ANT describes. Thus, the mathematics stands alone, but SSCT frames the resulting spectral scores as elements of science's communicative autopoiesis.
+
+Where actor–network theory reconstructs in detail how heterogeneous actors (scientists, journals, metrics, instruments) assemble networks of citation, the Social System of Science Citation Theory starts from the opposite end: it treats citations as elements of an autopoietic communication system that reproduces itself independently of particular actors. ANT struggles to account for the emergent, durable ‘ANs’ that outlive any local interaction; SSCT fills this gap by modelling the citation system as operationally closed yet structurally coupled to the actor-networks that ANT describes
+
+
+\paragraph{Spectral methods}
+\cite{vignaSpectralRanking2016} provides an overview of spectral ranking methods, highlighting key methodologies and their sometimes unrecognised commonalities. 
+
+\paragraph{Duality of bipartite networks}
+A bipartite network has two sets of nodes (let us call them top $T$ and bottom $B$) connected only by edges between $T$ and $B$. Spectral ranking over a bipartite network entails `duality' \citep[e.g. ][]{breigerDualityPersonsGroups1974a} whereby attention flows $T \rightarrow B$ and $B \rightarrow T$ to settle ss attention rankings over $T$ and $B$. 
+
+\paragraph{Integrity of the science system}
+
+\paragraph{Overview of the rest of the paper}
+
+\section{Journal-institution citation networks}
+
+
+
+\section{Application: Economics and Commerce (EC)}
+The standing of journals and institutions in economics and commerce (EC, including economics, econometrics, finance, accounting, business, and management) is well reported, offering an opportunity to test dual spectral ranking against other ranking approaches. The broad field also spans relatively unconnected sub-fields (e.g. economics and business) supporting an analysis of the effect of clustering on rankings.
+
+
+\paragraph{Data sources and descriptive statistics}
+Corpus construction begins with a discipline-based list of \textit{OpenAlex source entities} (OAS).
+The list combines entries from three established journal registers:
+Harzing's \textit{Journal Quality List} (JQL)~\cite{harzing_jql},
+the \textit{ERA 2023 Submission Journal List} (SJL) maintained by the Australian Research Council~\cite{arc_era2023},
+and the \textit{Clarivate Master Journal List} (MJL), drawn from the Web of Science Journal Citation Reports~\cite{clarivate_mjl}.
+Each entry in these registers includes at least one ISSN identifier together with a text description of its disciplinary coverage.
+
+Because SJL and MJL span all scholarly disciplines, disciplinary filtering is applied before matching.
+SJL entries are retained only where the primary \textit{Field of Research} (FoR) code falls within
+Division~35 (\textit{Commerce, Management, Tourism and Services}) or Division~38 (\textit{Economics}),
+encompassing both the two-digit divisional codes and all four-digit group codes within those divisions
+(3501--3509 and 3801--3803, 3899).
+MJL entries are retained where the assigned Web of Science category is one of:
+\textsc{Economics}, \textsc{Transportation}, \textsc{Management}, \textsc{Business},
+or \textsc{Business, Finance}.
+JQL is not filtered: its scope is already confined to business and economics disciplines.
+After filtering, the three registers contain 827 (JQL), 2{,}366 (SJL), and 1{,}413 (MJL) journals respectively.
+
+Each filtered register is joined independently to the OpenAlex sources snapshot
+using ISSN as the matching key.
+For JQL, the single ISSN column is matched against the OpenAlex preferred ISSN
+(\texttt{issn\_l}) and the full set of alternative ISSNs stored in the \texttt{issn} field.
+For MJL, both the print ISSN and electronic ISSN fields are tried in sequence.
+For SJL, all seven ISSN columns ({\small\texttt{ISSN~1}} through {\small\texttt{ISSN~7}}) are tried in sequence,
+stopping at the first hit.
+
+The three matched sets are then unioned to produce the long-list of candidate OAS.
+A journal appearing in more than one register contributes a single OAS entry,
+identified by its OpenAlex source identifier.
+The match statistics for each register are shown in Table~\ref{tab:oas_matching}.
+
+\begin{table}[ht]
+	\centering
+	\caption{Matching of disciplinary journal registers to OpenAlex sources (OAS).
+		Overlap counts are based on shared OpenAlex source identifiers among matched entries.}
+	\label{tab:oas_matching}
+	\small
+	\begin{tabular}{lrrrr}
+		\toprule
+		\textbf{Register} & \textbf{Journals} & \textbf{Matched to OAS} & \textbf{Match rate} & \textbf{Unmatched} \\
+		\midrule
+		JQL  &    827 &    826 & 99.9\% &   1 \\
+		MJL  & 1{,}413 & 1{,}393 & 98.6\% &  20 \\
+		SJL  & 2{,}366 & 2{,}095 & 88.5\% & 271 \\
+		\midrule
+		\multicolumn{5}{l}{\textit{Pairwise overlap of matched OAS}} \\
+		\quad MJL $\cap$ SJL  & \multicolumn{4}{l}{961 sources in common} \\
+		\quad MJL $\cap$ JQL  & \multicolumn{4}{l}{540 sources in common} \\
+		\quad SJL $\cap$ JQL  & \multicolumn{4}{l}{597 sources in common} \\
+		\quad MJL $\cap$ SJL $\cap$ JQL & \multicolumn{4}{l}{489 sources in all three registers} \\
+		\midrule
+		\textbf{Union (long-list)} & \multicolumn{4}{l}{\textbf{2{,}705 unique OAS}} \\
+		\bottomrule
+	\end{tabular}
+	
+	\bigskip
+	\begin{tabular}{lrr}
+		\toprule
+		\textbf{Long-list segment} & \textbf{OAS} & \textbf{Share} \\
+		\midrule
+		MJL only                      &  381 & 14.1\% \\
+		SJL only                      & 1{,}026 & 37.9\% \\
+		JQL only                      &  178 &  6.6\% \\
+		MJL $\cap$ SJL (not JQL)      &  472 & 17.5\% \\
+		MJL $\cap$ JQL (not SJL)      &   51 &  1.9\% \\
+		SJL $\cap$ JQL (not MJL)      &  108 &  4.0\% \\
+		All three registers           &  489 & 18.1\% \\
+		\midrule
+		\textbf{Total}                & \textbf{2{,}705} & \textbf{100.0\%} \\
+		\bottomrule
+	\end{tabular}
+\end{table}
+
+\subsection{Unmatched Journals}
+
+The overall unmatched rate is low for JQL (0.1\%) and MJL (1.4\%) but more substantial for SJL (11.5\%).
+The higher SJL rate reflects the breadth of the ERA register, which deliberately includes
+lower-profile national and regional journals.
+Table~\ref{tab:sjl_misses} categorises the 271 unmatched SJL entries.
+
+\begin{table}[ht]
+	\centering
+	\caption{Categorisation of the 271 SJL journals not matched to OpenAlex sources.}
+	\label{tab:sjl_misses}
+	\small
+	\begin{tabular}{lr}
+		\toprule
+		\textbf{Category} & \textbf{Count} \\
+		\midrule
+		Small specialist journal (not indexed in OA)   & 129 \\
+		Possible ISSN mismatch (name match found in OA) &  47 \\
+		Regional / national journal                    &  29 \\
+		Non-English / regional language journal        &  22 \\
+		Tax / legal specialist journal                 &  13 \\
+		Education / pedagogical journal                &  12 \\
+		Newsletter / trade publication                 &   9 \\
+		Working paper / discussion paper series        &   6 \\
+		Actuarial / insurance journal                  &   3 \\
+		Annual edition / book series                   &   1 \\
+		\midrule
+		\textbf{Total}                                 & \textbf{271} \\
+		\bottomrule
+	\end{tabular}
+\end{table}
+
+The 47 journals flagged as possible ISSN mismatches were investigated further by
+fuzzy name-matching against OpenAlex display names.
+Of these, 42 are high-confidence matches where the ERA-recorded ISSN and the
+OpenAlex \texttt{issn\_l} differ (a common occurrence when a register records the
+print ISSN while OpenAlex uses the electronic ISSN as preferred identifier, or vice versa).
+A further five cases involve multiple OpenAlex records sharing the same journal name,
+requiring disambiguation.
+Three cases are assessed as probable false matches---most notably
+\textit{Banking and Finance Law Review}, for which the name-similar OpenAlex entry is
+a distinct American periodical.
+These 47 candidates are held in a separate inspection table and are not included
+in the long-list pending editorial review.
+
+The 20 unmatched MJL journals are predominantly regional or non-Anglophone publications
+(e.g., \textit{Maliye Dergisi}, \textit{Politica Economica}, \textit{Region et
+	D\'eveloppement}) or have ISSNs not yet registered in the OpenAlex snapshot.
+The single unmatched JQL entry is the
+\textit{B.E. Journal of Economic Analysis and Policy}, which is absent from the
+OpenAlex sources file despite being a peer-reviewed journal.
+
+\subsection{FoR Classification Breadth}
+
+Within SJL, journals are assigned a primary FoR code at either the two-digit
+divisional level (35 or 38) or a four-digit group level (e.g., 3501 for
+\textit{Accounting, Auditing and Accountability}).
+A two-digit primary code signals that the journal's scope is too broad to assign
+to any single group, typically indicating a cross-disciplinary outlet.
+Of the 2{,}366 filtered SJL entries, 172 (7.3\%) carry a two-digit FoR~1 code.
+Contrary to the initial hypothesis that breadth might reduce OAS coverage,
+these cross-disciplinary journals actually exhibit a \textit{lower} unmatched rate
+(7.0\%) than the 4-digit group journals (11.8\%).
+This is consistent with broader-scope journals tending to be larger, more established
+outlets that OpenAlex is more likely to index.
+The FoR code granularity is therefore not used as an exclusion criterion,
+but the two-digit flag is retained as a covariate for downstream scope analysis,
+since a cross-disciplinary source may yield works spanning multiple research areas
+beyond the target fields.
+
+\subsection{Long-List Composition}
+
+The 2{,}705 OAS in the long-list are distributed across the three registers as shown
+in Table~\ref{tab:oas_matching}.
+The SJL-only segment (1{,}026 sources, 37.9\%) is the largest single partition and
+consists entirely of journals that carry an ERA disciplinary classification but
+no JCR impact metrics---predominantly emerging, regional, or specialist outlets.
+The 489 sources appearing in all three registers (18.1\%) represent the
+highest-consensus core: outlets simultaneously recognised by the ERA,
+classified in JCR, and assessed in Harzing's quality synthesis.
+These sources will carry the richest set of quality and bibliometric metadata for
+subsequent corpus filtering.
+
+
+
+
+\paragraph{Network properties}
+The reference list of a work points to earlier influential works that OpenAlex identifies within its database. T
+
+\paragraph{Limitations of the data}
+Reference cross-link, author disambiguation, institution identity
+
+\section{Results}
+
+\paragraph{Baseline model}
+
+\paragraph{Exploring dependencies on model assumptions}
+
+\paragraph{Bootstraps}
+
+\section{Discussion}
+
+\paragraph{Face validity}
+
+\paragraph{Content validity}
+
+\paragraph{Criterion validity - concurrent and predictive}
+
+\paragraph{Construct validity}
+
+\section{Prospects}
+
+\bibliographystyle{spbasic}
+\bibliography{MyLibrary,sciomtcs}
+
+\end{document}
+

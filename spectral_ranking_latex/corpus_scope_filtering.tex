@@ -1,0 +1,223 @@
+% ---------------------------------------------------------------
+% Section: Cross-checking against OpenAlex Journal List and
+%          scope filtering of the long-list OAS
+% Append after the Long-List Composition subsection in
+% corpus_construction.tex
+% ---------------------------------------------------------------
+
+\subsection{Cross-check against the OpenAlex Discipline-Scoped Journal List}
+\label{sec:ojl_crosscheck}
+
+The 2{,}751 long-list OAS are compiled from disciplinary registers,
+each of which casts a deliberately broad net:
+the ERA SJL encompasses any journal with a business or economics secondary classification,
+the MJL includes transportation and management science outlets,
+and Harzing's JQL includes journals that, while valuable references for management
+researchers, sit primarily in adjacent social-science or natural-science disciplines.
+To assess whether each long-list entry has substantive disciplinary coverage,
+the long-list is cross-checked against a second OpenAlex-derived resource---here
+called the \textit{OpenAlex Journal List} (OJL).
+
+The OJL is constructed from the OpenAlex topics taxonomy.
+Each source record in the OpenAlex snapshot carries a list of topic assignments derived
+from the content of its indexed works, with each topic linked to a hierarchical
+\textit{subfield}, \textit{field}, and \textit{domain}.
+The OJL retains all OpenAlex sources for which at least one indexed work carries a
+topic belonging to Field~14 (\textit{Economics, Econometrics and Finance}) or
+Field~20 (\textit{Business and Management}).
+This yields 42{,}756 distinct source entities.
+For each such source, the OJL records the \textit{in-scope ratio}---the share of
+the source's indexed works whose primary topic falls within Fields~14 or~20---as an
+indicator of disciplinary concentration.
+
+\subsubsection*{Long-list OAS matched to OJL}
+
+Matching is performed by OA source identifier and, where identifiers do not agree
+between the two snapshots, by shared ISSN (using the OpenAlex preferred ISSN
+\texttt{issn\_l} and all alternative ISSNs on both sides).
+Of the 2{,}751 long-list OAS, 2{,}289 (83.2\%) are found in the OJL,
+confirming that a substantial majority of the register-derived list is independently
+recognised by OpenAlex as having economics or business content.
+The remaining 462 OAS (16.8\%) are absent from the OJL, meaning that OpenAlex
+has not classified any of their indexed works under Fields~14 or~20.
+
+\subsubsection*{OJL sources not in the long-list}
+
+Conversely, of the 42{,}756 OJL sources, only 2{,}289 (5.4\%) appear in the
+disciplinary register long-list.
+This large residual reflects the heterogeneous composition of OJL:
+it includes every source for which even a single work is classified in
+Fields~14 or~20, irrespective of that source's primary disciplinary focus.
+Restricting to sources with in-scope ratio above 0.40 yields 9{,}624 OJL sources
+absent from the long-list.
+
+These high-ratio OJL sources were examined to understand the gap.
+The 5{,}341 OJL sources with in-scope ratio above 0.60 that do not appear in the
+long-list are categorised in Table~\ref{tab:ojl_unmatched}.
+The dominant categories are low-output sources (28.6\%; fewer than 30 indexed
+works), journals not represented in any of the three disciplinary registers
+(27.1\%), and non-Anglophone or regional journals unlikely to be captured by the
+primarily English-language registers (21.8\%).
+A further 12.7\% carry no ISSN in OpenAlex and are therefore unmatchable regardless
+of register coverage.
+Together these structural reasons account for over 90\% of the gap.
+No further sources are added to the long-list on the basis of the OJL cross-check,
+as the residual journals are either low in aggregate output, absent from established
+disciplinary rankings, or lack the identifiers required for reliable provenance tracking.
+
+\begin{table}[ht]
+\centering
+\caption{High in-scope-ratio OJL sources (ratio~$>0.60$) absent from the
+         register-based long-list, classified by likely reason for absence.
+         In-scope ratio is the fraction of a source's indexed works whose primary
+         topic falls within Fields~14 or~20 of the OpenAlex taxonomy.}
+\label{tab:ojl_unmatched}
+\small
+\begin{tabular}{lrr}
+\toprule
+\textbf{Reason for absence from long-list} & \textbf{Count} & \textbf{Share} \\
+\midrule
+Low output ($<$30 indexed works in OA)  & 1{,}528 & 28.6\% \\
+Not in JQL, SJL, or MJL registers       & 1{,}447 & 27.1\% \\
+Non-Anglophone / regional journal        & 1{,}163 & 21.8\% \\
+No ISSN registered in OpenAlex          &   676   & 12.7\% \\
+Inactive (last publication before 2010) &   239   &  4.5\% \\
+Tax / legal specialist                   &   118   &  2.2\% \\
+Health / medical adjacent                &    73   &  1.4\% \\
+Conference proceedings                   &    48   &  0.9\% \\
+Working paper series                     &    44   &  0.8\% \\
+\midrule
+\textbf{Total}                           & \textbf{5{,}341} & \textbf{100\%} \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{Scope Filtering of the Long-list OAS}
+\label{sec:scope_filter}
+
+The 462 long-list OAS absent from the OJL are examined to assess whether their
+absence reflects a genuine disciplinary mismatch or a structural gap in OpenAlex's
+topic coverage.
+By construction, absence from the OJL implies that OpenAlex has not assigned any
+work from that source to Fields~14 or~20.
+This can arise for two substantively different reasons.
+
+First, a journal may have been captured by the disciplinary registers but is
+primarily housed in an adjacent field---psychology, political science, statistics,
+or the natural sciences---and appears in the register only because of a secondary
+or borderline classification.
+Examples include \textit{Nature Communications}, \textit{American Psychological
+Review}, and \textit{American Political Science Review}, all of which appear in
+Harzing's JQL as reference journals for management researchers but whose indexed
+content is overwhelmingly outside the target fields.
+
+Second, the OpenAlex topic classifier may not have assigned Fields~14 or~20 to the
+works of a genuine economics or management journal.
+This occurs most visibly for the 82 long-list OAS that carry a MJL classification
+in \textsc{Economics}, \textsc{Transportation}, \textsc{Management},
+\textsc{Business}, or \textsc{Business, Finance}: these sources are confirmed
+in-scope by the Web of Science category system, yet are absent from the OJL
+because OpenAlex classifies their content primarily under transport science,
+operations research, or adjacent technology fields rather than Fields~14 or~20.
+Notable examples include \textit{Transportation Research} parts B, D, and F,
+\textit{Journal of Transport Geography}, and
+\textit{Accident Analysis and Prevention}.
+
+Each of the 462 OAS absent from OJL is assigned a scope signal
+based on register membership and journal name (Table~\ref{tab:scope_signals}).
+
+\begin{table}[ht]
+\centering
+\caption{Scope signal assigned to the 462 long-list OAS absent from the OJL,
+         based on register membership and journal name.}
+\label{tab:scope_signals}
+\small
+\begin{tabular}{lrp{7cm}}
+\toprule
+\textbf{Scope signal} & \textbf{Count} & \textbf{Interpretation} \\
+\midrule
+WoS-confirmed scope  &  82 & In MJL; absent from OJL due to OA classifier gap,
+                              not disciplinary mismatch. Retained. \\
+JQL$+$SJL borderline &  36 & In both Harzing and ERA; names ambiguous.
+                              Retained pending manual review. \\
+JQL peripheral       &  79 & In JQL only; names suggest adjacent discipline
+                              (statistics, IS, sociology). Flagged. \\
+Adjacent field       & 105 & Name clearly outside target fields
+                              (natural sciences, medicine, political science,
+                              psychology). Flagged. \\
+SJL adjacent         & 186 & In SJL only; captured via a secondary FoR
+                              classification in transport, logistics,
+                              or engineering. Flagged. \\
+\midrule
+\textbf{Total}       & \textbf{462} & \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsubsection*{Activity and output criteria}
+
+Two further criteria are applied uniformly across all 2{,}751 long-list OAS,
+drawing on publication-year data from the OJL for the 2{,}289 matched sources.
+A source is flagged \textit{Inactive pre-2000} if its last indexed publication
+year in OpenAlex is before 2000; such sources cannot contribute works to a
+modern research corpus.
+A source is flagged \textit{Very low output} if the ratio of its indexed-work
+count to the length of its active period (last minus first publication year plus
+one) falls below 1.0, indicating negligible OpenAlex coverage regardless of
+whether the journal itself is active.
+This criterion reflects the practical constraint that work extraction is from
+OpenAlex: a source with fewer than one indexed work per year will contribute
+negligibly to the corpus, whether because the journal is genuinely thin or because
+its content is predominantly behind a paywall and therefore unindexed.
+
+\subsubsection*{Resulting scope-filtered OAS}
+
+Table~\ref{tab:scope_flags} summarises the \texttt{out\_of\_scope} categorical flag
+applied to each of the 2{,}751 long-list OAS.
+Flag assignment follows a priority order:
+(i) inactivity before 2000,
+(ii) very low output rate,
+(iii) scope signal for OJL-absent sources, and
+(iv) in-scope otherwise.
+
+\begin{table}[ht]
+\centering
+\caption{Distribution of the \texttt{out\_of\_scope} flag across the 2{,}751
+         long-list OAS. Sources classified as \textit{In scope} or
+         \textit{WoS-confirmed scope} are retained for work extraction;
+         all others are excluded from corpus assembly.}
+\label{tab:scope_flags}
+\small
+\begin{tabular}{lrrl}
+\toprule
+\textbf{Flag value} & \textbf{Count} & \textbf{Share} & \textbf{Basis} \\
+\midrule
+In scope            & 2{,}259 & 82.1\% & OJL-matched; active; adequate OA output \\
+WoS-confirmed scope &      82 &  3.0\% & MJL category; absent from OJL (classifier gap) \\
+\midrule
+\textit{Excluded:} \\
+SJL adjacent        &   209   &  7.6\% & SJL-only; transport / logistics / engineering \\
+JQL peripheral      &    79   &  2.9\% & JQL-only; adjacent social or formal sciences \\
+Adjacent field      &    59   &  2.1\% & Name-identified non-economics outlet \\
+JQL$+$SJL borderline&    33   &  1.2\% & Borderline; retained for manual review \\
+Very low output     &    25   &  0.9\% & $<$1 OA-indexed work per active year \\
+Inactive pre-2000   &     5   &  0.2\% & No publication after 1999 \\
+\midrule
+\textbf{In scope (net)} & \textbf{2{,}341} & \textbf{85.1\%} & \\
+\textbf{Flagged for exclusion} & \textbf{410} & \textbf{14.9\%} & \\
+\midrule
+\textbf{Total long-list} & \textbf{2{,}751} & \textbf{100\%} & \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+The 2{,}341 in-scope OAS form the \textit{scope-filtered source list} used for
+work extraction.
+Of these, 2{,}259 are confirmed in-scope by the OJL cross-check
+(in-scope ratio~$>0$), and 82 are retained on the strength of their Web of Science
+category despite the absence of a corresponding OJL record.
+The 33 JQL$+$SJL borderline sources are included in the count pending manual review;
+reclassification of any of these as out-of-scope would reduce the list proportionally.
+The 25 very-low-output sources represent a practical rather than a disciplinary
+exclusion: their OpenAlex coverage is too sparse to contribute meaningfully
+to a works-based analysis, but their disciplinary classification is not in question.

@@ -1,0 +1,196 @@
+\documentclass[10pt]{article}
+\setlength\parindent{10pt}
+
+\title{\vspace{-2cm} \flushleft \normalsize Scientometrics\\[1cm]
+\large\bfseries\center Dual ordinal spectral ranking of journals and institutions}
+\date{\today}
+\author{\textsc{Docampo, D. and Cram, L.}}
+\usepackage{natbib, amsmath, amssymb, mathrsfs}
+\usepackage[margin=1in]{geometry}
+\pagestyle{empty}
+\begin{document}
+\maketitle
+
+\begin{abstract}
+The research system relies on journals and institutions. Journals filter works through editorial and peer review, archive the literature, and create metadata for retrieval. Institutions fund individual researchers, implement training, oversee compliance, and maintain physical and information infrastructure. 
+{\textbf Keywords}: Scientometrics, spectral ranking, dual journal-institution prestige
+\end{abstract}
+
+\section{Introduction}
+
+\paragraph{Overview of problem: journal and institution influence ranking}
+
+
+\paragraph{Previous work on journal ranking}
+
+
+\paragraph{How institutions are ranked}
+Institutional rankings, dominated by QS, Times Higher Education (THE), and ShanghaiRanking (ARWU), blend bibliometrics with reputational surveys, teaching metrics, and internationalization. QS 2026 ranks MIT \#1, emphasizing academic reputation (30\%) and citations per faculty (20\%); THE prioritizes research income and industry links; ARWU focuses on top-journal pubs and Nobel/Fields winners.
+
+Pluses:
+
+Global visibility drives funding, talent, and policy (e.g., QS influences 80M+ students yearly).
+
+Standardized comparisons spotlight excellence beyond national borders.
+
+Bibliometrics (citations, H-index) reward research volume and impact, though field-normalized in newer versions.
+
+Minuses:
+
+Size bias: Large US/UK unis dominate via sheer output; specialized excellence (e.g., Dutch tech unis in Leiden) gets undervalued.
+
+Reputational feedback loops favour English-language giants, ignoring regional strengths.
+
+%%Opaque aggregation hides trade-offs; no recursive prestige (unlike PageRank for journals).​
+
+%%Gaming via self-cites, predatory pubs, or survey manipulation.​
+
+Leiden Ranking counters with field-normalized bibliometrics (MNC, top 10% pubs), revealing niche leaders but lacks QS/THE's fame due to no reputation scores. Spectral methods remain rare institutionally—your economics dual ranking exploits this gap, offering recursive prestige within feasible disciplinary bounds. (178 words)
+
+
+\paragraph{Social system of citations and actor-network theory}
+In citation analysis, distinguishing the mathematical structure of networks from the motivations of referencing proves analytically fruitful. Dual spectral rankings of journals and institutions—derived from Katz or Pinski-Narin iterations on a bipartite citation matrix—treat citations as structural relations that generate influence scores without presupposing authorial intent. Here we draw on Social System of Science Citation Theory (SSCT), which, building from Luhmann via Lehmann, conceptualizes citations as autopoietic communications within a functionally differentiated scientific system, where individual actors reside in the environment rather than constituting system elements. This contrasts with actor-network theory (ANT; Latour 2005), which foregrounds heterogeneous agents—authors, metrics, instruments—in assembling citation networks. While ANT richly traces local translations yet struggles to formalize emergent macro-structures, SSCT supplies the missing operational closure: once computed, our dual rankings reveal stable, self-referential hierarchies that condition future citations, structurally coupled to (yet autonomous from) the actor-networks ANT describes. Thus, the mathematics stands alone, but SSCT frames the resulting spectral scores as elements of science's communicative autopoiesis.
+
+Where actor–network theory reconstructs in detail how heterogeneous actors (scientists, journals, metrics, instruments) assemble networks of citation, the Social System of Science Citation Theory starts from the opposite end: it treats citations as elements of an autopoietic communication system that reproduces itself independently of particular actors. ANT struggles to account for the emergent, durable ‘ANs’ that outlive any local interaction; SSCT fills this gap by modelling the citation system as operationally closed yet structurally coupled to the actor-networks that ANT describes
+
+
+\paragraph{Spectral methods}
+\cite{vignaSpectralRanking2016} provides an overview of spectral ranking methods, highlighting key methodologies and their sometimes unrecognised commonalities. 
+
+\paragraph{Duality of bipartite networks}
+A bipartite network has two sets of nodes (let us call them top $T$ and bottom $B$) connected only by edges between $T$ and $B$. Spectral ranking over a bipartite network entails `duality' \citep[e.g. ][]{breigerDualityPersonsGroups1974a} whereby attention flows $T \rightarrow B$ and $B \rightarrow T$ to settle ss attention rankings over $T$ and $B$. 
+
+\paragraph{Integrity of the science system}
+
+\paragraph{Overview of the rest of the paper}
+
+\section{Journal-institution citation networks}
+
+\paragraph{set up definitions and relations}
+Our study aims to explore simultaneous spectral ranking of sources (journals) and institutions.
+Let $\mathfrak{\hat{W}}$ be the set of all scholarly works, $\mathfrak{\hat{S}}$ the set of all sources, $\mathfrak{\hat{A}}$ the set of all authors, and $\mathfrak{\hat{I}}$ the set of all institutions.
+A particular work $W_w$ ($w = 1...N_W$) is written by authors $\cal{A_{wa}}$ affiliated with institutions $\cal{I_{wai}}$, and published in source $S_s$. The work has a publication year $t_w$ and may have a list of references $R_{wr}$ to earlier works $W_r$. 
+We select works published in the census years $t^c_0 \le t_w \le t^c_1$ and their referenced works $W_{wr}$ in the target interval $t^t_0 \le t_{wr} \le t^t_1$. 
+To avoid counting any one of a work's references more than once, we allocate an institution weight $w^I_{ik}$ to its affiliated $k^{\text{th}}$ institution, where either (a) $\omega^I_{wk} = 1/N_I$ for $N_I$ distinct institutions (institution factional counting), or (b) $\omega^I_{wk} = \sum_j $ via the fraction $1/N_A$ of a work allocated to its $N_A$ authors, then to the institution(s) associated with the author, and the accumulated over all authors share (author fractional counting).
+
+Consider the subset $\mathfrak{S} \subset \mathfrak{\hat{S}}$ of sources that publish works in a group of disciplines or fields. The works published in this subset over the specified time windows, $\mathfrak{W} \subset \mathfrak{\hat{W}}$, induce a subset of institutions $\mathfrak{I'} \subset \mathfrak{\hat{I}}$ and authors $\mathfrak{A'} \subset \mathfrak{\hat{A}}$. These two sets, generally much larger than the set of sources, include authors or institutions associated with few works. These institutions and authors are omitted from the subsets $\mathfrak{I} \subset \mathfrak{I'}$ and $\mathfrak{A} \subset \mathfrak{A'}$ that we adopt for spectral ranking. 
+
+\paragraph{citation matrices}
+Let us regard a reference from work $W_w$ to $W_x$ as a unit of \textit{attention} from $w$ to $x$. The attention is shared over all pathways from the source $S_w$ and institutions $I_wi$ of the referencing work to the source $S_x$ and institutions $I_xi$ of the referenced work. Summing over all referencing and referenced works we construct four (sub-)matrices,
+
+\[ C_{SS} = \sum_x \sum_y \delta_{xy}\]
+\[ C_{II} = \sum_i \sum_j \delta_{ij} \omega_{ij} \]
+\[ C_{SI} = \sum_x \sum_j \delta_{xj} \omega_{xi} \omega_{y_j}\]
+\[ C_{IS} = \sum_i \sum_j \delta_{ij} \omega_{ij} \],
+These can be assembled into the block matrix
+\[\bf{C} = 
+\begin{pmatrix}
+	\bf{C_{SS}} & \bf{C_{SI}} \\
+	\bf{C_{IS}} & \bf{C_{II}}
+\end{pmatrix}
+\]
+We can regard the reference from $w_x$ to $w_y$ as a citation to $W-y$ by $w_x$ and the attention transfer from $x$ to $y$ as the influence of $y$ on $x$.   
+
+The PN influence per reference $w_i$ is a measure of the influence of a reference (or equivalently a `citation') from $i$ relative to the average, and the ratio $w_i/w_j$ is a measure of the relative influence of a citation from unit $i$ and from unit $j$. Differences between unit size and reference density have been removed. Accordingly, we will herein call $w_i$ the \textit{prestige} of unit $i$ and use its value to represent the \textit{esteem} that a work acquires from a citation by $i$. 
+
+We extend the PN solution to the two-unit source-institution problem using the block matrix $\mathbf{K}$ defined above, with diagonal blocks $K_{SS}$ and $K_{II}$ set to zero. The removal of these blocks excises direct journal-journal and institution-institution reference flows, including all unit self-references. This approach tends to strengthen the `independence' of citing-side contributions to the prestige indicators, since direct journal-journal and institution-institution citation is excluded. 
+
+Introduce the diagonal matrix $\mathbf{D} = \text{diag}(1/s_j)$ whose elements are the reciprocals of the column sums of $\mathbf{K}$, $s_j = \sum_k K_{kj}$, and the PN block matrix 
+\begin{align}
+	\bf{\Gamma} = \mathbf{K}\mathbf{D} = 
+	\begin{pmatrix}
+		\mathbf{0} & \bf{\Gamma}_{SI} \\
+		\bf{\Gamma}_{IS} & \mathbf{0} 
+	\end{pmatrix}
+\end{align}
+Provided that $\mathbf{\Gamma_{SI}}$ is a primitive matrix, the prestige values are the components of the principal eigenvector
+\begin{align}
+	\bf{\Gamma}^T \mathbf{w} = \lambda \mathbf{w}
+\end{align}
+with eigenvalue $\lambda = 1$ and the normalisation 
+\begin{align}
+	\mathbf{w} = \text{N} \mathbf{D} \mathbf{w}  
+\end{align}
+where $N$ is the total number of references, $N = \sum_k s_k$.
+
+If we partition the principal eigenvector into components corresponding to sources ($\mathbf{w}_S$) and institutions ($\mathbf{w}_I$):
+\begin{align}
+	\mathbf{w} = 
+	\begin{pmatrix}
+		\mathbf{w}_S \\
+		\mathbf{w}_I
+	\end{pmatrix}
+\end{align}
+the components satisfy the \textit{Journal-Institution Reputation Circulation} (JIRC) system that connects the prestige vectors 
+\begin{align}
+	\mathbf{\Gamma}_{IS}^\top \mathbf{w}_I &= \mathbf{w}_S \\
+	\mathbf{\Gamma}_{SI}^\top \mathbf{w}_S &= \mathbf{w}_I
+\end{align}
+and either one can be found from
+\begin{align}
+	(\mathbf{\Gamma}_{IS}^\top \mathbf{\Gamma}_{SI}^\top) \mathbf{w}_S &= \mathbf{w}_S \\
+	(\mathbf{\Gamma}_{SI}^\top \mathbf{\Gamma}_{IS}^\top) \mathbf{w}_I &= \mathbf{w}_I
+\end{align}
+Our JIRC uses the power iteration method
+\begin{align}
+	\mathbf{w}_S^{(k)} = \mathbf{\Gamma}_{IS}^\top \mathbf{\Gamma}_{SI}^\top \mathbf{w}_S^{(k-1)}
+\end{align}
+yielding the source prestige vector $\mathbf{w}_S$ and by (10) the institution prestige vector $\mathbf{w}_I$. In practise we normalise $\mathbf{w}_S$ using (7) on each iteration.
+
+
+The power iteration for the Geller-PageRank-Bollen-Eigenvector approach follows similarly. Define $\mathbf{D'} = \text{diag} (1/s_i)$ where $S_i$ is the row sum $s_i = \sum_k c_{ki}$ and the row-stochastic matrix $\Gamma' = \mathbf{K}\mathbf{D'}$. Then the PageRank power iteration is  
+\begin{align}
+	\mathbf{\pi^*}^{(k)} = \mathbf{M} \mathbf{\pi^*}^{(k-1)} \\
+	\mathbf{M} = (1-\alpha)/N \mathbf{J} + \alpha \Gamma_{IS}^\top\Gamma_{SI}^T
+\end{align}
+where $\mathbf{J}$ is a matrix of all ones. The prestige is $\mathbf{w} = \mathbf{\pi^*}N\mathbf{D}$. The PageRank algorithm may be applied if the matrix $\Gamma_{SI}$ is not primitive.
+
+
+\paragraph{set up spectral ranking}
+
+\paragraph{set up convergence and Katz iteration}
+
+\paragraph{Pinski-Narin}
+
+\paragraph{Eigenvector}
+
+\paragraph{Scimago}
+
+\section{Example: Economics and Commerce (EC)}
+The standing of journals and institutions in economics and commerce (EC, including economics, econometrics, finance, accounting, business, and management) has been extensively studied, providing to assess our approach.
+
+
+\paragraph{Data sources and descriptive statistics}
+Guided by InCites EC journal categories, we extract OpenAlex data  \citep{priemOpenAlexFullyopenIndex2022} for ~600 journals and ~350,000 articles and reviews published between 2000 and 2025. 
+
+\paragraph{Network properties}
+The reference list of a work points to earlier influential works that OpenAlex identifies within its database. T
+
+\paragraph{Limitations of the data}
+Reference cross-link, author disambiguation, institution identity
+
+\section{Results}
+
+\paragraph{Baseline model}
+
+\paragraph{Exploring dependencies on model assumptions}
+
+\paragraph{Bootstraps}
+
+\section{Discussion}
+
+\paragraph{Face validity}
+
+\paragraph{Content validity}
+
+\paragraph{Criterion validity - concurrent and predictive}
+
+\paragraph{Construct validity}
+
+\section{Prospects}
+
+\bibliographystyle{spbasic}
+\bibliography{MyLibrary,sciomtcs}
+
+\end{document}
+
