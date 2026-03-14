@@ -3,61 +3,30 @@
 \label{sec:networks}
 % ---------------------------------------------------------------
 
-\paragraph{Corpus construction.}
-
-Following \citet{woutersThesisCitationCulture1999}, a \emph{reference}
-written by a scientist becomes a \emph{citation}---a directed edge
-$(w_i,w_j)$---only after indexer resolution to canonical work records.
-The corpus is built in five steps:
-(i)~select $N_s$ sources $\mathfrak{S}$ by field classification;
-(ii)~collect all works $\mathfrak{W}$ ($|\mathfrak{W}|=N_w$) in
-$\mathfrak{S}$ within the census window $[t^c_0,t^c_1]$;
-(iii)~retain references from $\mathfrak{W}$ to works $\mathfrak{W}^t$
-in $\mathfrak{S}$ within the target window $[t^t_0,t^t_1]$, forming
-$\mathcal{R}=\{(i,j):w_i\in\mathfrak{W},\,w_j\in\mathfrak{W}^t\}$;
-(iv)~induce institution set $\mathfrak{I}'$ from author affiliations
-of $\mathfrak{W}$;
-(v)~retain institutions with $\geq\tau$ census works, giving
-$\mathfrak{I}$, $|\mathfrak{I}|=N_u$.
-Flows crossing any corpus boundary are excluded without renormalisation
-(\emph{open-corpus principle}); the closed-corpus alternative is
-examined in the Supplement.
-
-Each work $w_i$ is assigned an institution weight under
-author-fractional counting,
+%\paragraph{Corpus construction.}
+We begin corpus construction by selecting $N_s$ sources $\mathfrak{S}$ in a field, discipline or category. Then we select $N_w$ works $\mathfrak{W}$ published in $\mathfrak{S}$ within the census window $[t^c_0,t^c_1]$ or the target window $[t^t_0,t^t_1]$. By identifying the set of target works $\mathfrak{W}^t$ listed among the references of census works, we form the filtered reference set  $\mathfrak{R}=\{(i,j):w_i\in\mathfrak{W},\,w_j\in\mathfrak{W}^t\}$.
+Author affiliations in $\mathfrak{W}$ establish a set of institutions $\mathfrak{U}'$ and a set of authors $\mathfrak{A}'$. Examining the frequency distributions of institutions and authors, we retain those with work counts above $\geq\tau^U$ and $\geq\tau^A$, giving $N_u$ institutions in the the subset $\mathfrak{U}$ and $N_v$ in $\mathfrak{A}$.
+Each work $w_i$ has an institution weight under author-fractional counting,
 \begin{equation}
   \omega_{ik} \;=\;
-  \sum_{j:\,k\in\mathcal{U}_{ij}}
-  \frac{1}{A_i}\,\frac{1}{U_{ij}},
+  \sum_{j:\,k\in\mathcal{u}_{ij}}
+  \frac{1}{a_i}\,\frac{1}{u_{ij}},
   \label{eq:omega}
 \end{equation}
-where $A_i$ is the number of authors and $U_{ij}$ the number of
-retained institutions of author $j$; after filtering,
-$\sum_k\omega_{ik}\leq 1$ and weights are not renormalised.
+where $a_i$ is the number of authors and $u_{ij}$ the number of
+institutions of author $j$.
+
+This construction excludes (a) census work references not among target works, (b) non-census works that reference target works, and (c) authorships that include an omitted author or institution. The weights $\sum_k\omega_{ik}\leq 1$ and weights are not renormalised to account for any omission of institution or author.
+
 Model parameters are
 $\boldsymbol{\theta}=(\mathfrak{S},[t^c_0,t^c_1],[t^t_0,t^t_1],
 \tau,\mathbf{m},\chi,\alpha,\rho)$.
 
-\paragraph{The attention matrix $\mathbf{C}(\chi,\mathbf{m},\rho)$.}
-
-Let $R_i=|\{j:(i,j)\in\mathcal{R}\}|$ be the reference count of work
-$w_i$ and $\bar{R}=|\mathcal{R}|/N_w$ the mean reference count over
-$\mathfrak{W}$.
-A binary parameter $\rho\in\{0,1\}$ controls the per-reference
-attention weight:
+When a work $w_i$ references another work $w_j$ we say that $w_i$ gives attention to $w_j$. The total attention given by a work can be either (a) the number of references, or (b) one unit \citep{zittModifyingJournalImpact2008}.  Let $R_i=|\{j:(i,j)\in\mathfrak{R}\}|$ be the reference count of work $w_i$ and $\bar{R}=|\mathfrak{R}|/N_w$ the mean reference count over $\mathfrak{W}$. We use a weight $\delta_i$ to select case (a) or case (b) respectively:
 \begin{equation}
-  \delta_i(\rho) \;=\; \left(\frac{\bar{R}}{R_i}\right)^{1-\rho}.
-  \label{eq:delta}
+	\delta_i \;=\; \begin{cases} 1 & \text{(proportional mode)} \\ \bar{R}/R_i & \text{(normalised mode).} \end{cases}
+	\label{eq:delta}
 \end{equation}
-When $\rho=1$, $\delta_i=1$ and each reference contributes one unit of
-attention, so reference-heavy works generate proportionally more
-attention before aggregation.
-When $\rho=0$, $\delta_i=\bar{R}/R_i$ and every work contributes
-$\bar{R}$ units in total, neutralising reference-list length while
-preserving the average scale.
-In both cases $\mathbf{H}=\mathbf{D}_r^{-1}\mathbf{C}$ is row-stochastic
-by construction; $\rho$ affects the \emph{within-row} distribution of
-$\mathbf{C}$, not its stochasticity.
 
 A reference $(i,j)\in\mathcal{R}$ transfers $\delta_i(\rho)$ units of
 attention from $w_i$ to $w_j$.
