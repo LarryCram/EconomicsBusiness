@@ -5,7 +5,7 @@
 
 %\paragraph{Corpus construction.}
 We begin corpus construction by selecting $N_s$ sources $\mathfrak{S}$ in a field, discipline or category. Then we select $N_w$ works $\mathfrak{W}$ published in $\mathfrak{S}$ within the census window $[t^c_0,t^c_1]$ or the target window $[t^t_0,t^t_1]$. By identifying the set of target works $\mathfrak{W}^t$ listed among the references of census works, we form the filtered reference set  $\mathfrak{R}=\{(i,j):w_i\in\mathfrak{W},\,w_j\in\mathfrak{W}^t\}$.
-Author affiliations in $\mathfrak{W}$ establish a set of institutions $\mathfrak{U}'$ and a set of authors $\mathfrak{A}'$. Examining the frequency distributions of institutions and authors, we retain those with work counts above $\geq\tau^U$ and $\geq\tau^A$, giving $N_u$ institutions in the the subset $\mathfrak{U}$ and $N_v$ in $\mathfrak{A}$.
+Author affiliations in $\mathfrak{W}$ establish a set of institutions $\mathfrak{U}'$ and a set of authors $\mathfrak{A}'$. Examining the frequency distributions of institutions and authors, we retain institutions with work counts $\geq\tau^U$ and authors with work counts $\geq\tau^A$, giving $\mathfrak{U}$ and $\mathfrak{A}$ respectively. Since $\omega_{iu}$ requires both an author and an institution, we drop any authorship where either the author $\notin\mathfrak{A}$ or the institution $\notin\mathfrak{U}$, and subsequently drop works that lose all their authorships.
 Each work $w_i$ has an \textit{institution weight} under author-fractional counting,
 \begin{equation}
   \omega_{ik} \;=\;
@@ -31,64 +31,70 @@ $\mathfrak{P}=\mathfrak{S}\cup\mathfrak{U}$ with $N=N_s+N_u$ elements, ordered s
 sources occupy indices $1,\dots,N_s$ and institutions indices $N_s+1,\dots,N$. 
 A reference $(i,j) \in \mathfrak{R}$ transfers attention between unit-type pairs: 
 source--source ($SS$), source--institution ($SI$), institution--source ($IS$), and 
-institution--institution ($II$). We introduce the \textit{source-institution mixing weight} $\chi\in[0,1]$ to govern how attention is allocated between the source and institution sides of each work, with the fraction $\chi$ distributed across the affiliated institutions weighted by $\omega_{ik}$, and $(1-\chi)$ attributed to the source.
+institution--institution ($II$).
 
-A reference $(i,j)\in\mathcal{R}$ transfers $\delta_i$ units of
-attention from $w_i$ to $w_j$. Let $\mathbf{b}_i \in \mathbb{R}^N$ be 
-the unit-weight vector for work $w_i$,
+For each work $w_i$ define the source membership vector
+$\mathbf{b}^S_i\in\mathbb{R}^{N_s}$ with $[\mathbf{b}^S_i]_k=\mathbf{1}[w_i\in s_k]$,
+and the institution weight vector
+$\mathbf{b}^U_i\in\mathbb{R}^{N_u}$ with $[\mathbf{b}^U_i]_u=\omega_{iu}$
+from \eqref{eq:omega}.
+The four raw blocks are accumulated over $\mathfrak{R}$ as rank-1 outer products,
 \begin{equation}
-	[\mathbf{b}_i]_k \;=\;
-	\begin{cases}
-		(1-\chi)\,\mathbf{1}[w_i\in s_k]  & k \leq N_s \\[6pt]
-		\chi\,\omega_{i,\,k-N_s}           & k > N_s,
-	\end{cases}
-	\label{eq:b}
+	\mathbf{C}_{XY} \;=\; \sum_{(i,j)\,\in\,\mathfrak{R}}
+	\delta_i\;\mathbf{b}^X_i\,\bigl(\mathbf{b}^Y_j\bigr)^\top,
+	\qquad XY\in\{SS,\,SI,\,IS,\,II\},
+	\label{eq:Cblock}
 \end{equation}
-The citation matrix is the sum of rank-1 outer products over $\mathfrak{R}$,
-\begin{equation}
-	\mathbf{C} \;=\; \sum_{(i,j)\,\in\,\mathfrak{R}}
-	\delta_i\; \mathbf{b}_i\, \mathbf{b}_j^\top,
-	\label{eq:Csum}
-\end{equation}
-with $\mathbf{b}_i$ weighting the citing side and $\mathbf{b}_j^\top$
-the cited side. In matrix form $\mathbf{C}=\mathbf{B}^\top\mathbf{A}\mathbf{B}$
-where $[\mathbf{B}]_{ik}=[\mathbf{b}_i]_k$ and
-$A_{ij}=\delta_i\,\mathbf{1}[(i,j)\in\mathfrak{R}]$.
+with $\mathbf{b}^X_i$ weighting the citing side and $\mathbf{b}^Y_j$ the cited side.
+Each block captures the attention flow between one pair of unit types.
 
-with $B_{ik}$ weighting the citing side and $B_{jl}$ the cited side before summation. In matrix form, $\mathbf{C}=\mathbf{B}^\top\mathbf{A},\mathbf{B}$ where $A_{ij}=\delta_i\mathbf{1}[(i,j)\in\mathfrak{R}]$; the block masks $\mathbf{m}$ in \eqref{eq:C} are then applied as scalar multipliers on each block.
-Model parameters are
-$\boldsymbol{\theta}=(\mathfrak{S},[t^c_0,t^c_1],[t^t_0,t^t_1],
-\tau,\mathbf{m},\chi,\alpha,\rho)$.asis functions.
-
-Each reference generates four unit-type 
-edges with weights $\delta_i(1-\chi)^2$, $\delta_i\chi(1-\chi)$, $\delta_i\chi(1-\chi)$,
-$\delta_i\chi^2$ for the $SS$, $SI$, $IS$, $II$ blocks respectively.
-Summing over $\mathcal{R}$  gives the citation matrix $\mathbf{C}$:
+The citation matrix assembles the four blocks with the
+\textit{source--institution mixing weight} $\chi\in[0,1]$
+and the binary \textit{block mask} $\mathbf{m}=(m_{SS},m_{SI},m_{IS},m_{II})\in\{0,1\}^4$,
+$m_{SI}=m_{IS}$:
 \begin{equation}
-	\mathbf{C}(\chi,\mathbf{m},\delta) =
+	\mathbf{C}(\chi,\mathbf{m},\delta) \;=\;
 	\begin{pmatrix}
 		m_{SS}(1-\chi)^2\,\mathbf{C}_{SS} &
 		m_{SI}\,\chi(1-\chi)\,\mathbf{C}_{SI} \\[4pt]
 		m_{IS}\,\chi(1-\chi)\,\mathbf{C}_{IS} &
 		m_{II}\,\chi^2\,\mathbf{C}_{II}
-	\end{pmatrix},
+	\end{pmatrix}.
 	\label{eq:C}
 \end{equation}
-where each block $\mathbf{C}_{XY}$ is accumulated with per-reference
-weight $\delta_i$, and $\delta$ picks the full-count or normalised mode. 
-In \ref{eq:C} the binary block-mask, $\mathbf{m}=(m_{SS},m_{SI},m_{IS},m_{II})\in\{0,1\}^4$ with $m_{SI}=m_{IS}$,
-is bibliometrically meaningful for source-only $(1,0,0,0)$,
-institution-only $(0,0,0,1)$, bipartite $(0,1,1,0)$, and full-joint
-$(1,1,1,1)$ blocks. The parameter $\chi$ controls the source--institution balance in the
-bipartite and full-joint cases and is inert in the single-mode cases.
+The block mask is bibliometrically meaningful for
+source-only $(1,0,0,0)$, institution-only $(0,0,0,1)$,
+bipartite $(0,1,1,0)$, and full-joint $(1,1,1,1)$ combined blocks.
+The mixing weight $\chi$ controls the source--institution balance
+in the bipartite and full-joint cases and is inert in the single-mode cases.
+
+The model parameters are summarised in Table \ref{tab:params}. Note that the corpus excludes (a) census work references not among target works, (b) non-census works that reference target works, and (c) authorships that include an omitted author or institution. The institution weights are not renormalised to account for the omission of an authorship, so that $\sum_k\omega_{ik}\leq 1$.
+
+\begin{table}[h]
+	\centering
+	\caption{Model parameters $\boldsymbol{\theta}$.}
+	\label{tab:params}
+	\begin{tabularx}{\textwidth}{lllX}
+		\toprule
+		Symbol & Name & Type & Role \\
+		\midrule
+		\multicolumn{4}{@{}l@{}}{\textit{Corpus construction}} \\[2pt]
+		$\mathfrak{S}$           & source set            & set             & define the field, subject, category \\
+		$[t^c_0,t^c_1]$          & census window         & interval        & works whose references are traced \\
+		$[t^t_0,t^t_1]$          & target window         & interval        & works eligible to receive references \\
+		$\tau^U$                 & institution threshold & integer         & minimum work count to retain an institution \\
+		$\tau^A$                 & author threshold      & integer         & minimum work count to retain an author \\[4pt]
+		\multicolumn{4}{@{}l@{}}{\textit{Matrix construction}} \\[2pt]
+		$\delta\in\{0,1\}$       & reference normalisation & binary        & 0: each work contributes $\bar{R}$ units; \newline 1: full reference count \\
+		$\mathbf{m}\in\{0,1\}^4$ & block mask            & binary 4-vector & select active unit-type pairs ($SS$, $SI$, $IS$, $II$) \\
+		$\chi\in[0,1]$           & mixing weight         & continuous      & source--institution balance within each work \\[4pt]
+		\multicolumn{4}{@{}l@{}}{\textit{Ranking}} \\[2pt]
+		$\alpha\in[0,1)$         & discount factor       & continuous      & downweight long walks; ensure convergence\\
+		\bottomrule
+	\end{tabularx}
+\end{table}
 
 
-
-This construction excludes (a) census work references not among target works, (b) non-census works that reference target works, and (c) authorships that include an omitted author or institution. The weights $\sum_k\omega_{ik}\leq 1$ and weights are not renormalised to account for any omission of institution or author.
-
-Model parameters are
-$\boldsymbol{\theta}=(\mathfrak{S},[t^c_0,t^c_1],[t^t_0,t^t_1],
-\tau,\mathbf{m},\chi,\alpha,\rho)$.
 
 \paragraph{Spectral ranking.}
 
