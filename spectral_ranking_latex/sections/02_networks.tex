@@ -28,6 +28,15 @@ When a work $w_i$ references another work $w_j$ we say that $w_i$ gives attentio
 	\label{eq:delta}
 \end{equation}
 
+Let $\mathcal{P}=\mathfrak{S}\cup\mathfrak{U}$ be the \emph{unit} set with $N=N_s+N_u$ elements, 
+ordered so that sources occupy indices $1,\dots,N_s$ and institutions indices $N_s+1,\dots,N$. 
+The citation matrix $\mathbf{C}$ is then an $N\times N$ matrix with a natural $2\times 2$ block 
+partition into source--source ($SS$), source--institution ($SI$), institution--source ($IS$), and 
+institution--institution ($II$) blocks. A reference $(i,j)\in\mathfrak{R}$ can transfer attention 
+between any of these four unit-type pairs: the parameter $\chi\in[0,1]$ governs how attention is 
+allocated between the source and institution sides of each work, with fraction $(1-\chi)$ attributed 
+to the source and $\chi$ distributed across affiliated institutions weighted by $\omega_{ik}$.
+
 A reference $(i,j)\in\mathcal{R}$ transfers $\delta_i(\rho)$ units of
 attention from $w_i$ to $w_j$.
 On each side, a fraction $(1-\chi)$ is attributed to the source and
