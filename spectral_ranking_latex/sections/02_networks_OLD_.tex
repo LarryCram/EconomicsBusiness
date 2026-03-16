@@ -65,7 +65,7 @@ The citation matrix assembles the four blocks:
 	\label{eq:C}
 \end{equation}
 where the binary \textit{block mask} $\mathbf{m}=(m_{SS},m_{SI},m_{IS},m_{II})\in\{0,1\}^4$
-is bibliometrically meaningful for
+with $m_{SI}=m_{IS}$ is bibliometrically meaningful for
 source-only $(1,0,0,0)$, institution-only $(0,0,0,1)$,
 bipartite $(0,1,1,0)$, and full-joint $(1,1,1,1)$ combined blocks.
 The mixing weight $\chi$ controls the source--institution balance
@@ -101,15 +101,16 @@ The model parameters are summarised in Table \ref{tab:params}. Note that the cor
 \end{table}
 
 \paragraph{Spectral ranking.}
+
 Let $r_p=\sum_q C_{pq}$ be the total outgoing citation flow from unit $p$,
 $\mathbf{D}_r=\mathrm{diag}(r_p)$ the corresponding diagonal matrix.
 If $r_p=0$ (a dangling unit with no outgoing citations) the corresponding
 row of $\mathbf{C}$ is zero and $\mathbf{H}$ is defined to have a zero row
 there; the boundary condition below then supplies the necessary probability
 mass.
-Let $\boldsymbol{\mu}$ be an initial preference, or boundary condition
+Let $\mathbf{p}$ be an initial preference, or boundary condition
 \citep{hubbellInputoutputApproachClique1965, vignaSpectralRanking2016},
-with entries $\mu_p = a_p / \sum_q a_q$,
+with entries $p_p = a_p / \sum_q a_q$,
 where the unit work count $a_p$ is
 $\Sigma_s = |\{i : w_i \in s\}|$ for source $p=s$
 and
@@ -125,7 +126,7 @@ is defined as the solution to the damped eigenvector problem
     \boldsymbol{\pi}
     \;=\;
     \alpha\mathbf{H}^\top\boldsymbol{\pi}
-    +(1-\alpha)\boldsymbol{\mu},
+    +(1-\alpha)\mathbf{p},
     \qquad
     \mathbf{1}^\top\boldsymbol{\pi}=1,
     \quad
@@ -133,7 +134,7 @@ is defined as the solution to the damped eigenvector problem
     \label{eq:spectral}
 \end{equation}
 with damping factor $\alpha\in[0,1)$.
-The prior $\boldsymbol{\mu}$ encodes the distribution over
+The preference vector $\mathbf{p}$ encodes the prior distribution over
 units weighted by scholarly output, and $\alpha$ controls the degree to
 which influence propagates through the citation network rather than
 being absorbed by that prior.
@@ -179,17 +180,18 @@ which is not norm-preserving and yields a fixed point with no clean
 interpretation.
 
 \paragraph{Computation via power iteration.}
+
 To compute $\boldsymbol{\pi}$ we define the modified matrix
 \begin{equation}
 	\mathbf{\tilde{H}}
 	\;=\;
-	\alpha\mathbf{H}+(1-\alpha)\boldsymbol{\mu}\mathbf{1}^\top,
+	\alpha\mathbf{H}+(1-\alpha)\mathbf{p}\mathbf{1}^\top,
 	\label{eq:Hstar}
 \end{equation}
 so that the fixed-point condition
 $\boldsymbol{\pi}=\mathbf{\tilde{H}}^{\top}\boldsymbol{\pi}$
 is equivalent to equation~\eqref{eq:spectral}.
-Because $\boldsymbol{\mu}>0$ and $0<\alpha<1$, every entry of $\mathbf{\tilde{H}}$
+Because $\mathbf{p}>0$ and $0<\alpha<1$, every entry of $\mathbf{\tilde{H}}$
 is strictly positive, ensuring it is a primitive row-stochastic matrix.
 By the Perron--Frobenius theorem, $\mathbf{\tilde{H}}^{\top}$ therefore
 has a unique stationary distribution $\boldsymbol{\pi}$, recovered by
@@ -201,9 +203,11 @@ power iteration
 	\label{eq:power}
 \end{equation}
 converging to $\boldsymbol{\pi}$ from any strictly positive starting
-vector $\boldsymbol{\pi}^{(0)}$.
+vector $\boldsymbol{\pi}^{(0)}$. Convergence analysis is in the
+Supplement.
 
 \paragraph{Computation.}
+
 $\mathbf{C}(\chi,\mathbf{m},\delta)$ is a sparse matrix built from a
 weighted edge list $\mathcal{E}$ accumulated over $\mathfrak{R}$ with
 per-reference weight $\delta_i$, stored in CSR format, and
