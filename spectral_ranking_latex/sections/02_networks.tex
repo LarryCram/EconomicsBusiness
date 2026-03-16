@@ -144,40 +144,33 @@ The spectral ranking $\boldsymbol{\pi}$ depends on the number of works in each u
 removes this dependence. \cite{palacios-huertaMeasurementIntellectualInfluence2004} show that $\mathbf{v}$ is a ranking that is uniquely invariant to several reasonable constraints \cite[but see][]{serranoMeasurementIntellectualInfluence2004}.
 
 \paragraph{Computation via power iteration.}
-
-To compute $\boldsymbol{\pi}^*$ we define the modified matrix
+To compute $\boldsymbol{\pi}$ we define the modified matrix
 \begin{equation}
-	\mathbf{H}^*
+	\mathbf{\tilde{H}}
 	\;=\;
 	\alpha\mathbf{H}+(1-\alpha)\mathbf{p}\mathbf{1}^\top,
 	\label{eq:Hstar}
 \end{equation}
 so that the fixed-point condition
-$\mathbf{H}^{*\top}\boldsymbol{\pi}^*=\boldsymbol{\pi}^*$
+$\boldsymbol{\pi}=\mathbf{\tilde{H}}^{\top}\boldsymbol{\pi}$
 is equivalent to equation~\eqref{eq:spectral}.
-Because $\mathbf{p}>0$ and $0<\alpha<1$, every entry of $\mathbf{H}^*$
-is strictly positive, making $\mathbf{H}^*$ a primitive row-stochastic
-matrix. By the Perron--Frobenius theorem, $\mathbf{H}^{*\top}$
-therefore has a unique stationary distribution $\boldsymbol{\pi}^*$,
+Because $\mathbf{p}>0$ and $0<\alpha<1$, every entry of $\mathbf{\tilde{H}}$
+is strictly positive, ensuring it is a primitive row-stochastic
+matrix. By the Perron--Frobenius theorem, $\mathbf{\tilde{H}}^{\top}$
+therefore has a unique stationary distribution $\boldsymbol{\pi}$,
 recovered by power iteration
 \begin{equation}
 	\boldsymbol{\pi}^{(k+1)}
 	\;=\;
-	\mathbf{H}^{*\top}\boldsymbol{\pi}^{(k)},
+	\mathbf{\tilde{H}}^{\top}\boldsymbol{\pi}^{(k)}
 	\label{eq:power}
 \end{equation}
-converging to $\boldsymbol{\pi}^*$ from any strictly positive starting
+and converging to $\boldsymbol{\pi}$ from any strictly positive starting
 vector $\boldsymbol{\pi}^{(0)}$.
-We report $\mathbf{v}^*$ over $\alpha\in\{0.50,0.75,0.85,0.95\}$.
-Convergence analysis is in the Supplement.
 
 \paragraph{Computation.}
-
-$\mathbf{C}(\chi,\mathbf{m},\rho)$ is sparse ($\mathrm{nnz}\leq
-4|\mathcal{R}|$) and is built from a weighted edge list $\mathcal{E}$
+$\mathbf{C}(\chi,\mathbf{m},\rho)$ is a sparse matrix built from a weighted edge list $\mathcal{E}$
 accumulated over $\mathcal{R}$ with per-reference weight $\delta_i(\rho)$,
 stored in CSR format, and row-normalised to $\mathbf{H}$.
 The pipeline
-$\mathcal{R}\!\to\!\mathcal{E}\!\to\!\mathbf{C}\!\to\!\mathbf{H}\!\to\!\boldsymbol{\pi}^*\!\to\!\mathbf{v}^*$
-and its parameter entry points are detailed in the Supplement.
-Implementation uses \texttt{scipy.sparse.csr\_matrix}.
+$\mathcal{R}\!\to\!\mathcal{E}\!\to\!\mathbf{C}\!\to\!\mathbf{H}\!\to\!\boldsymbol{\pi}^*\!\to\!\mathbf{v}^*$ is implementation using \texttt{scipy.sparse.csr\_matrix} with parameter entry points detailed in the Supplement.
