@@ -4,8 +4,13 @@
 % ---------------------------------------------------------------
 
 %\paragraph{Corpus construction.}
-We begin corpus construction by selecting $N_s$ sources $\mathfrak{S}$ in a field, discipline or category. Then we select $N_w$ works $\mathfrak{W}$ published in $\mathfrak{S}$ within the census window $[t^c_0,t^c_1]$ or the target window $[t^t_0,t^t_1]$. By identifying the set of target works $\mathfrak{W}^t$ listed among the references of census works, we form the filtered reference set  $\mathfrak{R}=\{(i,j):w_i\in\mathfrak{W},\,w_j\in\mathfrak{W}^t\}$.
-Author affiliations in $\mathfrak{W}$ establish a set of institutions $\mathfrak{U}'$ and a set of authors $\mathfrak{A}'$. Examining the frequency distributions of institutions and authors, we retain institutions with work counts $\geq\tau^U$ and authors with work counts $\geq\tau^A$, giving $\mathfrak{U}$ and $\mathfrak{A}$ respectively. Since $\omega_{iu}$ requires both an author and an institution, we drop any authorship where either the author $\notin\mathfrak{A}$ or the institution $\notin\mathfrak{U}$, and subsequently drop works that lose all their authorships.
+We begin corpus construction by selecting $N_s$ sources $\mathfrak{S}$ in a field, discipline or category. 
+Then we select $N_w$ works $\mathfrak{W}$ published in $\mathfrak{S}$ within the census 
+window years $[t^c_0,t^c_1]$ or the earlier contiguous target year $t^t$ 
+where $t^t = t^c_0 - 1$. 
+From the reference lists of the set of census works $\mathfrak{W}^c$ we identify the set of target works $\mathfrak{W}^t$ and form the filtered reference set  $\mathfrak{R}=\{(i,j):w_i\in\mathfrak{W}^c,\,w_j\in\mathfrak{W}^t\}$.
+Author affiliations in $\mathfrak{W}$ establish a set of institutions $\mathfrak{U}'$ and a set of 
+authors $\mathfrak{A}'$. Examining the frequency distributions of institutions and authors, we retain institutions with work counts $\geq\tau^U$ and authors with work counts $\geq\tau^A$, giving $\mathfrak{U}$ and $\mathfrak{A}$ respectively. 
 Each work $w_i$ has an \textit{institution weight} under author-fractional counting,
 \begin{equation}
   \omega_{ik} \;=\;
@@ -14,14 +19,14 @@ Each work $w_i$ has an \textit{institution weight} under author-fractional count
   \label{eq:omega}
 \end{equation}
 where $a_i$ is the number of authors and $u_{ij}$ the number of
-institutions of author $j$.
+institutions of author $j$. Since $\omega_{iu}$ requires both an author and an institution, we drop any authorship where either the author $\notin\mathfrak{A}$ or the institution $\notin\mathfrak{U}$, and subsequently drop works that lose all their authorships. The institution weights are not renormalised to account for the omission of an authorship, so that $\sum_k\omega_{ik}\leq 1$.
 
-When a work $w_i$ references another work $w_j$ we say that $w_i$ gives attention to $w_j$. The total attention given by a work can be either (a) the number of references, or (b) one unit \citep{zittModifyingJournalImpact2008}.  Let $R_i=|\{j:(i,j)\in\mathfrak{R}\}|$ be the reference count of work $w_i$ and $\bar{R}=|\mathfrak{R}|/N_w$ the mean reference count over $\mathfrak{W}$. We use the \textit{reference normalisation weight} $\delta_i$ to select case (a) or case (b) respectively:
+When a work $w_i$ references another work $w_j$ we say that $w_i$ gives attention to $w_j$. The attention given by a work can be either (a) the number of references, or (b) a fixed amount \citep{zittModifyingJournalImpact2008}.  Let $R_i=|\{j:(i,j)\in\mathfrak{R}\}|$ be the reference count of work $w_i$ and $\bar{R}=|\mathfrak{R}|/N_w$ the mean reference count over $\mathfrak{W}$. We use the \textit{reference normalisation weight} $\delta_i$ to select case (a) or case (b) respectively:
 \begin{equation}
 	\delta_i \;=\; 
 	\begin{cases}
-		 1 & \text{(full-count mode)} \\ 
-		\bar{R}/R_i & \text{(normalised mode).} 
+		 1 & \text{(full count)} \\ 
+		\bar{R}/R_i & \text{(fixed count).} 
 	\end{cases}
 	\label{eq:delta}
 \end{equation}
@@ -29,29 +34,25 @@ When a work $w_i$ references another work $w_j$ we say that $w_i$ gives attentio
 We construct the set of \emph{units} [sources or institutions;  \cite{pinskiCitationInfluenceJournal1976}]
 $\mathfrak{P}=\mathfrak{S}\cup\mathfrak{U}$ with $N=N_s+N_u$ elements, ordered so that 
 sources occupy indices $1,\dots,N_s$ and institutions indices $N_s+1,\dots,N$. 
-A reference $(i,j) \in \mathfrak{R}$ transfers attention between unit-type pairs: 
+A reference $(i,j) \in \mathfrak{R}$ gives attention across unit-type pairs: 
 source--source ($SS$), source--institution ($SI$), institution--source ($IS$), and 
 institution--institution ($II$).
 
-For each work $w_i$ define the source membership vector
+For each work $w_i$ we define the source membership one-hot vector
 $\mathbf{b}^S_i\in\mathbb{R}^{N_s}$ with $[\mathbf{b}^S_i]_k=\mathbf{1}[w_i\in s_k]$,
-and the institution weight vector
+and the institution weight distribution vector
 $\mathbf{b}^U_i\in\mathbb{R}^{N_u}$ with $[\mathbf{b}^U_i]_u=\omega_{iu}$
 from \eqref{eq:omega}.
-The four raw blocks are accumulated over $\mathfrak{R}$ as rank-1 outer products,
+Attention flow between pairs of unit types is accumulated as four blocks over $\mathfrak{R}$ as rank-1 outer products,
 \begin{equation}
 	\mathbf{C}_{XY} \;=\; \sum_{(i,j)\,\in\,\mathfrak{R}}
 	\delta_i\;\mathbf{b}^X_i\,\bigl(\mathbf{b}^Y_j\bigr)^\top,
 	\qquad XY\in\{SS,\,SI,\,IS,\,II\},
 	\label{eq:Cblock}
 \end{equation}
-with $\mathbf{b}^X_i$ weighting the citing side and $\mathbf{b}^Y_j$ the cited side.
-Each block captures the attention flow between one pair of unit types.
+with $\mathbf{b}^X_i$ weighting the referencing (citing) side and $\mathbf{b}^Y_j$ the referenced (cited) side.
 
-The citation matrix assembles the four blocks with the
-\textit{source--institution mixing weight} $\chi\in[0,1]$
-and the binary \textit{block mask} $\mathbf{m}=(m_{SS},m_{SI},m_{IS},m_{II})\in\{0,1\}^4$,
-$m_{SI}=m_{IS}$:
+The citation matrix assembles the four blocks:
 \begin{equation}
 	\mathbf{C}(\chi,\mathbf{m},\delta) \;=\;
 	\begin{pmatrix}
@@ -62,13 +63,14 @@ $m_{SI}=m_{IS}$:
 	\end{pmatrix}.
 	\label{eq:C}
 \end{equation}
-The block mask is bibliometrically meaningful for
+where the binary \textit{block mask} $\mathbf{m}=(m_{SS},m_{SI},m_{IS},m_{II})\in\{0,1\}^4$,
+$m_{SI}=m_{IS}$ is bibliometrically meaningful for
 source-only $(1,0,0,0)$, institution-only $(0,0,0,1)$,
 bipartite $(0,1,1,0)$, and full-joint $(1,1,1,1)$ combined blocks.
 The mixing weight $\chi$ controls the source--institution balance
-in the bipartite and full-joint cases and is inert in the single-mode cases.
+in the bipartite and full-joint cases and is inert in the single-mode cases. We could name $\mathbf{C}$ the reference, attention or citation matrix and prefer the latter. 
 
-The model parameters are summarised in Table \ref{tab:params}. Note that the corpus excludes (a) census work references not among target works, (b) non-census works that reference target works, and (c) authorships that include an omitted author or institution. The institution weights are not renormalised to account for the omission of an authorship, so that $\sum_k\omega_{ik}\leq 1$.
+The model parameters are summarised in Table \ref{tab:params}. Note that the corpus excludes (a) census work references not among target works, (b) non-census works that reference target works, and (c) authorships that include an omitted author or institution. 
 
 \begin{table}[h]
 	\centering
@@ -85,7 +87,7 @@ The model parameters are summarised in Table \ref{tab:params}. Note that the cor
 		$\tau^U$                 & institution threshold & integer         & minimum work count to retain an institution \\
 		$\tau^A$                 & author threshold      & integer         & minimum work count to retain an author \\[4pt]
 		\multicolumn{4}{@{}l@{}}{\textit{Matrix construction}} \\[2pt]
-		$\delta\in\{0,1\}$       & reference normalisation & binary        & 0: each work contributes $\bar{R}$ units; \newline 1: full reference count \\
+		$\delta\in\{0,1\}$       & reference normalisation & binary        & 0: a work contributes $\bar{R}$ units; \newline 1: a reference contributes 1 unit \\
 		$\mathbf{m}\in\{0,1\}^4$ & block mask            & binary 4-vector & select active unit-type pairs ($SS$, $SI$, $IS$, $II$) \\
 		$\chi\in[0,1]$           & mixing weight         & continuous      & source--institution balance within each work \\[4pt]
 		\multicolumn{4}{@{}l@{}}{\textit{Ranking}} \\[2pt]
@@ -94,43 +96,80 @@ The model parameters are summarised in Table \ref{tab:params}. Note that the cor
 	\end{tabularx}
 \end{table}
 
-
-
 \paragraph{Spectral ranking.}
 
-Let $\mathcal{P}=\mathfrak{S}\cup\mathfrak{I}$ be the \emph{unit} set
-\citep{pinskiNarin1976}, $N=N_s+N_u$, $r_p=\sum_q C_{pq}$ the
-outgoing reference flow, $\mathbf{D}_r=\mathrm{diag}(r_p)$, and
-$\mathbf{A}=\mathrm{diag}(a_p)$ the work-count matrix ($a_p=N^s_p$
-for sources, $a_p=M_k$ for institutions).
-The row-stochastic reference matrix is
+Let $\mathbf{r} = r_p=\sum_q C_{pq}$ be the total attention from unit $p$,
+$\mathbf{D}_r=\mathrm{diag}(r_p)$ the corresponding diagonal matrix, and
+$\mathbf{p}$ a boundary condition \citep{vignaSpectralRanking2016} with entries
+$p_p=a_p/\sum_q a_q$,
+where $a_p=N^s_p$ for sources and $a_p=M_k$ for institutions.
+The row-stochastic citation matrix is
 $\mathbf{H}=\mathbf{D}_r^{-1}\mathbf{C}$.
-The Katz resolvent \citep{katz1953,franceschetPagerank2010},
-\begin{equation}
-  \boldsymbol{\pi}^*(\alpha)
-  \;=\;(1-\alpha)\bigl(\mathbf{I}-\alpha\mathbf{H}^\top\bigr)^{-1}\mathbf{p},
-  \quad p_p=\frac{a_p}{N_\text{works}},
-  \label{eq:katz}
-\end{equation}
-converges for all $\alpha<1$ and approaches the stationary distribution
-of the Markov chain with transition matrix $\mathbf{H}$ as $\alpha\to
-1$; \citet{geller1978} shows $\pi^*_q$ equals the long-run expected
-share of reference flow received by unit $q$.
-\emph{Prestige per work} \citep{palacioshuertaVolij2004} is
-\begin{equation}
-  \mathbf{v}^*(\alpha)\;=\;\mathbf{A}^{-1}\boldsymbol{\pi}^*(\alpha),
-  \label{eq:vstar}
-\end{equation}
-recovered once after convergence of successive substitution on
-\eqref{eq:katz}. Convergence analysis is in the Supplement.
-We report $\mathbf{v}^*$ over $\alpha\in\{0.50,0.75,0.85,0.95\}$
-and $\rho\in\{0,1\}$.
 
-\textbf{Critical implementation note.} Applying $\mathbf{A}^{-1}$
-inside the iteration loop iterates on $\mathbf{H}^\top\mathbf{A}$,
-which is not norm-preserving---this ``sums the averages rather than
-averages the sum'' and yields a fixed point with no clean
-interpretation.
+The spectral ranking $\boldsymbol{\pi}$ \citep[see ][for an overview of the concept]{vignaSpectralRanking2016} is the largest eigenvector of the problem
+\begin{equation}
+	\boldsymbol{\pi}
+	\;=\;
+	\alpha\mathbf{H}^\top\boldsymbol{\pi}
+	+(1-\alpha)\mathbf{p},
+	\qquad
+	\mathbf{1}^\top\boldsymbol{\pi}=1,
+	\quad
+	\boldsymbol{\pi}\ge 0,
+	\label{eq:spectral}
+\end{equation}
+with damping factor $\alpha\in[0,1)$.
+In the limit $\alpha\to 1$, equation~\eqref{eq:spectral} reduces to the
+eigenvector problem
+\begin{equation}
+	\boldsymbol{\pi}^{*} = \mathbf{H}^\top\boldsymbol{\pi}^{*},
+	\qquad
+	\mathbf{1}^\top\boldsymbol{\pi}^{*}=1,
+	\quad
+	\boldsymbol{\pi}^{*}\ge 0,
+	\label{eq:eig}
+\end{equation}
+whose solution is unique when $\mathbf{H}$ is primitive.
+In that limit, \cite{gellerCitationInfluenceMethodology1978} notes that $\boldsymbol{\pi}^{*}$ is the limiting stationary distribution of a irreducible, aperiodic Markov chain with transition matrix $\mathbf{H}$. She shows that $\boldsymbol{\pi}^{*}$ is the \textit{influence weight} defined by \cite{pinskiCitationInfluenceJournal1976}, scaled by the reference count proportion $\mathbf{r}/|\mathbf{r}|$. 
+
+The spectral ranking $\boldsymbol{\pi}$ depends on the number of works in each unit, while 
+\begin{equation}
+	\mathbf{v}
+	\;=\;
+	\mathbf{A}^{-1}\boldsymbol{\pi},
+	\qquad
+	\mathbf{A}=\mathrm{diag}(p_r)
+	\label{eq:vstar}
+\end{equation}
+removes this dependence. \cite{palacios-huertaMeasurementIntellectualInfluence2004} show that $\mathbf{v}$ is a ranking that is uniquely invariant to several reasonable constraints \cite[but see][]{serranoMeasurementIntellectualInfluence2004}.
+
+\paragraph{Computation via power iteration.}
+
+To compute $\boldsymbol{\pi}^*$ we define the modified matrix
+\begin{equation}
+	\mathbf{H}^*
+	\;=\;
+	\alpha\mathbf{H}+(1-\alpha)\mathbf{p}\mathbf{1}^\top,
+	\label{eq:Hstar}
+\end{equation}
+so that the fixed-point condition
+$\mathbf{H}^{*\top}\boldsymbol{\pi}^*=\boldsymbol{\pi}^*$
+is equivalent to equation~\eqref{eq:spectral}.
+Because $\mathbf{p}>0$ and $0<\alpha<1$, every entry of $\mathbf{H}^*$
+is strictly positive, making $\mathbf{H}^*$ a primitive row-stochastic
+matrix. By the Perron--Frobenius theorem, $\mathbf{H}^{*\top}$
+therefore has a unique stationary distribution $\boldsymbol{\pi}^*$,
+recovered by power iteration
+\begin{equation}
+	\boldsymbol{\pi}^{(k+1)}
+	\;=\;
+	\mathbf{H}^{*\top}\boldsymbol{\pi}^{(k)},
+	\label{eq:power}
+\end{equation}
+converging to $\boldsymbol{\pi}^*$ from any strictly positive starting
+vector $\boldsymbol{\pi}^{(0)}$.
+We report $\mathbf{v}^*$ over $\alpha\in\{0.50,0.75,0.85,0.95\}$.
+Convergence analysis is in the Supplement.
 
 \paragraph{Computation.}
 
