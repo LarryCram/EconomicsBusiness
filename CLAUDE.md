@@ -18,16 +18,17 @@ EconomicsBusiness/
 Large parquets live on a separate SSD. Location is machine-specific and set in `config.yaml` (gitignored). Never hardcode paths — always read from config. Small files (journal lists, corpus sources) live in `data/` and are git-tracked.
 
 ## Paper
-Multi-file LaTeX in `spectral_ranking_latex/`. Master file is `main.tex`; sections are in `sections/`. Bibliography fed by Zotero (`MyLibrary.bib`). 
+Multi-file LaTeX in `spectral_ranking_latex/`. Master file is `main.tex`; sections are in `sections/`. Bibliography fed by Zotero (`MyLibrary.bib`). Commited to GitHub for backup.
 
 **Convention (critical):** $C_{ij}$ = attention from $i$ (citing, row) to $j$ (cited, column). Row sum = references given out. This is the transpose of economist's convention but consistent with most non-economics bibliometrics. Prefer "reference" over "citation" unless it is precise.
 
 ## Current paper status
 - `main.tex` compiles cleanly
-- Section 2 (mathematical framework, Layers 1–4): complete
-- Section 3 (corpus construction + scope filtering, 2,341 sources): complete
+- Section 1 (introduction): partial
+- Section 2 (mathematical framework and computational summary): complete
+- Section 3 (source selection, scope filtering, corpus construction): source selection complete
 - Section 1 (introduction): skeleton only
 - Sections 4–6 and Supplement: placeholder
 
 ## Machines
-Two home Linux machines plus HPC. Code syncs via GitHub. Data moves via portable SSD.
+Two home Linux machines plus HPC. Code and Latex syncs via GitHub. Data moves via portable SSD.
