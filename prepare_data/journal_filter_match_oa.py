@@ -1,30 +1,46 @@
 from pathlib import Path
 import duckdb
+import yaml
 import pandas as pd
 
+# Load configuration relative to project root
+config_path = Path('./config.yaml')
+with open(config_path) as f:
+    config = yaml.safe_load(f)
+    PROJECT_FOLDER = Path(config['PROJECT_ROOT'])
+    DATA = PROJECT_FOLDER / Path(config.get('DATA'))
+    WORKING = Path(config.get('WORKING'))
+    OPENALEX = Path(config.get('OPENALEX'))
+
+PARQUET = WORKING / 'parquet'
+
+
 def filter_and_match(db):
-    sql = """
-        -- 1. CROSS MATCH journals by ISSN (your original, works perfectly)
+    sql = f"""
+        -- 1. CROSS MATCH journals by ISSN
         -- ================================================================
         CREATE OR REPLACE TEMP TABLE source_list AS
             SELECT DISTINCT ON (s.id) s.id AS source_id, s.display_name AS source_name,
                                 works_count, cited_by_count,
                                 s.issn_l AS issn, j.era_journal_name, j.harzing_journal_name, j.wos_journal_name
-            FROM '/home/lc/m/working/econ_bus/parquet/comprehensive_journal_list.parquet' j
-            LEFT JOIN '/home/lc/s/openalex_feb26/parquet/sources.parquet' s
+            FROM '{PARQUET}/comprehensive_journal_list.parquet' j
+            LEFT JOIN '{OPENALEX}/sources.parquet' s
             ON list_has_any(j.unique_issn_list, s.issn)
             AND j.unique_issn_list IS NOT NULL AND s.issn IS NOT NULL;
 
-        -- 2. Get ALL topics for matched sources (your original syntax)
+        -- Save OAS* (long-list before topic filtering) for table reporting
+        COPY (SELECT * FROM source_list) TO '{PARQUET}/oas_star.parquet' (FORMAT PARQUET);
+
+        -- 2. Get ALL topics for matched sources
         -- ============================================================
         CREATE OR REPLACE TEMP TABLE source_topics AS
             SELECT s.source_id, s.source_name, oa.works_count, oa.cited_by_count,
                     s.issn, s.era_journal_name, s.harzing_journal_name, s.wos_journal_name,
-                unnest(oa.topics).count AS topic_count, 
+                unnest(oa.topics).count AS topic_count,
                 unnest(oa.topics).subfield.display_name AS subfield_name,
                 unnest(oa.topics).field.display_name AS field_name
             FROM source_list s
-            LEFT JOIN '/home/lc/m/openalex_feb26/parquet/sources.parquet' oa ON s.source_id = oa.id;
+            LEFT JOIN '{OPENALEX}/sources.parquet' oa ON s.source_id = oa.id;
 
         -- 3. Sources whose TOP subfield is approved
         -- =========================================
@@ -35,7 +51,7 @@ def filter_and_match(db):
                     ROW_NUMBER() OVER (PARTITION BY source_id ORDER BY topic_count DESC, subfield_name ASC) as rn
                 FROM source_topics
             ) ranked
-            WHERE rn = 1 
+            WHERE rn = 1
             AND subfield_name IN (
                 'Economics and Econometrics','Accounting','General Economics, Econometrics and Finance',
                 'Strategy and Management','Organizational Behavior and Human Resource Management',
@@ -47,30 +63,29 @@ def filter_and_match(db):
 
         -- 4. Final: main topic for approved sources only
         -- ==============================================
-        -- Replace your final SELECT with this aggregation:
         CREATE OR REPLACE TEMP TABLE source_master AS
         WITH ranked_topics AS (
-        SELECT 
-            source_id, source_name, issn, era_journal_name, harzing_journal_name, 
+        SELECT
+            source_id, source_name, issn, era_journal_name, harzing_journal_name,
             works_count, cited_by_count,
             wos_journal_name, topic_count, subfield_name, field_name,
             ROW_NUMBER() OVER (PARTITION BY source_id ORDER BY topic_count DESC, subfield_name ASC) as rn
-        FROM source_topics 
+        FROM source_topics
         WHERE source_id IN (SELECT source_id FROM approved_sources)
         )
 
         SELECT * FROM ranked_topics WHERE rn = 1;
 
-        COPY (SELECT * FROM source_master) TO '/home/lc/m/working/econ_bus/parquet/source_master.parquet' (FORMAT PARQUET);
+        COPY (SELECT * FROM source_master) TO '{PARQUET}/source_master.parquet' (FORMAT PARQUET);
         """
     db.sql(sql)
-    sql = """
+    sql = f"""
         SELECT *
-        FROM '/home/lc/m/working/econ_bus/parquet/source_master.parquet'
+        FROM '{PARQUET}/source_master.parquet'
         ORDER BY works_count DESC
         """
     db.sql(sql).show()
-    db.sql(sql).df().to_csv('/home/lc/Projects/EconomicsBusiness/data/source_master.csv')
+    db.sql(sql).df().to_csv(DATA / 'source_master.csv')
     return
 
 def main():

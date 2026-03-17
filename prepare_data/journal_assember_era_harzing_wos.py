@@ -31,7 +31,7 @@ config_path = Path('./config.yaml')
 with open(config_path) as f:
     config = yaml.safe_load(f)
     print(f'{config = }')
-    PROJECT_FOLDER = config['PROJECT_ROOT']
+    PROJECT_FOLDER = Path(config['PROJECT_ROOT'])
     DATA = PROJECT_FOLDER / Path(config.get('DATA'))
     WORKING = Path(config.get('WORKING'))
 
@@ -49,13 +49,10 @@ def assemble_wos_journal_list(db):
                                 "JCR Abbreviation" AS jcr_abrv, 
                                 Category
                             FROM read_xlsx('{file}', range='A3:AZ999', header=true)
-                            WHERE jcr_name NOT NULL AND 
-                                not list_contains(
-                                    ['ETHNIC STUDIES', 'DEMOGRAPHY', 'DEVELOPMENT STUDIES', 
-                                    'URBAN STUDIES', 'FORESTRY', 'HEALTH POLICY & SERVICES',
-                                    'GEOGRAPHY', 'AREA STUDIES', 'HEALTH CARE SCIENCES & SERVICES',
-                                    'ENVIRONMENTAL STUDIES', 'ECOLOGY', 'COMMUNICATION',
-                                    'PUBLIC ADMINISTRATION'], Category)
+                            WHERE jcr_name NOT NULL AND
+                                Category IN (
+                                    'ECONOMICS', 'MANAGEMENT', 'BUSINESS',
+                                    'BUSINESS, FINANCE', 'TRANSPORTATION')
                             GROUP BY ALL
                         """)
 
@@ -100,7 +97,9 @@ def load_journals(db):
                         range='A:P', 
                         header=true, 
                         all_varchar = true)
-        WHERE "FoR 1"[1:2] = '35' OR "FoR 1"[1:2] = '38'
+        WHERE LEFT("FoR 1", 2) IN ('35', '38')
+           OR LEFT("FoR 2", 2) IN ('35', '38')
+           OR LEFT("FoR 3", 2) IN ('35', '38')
         GROUP BY ALL
     """)
     print("=== ERA BASE LIST ===")

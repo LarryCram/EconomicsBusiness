@@ -1,3 +1,4 @@
 PROJECT_ROOT: '/home/lc/Projects/EconomicsBusiness'
 DATA: 'data'
 WORKING: '/home/lc/m/working/econ_bus'
+OPENALEX: '/home/lc/m/openalex_feb26/parquet'
