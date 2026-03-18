@@ -1,0 +1,22 @@
+\begin{table}[htbp]
+\centering
+\caption{Matching of the three register-based sources to OpenAlex source identifiers. Pairwise overlaps are based on shared matched entries.}
+\label{tab:source_matching}
+\begin{tabular}{lrrrr}
+\toprule
+Register & Journals & Matched & Match rate & Unmatched \\
+\midrule
+JQL & 842 & 839 & 99.6\% & 3 \\
+MJL & 1,413 & 1,392 & 98.5\% & 21 \\
+SJL & 1,602 & 1,388 & 86.6\% & 214 \\
+\midrule
+\multicolumn{5}{l}{\textit{Pairwise overlap of matched OAS$^*$}} \\
+\multicolumn{2}{l}{MJL $\cap$ SJL} & \multicolumn{3}{r}{783 sources} \\
+\multicolumn{2}{l}{MJL $\cap$ JQL} & \multicolumn{3}{r}{566 sources} \\
+\multicolumn{2}{l}{SJL $\cap$ JQL} & \multicolumn{3}{r}{424 sources} \\
+\multicolumn{2}{l}{MJL $\cap$ SJL $\cap$ JQL} & \multicolumn{3}{r}{393 sources} \\
+\midrule
+\multicolumn{2}{l}{\textbf{Union (long-list)}} & \multicolumn{3}{r}{\textbf{2,380 unique OAS}} \\
+\bottomrule
+\end{tabular}
+\end{table}

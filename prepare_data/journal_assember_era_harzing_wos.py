@@ -98,8 +98,8 @@ def load_journals(db):
                         header=true, 
                         all_varchar = true)
         WHERE LEFT("FoR 1", 2) IN ('35', '38')
-           OR LEFT("FoR 2", 2) IN ('35', '38')
-           OR LEFT("FoR 3", 2) IN ('35', '38')
+          AND ("FoR 2" IS NULL OR "FoR 2" = '' OR LEFT("FoR 2", 2) IN ('35', '38'))
+          AND ("FoR 3" IS NULL OR "FoR 3" = '' OR LEFT("FoR 3", 2) IN ('35', '38'))
         GROUP BY ALL
     """)
     print("=== ERA BASE LIST ===")
