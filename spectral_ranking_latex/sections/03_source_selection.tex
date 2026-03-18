@@ -7,32 +7,54 @@ publishes economics or business research, and high OpenAlex source topic density
 
 The journal registries are as follows. Harzing's \textit{71st Edition of the Journal Quality List}~\cite[][JQL]{harzinga.-w.JournalQualityList2024} assembles
 peer assessments of journal quality across business and economics
-disciplines. Its scope is already confined to the target fields and no
+disciplines. Its scope is confined to Economics and Commerce so no
 filtering is applied.
 The \textit{ERA 2023 Submission Journal List}~\cite[][SJL]{australianresearchcouncilERA2023Submission2022} assigns up to three
 Field of Research (FoR) codes to each entry. From the full list 
-of 26,241 journals we retain those having a FoR code falling within 
+of 26,241 journals we retain those having all FoR codes falling within 
 Division~35 (Commerce, Management, Tourism and
 Services) or Division~38 (Economics). This applies to two-digit `division' codes and all four-digit `group' codes (3501--3509, 3801--3803, 3899).
-After filtering, 2,469~journals remain.
+After filtering, 1,602~journals remain.
 \textit{Clarivate Web of Science Journal Citation Reports} ~\cite[][JCR]{clarivateanalyticsJournalCitationReports2026} assign each
 journal a Web of Science category. We retain those in Economics, Management, Business, Transportation or Business, Finance. After filtering, 1,413~journals remain.
 
-Each journal in each of JQL, SJL, and MJL have at least one ISSN, and may have several. These registry ISSNs are joined independently to the OpenAlex sources snapshot using its list of ISSNs as the matching key. Journal titles are examined to identify around 40 additional matches where the OpenAlex source does not have an ISSN. The list of OpenAlex sources that are matched is designated OAS\textsuperscript{*}. matching outcomes are summarised in Table \ref{tab:oa_matches}.
+Every journal in JQL, SJL, and MJL has at least one ISSN, and may have several. These registry ISSNs are joined independently to the OpenAlex sources snapshot using its list of ISSNs as the matching key. Journal titles are examined to identify around 30 additional matches where the OpenAlex source does not have an ISSN. The list of OpenAlex sources that are matched is designated OAS\textsuperscript{*}. Matching outcomes are summarised in Table \ref{tab:oa_matches}.
 
-The long list OAS\textsuperscript{*} includes cross-disciplinary sources publishing works in disciplines beyond  economics and business, or otherwise not scholarly works (e.g. newsletters labeled as journals). We use OpenAlex source-topic assignments to exclude sources having a minority of works in economics/business. A source has work-topic counts for up to five topics, each within a single sub-field, field, and domain. We accumulate the work-topic counts for Field~14 (Economics, Econometrics and Finance) and Field~20 (Business and Management) and define the work-topic density is the ratio of this count to the total works in the source. Sources are dropped if this ratio is below 50\%. The 2,289 surviving sources, labeled OAS, are used to extract the corpus. Matching statistics for the three registries and a summary of reasons for excluding sources are shown in
+\begin{table}[htbp]
+	\centering
+	\caption{Matching of the three register-based sources to OpenAlex source identifiers. Pairwise overlaps are based on shared matched entries.}
+	\label{tab:source_matching}
+	\begin{tabular}{lrrrr}
+		\toprule
+		Register & Journals & Matched & Match rate & Unmatched \\
+		\midrule
+		JQL & 842 & 839 & 99.6\% & 3 \\
+		MJL & 1,413 & 1,392 & 98.5\% & 21 \\
+		SJL & 1,602 & 1,388 & 86.6\% & 214 \\
+		\midrule
+		\multicolumn{5}{l}{\textit{Pairwise overlap of matched OAS$^*$}} \\
+		\multicolumn{2}{l}{MJL $\cap$ SJL} & \multicolumn{3}{r}{783 sources} \\
+		\multicolumn{2}{l}{MJL $\cap$ JQL} & \multicolumn{3}{r}{566 sources} \\
+		\multicolumn{2}{l}{SJL $\cap$ JQL} & \multicolumn{3}{r}{424 sources} \\
+		\multicolumn{2}{l}{MJL $\cap$ SJL $\cap$ JQL} & \multicolumn{3}{r}{393 sources} \\
+		\midrule
+		\multicolumn{2}{l}{\textbf{Union (long-list)}} & \multicolumn{3}{r}{\textbf{2,380 unique OAS}} \\
+		\bottomrule
+	\end{tabular}
+\end{table}
+
+The long list OAS\textsuperscript{*} includes sources publishing works in disciplines beyond  economics and business. We use OpenAlex source-topic assignments to exclude sources having a minority of works in economics/business. A source has work-topic counts for up to five topics, each within a single sub-field, field, and domain. We accumulate the work-topic counts for Field~14 (Economics, Econometrics and Finance) and Field~20 (Business and Management) and define the work-topic density is the ratio of this count to the total topic count in the source. Sources are dropped if this ratio is below 50\%. The 1,659 surviving sources, labeled OAS, are used to extract the corpus. Matching statistics for the three registries
 Table~\ref{tab:oa_matches}.
 
 \begin{table}[ht]
 \centering
 \caption{Matching of the three register-based sources to OpenAlex
-         source identifiers. Pairwise overlaps are based
-         on shared among matched entries.}
+         source identifiers.}
 \label{tab:oa_matches}
 \small
 \begin{tabular}{lrrrr}
 \toprule
-\textbf{Register} & \textbf{Journals} & \textbf{Matched} &
+\textbf{Register} & \textbf{Sources} & \textbf{Matched} &
 \textbf{Match rate} & \textbf{Unmatched} \\
 \midrule
 JQL  &    827 &    826 & 99.9\% &   1 \\
@@ -40,134 +62,16 @@ MJL  & 1{,}413 & 1{,}393 & 98.6\% &  20 \\
 SJL  & 2{,}469 & 2{,}193 & 88.8\% & 276 \\
 \midrule
 \multicolumn{5}{l}{\textit{Pairwise overlap of matched OAS}} \\
-\quad MJL $\cap$ SJL  & \multicolumn{4}{l}{1{,}008 sources} \\
-\quad MJL $\cap$ JQL  & \multicolumn{4}{l}{540 sources} \\
-\quad SJL $\cap$ JQL  & \multicolumn{4}{l}{618 sources} \\
-\quad MJL $\cap$ SJL $\cap$ JQL & \multicolumn{4}{l}{505 sources} \\
+\quad MJL $\cap$ SJL  & \multicolumn{1}{r}{1{,}008} \\
+\quad MJL $\cap$ JQL  & \multicolumn{1}{r}{540} \\
+\quad SJL $\cap$ JQL  & \multicolumn{1}{r}{618} \\
+\quad MJL $\cap$ SJL $\cap$ JQL & \multicolumn{1}{r}{505} \\
 \midrule
-\textbf{Union (long-list)} &
-\multicolumn{4}{l}{\textbf{2{,}751 unique OAS}} \\
+\textbf{Initial matches OAS\textsuperscript{*}} &
+\multicolumn{1}{r}{2{,}751} \\
+\midrule
+\textbf{After topic filtering OAS} &
+\multicolumn{1}{r}{1{,}659} \\
 \bottomrule
 \end{tabular}
 \end{table}
-
-%Match rates are high for JQL (99.9\%) and MJL (98.6\%) but more
-%modest for SJL (88.8\%), reflecting the ERA register's deliberate
-%inclusion of lower-profile national and regional journals.
-%Of the 276~unmatched SJL entries, 132~are small specialist journals
-%not indexed in OpenAlex, 47~are probable ISSN mismatches (held for
-%manual review), and the remainder are regional, non-Anglophone,
-%tax/legal specialist, or newsletter/working-paper series entries
-%(Table~\ref{tab:sjl_misses}).
-%The 20~unmatched MJL entries are predominantly regional or
-%non-Anglophone publications; the single unmatched JQL entry is the
-%\textit{B.E.\ Journal of Economic Analysis and Policy}, absent from
-%the OpenAlex sources snapshot.
-%
-%\begin{table}[ht]
-%\centering
-%\caption{Categorisation of the 276 SJL journals not matched to
-%         an OpenAlex source ID.}
-%\label{tab:sjl_misses}
-%\small
-%\begin{tabular}{lr}
-%\toprule
-%\textbf{Category} & \textbf{Count} \\
-%\midrule
-%Small specialist journal (not indexed in OA)    & 132 \\
-%Possible ISSN mismatch (name match found in OA) &  47 \\
-%Regional / national journal                     &  30 \\
-%Non-English / regional language journal         &  22 \\
-%Tax / legal specialist journal                  &  14 \\
-%Education / pedagogical journal                 &  12 \\
-%Newsletter / trade publication                  &   9 \\
-%Working paper / discussion paper series         &   6 \\
-%Actuarial / insurance journal                   &   3 \\
-%Annual edition / book series                    &   1 \\
-%\midrule
-%\textbf{Total}                                  & \textbf{276} \\
-%\bottomrule
-%\end{tabular}
-%\end{table}
-%
-%
-%
-%\begin{table}[ht]
-%\centering
-%\caption{Scope signal assigned to the 462 long-list OAS absent
-%         from the OJL, based on register membership and journal name.}
-%\label{tab:scope_signals}
-%\small
-%\begin{tabular}{lrp{6.5cm}}
-%\toprule
-%\textbf{Scope signal} & \textbf{Count} & \textbf{Interpretation} \\
-%\midrule
-%WoS-confirmed scope   &  82 & MJL category confirms scope; OJL
-%                               absence reflects classifier gap.
-%                               Retained. \\
-%JQL$+$SJL borderline  &  36 & In both Harzing and ERA; names
-%                               ambiguous. Retained pending review. \\
-%JQL peripheral        &  79 & JQL only; names suggest adjacent
-%                               discipline (statistics, IS, sociology).
-%                               Excluded. \\
-%Adjacent field        & 105 & Name clearly outside target fields
-%                               (natural sciences, medicine, political
-%                               science, psychology). Excluded. \\
-%SJL adjacent          & 186 & SJL only; secondary FoR in transport,
-%                               logistics, or engineering. Excluded. \\
-%\midrule
-%\textbf{Total}        & \textbf{462} & \\
-%\bottomrule
-%\end{tabular}
-%\end{table}
-%
-%Table~\ref{tab:scope_flags} summarises the scope flag applied to
-%each of the 2{,}751 long-list OAS, with flags assigned in priority
-%order: (i)~inactivity before 2000, (ii)~very low output,
-%(iii)~scope signal for OJL-absent sources, (iv)~in-scope otherwise.
-%
-%\begin{table}[ht]
-%\centering
-%\caption{Distribution of scope flags across the 2{,}751 long-list
-%         OAS. Sources flagged \textit{In scope} or
-%         \textit{WoS-confirmed} are retained for work extraction.}
-%\label{tab:scope_flags}
-%\small
-%\begin{tabular}{lrrl}
-%\toprule
-%\textbf{Flag} & \textbf{Count} & \textbf{Share} & \textbf{Basis} \\
-%\midrule
-%In scope             & 2{,}259 & 82.1\% &
-%  OJL-matched; active; adequate OA output \\
-%WoS-confirmed scope  &      82 &  3.0\% &
-%  MJL category; OJL absence is classifier gap \\
-%\midrule
-%\textit{Excluded:} \\
-%SJL adjacent         &   209   &  7.6\% &
-%  SJL-only; transport / logistics / engineering \\
-%JQL peripheral       &    79   &  2.9\% &
-%  JQL-only; adjacent social or formal sciences \\
-%Adjacent field       &    59   &  2.1\% &
-%  Name-identified non-economics outlet \\
-%JQL$+$SJL borderline &    33   &  1.2\% &
-%  Borderline; retained for manual review \\
-%Very low output      &    25   &  0.9\% &
-%  $<$1 OA-indexed work per active year \\
-%Inactive pre-2000    &     5   &  0.2\% &
-%  No publication after 1999 \\
-%\midrule
-%\textbf{In scope (net)} & \textbf{2{,}341} & \textbf{85.1\%} & \\
-%\textbf{Excluded}       & \textbf{410}     & \textbf{14.9\%} & \\
-%\midrule
-%\textbf{Total}          & \textbf{2{,}751} & \textbf{100\%}  & \\
-%\bottomrule
-%\end{tabular}
-%\end{table}
-%
-%The 2,341 in-scope form the \textit{scope-filtered source list}
-%used for work extraction.
-%The 505~sources confirmed by all four registers
-%(JQL $\cap$ SJL $\cap$ MJL $\cap$ OJL) represent the
-%highest-consensus core: outlets simultaneously recognised by an
-%editorial quality list, the ERA classification, the WoS category
-%system, and OpenAlex content analysis.

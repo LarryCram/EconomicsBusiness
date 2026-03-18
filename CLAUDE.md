@@ -10,8 +10,10 @@ EconomicsBusiness/
   spectral_ranking_latex/  # LaTeX paper (multi-file master)
   prepare_data/            # OpenAlex data pipeline
   data/                    # Small reference files (MB-scale, git-tracked)
+  plots/                   # Plots for exploration and publication (git-tracked)
   config.yaml              # Machine-specific data paths — gitignored
   CLAUDE.md
+  PLOTS.md
 ```
 
 ## Data
