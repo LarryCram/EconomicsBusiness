@@ -8,12 +8,26 @@ Table 2: Source registry matching statistics.
     Outputs (written to data/):
         table2_source_matching.tex          -- LaTeX fragment, \\input{} into paper
         table2_source_matching.csv          -- for inspection / sanity check
+
+Table 3: Corpus features.
+    Inputs:
+        corpus_works.parquet
+        corpus_authorships.parquet
+        corpus_references.parquet
+        openalex institutions parquet
+    Intermediate:
+        corpus_institutions.parquet         -- institution-level summary with works_per_year
+    Outputs (written to data/):
+        table3_corpus_features.tex
+        table3_corpus_features.csv
 """
 
 from pathlib import Path
 import duckdb
 import yaml
 import pandas as pd
+import subprocess
+import tempfile
 
 # Load config
 config_path = Path('./config.yaml')
@@ -22,8 +36,10 @@ with open(config_path) as f:
     PROJECT_FOLDER = Path(config['PROJECT_ROOT'])
     DATA = PROJECT_FOLDER / Path(config.get('DATA'))
     WORKING = Path(config.get('WORKING'))
-
 PARQUET = WORKING / 'parquet'
+
+# Institution threshold (τ_U); sensitivity runs at 5 and 15
+TAU_U = 10
 
 
 # ---------------------------------------------------------------------------
@@ -114,6 +130,44 @@ def build_table2_data(db):
     print(f"  MJL \u2229 SJL \u2229 JQL    {all_three_oas:>6,} sources")
 
     return rows, overlaps, overlaps_oas, oas_provenance
+
+
+# ---------------------------------------------------------------------------
+# PDF compilation
+# ---------------------------------------------------------------------------
+
+def compile_pdf(tex_fragment_path):
+    """
+    Wrap a .tex table fragment in a minimal standalone document and compile
+    to PDF with pdflatex.  Output is written alongside the .tex file.
+    """
+    fragment = tex_fragment_path.read_text()
+    doc = "\n".join([
+        r"\documentclass{article}",
+        r"\usepackage{booktabs}",
+        r"\usepackage[margin=1in]{geometry}",
+        r"\begin{document}",
+        r"\pagestyle{empty}",
+        fragment,
+        r"\end{document}",
+    ])
+    with tempfile.TemporaryDirectory() as tmpdir:
+        src = Path(tmpdir) / "table.tex"
+        src.write_text(doc)
+        result = subprocess.run(
+            ["pdflatex", "-interaction=nonstopmode", str(src)],
+            cwd=tmpdir,
+            capture_output=True,
+            text=True,
+        )
+        if result.returncode != 0:
+            print(f"pdflatex failed for {tex_fragment_path.name}:")
+            print(result.stdout[-2000:])
+            return
+        pdf_src = Path(tmpdir) / "table.pdf"
+        pdf_dst = tex_fragment_path.with_suffix(".pdf")
+        pdf_dst.write_bytes(pdf_src.read_bytes())
+    print(f"PDF written to {pdf_dst}")
 
 
 # ---------------------------------------------------------------------------
@@ -386,6 +440,343 @@ def sjl_dropped_by_topic_filter(db):
 
 
 # ---------------------------------------------------------------------------
+# Table 3: Corpus features
+# ---------------------------------------------------------------------------
+
+
+def build_table3_data(db):
+    """
+    Compute Table 3 corpus feature counts for years 2000, 2024, and 2000-24.
+
+    Institution filter: works_per_year > TAU_U, applied globally.
+    The filtered corpus is the set of works that have at least one authorship
+    from a retained institution.
+
+    Returns a dict:
+        {row_label: {'y2000': int, 'y2024': int, 'all': int}, ...}
+    """
+    row = db.sql(f"""
+        WITH retained_inst AS (
+            SELECT institution_idx
+            FROM '{PARQUET}/corpus_institutions.parquet'
+            WHERE works_per_year > {TAU_U}
+        ),
+        retained_work_idx AS (
+            SELECT DISTINCT work_idx
+            FROM '{PARQUET}/corpus_authorships.parquet'
+            WHERE institution_idx IN (SELECT institution_idx FROM retained_inst)
+        ),
+        fc AS (
+            -- filtered corpus: works with at least one retained-institution authorship
+            SELECT w.work_idx, w.source_id, w.publication_year
+            FROM '{PARQUET}/corpus_works.parquet' w
+            JOIN retained_work_idx USING (work_idx)
+        ),
+        -- Works
+        w2000 AS (SELECT COUNT(DISTINCT work_idx) AS n FROM fc WHERE publication_year = 2000),
+        w2024 AS (SELECT COUNT(DISTINCT work_idx) AS n FROM fc WHERE publication_year = 2024),
+        wall  AS (SELECT COUNT(DISTINCT work_idx) AS n FROM fc),
+        -- Sources
+        s2000 AS (SELECT COUNT(DISTINCT source_id) AS n FROM fc WHERE publication_year = 2000),
+        s2024 AS (SELECT COUNT(DISTINCT source_id) AS n FROM fc WHERE publication_year = 2024),
+        sall  AS (SELECT COUNT(DISTINCT source_id) AS n FROM fc),
+        -- Institutions (distinct institutions active in that year/range)
+        i2000 AS (
+            SELECT COUNT(DISTINCT a.institution_idx) AS n
+            FROM '{PARQUET}/corpus_authorships.parquet' a
+            JOIN retained_inst USING (institution_idx)
+            WHERE a.work_idx IN (SELECT work_idx FROM fc WHERE publication_year = 2000)
+        ),
+        i2024 AS (
+            SELECT COUNT(DISTINCT a.institution_idx) AS n
+            FROM '{PARQUET}/corpus_authorships.parquet' a
+            JOIN retained_inst USING (institution_idx)
+            WHERE a.work_idx IN (SELECT work_idx FROM fc WHERE publication_year = 2024)
+        ),
+        iall  AS (SELECT COUNT(*) AS n FROM retained_inst),
+        -- Reference counts (out-degree: citer in filtered corpus, grouped by citer year)
+        r2000 AS (
+            SELECT COUNT(*) AS n
+            FROM '{PARQUET}/corpus_references.parquet' r
+            JOIN fc ON r.citer_idx = fc.work_idx AND fc.publication_year = 2000
+        ),
+        r2024 AS (
+            SELECT COUNT(*) AS n
+            FROM '{PARQUET}/corpus_references.parquet' r
+            JOIN fc ON r.citer_idx = fc.work_idx AND fc.publication_year = 2024
+        ),
+        rall  AS (
+            SELECT COUNT(*) AS n
+            FROM '{PARQUET}/corpus_references.parquet' r
+            JOIN fc ON r.citer_idx = fc.work_idx
+        ),
+        -- Citation counts (in-degree: cited in filtered corpus, grouped by cited year)
+        c2000 AS (
+            SELECT COUNT(*) AS n
+            FROM '{PARQUET}/corpus_references.parquet' r
+            JOIN fc ON r.cited_idx = fc.work_idx AND fc.publication_year = 2000
+        ),
+        c2024 AS (
+            SELECT COUNT(*) AS n
+            FROM '{PARQUET}/corpus_references.parquet' r
+            JOIN fc ON r.cited_idx = fc.work_idx AND fc.publication_year = 2024
+        ),
+        call_ AS (
+            SELECT COUNT(*) AS n
+            FROM '{PARQUET}/corpus_references.parquet' r
+            JOIN fc ON r.cited_idx = fc.work_idx
+        )
+        SELECT
+            (SELECT n FROM w2000) AS works_2000,
+            (SELECT n FROM w2024) AS works_2024,
+            (SELECT n FROM wall)  AS works_all,
+            (SELECT n FROM s2000) AS sources_2000,
+            (SELECT n FROM s2024) AS sources_2024,
+            (SELECT n FROM sall)  AS sources_all,
+            (SELECT n FROM i2000) AS inst_2000,
+            (SELECT n FROM i2024) AS inst_2024,
+            (SELECT n FROM iall)  AS inst_all,
+            (SELECT n FROM r2000) AS ref_2000,
+            (SELECT n FROM r2024) AS ref_2024,
+            (SELECT n FROM rall)  AS ref_all,
+            (SELECT n FROM c2000) AS cit_2000,
+            (SELECT n FROM c2024) AS cit_2024,
+            (SELECT n FROM call_) AS cit_all
+    """).fetchone()
+
+    (works_2000, works_2024, works_all,
+     src_2000,   src_2024,   src_all,
+     inst_2000,  inst_2024,  inst_all,
+     ref_2000,   ref_2024,   ref_all,
+     cit_2000,   cit_2024,   cit_all) = row
+
+    data = {
+        'Works':                    {'y2000': works_2000, 'y2024': works_2024, 'all': works_all},
+        'Sources':                  {'y2000': src_2000,   'y2024': src_2024,   'all': src_all},
+        'Institutions':             {'y2000': inst_2000,  'y2024': inst_2024,  'all': inst_all},
+        'Reference counts (out-degree)': {'y2000': ref_2000, 'y2024': ref_2024, 'all': ref_all},
+        'Citation counts (in-degree)':   {'y2000': cit_2000, 'y2024': cit_2024, 'all': cit_all},
+    }
+
+    print(f"\n=== TABLE 3: CORPUS FEATURES (τ_U > {TAU_U}) ===")
+    print(f"{'Quantity':<35} {'2000':>10} {'2024':>10} {'2000-24':>12}")
+    for label, vals in data.items():
+        print(f"{label:<35} {vals['y2000']:>10,} {vals['y2024']:>10,} {vals['all']:>12,}")
+
+    return data
+
+
+def build_table3_distributions(db):
+    """
+    Compute Q1 (25th) and Q3 (75th) percentiles for four per-entity metrics,
+    for years 2000, 2024, and 2000-24 (pooled).
+
+        works/source          -- distinct works per source (per-year and pooled)
+        institutions/work     -- distinct institutions per work (all institutions)
+        references/work       -- outgoing intra-corpus references per work
+        citations/work        -- incoming intra-corpus references per work
+
+    Returns a dict:
+        {row_label: {'q1_2000': float, 'q3_2000': float,
+                     'q1_2024': float, 'q3_2024': float,
+                     'q1_all':  float, 'q3_all':  float}, ...}
+    """
+    def _q(cte_sql, year_col='publication_year'):
+        return db.sql(f"""
+            WITH retained_inst AS (
+                SELECT institution_idx FROM '{PARQUET}/corpus_institutions.parquet'
+                WHERE works_per_year > {TAU_U}
+            ),
+            retained_work_idx AS (
+                SELECT DISTINCT work_idx FROM '{PARQUET}/corpus_authorships.parquet'
+                WHERE institution_idx IN (SELECT institution_idx FROM retained_inst)
+            ),
+            fc AS (
+                SELECT w.work_idx, w.source_id, w.publication_year
+                FROM '{PARQUET}/corpus_works.parquet' w
+                JOIN retained_work_idx USING (work_idx)
+            ),
+            {cte_sql}
+            SELECT
+                QUANTILE_CONT(val, 0.10) FILTER (WHERE {year_col} = 2000) AS q1_2000,
+                QUANTILE_CONT(val, 0.90) FILTER (WHERE {year_col} = 2000) AS q3_2000,
+                QUANTILE_CONT(val, 0.10) FILTER (WHERE {year_col} = 2024) AS q1_2024,
+                QUANTILE_CONT(val, 0.90) FILTER (WHERE {year_col} = 2024) AS q3_2024,
+                QUANTILE_CONT(val, 0.10)                                   AS q1_all,
+                QUANTILE_CONT(val, 0.90)                                   AS q3_all
+            FROM metric
+        """).fetchone()
+
+    wps = _q("""
+        wps_yr AS (
+            SELECT source_id, publication_year, COUNT(DISTINCT work_idx) AS val
+            FROM fc GROUP BY source_id, publication_year
+        ),
+        wps_pool AS (
+            SELECT source_id, COUNT(DISTINCT work_idx) AS val FROM fc GROUP BY source_id
+        ),
+        metric AS (
+            -- per-year rows for 2000/2024 quantiles; pooled rows for all-years quantile
+            SELECT source_id, publication_year, val FROM wps_yr
+            UNION ALL
+            -- tag pooled rows with a sentinel year so FILTER can distinguish them,
+            -- then override q1_all/q3_all from wps_pool via scalar subquery
+            SELECT source_id, -1 AS publication_year, val FROM wps_pool
+        )
+    """)
+    # wps_pool gives pooled counts; extract q1_all/q3_all directly
+    wps_pool_row = db.sql(f"""
+        WITH retained_inst AS (
+            SELECT institution_idx FROM '{PARQUET}/corpus_institutions.parquet'
+            WHERE works_per_year > {TAU_U}
+        ),
+        retained_work_idx AS (
+            SELECT DISTINCT work_idx FROM '{PARQUET}/corpus_authorships.parquet'
+            WHERE institution_idx IN (SELECT institution_idx FROM retained_inst)
+        ),
+        fc AS (
+            SELECT w.work_idx, w.source_id, w.publication_year
+            FROM '{PARQUET}/corpus_works.parquet' w JOIN retained_work_idx USING (work_idx)
+        ),
+        wps_pool AS (
+            SELECT COUNT(DISTINCT work_idx) AS val FROM fc GROUP BY source_id
+        )
+        SELECT QUANTILE_CONT(val, 0.10) AS q1_all, QUANTILE_CONT(val, 0.90) AS q3_all
+        FROM wps_pool
+    """).fetchone()
+
+    ipw = _q(f"""
+        metric AS (
+            SELECT a.work_idx, fc.publication_year, COUNT(DISTINCT a.institution_idx) AS val
+            FROM '{PARQUET}/corpus_authorships.parquet' a
+            JOIN fc USING (work_idx)
+            GROUP BY a.work_idx, fc.publication_year
+        )
+    """)
+
+    rpw = _q(f"""
+        metric AS (
+            SELECT r.citer_idx AS work_idx, fc.publication_year, COUNT(*) AS val
+            FROM '{PARQUET}/corpus_references.parquet' r
+            JOIN fc ON r.citer_idx = fc.work_idx
+            GROUP BY r.citer_idx, fc.publication_year
+        )
+    """)
+
+    cpw = _q(f"""
+        metric AS (
+            SELECT r.cited_idx AS work_idx, fc.publication_year, COUNT(*) AS val
+            FROM '{PARQUET}/corpus_references.parquet' r
+            JOIN fc ON r.cited_idx = fc.work_idx
+            GROUP BY r.cited_idx, fc.publication_year
+        )
+    """)
+
+    def _row(r, all_override=None):
+        q1_2000, q3_2000, q1_2024, q3_2024, q1_all, q3_all = r
+        if all_override:
+            q1_all, q3_all = all_override
+        return {'d1_2000': q1_2000, 'd9_2000': q3_2000,
+                'd1_2024': q1_2024, 'd9_2024': q3_2024,
+                'd1_all':  q1_all,  'd9_all':  q3_all}
+
+    dists = {
+        'Works per source':              _row(wps, all_override=wps_pool_row),
+        'Institutions per work':         _row(ipw),
+        'References per work (out-degree)': _row(rpw),
+        'Citations per work (in-degree)':   _row(cpw),
+    }
+
+    print(f"\n=== TABLE 3: DISTRIBUTIONS (τ_U > {TAU_U}) ===")
+    print(f"{'Quantity':<40} {'2000 D_1':>8} {'D_9':>8} {'2024 D_1':>8} {'D_9':>8} {'All D_1':>8} {'D_9':>8}")
+    for label, d in dists.items():
+        print(f"{label:<40} {d['d1_2000']:>8.1f} {d['d9_2000']:>8.1f}"
+              f" {d['d1_2024']:>8.1f} {d['d9_2024']:>8.1f}"
+              f" {d['d1_all']:>8.1f} {d['d9_all']:>8.1f}")
+
+    return dists
+
+
+def _f(x):
+    """Float to 1 decimal place."""
+    return f"{x:.1f}"
+
+
+def write_latex_table3(counts, dists, out_path):
+    L = []
+    L.append(r"\begin{table}[htbp]")
+    L.append(r"\centering")
+    L.append(
+        r"\caption{Corpus features by year ($\tau_U > "
+        rf"{TAU_U}$). "
+        r"Upper panel: unique-item counts. "
+        r"Lower panel: $D_1$ and $D_9$ deciles of per-entity distributions. "
+        r"The 2000--24 column pools the full period.}"
+    )
+    L.append(r"\label{tab:corpus_features}")
+    L.append(r"\begin{tabular}{lrrrrrr}")
+    L.append(r"\toprule")
+    L.append(
+        r" & \multicolumn{2}{c}{2000}"
+        r" & \multicolumn{2}{c}{2024}"
+        r" & \multicolumn{2}{c}{2000--24} \\"
+    )
+    L.append(r"\cmidrule(lr){2-3}\cmidrule(lr){4-5}\cmidrule(lr){6-7}")
+    L.append(
+        r"Quantity"
+        r" & \multicolumn{2}{c}{count}"
+        r" & \multicolumn{2}{c}{count}"
+        r" & \multicolumn{2}{c}{count} \\"
+    )
+    L.append(r"\midrule")
+    # Count rows: single value spans both sub-columns
+    for label, vals in counts.items():
+        L.append(
+            f"{label}"
+            f" & \\multicolumn{{2}}{{r}}{{{_i(vals['y2000'])}}}"
+            f" & \\multicolumn{{2}}{{r}}{{{_i(vals['y2024'])}}}"
+            f" & \\multicolumn{{2}}{{r}}{{{_i(vals['all'])}}} \\\\"
+        )
+    L.append(r"\midrule")
+    L.append(r"Quantity & $D_1$ & $D_9$ & $D_1$ & $D_9$ & $D_1$ & $D_9$ \\")
+    L.append(r"\midrule")
+    # Distribution rows
+    for label, d in dists.items():
+        L.append(
+            f"{label}"
+            f" & {_f(d['d1_2000'])} & {_f(d['d9_2000'])}"
+            f" & {_f(d['d1_2024'])} & {_f(d['d9_2024'])}"
+            f" & {_f(d['d1_all'])} & {_f(d['d9_all'])} \\\\"
+        )
+    L.append(r"\bottomrule")
+    L.append(r"\end{tabular}")
+    L.append(r"\end{table}")
+
+    out_path.write_text("\n".join(L) + "\n")
+    print(f"LaTeX written to {out_path}")
+
+
+def write_csv_table3(counts, dists, out_path):
+    rows = []
+    for label, vals in counts.items():
+        rows.append({
+            'Quantity': label, 'type': 'count',
+            '2000_D1': vals['y2000'], '2000_D9': vals['y2000'],
+            '2024_D1': vals['y2024'], '2024_D9': vals['y2024'],
+            '2000-24_D1': vals['all'], '2000-24_D9': vals['all'],
+        })
+    for label, d in dists.items():
+        rows.append({
+            'Quantity': label, 'type': 'distribution',
+            '2000_D1': d['d1_2000'], '2000_D9': d['d9_2000'],
+            '2024_D1': d['d1_2024'], '2024_D9': d['d9_2024'],
+            '2000-24_D1': d['d1_all'], '2000-24_D9': d['d9_all'],
+        })
+    pd.DataFrame(rows).to_csv(out_path, index=False)
+    print(f"CSV written to {out_path}")
+
+
+# ---------------------------------------------------------------------------
 # Entry point
 # ---------------------------------------------------------------------------
 
@@ -396,8 +787,14 @@ def main():
         build_table_exclusions(db)
         build_table_dropped_sources(db)
         sjl_dropped_by_topic_filter(db)
+        t3_counts = build_table3_data(db)
+        t3_dists  = build_table3_distributions(db)
     write_latex_table2(rows, overlaps, DATA / 'table2_source_matching.tex')
     write_csv_table2(rows, overlaps, DATA / 'table2_source_matching.csv')
+    compile_pdf(DATA / 'table2_source_matching.tex')
+    write_latex_table3(t3_counts, t3_dists, DATA / 'table3_corpus_features.tex')
+    write_csv_table3(t3_counts, t3_dists, DATA / 'table3_corpus_features.csv')
+    compile_pdf(DATA / 'table3_corpus_features.tex')
 
 
 if __name__ == "__main__":
