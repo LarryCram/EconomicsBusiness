@@ -6,11 +6,9 @@
 %\paragraph{Corpus construction.}
 We begin corpus construction by selecting $N_s$ sources $\mathfrak{S}$ in a field, discipline or category.
 Then we select $N_w$ works $\mathfrak{W}$ published in $\mathfrak{S}$ within the census
-window years $[t^c_0,t^c_1]$ or the earlier contiguous target year $t^t$
-where $t^t = t^c_0 - 1$ (we explain this choice in the discussion).
+window years $t_c = [t^c_0 \ldots t^c_1]$ or target years $t_t = [t^t_0 \ldots t^t_1]$.
 From the reference lists of the set of census works $\mathfrak{W}^c$ we identify the set of target works $\mathfrak{W}^t$ and form the filtered reference set $\mathfrak{R}=\{(i,j):w_i\in\mathfrak{W}^c,\,w_j\in\mathfrak{W}^t\}$.
-Author affiliations in $\mathfrak{W}$ establish a set of institutions $\mathfrak{U}'$ and a set of
-authors $\mathfrak{A}'$. Examining the frequency distributions of institutions and authors, we retain institutions with work counts $\geq\tau^U$ and authors with work counts $\geq\tau^A$, giving $\mathfrak{U}$ and $\mathfrak{A}$ respectively.
+Author affiliations in $\mathfrak{W}$ establish a set of authors $\mathfrak{A}'$ and institutions $\mathfrak{U}'$. 
 Each work $w_i$ has an \textit{institution weight} under author-fractional counting
 \citep{waltmanFieldnormalizedCitationImpact2015},
 \begin{equation}
@@ -20,7 +18,7 @@ Each work $w_i$ has an \textit{institution weight} under author-fractional count
   \label{eq:omega}
 \end{equation}
 where $\ell$ indexes authors of work $w_i$, $a_i$ is the number of authors, and $u_{i\ell}$ the number of
-institutions of author $\ell$. Since $\omega_{iu}$ requires both an author and an institution, we drop any authorship where either the author $\notin\mathfrak{A}$ or the institution $\notin\mathfrak{U}$, and subsequently drop works that lose all their authorships. The institution weights are not renormalised to account for the omission of an authorship, so that $\sum_u\omega_{iu}\leq 1$.
+institutions of author $\ell$. Using the work-institution frequency distribution to determine a minimum cut for works per institution per year $\geq\tau_U$, we retain the set $\mathfrak{U}$ and the corresponding set of authors $\mathfrak{A}$. Since $\omega_{iu}$ requires both an author and an institution, we drop any authorship where the institution $\notin\mathfrak{U}$, and subsequently drop works that lose all their authorships. The institution weights are not renormalised to account for the omission of an authorship, so that $\sum_u\omega_{iu}\leq 1$.
 
 When a work $w_i$ references another work $w_j$ we say that $w_i$ gives attention to $w_j$. The attention given by a work can be either (a) the number of references, or (b) a fixed amount \citep{zittModifyingJournalImpact2008}. Let $R_i=|\{j:(i,j)\in\mathfrak{R}\}|$ be the reference count of work $w_i$ and $\bar{R}=|\mathfrak{R}|/N_w$ the mean reference count over $\mathfrak{W}$. We use the \textit{reference normalisation weight} $\delta_i$ to select case (a) or case (b) respectively:
 \begin{equation}
@@ -74,7 +72,7 @@ The $\chi$ scaling preserves total citation flow across all block combinations,
 since $(1-\chi)^2+2\chi(1-\chi)+\chi^2=1$.
 We could name $\mathbf{C}$ the reference, attention or citation matrix and prefer the latter.
 
-The model parameters are summarised in Table \ref{tab:params}. Note that the corpus excludes (a) census work references not among target works, (b) non-census works that reference target works, and (c) authorships that include an omitted author or institution.
+The model parameters are summarised in Table \ref{tab:params}. Note that the corpus excludes (a) census work references not giving attention to  target works, (b) non-census works giving attention to target works, and (c) authorships that include an omitted institution.
 
 \begin{table}[h]
 	\centering
@@ -86,18 +84,17 @@ The model parameters are summarised in Table \ref{tab:params}. Note that the cor
 		\midrule
 		\multicolumn{4}{@{}l@{}}{\textit{Corpus construction}} \\[2pt]
 		$\mathfrak{S}$           & source set            & set             & define the field, subject, category \\
-		$[t^c_0,t^c_1]$          & census window         & interval        & works whose references are traced \\
-		$t^t = t^c_0-1$          & target year           & integer         & the year immediately preceding the census window; works eligible to receive references \\
-		$\tau^U$                 & institution threshold & integer         & minimum work count to retain an institution \\
-		$\tau^A$                 & author threshold      & integer         & minimum work count to retain an author \\[4pt]
+		$[t^c_0 \ldots t^c_1]$   & census window         & interval        & publication years of works \newline \hspace*{1em} whose references are traced \\
+		$[t^t_0 \ldots t^t_1]$   & target window         & interval        & publication years of works \newline \hspace*{1em} eligible to receive references \\
+		$\tau_U$                 & institution threshold & integer         & minimum work count to retain an institution \\[4pt]
 		\multicolumn{4}{@{}l@{}}{\textit{Matrix construction}} \\[2pt]
-		$\delta\in\{0,1\}$       & reference normalisation & binary        & 0: a work contributes $\bar{R}$ units; \newline 1: a reference contributes 1 unit \\
+		$\delta\in\{0,1\}$       & reference normalisation & binary        & 0: a work  contributes $\bar{R}$ units \newline 1: a work contributes $R$ units \\
 		$\mathbf{m}\in\{0,1\}^4$ & block mask            & binary 4-vector & select active unit-type pairs ($SS$, $SI$, $IS$, $II$) \\
 		$\chi\in[0,1]$           & mixing weight         & continuous      & source--institution balance within each work \\[4pt]
 		\multicolumn{4}{@{}l@{}}{\textit{Ranking}} \\[2pt]
-		$\alpha\in[0,1)$         & damping factor        & continuous      & controls propagation through citation network; ensures convergence \\
+		$\alpha\in[0,1)$         & damping factor        & continuous      & controls propagation through citation network \newline \hspace*{1em} ensures convergence \\
 		\bottomrule
-	\end{tabularx}
+\end{tabularx}
 \end{table}
 
 \paragraph{Spectral ranking.}
@@ -178,7 +175,6 @@ it inside the iteration loop would iterate on $\mathbf{H}^\top\mathbf{A}$,
 which is not norm-preserving and yields a fixed point with no clean
 interpretation.
 
-\paragraph{Computation via power iteration.}
 To compute $\boldsymbol{\pi}$ we define the modified matrix
 \begin{equation}
 	\mathbf{\tilde{H}}
@@ -203,7 +199,6 @@ power iteration
 converging to $\boldsymbol{\pi}$ from any strictly positive starting
 vector $\boldsymbol{\pi}^{(0)}$.
 
-\paragraph{Computation.}
 $\mathbf{C}(\chi,\mathbf{m},\delta)$ is a sparse matrix built from a
 weighted edge list $\mathcal{E}$ accumulated over $\mathfrak{R}$ with
 per-reference weight $\delta_i$, stored in CSR format, and
