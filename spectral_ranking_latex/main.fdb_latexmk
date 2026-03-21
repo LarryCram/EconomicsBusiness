@@ -1,18 +1,19 @@
 # Fdb version 4
-["bibtex main"] 1774001412.72792 "main.aux" "main.bbl" "main" 1774001413.91003 0
-  "./MyLibrary.bib" 1773960993.13397 6560791 624d751172bcab07e917490fe3cc1bf4 ""
+["bibtex main"] 1774085541.12385 "main.aux" "main.bbl" "main" 1774085542.27209 0
+  "./MyLibrary.bib" 1774076788.56919 6567488 471c1ff370aa7572aab0f44def3ea05d ""
   "./sciomtcs.bib" 1758004733 38814 e32becf37c07e9c5a5ecec51c1c262af ""
   "./spbasic.bst" 1757517455 33250 b27924137faccbc3d13ebae5a7538c63 ""
-  "main.aux" 1774001413.57226 6408 939763dc82ac21c471bbea4dfd22e542 "pdflatex"
+  "main.aux" 1774085541.92216 7603 79a34e2bc41a53a7d63c14868211ee80 "pdflatex"
   (generated)
   "main.bbl"
   "main.blg"
   (rewritten before read)
-["pdflatex"] 1774001412.91205 "/home/lc/Projects/EconomicsBusiness/spectral_ranking_latex/main.tex" "main.pdf" "main" 1774001413.91022 0
+["pdflatex"] 1774085541.31474 "/home/lc/Projects/EconomicsBusiness/spectral_ranking_latex/main.tex" "main.pdf" "main" 1774085542.27226 0
   "../plots/plot1_institution_elbow_latex.pdf" 1773869714.27532 17629 e5a8ec121a7b7b69b58c11aa0b1c7bc2 ""
   "/etc/texmf/web2c/texmf.cnf" 1768766222.50773 475 c0e671620eb5563b2130f56340a5fde8 ""
   "/home/lc/Projects/EconomicsBusiness/spectral_ranking_latex/main.tex" 1774001409.0742 1662 f7401e6c7971ddbee7c726801eb852d3 ""
   "/usr/share/texlive/texmf-dist/fonts/map/fontname/texfonts.map" 1577235249 3524 cb3e574dea2d1052e39280babc910dc8 ""
+  "/usr/share/texlive/texmf-dist/fonts/tfm/jknappen/ec/tcrm1000.tfm" 1136768653 1536 e07581a4bb3136ece9eeb4c3ffab8233 ""
   "/usr/share/texlive/texmf-dist/fonts/tfm/public/amsfonts/cmextra/cmbsy5.tfm" 1246382020 1120 1e8878807317373affa7f7bba4cf2f6a ""
   "/usr/share/texlive/texmf-dist/fonts/tfm/public/amsfonts/cmextra/cmbsy7.tfm" 1246382020 1120 7f9f170e8aa57527ad6c49feafd45d54 ""
   "/usr/share/texlive/texmf-dist/fonts/tfm/public/amsfonts/cmextra/cmex7.tfm" 1246382020 1004 54797486969f23fa377b128694d548df ""
@@ -203,16 +204,18 @@
   "/usr/share/texlive/texmf-dist/tex/latex/url/url.sty" 1388531844 12796 8edb7d69a20b857904dd0ea757c14ec9 ""
   "/usr/share/texlive/texmf-dist/tex/latex/xcolor/xcolor.sty" 1727642399 55384 b454dec21c2d9f45ec0b793f0995b992 ""
   "/usr/share/texlive/texmf-dist/web2c/texmf.cnf" 1741904018 41538 c016915c1d51223b6dbbfe27341748a8 ""
+  "/usr/share/texmf/fonts/enc/dvips/cm-super/cm-super-ts1.enc" 1636152094 2900 1537cc8184ad1792082cd229ecc269f4 ""
+  "/usr/share/texmf/fonts/type1/public/cm-super/sfrm1000.pfb" 1636152094 138258 6525c253f16cededa14c7fd0da7f67b2 ""
   "/usr/share/texmf/web2c/texmf.cnf" 1741904018 41538 c016915c1d51223b6dbbfe27341748a8 ""
   "/var/lib/texmf/fonts/map/pdftex/updmap/pdftex.map" 1768766240 5467255 9a64d1b40e0b893fc5588ecce9d8accf ""
   "/var/lib/texmf/web2c/pdftex/pdflatex.fmt" 1768766286 3347051 b210dd19afa7cdfe2454020fc7cff434 ""
-  "main.aux" 1774001413.57226 6408 939763dc82ac21c471bbea4dfd22e542 "pdflatex"
-  "main.bbl" 1774001412.90617 3377 0ede4c038fa20d4340dc5bfe39aaad7c "bibtex main"
-  "main.out" 1774001413.57226 891 ffa311696a282931c8bd9edf3d152190 "pdflatex"
+  "main.aux" 1774085541.92216 7603 79a34e2bc41a53a7d63c14868211ee80 "pdflatex"
+  "main.bbl" 1774085541.30928 5610 333bc3ed14172ff6f0d6ad711314f381 "bibtex main"
+  "main.out" 1774085541.92316 891 ffa311696a282931c8bd9edf3d152190 "pdflatex"
   "main.tex" 1774001409.0742 1662 f7401e6c7971ddbee7c726801eb852d3 ""
-  "sections/01_introduction.tex" 1773732813.05204 2861 277efeb25f85e4565002231ff28b8b35 ""
+  "sections/01_introduction.tex" 1774085539.97817 4095 43e0b6ee8cc64ee2e96971c1f50de033 ""
   "sections/02_model_specification.tex" 1773901092.91875 11092 59f90b8331ee5c6a230b0f26f2bf8fd1 ""
-  "sections/03_processing.tex" 1774001310.12843 4621 76de505b049ae37f5e97993af04bd7a1 ""
+  "sections/03_processing.tex" 1774001663.84531 6196 84bceb96da1d53d80a20faaed5c8ba15 ""
   "sections/04_results.tex" 1773298695.09557 462 c16720978fa9a5c053f21087aa6485f3 ""
   "sections/05_discussion.tex" 1773282420.74651 582 9ab90db1e37db4f318ecf374cb35ff5b ""
   "sections/06_prospects.tex" 1773282420.00526 190 4eccb76168b576fb53f3c3cec6a10a7a ""

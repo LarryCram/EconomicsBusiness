@@ -45,7 +45,7 @@ Every journal in JQL, SJL, and MJL has at least one ISSN, and may have several. 
 	\end{tabular}
 \end{table}
 
-We extract an initial corpus of works in the OAS source list, by retaining article and review types with publication years between 2020 and 2024 inclusive. We exclude works that are paratext or retracted, or without an authorship entity. The institution retention curve Fig. \ref{fig:retention} implies that the preferred minimum cut for works per institution per year could be chosen as $\tau_U = 10$, leaving approximately 1,900 institutions and 75\% of the works. We will test values of $\tau_U = 5, 10\ \rm{and}\ 15$.  For each work we compute the value of $\omega_{iu}$
+We extract an initial corpus of works in the OAS source list, by retaining article and review types with publication years between 2020 and 2024 inclusive and excluding works that are paratext or retracted, or without an authorship entity. The institution retention curve Fig. \ref{fig:retention} implies that the preferred minimum cut for works per institution per year could be chosen as $\tau_U = 10$, leaving approximately 1,900 institutions and 75\% of the works. The authorships and references for the initial corpus are then attached and the value of $\omega_{iu}$ computed fo each work. The characteristics of the initial data set are exhibited in Table \ref{tab:corpus_features}.
 
 \begin{figure}[htbp]
 	\centering
@@ -53,3 +53,30 @@ We extract an initial corpus of works in the OAS source list, by retaining artic
 	\caption{Institution retention curve}
 	\label{fig:retention}
 \end{figure}
+
+\begin{table}[htbp]
+\centering
+\caption{Corpus features by year ($\tau_U > 10$). Upper panel: unique-item counts. Lower panel: $D_1$ and $D_9$ deciles of per-entity distributions. The 2000--24 column pools the full period.}
+\label{tab:corpus_features}
+\begin{tabular}{lrrrrrr}
+\toprule
+ & \multicolumn{2}{c}{2000} & \multicolumn{2}{c}{2024} & \multicolumn{2}{c}{2000--24} \\
+\cmidrule(lr){2-3}\cmidrule(lr){4-5}\cmidrule(lr){6-7}
+Quantity & \multicolumn{2}{c}{count} & \multicolumn{2}{c}{count} & \multicolumn{2}{c}{count} \\
+\midrule
+Works & \multicolumn{2}{r}{16,190} & \multicolumn{2}{r}{59,802} & \multicolumn{2}{r}{966,687} \\
+Sources & \multicolumn{2}{r}{669} & \multicolumn{2}{r}{1,327} & \multicolumn{2}{r}{1,624} \\
+Institutions & \multicolumn{2}{r}{1,329} & \multicolumn{2}{r}{1,739} & \multicolumn{2}{r}{1,742} \\
+Reference counts (out-degree) & \multicolumn{2}{r}{6,304} & \multicolumn{2}{r}{1,546,508} & \multicolumn{2}{r}{14,897,377} \\
+Citation counts (in-degree) & \multicolumn{2}{r}{580,260} & \multicolumn{2}{r}{31,558} & \multicolumn{2}{r}{14,751,724} \\
+\midrule
+Quantity & $D_1$ & $D_9$ & $D_1$ & $D_9$ & $D_1$ & $D_9$ \\
+\midrule
+Works per source & 3.0 & 49.0 & 5.0 & 84.4 & 32.0 & 1283.9 \\
+Institutions per work & 1.0 & 3.0 & 1.0 & 4.0 & 1.0 & 4.0 \\
+References per work (out-degree) & 1.0 & 3.0 & 5.0 & 60.0 & 2.0 & 44.0 \\
+Citations per work (in-degree) & 2.0 & 92.0 & 1.0 & 4.0 & 1.0 & 44.0 \\
+\bottomrule
+\end{tabular}
+\end{table}
+

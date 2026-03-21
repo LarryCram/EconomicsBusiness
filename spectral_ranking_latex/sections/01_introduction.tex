@@ -3,20 +3,14 @@
 \label{sec:introduction}
 % ---------------------------------------------------------------
 
-\paragraph{Journal and institution ranking.}
 The research system relies on journals and institutions. Journals filter
 works through editorial and peer review, archive the literature, and
-create metadata for retrieval. Institutions fund individual researchers,
-implement training, oversee compliance, and maintain physical and
-information infrastructure.
-[Placeholder: overview of the joint ranking problem.]
+create metadata for retrieval and exploration. Institutions fund individual researchers,
+implement training, oversee compliance, establish research organisational units
+and maintain physical and information infrastructure. Although the status hierarchy that links journals and institutions is a pervasive aspect of the research system \citep{mertonSociologyScienceTheoretical1973, mcnameeStratificationScienceComparison1994a, martinTiedKnowledgePower1998}, bibliometric studies that explore the joint hierarchy of journals and institutions are rare. This paper proposes a joint ordinal spectral ranking of journals and institutions derived from bibliometric data. We hope that the method helps to reveal how status is formed and maintained. We also intend to apply the approach to study
+the relations between status and research quality assurance.
 
-\paragraph{Previous work on journal ranking.}
-\citet{pinskiNarin1976} introduced influence-per-reference weights for
-journal ranking; \citet{vignaSpectralRanking2016} surveys the broader
-lineage; \citet{franceschetPagerank2010} traces the
-Katz--Hubbell--Pinski-Narin--PageRank chain.
-[Placeholder: expand journal ranking literature.]
+The introduction of the science citation index \citep{garfieldScienceCitationIndex1964} opened a new way to investigate connections between journals and institutions. Citation-base journal ranking in particular became a useful means to manage collections and to indicate attractive outlets for publications. On the other hand, the misapplication of the journal impact factor (JIF) as proxy for the importance of research published in the journal fostered a still-unresolved tension in bibliometric evaluation \citep{garfieldCitationAnalysisLegitimate1979, macrobertsMismeasureScienceCitation2018}. The prospects of using citation indices to explore research importance and usage measures were considered by \citep{narinEvaluativeBibliometricsUse1976} who introduced a recursive method for finding the influence weights of journals. Having found the influence weights for sets of journals in ten science disciplines, Narin calculated the sum of influence-weighted publications for several dozen universities, revealing significant correlations with survey-based ranking but also finding additional significance in the number of publications. This work developed into the eigenvector approach for journal ranking \cite{bergstrom, vigna, franceschetTenGoodReasons2010}.
 
 \paragraph{How institutions are ranked.}
 Institutional rankings, dominated by QS, Times Higher Education (THE),
@@ -52,9 +46,3 @@ Our construction extends \citet{breigerDualityPersonsGroups1974a}:
 all four blocks of the joint attention matrix are primary flows, not
 derived projections.
 
-\paragraph{Paper structure.}
-Section~\ref{sec:networks} develops the mathematical framework.
-Section~\ref{sec:corpus} describes the corpus construction and source
-selection.
-Section~\ref{sec:results} presents results.
-Section~\ref{sec:discussion} discusses validity and prospects.
