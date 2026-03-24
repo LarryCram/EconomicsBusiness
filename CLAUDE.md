@@ -26,10 +26,9 @@ Multi-file LaTeX in `spectral_ranking_latex/`. Master file is `main.tex`; sectio
 
 ## Current paper status
 - `main.tex` compiles cleanly
-- Section 1 (introduction): partial
+- Section 1 (introduction): complete
 - Section 2 (mathematical framework and computational summary): complete
-- Section 3 (source selection, scope filtering, corpus construction): source selection complete
-- Section 1 (introduction): skeleton only
+- Section 3 (source selection, scope filtering, corpus construction): complete
 - Sections 4–6 and Supplement: placeholder
 
 ## Machines
