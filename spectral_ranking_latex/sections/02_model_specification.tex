@@ -1,13 +1,20 @@
 % ---------------------------------------------------------------
 \section{Journal--institution citation networks}
 \label{sec:networks}
+% ---------------------------------------------------------------
 
+%\paragraph{Corpus construction.}
 We begin by selecting $N_s$ sources $\mathfrak{S}$ in a field, discipline or category.
 Then we select $N_w$ works $\mathfrak{W}$ published in $\mathfrak{S}$ within the census
 window years $t_c = [t^c_0 \ldots t^c_1]$ or target years $t_t = [t^t_0 \ldots t^t_1]$.
 From the reference lists of the set of census works $\mathfrak{W}^c$ we identify the set of target works $\mathfrak{W}^t$ and form the filtered reference set $\mathfrak{R}=\{(i,j):w_i\in\mathfrak{W}^c,\,w_j\in\mathfrak{W}^t\}$.
-Author affiliations in $\mathfrak{W}$ establish a set of authors $\mathfrak{A}'$ and institutions $\mathfrak{U}'$. 
-Each work $w_i$ has an \textit{institution weight} under author-fractional counting
+Author affiliations in $\mathfrak{W}$ establish a set of authors $\mathfrak{A}'$ and institutions $\mathfrak{U}'$.
+Let $\bar{w}_u$ be the mean annual work count for institution $u$.
+We determine a lower limit $\tau_U$ on $\bar{w}_u$ by examining the work-institution frequency
+distribution and define $\mathfrak{U}\subseteq\mathfrak{U}'$ as the institutions with
+$\bar{w}_u\geq\tau_U$, with corresponding author set $\mathfrak{A}\subseteq\mathfrak{A}'$.
+Works that lose all their authorships under this filter are dropped.
+Each retained work $w_i$ has an \textit{institution weight} under author-fractional counting
 \citep{waltmanFieldnormalizedCitationImpact2015},
 \begin{equation}
   \omega_{i u} \;=\;
@@ -15,8 +22,8 @@ Each work $w_i$ has an \textit{institution weight} under author-fractional count
   \frac{1}{a_i}\,\frac{1}{u_{i\ell}},
   \label{eq:omega}
 \end{equation}
-where $\ell$ indexes authors of work $w_i$, $a_i$ is the number of authors, and $u_{i\ell}$ the number of
-institutions of author $\ell$. Using the work-institution frequency distribution to determine a minimum cut for works per institution per year $\geq\tau_U$, we retain the set $\mathfrak{U}$ and the corresponding set of authors $\mathfrak{A}$. Since $\omega_{iu}$ requires both an author and an institution, we drop any authorship where the institution $\notin\mathfrak{U}$, and subsequently drop works that lose all their authorships. The institution weights are not renormalised to account for the omission of an authorship, so that $\sum_u\omega_{iu}\leq 1$.
+where $\ell$ indexes the retained authors of work $w_i$, $a_i$ is their count, and $u_{i\ell}$ the number of
+retained institutions of author $\ell$, so that $\sum_u\omega_{iu}=1$.
 
 When a work $w_i$ references another work $w_j$ we say that $w_i$ gives attention to $w_j$. The attention given by a work can be either (a) the number of references, or (b) a fixed amount \citep{zittModifyingJournalImpact2008}. Let $R_i=|\{j:(i,j)\in\mathfrak{R}\}|$ be the reference count of work $w_i$ and $\bar{R}=|\mathfrak{R}|/N_w$ the mean reference count over $\mathfrak{W}$. We use the \textit{reference normalisation weight} $\delta_i$ to select case (a) or case (b) respectively:
 \begin{equation}
@@ -104,12 +111,7 @@ there; the boundary condition below then supplies the necessary probability
 mass.
 Let $\boldsymbol{\mu}$ be an initial preference, or boundary condition
 \citep{hubbellInputoutputApproachClique1965, vignaSpectralRanking2016},
-with entries $\mu_p = a_p / \sum_q a_q$,
-where the unit work count $a_p$ is
-$\Sigma_s = |\{i : w_i \in s\}|$ for source $p=s$
-and
-$\Sigma_u = \sum_i \omega_{iu}$ for institution $p=u$,
-the latter being the fractional work count summed via \eqref{eq:omega}.
+with $\mu_p = 1/N$ for all $p\in\mathfrak{P}$.
 The row-stochastic citation matrix is
 $\mathbf{H}=\mathbf{D}_r^{-1}\mathbf{C}$.
 
@@ -162,9 +164,10 @@ received by each unit and therefore depends on unit size.
     \mathbf{A}=\mathrm{diag}(a_p),
     \label{eq:vstar}
 \end{equation}
-removes this dependence, where $\boldsymbol{\pi}(\alpha)$ denotes the
-solution to \eqref{eq:spectral} and $\boldsymbol{\pi}^{\infty}$ the
-limiting case \eqref{eq:eig}.
+removes this dependence, where $a_p = |\{i:w_i\in s\}|$ for source $p=s$
+and $a_p = \sum_i\omega_{iu}$ for institution $p=u$ via \eqref{eq:omega} are the work-counts,
+$\boldsymbol{\pi}(\alpha)$ denotes the solution to \eqref{eq:spectral},
+and $\boldsymbol{\pi}^{\infty}$ the limiting case \eqref{eq:eig}.
 \cite{palacios-huertaMeasurementIntellectualInfluence2004} show that
 $\mathbf{v}$ is uniquely characterised by several reasonable axiomatic
 constraints \citep[but see][]{serranoMeasurementIntellectualInfluence2004}.
@@ -196,6 +199,33 @@ power iteration
 \end{equation}
 converging to $\boldsymbol{\pi}$ from any strictly positive starting
 vector $\boldsymbol{\pi}^{(0)}$.
+
+\paragraph{Bipartite structure.}
+With $\mathbf{m}=(0,1,1,0)$, equation~\eqref{eq:C} gives a block off-diagonal $\mathbf{H}$,
+forming a bipartite directed graph between sources and institutions.
+Since the product of row-stochastic matrices is row-stochastic, $\mathbf{H}^2$ is
+block-diagonal and row-stochastic, with one-mode projection blocks
+$\mathbf{M}_S=\mathbf{H}_{SI}\mathbf{H}_{IS}$ and $\mathbf{M}_I=\mathbf{H}_{IS}\mathbf{H}_{SI}$.
+The bipartite structure makes $\mathbf{H}$ periodic with period~2, so the undamped
+equation~\eqref{eq:eig} need not have a unique solution; $\tilde{\mathbf{H}}$ in
+equation~\eqref{eq:Hstar} restores primitivity for any $\alpha\in(0,1)$.
+Partitioning equation~\eqref{eq:spectral} and eliminating $\boldsymbol{\pi}_I$ yields
+the Katz--Hubbell resolvent for sources,
+\begin{equation}
+  \bigl(\mathbf{I}-\alpha^2\mathbf{M}_S^\top\bigr)\boldsymbol{\pi}_S
+  \;=\;
+  (1-\alpha)\bigl(\boldsymbol{\mu}_S+\alpha\,\mathbf{H}_{IS}^\top\boldsymbol{\mu}_I\bigr),
+  \label{eq:kh_source}
+\end{equation}
+where the effective damping is $\alpha^2$ and the effective prior transports institution
+mass back to sources through $\mathbf{H}_{IS}^\top$. The institution ranking is then
+recovered by a single matrix--vector product,
+\begin{equation}
+  \boldsymbol{\pi}_I
+  \;=\;
+  \alpha\,\mathbf{H}_{SI}^\top\boldsymbol{\pi}_S+(1-\alpha)\boldsymbol{\mu}_I.
+  \label{eq:kh_inst}
+\end{equation}
 
 $\mathbf{C}(\chi,\mathbf{m},\delta)$ is a sparse matrix built from a
 weighted edge list $\mathcal{E}$ accumulated over $\mathfrak{R}$ with
