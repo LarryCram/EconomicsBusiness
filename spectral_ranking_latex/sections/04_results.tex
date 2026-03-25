@@ -3,6 +3,28 @@
 \label{sec:results}
 % ---------------------------------------------------------------
 
+\begin{table}[htbp]
+\centering
+\caption{Parameters and values explored. Baseline values in italics.}
+\label{tab:paramvalues}
+\begin{tabular}{lllp{7.5cm}}
+\toprule
+Symbol & Name & Baseline & Values explored \\
+\midrule
+\multicolumn{4}{@{}l@{}}{\textit{Corpus construction (see Tables~\ref{tab:params} and~\ref{tab:windows})}} \\[2pt]
+$t_x$          & Time window            & \textit{5}           & 1,\ 2,\ 3,\ 4,\ \textit{5},\ 6,\ 7 \\
+$F$            & Field subset           & \textit{$A$}         & $E$,\ $B$,\ \textit{$A$} \\
+$\tau_U$       & Institution threshold  & \textit{[TBD]}       & [TBD] \\[4pt]
+\multicolumn{4}{@{}l@{}}{\textit{Matrix construction}} \\[2pt]
+$\rho$         & Reference normalisation & \textit{1}          & \textit{1} (full),\ 0 (fixed) \\
+$\mathbf{m}$   & Block mask             & \textit{$(1,0,0,0)$} & $(1,0,0,0)$,\ $(0,1,1,0)$,\ $(1,1,1,1)$ \\
+$\chi$         & Mixing weight          & \textit{0.50}        & 0.00,\ 0.25,\ \textit{0.50},\ 0.75,\ 1.00 \\[4pt]
+\multicolumn{4}{@{}l@{}}{\textit{Ranking}} \\[2pt]
+$\alpha$       & Damping factor         & \textit{0.85}        & 0.50,\ 0.75,\ \textit{0.85},\ 0.95 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
 \paragraph{Baseline model.}
 [Placeholder.]
 

@@ -25,14 +25,14 @@ Each retained work $w_i$ has an \textit{institution weight} under author-fractio
 where $\ell$ indexes the retained authors of work $w_i$, $a_i$ is their count, and $u_{i\ell}$ the number of
 retained institutions of author $\ell$, so that $\sum_u\omega_{iu}=1$.
 
-When a work $w_i$ references another work $w_j$ we say that $w_i$ gives attention to $w_j$. The attention given by a work can be either (a) the number of references, or (b) a fixed amount \citep{zittModifyingJournalImpact2008}. Let $R_i=|\{j:(i,j)\in\mathfrak{R}\}|$ be the reference count of work $w_i$ and $\bar{R}=|\mathfrak{R}|/N_w$ the mean reference count over $\mathfrak{W}$. We use the \textit{reference normalisation weight} $\delta_i$ to select case (a) or case (b) respectively:
+When a work $w_i$ references another work $w_j$ we say that $w_i$ gives attention to $w_j$. The attention given by a work can be either (a) the number of references, or (b) a fixed amount \citep{zittModifyingJournalImpact2008}. Let $R_i=|\{j:(i,j)\in\mathfrak{R}\}|$ be the reference count of work $w_i$ and $\bar{R}=|\mathfrak{R}|/N_w$ the mean reference count over $\mathfrak{W}$. We use the \textit{reference normalisation weight} $\rho_i$ to select case (a) or case (b) respectively:
 \begin{equation}
-	\delta_i \;=\;
+	\rho_i \;=\;
 	\begin{cases}
 		 1 & \text{(full count)} \\
 		\bar{R}/R_i & \text{(fixed count).}
 	\end{cases}
-	\label{eq:delta}
+	\label{eq:rho}
 \end{equation}
 
 We construct the set of \emph{units} [sources or institutions; \cite{pinskiCitationInfluenceJournal1976}]
@@ -50,7 +50,7 @@ from \eqref{eq:omega}.
 Attention flow between pairs of unit types is accumulated as four blocks over $\mathfrak{R}$ as rank-1 outer products,
 \begin{equation}
 	\mathbf{C}_{XY} \;=\; \sum_{(i,j)\,\in\,\mathfrak{R}}
-	\delta_i\;\mathbf{b}^X_i\,\bigl(\mathbf{b}^Y_j\bigr)^\top,
+	\rho_i\;\mathbf{b}^X_i\,\bigl(\mathbf{b}^Y_j\bigr)^\top,
 	\qquad XY\in\{SS,\,SI,\,IS,\,II\},
 	\label{eq:Cblock}
 \end{equation}
@@ -58,7 +58,7 @@ with $\mathbf{b}^X_i$ weighting the referencing (citing) side and $\mathbf{b}^Y_
 
 The citation matrix assembles the four blocks:
 \begin{equation}
-	\mathbf{C}(\chi,\mathbf{m},\delta) \;=\;
+	\mathbf{C}(\chi,\mathbf{m},\rho) \;=\;
 	\begin{pmatrix}
 		m_{SS}(1-\chi)^2\,\mathbf{C}_{SS} &
 		m_{SI}\,\chi(1-\chi)\,\mathbf{C}_{SI} \\[4pt]
@@ -88,12 +88,11 @@ The model parameters are summarised in Table \ref{tab:params}. Note that the cor
 		Symbol & Name & Type & Role \\
 		\midrule
 		\multicolumn{4}{@{}l@{}}{\textit{Corpus construction}} \\[2pt]
-		$\mathfrak{S}$           & source set            & set             & define the field, subject, category \\
-		$[t^c_0 \ldots t^c_1]$   & census window         & interval        & publication years of works \newline \hspace*{1em} whose references are traced \\
-		$[t^t_0 \ldots t^t_1]$   & target window         & interval        & publication years of works \newline \hspace*{1em} eligible to receive references \\
-		$\tau_U$                 & institution threshold & integer         & minimum work count to retain an institution \\[4pt]
+		$F\in\{E,B,A\}$          & field subset          & category        & restrict $\mathfrak{S}$ to Economics ($E$), Business ($B$), or all OAS ($A$); see Table~\ref{tab:windows} \\
+		$t_x\in\{1,\ldots,7\}$  & time window           & integer         & census and target year ranges; see Table~\ref{tab:windows} \\
+		$\tau_U$                 & institution threshold & integer         & minimum mean annual works to retain an institution \\[4pt]
 		\multicolumn{4}{@{}l@{}}{\textit{Matrix construction}} \\[2pt]
-		$\delta\in\{0,1\}$       & reference normalisation & binary        & 0: a work  contributes $\bar{R}$ units \newline 1: a work contributes $R$ units \\
+		$\rho\in\{0,1\}$         & reference normalisation & binary        & 0: a work contributes $\bar{R}$ units \newline 1: a work contributes $R_i$ units \\
 		$\mathbf{m}\in\{0,1\}^4$ & block mask            & binary 4-vector & select active unit-type pairs ($SS$, $SI$, $IS$, $II$) \\
 		$\chi\in[0,1]$           & mixing weight         & continuous      & source--institution balance within each work \\[4pt]
 		\multicolumn{4}{@{}l@{}}{\textit{Ranking}} \\[2pt]
@@ -227,9 +226,9 @@ recovered by a single matrix--vector product,
   \label{eq:kh_inst}
 \end{equation}
 
-$\mathbf{C}(\chi,\mathbf{m},\delta)$ is a sparse matrix built from a
+$\mathbf{C}(\chi,\mathbf{m},\rho)$ is a sparse matrix built from a
 weighted edge list $\mathcal{E}$ accumulated over $\mathfrak{R}$ with
-per-reference weight $\delta_i$, stored in CSR format, and
+per-reference weight $\rho_i$, stored in CSR format, and
 row-normalised to $\mathbf{H}$. The pipeline
 $\mathfrak{R}\!\to\!\mathcal{E}\!\to\!\mathbf{C}\!\to\!\mathbf{H}
 \!\to\!\boldsymbol{\pi}\!\to\!\mathbf{v}$

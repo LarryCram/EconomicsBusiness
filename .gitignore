@@ -10,6 +10,8 @@ JOURNAL_FILES
 .git
 *.aux
 *.bbl
+*.pdf
+MyLibrary
 *.synctex.gz
 *.log
 *.blg

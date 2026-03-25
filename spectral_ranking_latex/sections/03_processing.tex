@@ -18,7 +18,7 @@ After filtering, 1,602~journals remain.
 \textit{Clarivate Web of Science Journal Citation Reports} ~\cite[][JCR]{clarivateanalyticsJournalCitationReports2026} assign each
 journal a Web of Science category. We retain those in Economics, Management, Business, Transportation or Business, Finance. After filtering, 1,413~journals remain.
 
-Every journal in JQL, SJL, and MJL has at least one ISSN, and may have several. These registry ISSNs are joined independently to the February 2026 OpenAlex sources snapshot in using its list of ISSNs as the matching key. Journal titles are examined to identify around 30 additional matches where the OpenAlex source does not have an ISSN. The list of OpenAlex sources that are matched is designated OAS\textsuperscript{*}. The long list OAS\textsuperscript{*} includes sources publishing works in disciplines beyond  economics and business. We use OpenAlex source-topic assignments to exclude sources having a minority of works in economics/business. A source has work-topic counts for up to five topics, each within a single sub-field, field, and domain. We accumulate the work-topic counts for OpenAlex Field~14 (Economics, Econometrics and Finance) and Field~20 (Business and Management) and define the work-topic density is the ratio of this count to the total topic count in the source. Sources are dropped if this ratio is below 50\%. The 1,659 surviving sources, labeled OAS, are used to extract the corpus. Matching outcomes are summarised in Table \ref{tab:source_matching}.
+Every journal in JQL, SJL, and MJL has at least one ISSN, and may have several. These registry ISSNs are joined independently to the February 2026 OpenAlex sources snapshot in using its list of ISSNs as the matching key. Journal titles are examined to identify around 30 additional matches where the OpenAlex source does not have an ISSN. The list of OpenAlex sources that are matched is designated OAS\textsuperscript{*}. The long list OAS\textsuperscript{*} includes sources publishing works in disciplines beyond  economics and business. We use OpenAlex source-topic assignments to exclude sources having a minority of works in economics/business. A source has work-topic counts for up to five topics, each within a single sub-field, field, and domain. We accumulate the work-topic counts for OpenAlex Field~14 (Economics, Econometrics and Finance) and Field~20 (Business and Management) and define the work-topic density as the ratio of this count to the total topic count in the source. Sources are dropped if this ratio is below 50\%. The 1,659 surviving sources, labeled OAS, are used to extract the corpus. Matching outcomes are summarised in Table \ref{tab:source_matching}.
 
 \begin{table}[htbp]
 	\centering
@@ -45,7 +45,36 @@ Every journal in JQL, SJL, and MJL has at least one ISSN, and may have several. 
 	\end{tabular}
 \end{table}
 
-We extract an initial corpus of works in the OAS source list, by retaining article and review types with publication years between 2020 and 2024 inclusive and excluding works that are paratext or retracted, or without an authorship entity. The institution retention curve Fig. \ref{fig:retention} implies that the preferred minimum cut for works per institution per year could be chosen as $\tau_U = 10$, leaving approximately 1,900 institutions and 75\% of the works. The authorships and references for the initial corpus are then attached and the value of $\omega_{iu}$ computed fo each work. The characteristics of the initial data set are exhibited in Table \ref{tab:corpus_features}.
+Each corpus extraction is parameterised by a field subset $F$ and a time window $t_x$. The field subset restricts the source set $\mathfrak{S}$ to sources whose OpenAlex topic counts fall exclusively in Field~14 ($F=E$), exclusively in Field~20 ($F=B$), or in either field ($F=A$, all OAS sources). The time window encodes the census and target year ranges via $t_x\in\{1,\ldots,7\}$; the seven cases are listed in Table~\ref{tab:windows}. The five symmetric windows correspond to conventional five-year citation windows; cases~6 and~7 are asymmetric windows analogous to the Journal Impact Factor and reference spectroscopy respectively.
+
+\begin{table}[htbp]
+\centering
+\caption{Corpus construction parameters: field subsets ($F$) and time windows ($t_x$).}
+\label{tab:windows}
+\begin{tabular}{clll}
+\toprule
+\multicolumn{4}{@{}l@{}}{\textit{Panel A\,: Field subsets ($F$)}} \\[2pt]
+$F$ & \multicolumn{3}{@{}l}{Sources included in $\mathfrak{S}$} \\
+\midrule
+$E$ & \multicolumn{3}{@{}l}{Topic counts exclusively in Field~14 (Economics, Econometrics and Finance)} \\
+$B$ & \multicolumn{3}{@{}l}{Topic counts exclusively in Field~20 (Business, Management and Accounting)} \\
+$A$ & \multicolumn{3}{@{}l}{All OAS sources; topic counts in Fields~14 and/or~20 \textit{(baseline)}} \\
+\midrule
+\multicolumn{4}{@{}l@{}}{\textit{Panel B\,: Time windows ($t_x$)}} \\[2pt]
+$t_x$ & Census window $[t^c_0,t^c_1]$ & Target window $[t^t_0,t^t_1]$ & Label \\
+\midrule
+1 & 2000--2004 & 2000--2004 & Symmetric 5-year \\
+2 & 2005--2009 & 2005--2009 & Symmetric 5-year \\
+3 & 2010--2014 & 2010--2014 & Symmetric 5-year \\
+4 & 2015--2019 & 2015--2019 & Symmetric 5-year \\
+5 & 2020--2024 & 2020--2024 & Symmetric 5-year \textit{(baseline)} \\
+6 & 2024       & 2000--2024 & JIF analogue \\
+7 & 2020--2024 & 2020       & Reference spectroscopy \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+We extract an initial corpus of works in the OAS source list ($F=A$, $t_x=5$), by retaining article and review types with publication years between 2020 and 2024 inclusive and excluding works that are paratext or retracted, or without an authorship entity. The institution retention curve Fig. \ref{fig:retention} implies that the preferred minimum cut for works per institution per year could be chosen as $\tau_U = 10$, leaving approximately 1,900 institutions and 75\% of the works. The authorships and references for the initial corpus are then attached and the value of $\omega_{iu}$ computed for each work. The characteristics of the initial data set are exhibited in Table \ref{tab:corpus_features}.
 
 \begin{figure}[htbp]
 	\centering
