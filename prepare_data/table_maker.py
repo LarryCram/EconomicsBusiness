@@ -292,7 +292,7 @@ def export_title_match_candidates(db):
     """CSV of unmatched registry journals with a likely OA title match for manual review."""
     rel = db.sql(f"""
         SELECT
-            candidate_source_id                             AS oa_source_id,
+            candidate_source_idx                             AS oa_source_idx,
             candidate_name                                  AS oa_title,
             similarity                                      AS jaro_winkler,
             ref_name                                        AS registry_title,
@@ -427,10 +427,10 @@ def sjl_dropped_by_topic_filter(db):
                ROUND(d.econ_bus_density, 3) AS density,
                dr.field_name AS top_field, dr.subfield_name AS top_subfield
         FROM '{PARQUET}/oas_star.parquet' o
-        JOIN '{PARQUET}/source_densities.parquet' d USING (source_id)
-        LEFT JOIN '{PARQUET}/dropped_sources.parquet' dr USING (source_id)
+        JOIN '{PARQUET}/source_densities.parquet' d USING (source_idx)
+        LEFT JOIN '{PARQUET}/dropped_sources.parquet' dr USING (source_idx)
         WHERE o.era_journal_name IS NOT NULL
-          AND o.source_id NOT IN (SELECT source_id FROM '{PARQUET}/source_master.parquet')
+          AND o.source_idx NOT IN (SELECT source_idx FROM '{PARQUET}/source_master.parquet')
         ORDER BY o.works_count DESC
     """)
     print(f"\n=== SJL SOURCES DROPPED BY TOPIC FILTER ===")
@@ -468,7 +468,7 @@ def build_table3_data(db):
         ),
         fc AS (
             -- filtered corpus: works with at least one retained-institution authorship
-            SELECT w.work_idx, w.source_id, w.publication_year
+            SELECT w.work_idx, w.source_idx, w.publication_year
             FROM '{PARQUET}/corpus_works.parquet' w
             JOIN retained_work_idx USING (work_idx)
         ),
@@ -477,9 +477,9 @@ def build_table3_data(db):
         w2024 AS (SELECT COUNT(DISTINCT work_idx) AS n FROM fc WHERE publication_year = 2024),
         wall  AS (SELECT COUNT(DISTINCT work_idx) AS n FROM fc),
         -- Sources
-        s2000 AS (SELECT COUNT(DISTINCT source_id) AS n FROM fc WHERE publication_year = 2000),
-        s2024 AS (SELECT COUNT(DISTINCT source_id) AS n FROM fc WHERE publication_year = 2024),
-        sall  AS (SELECT COUNT(DISTINCT source_id) AS n FROM fc),
+        s2000 AS (SELECT COUNT(DISTINCT source_idx) AS n FROM fc WHERE publication_year = 2000),
+        s2024 AS (SELECT COUNT(DISTINCT source_idx) AS n FROM fc WHERE publication_year = 2024),
+        sall  AS (SELECT COUNT(DISTINCT source_idx) AS n FROM fc),
         -- Institutions (distinct institutions active in that year/range)
         i2000 AS (
             SELECT COUNT(DISTINCT a.institution_idx) AS n
@@ -592,7 +592,7 @@ def build_table3_distributions(db):
                 WHERE institution_idx IN (SELECT institution_idx FROM retained_inst)
             ),
             fc AS (
-                SELECT w.work_idx, w.source_id, w.publication_year
+                SELECT w.work_idx, w.source_idx, w.publication_year
                 FROM '{PARQUET}/corpus_works.parquet' w
                 JOIN retained_work_idx USING (work_idx)
             ),
@@ -609,19 +609,19 @@ def build_table3_distributions(db):
 
     wps = _q("""
         wps_yr AS (
-            SELECT source_id, publication_year, COUNT(DISTINCT work_idx) AS val
-            FROM fc GROUP BY source_id, publication_year
+            SELECT source_idx, publication_year, COUNT(DISTINCT work_idx) AS val
+            FROM fc GROUP BY source_idx, publication_year
         ),
         wps_pool AS (
-            SELECT source_id, COUNT(DISTINCT work_idx) AS val FROM fc GROUP BY source_id
+            SELECT source_idx, COUNT(DISTINCT work_idx) AS val FROM fc GROUP BY source_idx
         ),
         metric AS (
             -- per-year rows for 2000/2024 quantiles; pooled rows for all-years quantile
-            SELECT source_id, publication_year, val FROM wps_yr
+            SELECT source_idx, publication_year, val FROM wps_yr
             UNION ALL
             -- tag pooled rows with a sentinel year so FILTER can distinguish them,
             -- then override q1_all/q3_all from wps_pool via scalar subquery
-            SELECT source_id, -1 AS publication_year, val FROM wps_pool
+            SELECT source_idx, -1 AS publication_year, val FROM wps_pool
         )
     """)
     # wps_pool gives pooled counts; extract q1_all/q3_all directly
@@ -635,11 +635,11 @@ def build_table3_distributions(db):
             WHERE institution_idx IN (SELECT institution_idx FROM retained_inst)
         ),
         fc AS (
-            SELECT w.work_idx, w.source_id, w.publication_year
+            SELECT w.work_idx, w.source_idx, w.publication_year
             FROM '{PARQUET}/corpus_works.parquet' w JOIN retained_work_idx USING (work_idx)
         ),
         wps_pool AS (
-            SELECT COUNT(DISTINCT work_idx) AS val FROM fc GROUP BY source_id
+            SELECT COUNT(DISTINCT work_idx) AS val FROM fc GROUP BY source_idx
         )
         SELECT QUANTILE_CONT(val, 0.10) AS q1_all, QUANTILE_CONT(val, 0.90) AS q3_all
         FROM wps_pool

@@ -1,17 +1,19 @@
 """
-util/load_config.py — Shared configuration loader for the EconomicsBusiness project.
+util/load_config.py — Shared loaders for the EconomicsBusiness project.
 
-Reads config.yaml from the project root and exposes all standard paths as a
-frozen dataclass. Scripts import this and use only the fields they need.
+  load_config() → Paths   reads config.yaml  (machine-specific, gitignored)
+  load_params() → dict    reads params.yaml  (model parameters, version-controlled)
 
 Usage:
     import sys
     from pathlib import Path
     sys.path.insert(0, str(Path(__file__).parent.parent))
-    from util import load_config
+    from util import load_config, load_params
 
-    paths = load_config()
-    # paths.data, paths.working, paths.parquet, paths.openalex, paths.plots
+    paths  = load_config()
+    params = load_params()
+    # paths.data, paths.parquet, ...
+    # params['time_windows'], params['tau_u_floor']
 """
 
 from dataclasses import dataclass
@@ -19,6 +21,7 @@ from pathlib import Path
 import yaml
 
 _CONFIG_PATH = Path(__file__).parent.parent / 'config.yaml'
+_PARAMS_PATH = Path(__file__).parent.parent / 'params.yaml'
 
 
 @dataclass(frozen=True)
@@ -29,6 +32,11 @@ class Paths:
     openalex: Path       # OPENALEX (OA parquet snapshot)
     parquet: Path        # WORKING / parquet  (pipeline intermediates)
     plots: Path          # PROJECT_ROOT / plots
+
+
+def load_params(params_path: Path = _PARAMS_PATH) -> dict:
+    with open(params_path) as f:
+        return yaml.safe_load(f)
 
 
 def load_config(config_path: Path = _CONFIG_PATH) -> Paths:

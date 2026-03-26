@@ -16,7 +16,16 @@ echo "=== Stage 1: Assemble journal registry ==="
 echo "=== Stage 2: Filter and match to OpenAlex ==="
 "$PYTHON" prepare_data/journal_filter_match_oa.py
 
-echo "=== Stage 3: Build tables ==="
+echo "=== Stage 3: Load corpus entities ==="
+"$PYTHON" prepare_data/load_corpus_entities.py
+
+echo "=== Stage 4: Build edge lists ==="
+"$PYTHON" prepare_data/build_edge_lists.py
+
+echo "=== Stage 5: Verify edge lists ==="
+"$PYTHON" prepare_data/verify_edge_lists.py
+
+echo "=== Stage 6: Build tables ==="
 "$PYTHON" prepare_data/table_maker.py
 
 echo "=== Pipeline complete ==="

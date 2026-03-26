@@ -20,7 +20,9 @@ def filter_and_match(db):
         -- 1. CROSS MATCH journals by ISSN
         -- ================================================================
         CREATE OR REPLACE TEMP TABLE source_list AS
-            SELECT DISTINCT ON (s.id) s.id AS source_id, s.display_name AS source_name,
+            SELECT DISTINCT ON (s.id)
+                                CAST(regexp_replace(s.id, 'https://openalex.org/S', '') AS BIGINT) AS source_idx,
+                                s.display_name AS source_name,
                                 works_count, cited_by_count,
                                 s.issn_l AS issn, j.era_journal_name, j.harzing_journal_name, j.wos_journal_name
             FROM '{PARQUET}/comprehensive_journal_list.parquet' j
@@ -44,7 +46,8 @@ def filter_and_match(db):
                 AND COALESCE(cjl.era_journal_name, cjl.wos_journal_name, cjl.harzing_journal_name) IS NOT NULL
             )
             SELECT DISTINCT ON (s.id)
-                s.id AS source_id, s.display_name AS source_name,
+                CAST(regexp_replace(s.id, 'https://openalex.org/S', '') AS BIGINT) AS source_idx,
+                s.display_name AS source_name,
                 s.works_count, s.cited_by_count, s.issn_l AS issn,
                 u.era_journal_name, u.harzing_journal_name, u.wos_journal_name
             FROM unmatched u
@@ -53,7 +56,7 @@ def filter_and_match(db):
 
         INSERT INTO source_list
             SELECT * FROM title_matches
-            WHERE source_id NOT IN (SELECT source_id FROM source_list);
+            WHERE source_idx NOT IN (SELECT source_idx FROM source_list);
 
         -- Save OAS* (ISSN matches + exact title matches) for table reporting
         COPY (SELECT * FROM source_list) TO '{PARQUET}/oas_star.parquet' (FORMAT PARQUET);
@@ -61,61 +64,79 @@ def filter_and_match(db):
         -- 2. Get ALL topics for matched sources
         -- ============================================================
         CREATE OR REPLACE TEMP TABLE source_topics AS
-            SELECT s.source_id, s.source_name, oa.works_count, oa.cited_by_count,
+            SELECT s.source_idx, s.source_name, oa.works_count, oa.cited_by_count,
                     s.issn, s.era_journal_name, s.harzing_journal_name, s.wos_journal_name,
                 unnest(oa.topics).count AS topic_count,
                 unnest(oa.topics).subfield.display_name AS subfield_name,
                 unnest(oa.topics).field.display_name AS field_name
             FROM source_list s
-            LEFT JOIN '{OPENALEX}/sources.parquet' oa ON s.source_id = oa.id;
+            LEFT JOIN '{OPENALEX}/sources.parquet' oa
+                ON s.source_idx = CAST(regexp_replace(oa.id, 'https://openalex.org/S', '') AS BIGINT);
 
         -- 3. Source topic densities (all OAS*, saved for reporting/diagnostics)
         -- ====================================================================
         -- Density = SUM(econ/bus topic counts) / SUM(all topic counts)
         -- NULL density means no topic assignments; those sources are kept.
         CREATE OR REPLACE TEMP TABLE source_densities AS
-            SELECT source_id,
+            SELECT source_idx,
                 COALESCE(SUM(topic_count) FILTER (WHERE field_name IN (
                     'Economics, Econometrics and Finance',
                     'Business, Management and Accounting'
                 )), 0) * 1.0 / NULLIF(SUM(topic_count), 0) AS econ_bus_density
             FROM source_topics
-            GROUP BY source_id;
+            GROUP BY source_idx;
 
         COPY (SELECT * FROM source_densities) TO '{PARQUET}/source_densities.parquet' (FORMAT PARQUET);
 
         CREATE OR REPLACE TEMP TABLE approved_sources AS
-            SELECT source_id, econ_bus_density
+            SELECT source_idx, econ_bus_density
             FROM source_densities
             WHERE econ_bus_density >= 0.4 OR econ_bus_density IS NULL;
 
         -- 3c. Dropped sources: top topic for sources excluded by density filter
         COPY (
             WITH ranked AS (
-                SELECT st.source_id, st.source_name, st.works_count,
+                SELECT st.source_idx, st.source_name, st.works_count,
                        st.era_journal_name, st.harzing_journal_name, st.wos_journal_name,
                        sd.econ_bus_density,
                        st.field_name, st.subfield_name, st.topic_count,
-                       ROW_NUMBER() OVER (PARTITION BY st.source_id ORDER BY st.topic_count DESC, st.subfield_name ASC) AS rn
+                       ROW_NUMBER() OVER (PARTITION BY st.source_idx ORDER BY st.topic_count DESC, st.subfield_name ASC) AS rn
                 FROM source_topics st
-                JOIN source_densities sd ON st.source_id = sd.source_id
+                JOIN source_densities sd ON st.source_idx = sd.source_idx
                 WHERE sd.econ_bus_density < 0.4
             )
             SELECT * EXCLUDE rn FROM ranked WHERE rn = 1
         ) TO '{PARQUET}/dropped_sources.parquet' (FORMAT PARQUET);
 
-        -- 4. Final: top topic per approved source, with density
-        -- ======================================================
+        -- 4. Final: top topic per approved source, with density and E/B field subset flag
+        -- =============================================================================
+        -- field_subset: 'E' = exclusively Field 14 (Economics), 'B' = exclusively Field 20
+        -- (Business), NULL = mixed or neither exclusively
+        CREATE OR REPLACE TEMP TABLE field_subsets AS
+        SELECT source_idx,
+            CASE
+                WHEN SUM(CASE WHEN field_name != 'Economics, Econometrics and Finance'
+                              THEN topic_count ELSE 0 END) = 0 THEN 'E'
+                WHEN SUM(CASE WHEN field_name != 'Business, Management and Accounting'
+                              THEN topic_count ELSE 0 END) = 0 THEN 'B'
+                ELSE NULL
+            END AS field_subset
+        FROM source_topics
+        WHERE topic_count > 0
+        GROUP BY source_idx;
+
         CREATE OR REPLACE TEMP TABLE source_master AS
         WITH ranked_topics AS (
             SELECT
-                st.source_id, st.source_name, st.issn, st.era_journal_name, st.harzing_journal_name,
+                st.source_idx, st.source_name, st.issn, st.era_journal_name, st.harzing_journal_name,
                 st.works_count, st.cited_by_count,
                 st.wos_journal_name, st.topic_count, st.subfield_name, st.field_name,
                 ap.econ_bus_density,
-                ROW_NUMBER() OVER (PARTITION BY st.source_id ORDER BY st.topic_count DESC, st.subfield_name ASC) as rn
+                fs.field_subset,
+                ROW_NUMBER() OVER (PARTITION BY st.source_idx ORDER BY st.topic_count DESC, st.subfield_name ASC) as rn
             FROM source_topics st
-            JOIN approved_sources ap ON st.source_id = ap.source_id
+            JOIN approved_sources ap ON st.source_idx = ap.source_idx
+            LEFT JOIN field_subsets fs ON st.source_idx = fs.source_idx
         )
         SELECT * EXCLUDE rn FROM ranked_topics WHERE rn = 1;
 
@@ -151,7 +172,7 @@ def filter_and_match(db):
         COPY (
             WITH candidates AS (
                 SELECT u.ref_name, u.era_journal_name, u.harzing_journal_name, u.wos_journal_name,
-                       oa.id AS candidate_source_id,
+                       CAST(regexp_replace(oa.id, 'https://openalex.org/S', '') AS BIGINT) AS candidate_source_idx,
                        oa.display_name AS candidate_name,
                        jaro_winkler_similarity(LOWER(u.ref_name), LOWER(oa.display_name)) AS similarity
                 FROM unmatched u
@@ -164,7 +185,7 @@ def filter_and_match(db):
                 FROM candidates
             )
             SELECT ref_name, era_journal_name, harzing_journal_name, wos_journal_name,
-                   candidate_source_id, candidate_name, ROUND(similarity, 3) AS similarity,
+                   candidate_source_idx, candidate_name, ROUND(similarity, 3) AS similarity,
                    similarity = 1.0 AS likely_title_match
             FROM best WHERE rn = 1
         ) TO '{PARQUET}/unmatched_journals.parquet' (FORMAT PARQUET)
