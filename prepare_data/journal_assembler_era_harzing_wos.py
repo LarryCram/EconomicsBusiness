@@ -67,7 +67,7 @@ def assemble_wos_journal_list(db):
         CREATE TEMP TABLE wos AS
         SELECT 
             list_distinct(flatten(list(wos_issn))) AS wos_issn,
-            ANY_VALUE(jcr_name) AS jcr_name,
+            MIN(jcr_name) AS jcr_name,
             jcr_abrv,
             list_distinct(list(Category)) AS categories
         FROM all_jcr_data 
@@ -89,18 +89,18 @@ def load_journals(db):
     # Create temp table for ERA data
     db.sql(f"""
         CREATE TEMP TABLE era AS
-        SELECT DISTINCT list_distinct(list_filter(["ISSN 1", "ISSN 2", "ISSN 3"], x -> x IS NOT NULL AND x != 'N/A')) AS era_ISSN,
-                Title AS era_name, 
-                "FoR 1 Name" as FoR_name,  
-        FROM read_xlsx('{DATA}/source_masters/ecobus_journal_harzing_era.xlsx', 
-                        sheet='ERA2023 Submission Journal List', 
-                        range='A:P', 
-                        header=true, 
+        SELECT list_distinct(list_filter(flatten(list(["ISSN 1", "ISSN 2", "ISSN 3"])), x -> x IS NOT NULL AND x != 'N/A')) AS era_ISSN,
+                Title AS era_name,
+                "FoR 1 Name" AS FoR_name,
+        FROM read_xlsx('{DATA}/source_masters/ecobus_journal_harzing_era.xlsx',
+                        sheet='ERA2023 Submission Journal List',
+                        range='A:P',
+                        header=true,
                         all_varchar = true)
         WHERE LEFT("FoR 1", 2) IN ('35', '38')
           AND ("FoR 2" IS NULL OR "FoR 2" = '' OR LEFT("FoR 2", 2) IN ('35', '38'))
           AND ("FoR 3" IS NULL OR "FoR 3" = '' OR LEFT("FoR 3", 2) IN ('35', '38'))
-        GROUP BY ALL
+        GROUP BY "ERA Journal Id", Title, "FoR 1 Name"
     """)
     print("=== ERA BASE LIST ===")
     db.sql("SELECT COUNT(*) as era_count FROM era").show()
@@ -122,8 +122,8 @@ def load_journals(db):
     db.sql("SELECT COUNT(*) as harzing_count FROM harzing").show()
     db.sql("SELECT * FROM harzing LIMIT 5").show()
 
-    
-# First join: ERA and Harzing on ISSN overlaps
+
+    # First join: ERA and Harzing on ISSN overlaps
     db.sql("""
         CREATE TEMP TABLE era_harzing AS
         SELECT DISTINCT
@@ -139,6 +139,16 @@ def load_journals(db):
     
     print("=== ERA + HARZING INTERMEDIATE RESULTS ===")
     db.sql("SELECT COUNT(*) as era_harzing_count FROM era_harzing").show()
+    n_era = db.sql("SELECT COUNT(*) FROM era").fetchone()[0]
+    n_harzing = db.sql("SELECT COUNT(*) FROM harzing").fetchone()[0]
+    n_eh = db.sql("SELECT COUNT(*) FROM era_harzing").fetchone()[0]
+    if n_eh > n_era + n_harzing:
+        print(f"WARNING: many-to-many fan-out in ERA+Harzing join "
+              f"({n_eh} rows > {n_era} ERA + {n_harzing} Harzing). "
+              f"Check for shared ISSNs across distinct source entries.")
+        db.sql("""SELECT era_journal_name, COUNT(*) AS n FROM era_harzing
+                  WHERE era_journal_name IS NOT NULL
+                  GROUP BY era_journal_name HAVING n > 1 ORDER BY n DESC""").show()
     
     print("\\n=== ERA+HARZING BREAKDOWN ===")
     db.sql("""
@@ -171,9 +181,18 @@ def load_journals(db):
             ON len(list_intersect(eh.combined_issn_list, w.wos_issn)) > 0
     """)
     
-    # Show summary statistics  
+    # Show summary statistics
     print("=== FINAL COMPREHENSIVE RESULTS ===")
     db.sql("SELECT COUNT(*) as final_count FROM comprehensive_journals").show()
+    n_final = db.sql("SELECT COUNT(*) FROM comprehensive_journals").fetchone()[0]
+    n_wos = db.sql("SELECT COUNT(*) FROM wos").fetchone()[0]
+    if n_final > n_eh + n_wos:
+        print(f"WARNING: many-to-many fan-out in final join "
+              f"({n_final} rows > {n_eh} ERA+Harzing + {n_wos} WOS). "
+              f"Check for shared ISSNs across distinct source entries.")
+        db.sql("""SELECT wos_journal_name, COUNT(*) AS n FROM comprehensive_journals
+                  WHERE wos_journal_name IS NOT NULL
+                  GROUP BY wos_journal_name HAVING n > 1 ORDER BY n DESC""").show()
     
     print("\n=== FINAL BREAKDOWN BY SOURCE PRESENCE ===")
     db.sql("""

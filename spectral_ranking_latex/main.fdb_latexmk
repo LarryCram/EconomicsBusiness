@@ -1,17 +1,18 @@
 # Fdb version 4
-["bibtex main"] 1774430230.54156 "main.aux" "main.bbl" "main" 1774430231.7328 0
-  "./MyLibrary.bib" 1774430189.07794 6577085 03fd4739a5a3f5cee1e4b319af9ef2e7 ""
+["bibtex main"] 1774498306.40127 "main.aux" "main.bbl" "main" 1774501986.59892 0
+  "./MyLibrary.bib" 1774498208.25499 6577170 49d8803a32c8a4a061c68da280721dae ""
   "./sciomtcs.bib" 1758004733 38814 e32becf37c07e9c5a5ecec51c1c262af ""
   "./spbasic.bst" 1757517455 33250 b27924137faccbc3d13ebae5a7538c63 ""
+  "SpectralRanking.bib" 0 -1 0 ""
   "main.aux" 1774430231.39331 8918 84ba58c4b81c6bb18c1490743eb940b4 "pdflatex"
   (generated)
   "main.bbl"
   "main.blg"
   (rewritten before read)
-["pdflatex"] 1774430230.74481 "/home/lc/Projects/EconomicsBusiness/spectral_ranking_latex/main.tex" "main.pdf" "main" 1774430231.733 0
-  "../plots/plot1_institution_elbow_latex.pdf" 1773869714.27532 17629 e5a8ec121a7b7b69b58c11aa0b1c7bc2 ""
+["pdflatex"] 1774501985.54489 "/home/lc/Projects/EconomicsBusiness/spectral_ranking_latex/main.tex" "main.pdf" "main" 1774501986.59912 0
+  "../plots/plot1_institution_elbow_latex.pdf" 1774501985.07308 17328 42754e412eb70e56911f0aaca4c5661a ""
   "/etc/texmf/web2c/texmf.cnf" 1768766222.50773 475 c0e671620eb5563b2130f56340a5fde8 ""
-  "/home/lc/Projects/EconomicsBusiness/spectral_ranking_latex/main.tex" 1774001409.0742 1662 f7401e6c7971ddbee7c726801eb852d3 ""
+  "/home/lc/Projects/EconomicsBusiness/spectral_ranking_latex/main.tex" 1774498313.87259 1680 a10819f48bcf3332aee8775b2b0e19e8 ""
   "/usr/share/texlive/texmf-dist/fonts/map/fontname/texfonts.map" 1577235249 3524 cb3e574dea2d1052e39280babc910dc8 ""
   "/usr/share/texlive/texmf-dist/fonts/tfm/jknappen/ec/tcrm1000.tfm" 1136768653 1536 e07581a4bb3136ece9eeb4c3ffab8233 ""
   "/usr/share/texlive/texmf-dist/fonts/tfm/public/amsfonts/cmextra/cmbsy5.tfm" 1246382020 1120 1e8878807317373affa7f7bba4cf2f6a ""
@@ -209,10 +210,10 @@
   "/usr/share/texmf/web2c/texmf.cnf" 1741904018 41538 c016915c1d51223b6dbbfe27341748a8 ""
   "/var/lib/texmf/fonts/map/pdftex/updmap/pdftex.map" 1768766240 5467255 9a64d1b40e0b893fc5588ecce9d8accf ""
   "/var/lib/texmf/web2c/pdftex/pdflatex.fmt" 1768766286 3347051 b210dd19afa7cdfe2454020fc7cff434 ""
-  "main.aux" 1774430231.39331 8918 84ba58c4b81c6bb18c1490743eb940b4 "pdflatex"
-  "main.bbl" 1774430230.73823 7018 0beac4810cc3c101354b5de0a5b88e54 "bibtex main"
-  "main.out" 1774430231.39331 803 e0c8295340d7d49c163c6b61ae9ee64d "pdflatex"
-  "main.tex" 1774001409.0742 1662 f7401e6c7971ddbee7c726801eb852d3 ""
+  "main.aux" 1774501986.18087 8934 8f2ca4485f3cd15c7d712062743e1233 "pdflatex"
+  "main.bbl" 1774498306.58237 7018 0beac4810cc3c101354b5de0a5b88e54 "bibtex main"
+  "main.out" 1774501986.1812 803 e0c8295340d7d49c163c6b61ae9ee64d "pdflatex"
+  "main.tex" 1774498313.87259 1680 a10819f48bcf3332aee8775b2b0e19e8 ""
   "sections/01_introduction.tex" 1774430060.43648 5931 8b72cac42cd6958bef8f31cbc2f97956 ""
   "sections/02_model_specification.tex" 1774428357.90623 12226 0bf76959772065ee7a7ed51ec38d3aa5 ""
   "sections/03_processing.tex" 1774429531.22686 8095 fd9cf15b3ae217a718269fb5602cfbab ""

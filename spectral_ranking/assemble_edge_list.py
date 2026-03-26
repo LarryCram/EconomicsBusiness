@@ -4,16 +4,14 @@ Assemble edge list with institution weighting for spectral ranking analysis
 """
 
 import os
+import sys
 import duckdb
-import yaml
 from pathlib import Path
 
-# Load configuration relative to this script
-script_dir = os.path.dirname(os.path.abspath(__file__))
-config_path = os.path.join(script_dir, 'data.yaml')
+sys.path.insert(0, str(Path(__file__).parent.parent))
+from util import load_config
 
-with open(config_path) as f:
-    config = yaml.safe_load(f)
+paths = load_config()
 
 def create_works_clean(parquet_dir):
     """Create works_clean.parquet with institution weighting calculations"""
@@ -167,7 +165,7 @@ def create_citer_cited_table(parquet_dir):
 
 if __name__ == "__main__":
     # Set up paths from config
-    parquet_dir = config['PARQUET_DIR']
+    parquet_dir = str(paths.parquet)
     
     print(f"Parquet directory: {parquet_dir}")
     print(f"Time windows will be applied later in pipeline")
