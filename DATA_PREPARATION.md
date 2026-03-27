@@ -1,69 +1,102 @@
 # Data Preparation
 
-# Preparation
-- Re-read CLAUDE.md
-- Re-read main.pdf
+## Overview
 
-# Aim
-- Two outcomes:
-- First, a revision of 03_processing.tex to be more precise about what we are doing
-- Second, a DuckDB database at WORKING/econ_bus/duckdb/ containing edge lists that can be read to build CSR matrices and determine spectral rankings
+The data preparation pipeline runs in `prepare_data/` and produces the edge lists consumed
+by the spectral ranking pipeline. All intermediate parquets live under `WORKING/parquet/`
+(machine-specific path from `config.yaml`). Edge lists are stored in `WORKING/edge_lists.duckdb`.
 
-# Parameters
-- Make a way to comprehensively manage all parameters
-- There are corpus-construction parameters (time window, field subset, tau_U) and ranking parameters (alpha, delta, m, chi)
-- Persist a set of DuckDB edge list tables for each corpus-construction parameter combination, labelled uniquely
-- Do not assume that all permutations of parameters are run. Drive parameter selection from a hard-coded selection table in YAML
-- Note that it will take seconds to build a parameter set and its spectral ranking provided we pre-select all the possible works by journal and overall publication_year span, filtering out paratext and retractions
-- The ranking parameters (alpha, delta, m, chi) are applied at read/ranking time from the stored edge lists and do not require separate edge list files
+## Scripts and outputs
 
-# Review
-- Earlier we coded what is in prepare_data.py (now load_corpus_entities.py)
-- Review this code and extend as required by revisions in main.pdf
+| Script | Inputs | Outputs | Status |
+|---|---|---|---|
+| `journal_assembler_era_harzing_wos.py` | Registry files | `comprehensive_journal_list.parquet` | Done |
+| `journal_filter_match_oa.py` | OA snapshot, registry | `source_master.parquet`, `oas_star.parquet`, diagnostics | Done |
+| `load_corpus_entities.py` | OA snapshot, `source_master.parquet` | `corpus_works.parquet`, `corpus_authorships.parquet`, `corpus_references.parquet` | Done |
+| `institution_retention.py` | Corpus parquets | Diagnostic tables for τ_U selection | Done |
+| `build_edge_lists.py` | Corpus parquets, `source_master.parquet` | `edge_lists.duckdb` (21 tables) | Done |
+| `table_maker.py` | Parquets, DuckDB | LaTeX/CSV tables in `data/` | Done |
+| `verify_edge_lists.py` | `edge_lists.duckdb` | Verification report | Done |
 
-# Census and target windows as parameters
-- Define 5 symmetric windows where t^c = t^t: 2000-04 / 2005-09 / 2010-14 / 2015-19 / 2020-24.
-  Take all the works in the census window and keep all references pointing to works in the same target window.
-- Define 2 asymmetric windows:
-  - Case 6: t^c = 2024 only (publication_year = 2024 exactly), t^t = 2000-2024. Analogue of a 5-year JIF.
-  - Case 7: t^c = 2020-24, t^t = 2020 only (publication_year = 2020 exactly). Analogue of reference spectroscopy — traces where recent papers send their citations back to.
-- Introduce a parameter t_x in {1,...,7} to select the case
-- The works_per_year denominator used to compute mean annual institutional output must equal the length of the census window in years (e.g. 5 for the 5-year cases, 1 for case 6, 5 for case 7), not a global constant
+## Edge list schema
 
-# Economics Business as parameters
-- Current data extraction constructs a single final journal table (source_master.parquet)
-- Add a flag "E", "B", or "A" to source_master to indicate whether the OpenAlex topic counts are:
-  - "E": only in Field 14 'Economics, Econometrics and Finance'
-  - "B": only in Field 20 'Business, Management and Accounting'
-  - "A": both fields have some counts
-- Introduce a parameter F in {E, B, A} to select the journal subset for a given run
-- F=A uses all sources in source_master; F=E or F=B filters to the respective flag
+Each table in `edge_lists.duckdb` is named `el_t{tx}_{fx}_tau{tau_u}` and has one row
+per `(citer_work, citer_institution, cited_work, cited_institution)`:
 
-# Institution filtering computed first
-- There is a tau_U institutional filter whose appropriate value may depend on the work set (time window, field subset)
-- The expectation is that the shape of the frequency distribution will not change much across parameter cases due to the very long tail of institutions with few publications; this remains to be verified
-- Make two institution retention diagnostic tables covering all 7 time windows and 3 field subsets (21 cases)
-- Both tables have tau_U threshold (2, 4, 6, 8, 10 mean works/institution/year) as column labels and the 21 parameter cases as row labels
-- For each cell, the retention baseline is the total works in that specific (t_x, F) case (not the full 2000-2024 corpus)
-- In one table, the entry is the number of institutions retained at the tau_U threshold where 80% of that case's works are retained
-- In the other table, the same but for 70% of that case's works retained
-- Do not treat the calculation of tau_U as part of the pipeline; this is a standalone diagnostic script
-- We will choose one value of tau_U (possibly two if the results suggest it) for the entire project after reviewing these tables. We do not explore a cross-section of tau_U in the rankings.
-- Since tau_U is fixed before building edge lists, the edge lists for a given (t_x, F) combination are unique and do not need a tau_U dimension
+```
+citer_work_idx       BIGINT   -- citing work
+citer_source_idx     BIGINT   -- source of citing work
+citer_inst_idx       BIGINT   -- retained institution of citing work
+cited_work_idx       BIGINT   -- cited work
+cited_source_idx     BIGINT   -- source of cited work
+cited_inst_idx       BIGINT   -- retained institution of cited work
+inst_weight          DOUBLE   -- ω_iu author-fractional weight (citing side, eq. 1)
+direct_inst_weight   DOUBLE   -- 1/n_retained_institutions (citing side)
+R_i                  BIGINT   -- intra-corpus reference count of citing work
+a_citer_source       BIGINT   -- work count of citing source
+a_cited_source       BIGINT   -- work count of cited source
+a_citer_inst         DOUBLE   -- fractional work count of citing institution (Σ ω_iu)
+a_cited_inst         DOUBLE   -- fractional work count of cited institution (Σ ω_jv)
+```
 
-# alpha
-- alpha is a parameter of the spectral ranker and does not need to be present in the edge lists
-- m and chi are factors in the assembled citation matrix and are applied after the raw edge list blocks are read
+## Known issues — fix before running spectral ranking
 
-# Edge lists (not CSR)
-- Persist edge lists to DuckDB, not CSR matrices
-- Store the four raw block edge lists (SS, SI, IS, II) separately or with a block label column for each corpus-construction parameter combination
-- Schema: (citer_unit_idx, cited_unit_idx, block, raw_weight) where raw_weight accumulates delta_i * b^X_i * b^Y_j over references
-- The chi scaling and m masking are applied at read time when assembling C(chi, m, delta)
-- delta (full vs fixed reference count) can also be applied at read time since it requires R_bar which is computed from the edge list itself
-- The citation matrix convention is C_ij = attention from i (citing, row) to j (cited, column); the iterated matrix H = D_r^{-1} C is row-stochastic
-- Each (t_x, F) combination with a fixed tau_U produces one set of four block edge lists; the total number of edge list sets is 7 * 3 = 21
-- Unit index tables (mapping source_idx and institution_idx to contiguous unit indices 1..N_s and N_s+1..N) must be persisted alongside the edge lists for each case
+### 1. `params.yaml` case 6 census window is wrong
+`params.yaml` has `6: {census: [2020, 2024], ...}` but the paper and DATA_PREPARATION.md
+specify census=[2024, 2024] (single year, JIF analogue). Must be corrected to `[2024, 2024]`
+and `build_edge_lists.py` re-run for t_x=6.
 
-# Continue to plan
-- Once you have done this, provide extensive comments and suggestions on the completeness of the instructions and the way you propose to approach the tasks
+### 2. `build_edge_lists.py` does not enforce census/target window split
+The `rr` CTE (reference pairs) joins both citer and cited to `fw`, which spans
+`[min(cs,ts), max(ce,te)]`. For symmetric cases (t_x=1–5) this is harmless since
+census=target. For asymmetric cases:
+- **t_x=6**: Should require `citer_year=2024` and `cited_year ∈ [2000,2024]`. Currently
+  all works in [2000,2024] are eligible as citers.
+- **t_x=7**: Should require `citer_year ∈ [2020,2024]` and `cited_year=2020`. Currently
+  any cited year in [2020,2024] is eligible.
+Fix: add year-range predicates to the `rr` CTE using `wc.publication_year` and
+`wd.publication_year`.
+
+### 3. Institution retention uses wrong denominator for asymmetric windows
+`retained_inst` filters on `COUNT(DISTINCT work_idx) / n_years >= tau_u`, where
+`n_years = max_year - min_year + 1` (span of both windows). DATA_PREPARATION.md specifies
+the denominator should equal the length of the *census* window. For t_x=6 (after fixing
+to census=[2024,2024]), this means dividing by 1, not 25.
+Fix: compute `census_years = ce - cs + 1` and use that as the denominator in
+`retained_inst`, and restrict work counting to census-window works only.
+
+### 4. `cited_inst_weight` (ω_jv) is absent from the edge list
+Building C_SI and C_II requires ω_{jv} — the author-fractional institution weight for
+the *cited* work/institution pair. The current schema stores only `inst_weight` = ω_{iu}
+for the citing side. `a_cited_inst` is the total output (Σ_v ω_{jv}), not the per-work weight.
+Fix options:
+- Add `cited_inst_weight` column to the final SELECT in `build_edge_lists.py` by joining
+  the `iw` CTE on the cited side.
+- Persist a separate `(work_idx, inst_idx, inst_weight)` lookup table from the `iw` CTE
+  for each corpus, joinable at ranking time.
+
+Issues 1–3 require re-running `build_edge_lists.py` for at least cases 6 and 7 after
+correcting `params.yaml`. Issue 4 requires either a re-run or a join at ranking time.
+
+## Parameter design
+
+### Field subsets (F)
+`source_master.parquet` has a `field_subset` column: `'E'` (Field 14 only), `'B'` (Field 20 only),
+`'A'` (both). The `build_edge_lists.py` `FIELD_COND` dict translates this to SQL predicates.
+
+### Time windows (t_x)
+Seven cases defined in `params.yaml`. Cases 1–5 are symmetric 5-year windows. Cases 6–7
+are asymmetric (see issues above).
+
+### Institution threshold (τ_U)
+`tau_u_floor` in `params.yaml` sets per-field-subset floors: E=5, B=5, A=10 mean works/year.
+The final τ_U was chosen as 10 for F=A from the institution retention diagnostic curve
+(Fig 1 in paper: ~1,900 institutions retained, ~75% of works).
+
+## Corpus characteristics (baseline: t_x=5, F=A, τ_U=10)
+From Table 4 of the paper:
+- Works: 966,687 (2000–2024)
+- Sources: up to 1,624 in a single year
+- Institutions: 1,742 retained
+- References (out-degree): 14,897,377
+- Citations (in-degree): 14,751,724

@@ -13,8 +13,9 @@ citer_inst_idx       BIGINT   -- institution of citing work (one row per retaine
 cited_work_idx       BIGINT   -- cited work
 cited_source_idx      BIGINT   -- source of cited work
 cited_inst_idx       BIGINT   -- institution of cited work (one row per retained inst)
-inst_weight          DOUBLE   -- ω_iu author-fractional (paper eq. 1)
+inst_weight          DOUBLE   -- ω_iu author-fractional (paper eq. 1), citing side
 direct_inst_weight   DOUBLE   -- 1 / n_retained_institutions_of_citing_work
+cited_inst_weight    DOUBLE   -- ω_jv author-fractional (paper eq. 1), cited side
 R_i                  BIGINT   -- intra-corpus reference count of citing work
 a_citer_source       BIGINT   -- work count of citer source in this corpus
 a_cited_source       BIGINT   -- work count of cited source in this corpus
@@ -69,22 +70,27 @@ def table_name(tx: int, fx: str, tau_u: int) -> str:
 
 def build_one(db, tx: int, fx: str, tau_u: int) -> int:
     cs, ce, ts, te = TIME_WINDOWS[tx]
-    min_year = min(cs, ts)
-    max_year = max(ce, te)
-    n_years  = max_year - min_year + 1
-    fc       = FIELD_COND[fx]
+    min_year     = min(cs, ts)
+    max_year     = max(ce, te)
+    census_years = ce - cs + 1
+    fc           = FIELD_COND[fx]
     tname    = table_name(tx, fx, tau_u)
 
     db.execute(f"""
         CREATE OR REPLACE TABLE {tname} AS
         WITH
-        -- ── Works in this (t_x, F_x) window ────────────────────────────────
+        -- ── Works spanning both census and target windows ────────────────────
         fw AS (
             SELECT w.work_idx, w.source_idx, w.publication_year
             FROM '{PARQUET}/corpus_works.parquet' w
             JOIN '{PARQUET}/source_master.parquet' sm ON w.source_idx = sm.source_idx
             WHERE w.publication_year BETWEEN {min_year} AND {max_year}
             {fc}
+        ),
+        -- ── Census-window works only — used for τ_U retention filter ─────────
+        fw_census AS (
+            SELECT work_idx FROM fw
+            WHERE publication_year BETWEEN {cs} AND {ce}
         ),
         -- ── Per-work author and institution counts (for weight computation) ─
         work_author_counts AS (
@@ -121,12 +127,13 @@ def build_one(db, tx: int, fx: str, tau_u: int) -> int:
                                        AND a.author_idx = aic.author_idx
             GROUP BY a.work_idx, a.institution_idx
         ),
-        -- ── Retained institutions: mean works / year ≥ τ_U ─────────────────
+        -- ── Retained institutions: mean census works / census year ≥ τ_U ─────
         retained_inst AS (
             SELECT institution_idx
             FROM iw_raw
+            WHERE work_idx IN (SELECT work_idx FROM fw_census)
             GROUP BY institution_idx
-            HAVING COUNT(DISTINCT work_idx) / {n_years}.0 >= {tau_u}
+            HAVING COUNT(DISTINCT work_idx) / {census_years}.0 >= {tau_u}
         ),
         -- ── Restrict weights to retained institutions ───────────────────────
         iw AS (
@@ -137,7 +144,7 @@ def build_one(db, tx: int, fx: str, tau_u: int) -> int:
         retained_works AS (
             SELECT DISTINCT work_idx FROM iw
         ),
-        -- ── Intra-corpus references between retained works ──────────────────
+        -- ── Intra-corpus references: citer in census, cited in target ─────────
         -- Excludes self-loops and cited works > 1 year newer than citer
         rr AS (
             SELECT r.citer_idx, r.cited_idx
@@ -147,6 +154,8 @@ def build_one(db, tx: int, fx: str, tau_u: int) -> int:
             WHERE r.citer_idx IN (SELECT work_idx FROM retained_works)
               AND r.cited_idx  IN (SELECT work_idx FROM retained_works)
               AND r.citer_idx != r.cited_idx
+              AND wc.publication_year BETWEEN {cs} AND {ce}
+              AND wd.publication_year BETWEEN {ts} AND {te}
               AND wd.publication_year <= wc.publication_year + 1
         ),
         -- ── R_i: intra-corpus reference count of each citing work ───────────
@@ -189,6 +198,7 @@ def build_one(db, tx: int, fx: str, tau_u: int) -> int:
             SELECT iw.work_idx,
                    fw.source_idx,
                    iw.institution_idx,
+                   iw.inst_weight      AS cited_inst_weight,
                    acs.source_works    AS a_cited_source,
                    ain.inst_frac_works AS a_cited_inst
             FROM iw
@@ -207,6 +217,7 @@ def build_one(db, tx: int, fx: str, tau_u: int) -> int:
             cj.institution_idx   AS cited_inst_idx,
             ci.inst_weight,
             ci.direct_inst_weight,
+            cj.cited_inst_weight,
             ci.ref_count         AS R_i,
             ci.a_citer_source,
             cj.a_cited_source,

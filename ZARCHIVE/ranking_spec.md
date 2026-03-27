@@ -1,4 +1,12 @@
-# Summary.
+# ranking_spec.md — SUPERSEDED
+
+This was the initial project specification written before the pipeline design stabilised.
+It is retained for historical reference only. See SPECTRAL_RANKING.md for the current
+authoritative specification and DATA_PREPARATION.md for the pipeline documentation.
+
+---
+
+# Summary (original)
 
 This text describes a project about the use of ordinal spectral ranking in bibliometrics. We want to compare different ranking approaches (weighting) over networks beteen different units, namely  sources and institutions. The results will be used in a paper about dual ordinal spectral ranking over sources and institutions. The topic has not been studies very much.
 

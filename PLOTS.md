@@ -1,45 +1,31 @@
 # PLOTS.md — EconomicsBusiness Project
 
-## Project root
-`/home/lc/Projects/EconomicsBusiness` — VS Code workspace, synced to GitHub.
+## Conventions
+- Prefer seaborn OO interface; fall back to matplotlib where seaborn is insufficient.
+- Persist to disk in a LaTeX-compatible format (PDF or PGF).
+- Scripts in `prepare_data/plot_maker.py` (data diagnostics) and `spectral_ranking/` (results).
 
-## Plotting
-- prefer seaborn OO version.
-- use mathplotlib where seaborn is incapable.
-- make a plot in VS Code and persist to disk as a latex-compatible format
+## Plot inventory
 
-## Plot 1
-- Prepare an long-tail elbow plot I can use to determine the institution work_count cut off.
-- Perplexity suggests the following duckdb SQL for an abstact work-institution table. 
-- Apply an SQL like this to our table and make the elbow plot
+### Figure 1 — Institution retention curve (done)
+**Script**: `prepare_data/plot_maker.py`
+**Files**: `plots/plot1_institution_elbow.pdf`, `plots/plot1_institution_elbow_latex.pdf`
+**In paper**: Fig. 1, Section 3
+**Description**: Long-tail elbow plot of % works retained vs. annual work-count threshold τ_U,
+for the baseline corpus (F=A, t_x=5, 2020–2024). Annotations show institution counts at
+key thresholds. Selected cut: τ_U=10, ~1,900 institutions, ~75% works retained.
 
-### draft SQL
-WITH institution_works AS (
-    -- Step 1: Works per institution
-    SELECT 
-        institution_id, 
-        COUNT(DISTINCT work_id) AS works_count
-    FROM works_institutions 
-    GROUP BY institution_id
-),
-work_count_stats AS (
-    -- Step 2: Frequency distribution (institutions per works_count)
-    SELECT 
-        works_count, 
-        COUNT(*) AS institutions_count
-    FROM institution_works
-    GROUP BY works_count
-)
-SELECT 
-    works_count,
-    institutions_count,
-    -- Cumulative institutions up to this works_count
-    SUM(institutions_count) OVER (ORDER BY works_count ROWS UNBOUNDED PRECEDING) AS cum_institutions,
-    -- Cumulative works up to this works_count  
-    SUM(institutions_count * works_count) OVER (ORDER BY works_count ROWS UNBOUNDED PRECEDING) AS cum_works,
-    -- % of total works retained
-    SUM(institutions_count * works_count) OVER (ORDER BY works_count ROWS UNBOUNDED PRECEDING) * 100.0 / 
-    SUM(institutions_count * works_count) OVER () AS pct_works_retained
-FROM work_count_stats
-ORDER BY works_count;
+## Upcoming plots (spectral ranking results needed)
 
+### Figure 2 — Baseline ranking: source and institution prestige scores
+Top-N sources and institutions ranked by prestige per work v(α) under the baseline
+parameter set (t_x=5, F=A, τ_U=10, ρ=1, m=(1,0,0,0), χ=0.5, α=0.85).
+
+### Figure 3 — Parameter sensitivity
+Rank correlation (Spearman) heatmap across parameter combinations (α, χ, m, ρ).
+
+### Figure 4 — Time series
+Rank stability of top sources and institutions across t_x=1–5 symmetric windows.
+
+### Figure 5 — Bipartite vs. full-joint comparison
+Scatter or rank-shift plot comparing source rankings under m=(0,1,1,0) vs. m=(1,1,1,1).

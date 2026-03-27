@@ -10,7 +10,7 @@ time_windows:
   3: {census: [2010, 2014], target: [2010, 2014], label: "Symmetric 5-year"}
   4: {census: [2015, 2019], target: [2015, 2019], label: "Symmetric 5-year"}
   5: {census: [2020, 2024], target: [2020, 2024], label: "Symmetric 5-year (baseline)"}
-  6: {census: [2020, 2024], target: [2000, 2024], label: "JIF analogue"}
+  6: {census: [2024, 2024], target: [2000, 2024], label: "JIF analogue"}
   7: {census: [2020, 2024], target: [2020, 2020], label: "Reference spectroscopy"}
 
 # Minimum mean annual works per institution (τ_U) by field subset
