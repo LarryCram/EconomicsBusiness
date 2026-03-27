@@ -231,6 +231,48 @@ def build_one(db, tx: int, fx: str, tau_u: int) -> int:
     return db.execute(f"SELECT COUNT(*) FROM {tname}").fetchone()[0]
 
 
+def build_units(db, tx: int, fx: str, tau_u: int) -> int:
+    """
+    Build the unit index table _units_t{tx}_{fx}_tau{tau_u} in edge_lists.duckdb.
+
+    Derives all sources and institutions that appear in the edge list together
+    with their a_p work counts (integer for sources, fractional for institutions).
+    Called immediately after build_one() for each corpus.
+
+    Note: units that have retained works but zero intra-corpus references (isolated
+    nodes) are absent from the edge list and therefore absent from this table.
+    They are very rare in a dense citation corpus; add a parquet-based query here
+    if isolated-node correctness becomes necessary.
+    """
+    tname = table_name(tx, fx, tau_u)
+    uname = f'_units_t{tx}_{fx}_tau{tau_u}'
+
+    db.execute(f"""
+        CREATE OR REPLACE TABLE {uname} AS
+        SELECT unit_idx, unit_type, MAX(a_p) AS a_p
+        FROM (
+            SELECT citer_source_idx AS unit_idx, 'S' AS unit_type,
+                   CAST(a_citer_source AS DOUBLE) AS a_p
+            FROM {tname}
+            UNION ALL
+            SELECT cited_source_idx  AS unit_idx, 'S' AS unit_type,
+                   CAST(a_cited_source AS DOUBLE) AS a_p
+            FROM {tname}
+            UNION ALL
+            SELECT citer_inst_idx AS unit_idx, 'U' AS unit_type,
+                   a_citer_inst AS a_p
+            FROM {tname}
+            UNION ALL
+            SELECT cited_inst_idx AS unit_idx, 'U' AS unit_type,
+                   a_cited_inst AS a_p
+            FROM {tname}
+        )
+        GROUP BY unit_idx, unit_type
+        ORDER BY unit_type, unit_idx
+    """)
+    return db.execute(f"SELECT COUNT(*) FROM {uname}").fetchone()[0]
+
+
 def ensure_catalog(db):
     db.execute("""
         CREATE TABLE IF NOT EXISTS _catalog (
@@ -278,7 +320,9 @@ def main():
                 print(f"  Building {tname} ...", end='  ', flush=True)
                 n = build_one(db, tx, fx, tau_u)
                 update_catalog(db, tx, fx, tau_u, n)
-                print(f"{n:,} rows")
+                n_units = build_units(db, tx, fx, tau_u)
+                print(f"  Units: {n_units} (sources + institutions)", flush=True)
+                print(f"{n:,} rows", flush=True)
 
         print("\n=== Catalog ===")
         db.sql("SELECT * FROM _catalog ORDER BY t_x, F_x, tau_u").show()

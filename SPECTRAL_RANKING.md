@@ -24,7 +24,7 @@ matrices C(χ, m, ρ), row-normalise to H, run katz and katz_bipartite power ite
 - **Row-stochastic H** = D_r^{-1} C, where D_r = diag(row sums). Dangling rows get μ.
 - **Modified matrix** H̃ = αH + (1-α)μ1^T, μ_p = 1/N.
 - **Katz ranking** (eq. 5): π = H̃^T π, i.e. π^(k+1) = H̃^T π^(k).
-- **Prestige per work** (eq. 7): v_p = π_p / a_p, where a_p = work count of unit p.
+- **Prestige per work** (eq. 7): v_p = A · π_p / a_p, where a_p = work count of unit p and A = Σ_p a_p. Normalised so the a_p-weighted mean of v equals 1: a unit with v=1 has corpus-average prestige per work.
 
 ---
 

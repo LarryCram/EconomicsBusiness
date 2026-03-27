@@ -158,19 +158,25 @@ received by each unit and therefore depends on unit size.
 \begin{equation}
     \mathbf{v}(\alpha)
     \;=\;
-    \mathbf{A}^{-1}\boldsymbol{\pi}(\alpha),
+    A\,\mathbf{A}^{-1}\boldsymbol{\pi}(\alpha),
     \qquad
     \mathbf{A}=\mathrm{diag}(a_p),
+    \qquad
+    A = \mathbf{a}^{\top}\mathbf{1} = \textstyle\sum_p a_p,
     \label{eq:vstar}
 \end{equation}
 removes this dependence, where $a_p = |\{i:w_i\in s\}|$ for source $p=s$
 and $a_p = \sum_i\omega_{iu}$ for institution $p=u$ via \eqref{eq:omega} are the work-counts,
 $\boldsymbol{\pi}(\alpha)$ denotes the solution to \eqref{eq:spectral},
 and $\boldsymbol{\pi}^{\infty}$ the limiting case \eqref{eq:eig}.
+The scalar $A$ normalises $\mathbf{v}$ so that its $a_p$-weighted mean equals one:
+$\mathbf{a}^{\top}\mathbf{v}/A=\mathbf{1}^{\top}\boldsymbol{\pi}=1$.
+A unit with $v_p=1$ therefore has exactly the corpus-average prestige per work;
+$v_p=2$ indicates twice the average.
 \cite{palacios-huertaMeasurementIntellectualInfluence2004} show that
 $\mathbf{v}$ is uniquely characterised by several reasonable axiomatic
 constraints \citep[but see][]{serranoMeasurementIntellectualInfluence2004}.
-Note that $\mathbf{A}^{-1}$ must be applied after convergence; applying
+Note that $A\,\mathbf{A}^{-1}$ must be applied after convergence; applying
 it inside the iteration loop would iterate on $\mathbf{H}^\top\mathbf{A}$,
 which is not norm-preserving and yields a fixed point with no clean
 interpretation.
