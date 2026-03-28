@@ -160,24 +160,40 @@ H is block off-diagonal and periodic with period 2. The undamped fixed point lac
 a unique solution; with α < 1 naive power iteration converges but is governed by α
 rather than |λ_2|. The resolvent eliminates institutions analytically.
 
-Partitioning the fixed point π = α H^T π + (1−α) μ:
+### α convention: per-reference, not per-step
+
+In SS and II, one citation reference is one random-walk step (attenuation α). In
+SI/IS a single reference traverses two steps S→I→S (attenuation α² per reference).
+To make all four modes use α as the **per-reference** attenuation, the bipartite
+resolvent uses α_step = √α as its internal per-step parameter. The caller always
+passes the same α (e.g. 0.85); internally:
 
 ```
-π_S = α H_IS^T π_I + (1−α) μ_S          (A)
-π_I = α H_SI^T π_S + (1−α) μ_I          (B)
+alpha_step = sqrt(alpha)          # per-step damping, ≈ 0.922 when alpha=0.85
+```
+
+Partitioning the fixed point π = α_step H^T π + (1−α_step) μ:
+
+```
+π_S = α_step H_IS^T π_I + (1−α_step) μ_S          (A)
+π_I = α_step H_SI^T π_S + (1−α_step) μ_I          (B)
 ```
 
 Substituting (B) into (A) and defining M_S = H_SI @ H_IS (N_s × N_s,
 source–source one-mode projection through institutions):
 
 ```
-(I − α² M_S^T) π_S = (1−α)(μ_S + α H_IS^T μ_I)
+(I − α M_S^T) π_S = (1−α_step)(μ_S + α_step H_IS^T μ_I)
 ```
+
+Note: the LHS uses α (= α_step²) not α_step. This is the round-trip attenuation,
+equal to α in SS, making the community amplification 1/(1−α λ₂) directly
+comparable across all modes.
 
 With N_s ≈ 1,600 this is a small system. Form the LHS explicitly as a dense or sparse
 matrix and solve directly with `scipy.sparse.linalg.spsolve`. No inner iteration needed.
 
-Recover institutions from (B): `π_I = α H_SI^T π_S + (1−α) μ_I`.
+Recover institutions from (B): `π_I = α_step H_SI^T π_S + (1−α_step) μ_I`.
 
 Concatenate [π_S; π_I], clip negatives, normalise jointly to sum to 1, then compute v.
 

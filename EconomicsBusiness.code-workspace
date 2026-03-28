@@ -9,7 +9,17 @@
 			"*.copilotmd": "vscode.markdown.preview.editor",
 			"*.parquet": "duckdb.dataFileViewer",
 			"*.csv": "duckdb.dataFileViewer",
-			"*.tsv": "duckdb.dataFileViewer"
-		}
+			"*.tsv": "duckdb.dataFileViewer",
+			"*.xlsx": "duckdb.dataFileViewer"
+		},
+		"duckdb.databases": [
+			{
+				"alias": "rankings",
+				"type": "file",
+				"path": "/media/m-drive/working/econ_bus/rankings.duckdb",
+				"attached": false
+			}
+		],
+		"duckdb.defaultDatabase": "rankings"
 	}
 }

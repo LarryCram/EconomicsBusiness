@@ -35,6 +35,15 @@ II block: no deduplication needed (full cross product intended)
 
 Tables are named  el_t{t_x}_{F_x}_tau{τ_U},  e.g. el_t5_A_tau10.
 A _catalog table records parameters and summary statistics.
+
+Institution retention
+---------------------
+For F=A the retained institution set is computed from the A corpus itself
+(mean census works ≥ τ_U).  For all field subsets (E, B, EB, NEB) the
+institution set is *inherited* from the corresponding A corpus — i.e. from
+_units_t{tx}_A_tau{tau_u} — so that the source and institution sets of the
+field subsets are exact partitions of the A corpus.  A must therefore be
+built before its field subsets.
 """
 
 import sys
@@ -58,35 +67,85 @@ TIME_WINDOWS = {
 TAU_U_FLOOR = params['tau_u_floor']
 
 FIELD_COND = {
-    'E': "AND sm.field_subset = 'E'",
-    'B': "AND sm.field_subset = 'B'",
-    'A': "",
+    'E':   "AND sm.field_subset = 'E'",
+    'B':   "AND sm.field_subset = 'B'",
+    'EB':  "AND sm.field_subset IN ('E', 'B')",
+    'NEB': "AND sm.field_subset IS NULL",
+    'A':   "",
 }
+
+# Field subsets that inherit their institution set from the A corpus.
+# A must be built first for each (tx, tau_u) before these are processed.
+FIELD_SUBSETS = ['E', 'B', 'EB', 'NEB']
 
 
 def table_name(tx: int, fx: str, tau_u: int) -> str:
     return f'el_t{tx}_{fx}_tau{tau_u}'
 
 
-def build_one(db, tx: int, fx: str, tau_u: int) -> int:
+def build_one(db, tx: int, fx: str, tau_u: int,
+              inherited_inst_table: str = None) -> int:
+    """
+    Build one edge list table.
+
+    Parameters
+    ----------
+    inherited_inst_table : str or None
+        If provided, institution retention is read from this table
+        (unit_type='U' rows) instead of being computed from the corpus.
+        Pass the _units table of the corresponding A corpus.
+    """
     cs, ce, ts, te = TIME_WINDOWS[tx]
     min_year     = min(cs, ts)
     max_year     = max(ce, te)
     census_years = ce - cs + 1
     fc           = FIELD_COND[fx]
-    tname    = table_name(tx, fx, tau_u)
+    tname        = table_name(tx, fx, tau_u)
+
+    # ── Pre-materialise filtered parquets (one scan each) ──────────────────
+    # _fw_tmp:    works in the year range and field subset; referenced 4×
+    #             inside the main CTE so worth materialising.
+    # _auths_tmp: deduplicated authorships for those works.  The original CTE
+    #             scanned corpus_authorships.parquet 3× (work_author_counts,
+    #             author_inst_counts, iw_raw); this reduces it to one scan.
+    db.execute(f"""
+        CREATE OR REPLACE TEMP TABLE _fw_tmp AS
+        SELECT w.work_idx, w.source_idx, w.publication_year
+        FROM '{PARQUET}/corpus_works.parquet' w
+        JOIN '{PARQUET}/source_master.parquet' sm ON w.source_idx = sm.source_idx
+        WHERE w.publication_year BETWEEN {min_year} AND {max_year}
+          AND sm.has_corpus_refs = true
+        {fc}
+    """)
+
+    db.execute(f"""
+        CREATE OR REPLACE TEMP TABLE _auths_tmp AS
+        SELECT DISTINCT work_idx, author_idx, institution_idx
+        FROM '{PARQUET}/corpus_authorships.parquet'
+        WHERE institution_idx IS NOT NULL
+          AND work_idx IN (SELECT work_idx FROM _fw_tmp)
+    """)
+
+    if inherited_inst_table:
+        retained_inst_sql = f"""        retained_inst AS (
+            SELECT unit_idx AS institution_idx
+            FROM {inherited_inst_table}
+            WHERE unit_type = 'U'
+        ),"""
+    else:
+        retained_inst_sql = f"""        retained_inst AS (
+            SELECT institution_idx
+            FROM iw_raw
+            WHERE work_idx IN (SELECT work_idx FROM fw_census)
+            GROUP BY institution_idx
+            HAVING COUNT(DISTINCT work_idx) / {census_years}.0 >= {tau_u}
+        ),"""
 
     db.execute(f"""
         CREATE OR REPLACE TABLE {tname} AS
         WITH
-        -- ── Works spanning both census and target windows ────────────────────
-        fw AS (
-            SELECT w.work_idx, w.source_idx, w.publication_year
-            FROM '{PARQUET}/corpus_works.parquet' w
-            JOIN '{PARQUET}/source_master.parquet' sm ON w.source_idx = sm.source_idx
-            WHERE w.publication_year BETWEEN {min_year} AND {max_year}
-            {fc}
-        ),
+        -- ── Works (from temp table) ───────────────────────────────────────
+        fw AS (SELECT * FROM _fw_tmp),
         -- ── Census-window works only — used for τ_U retention filter ─────────
         fw_census AS (
             SELECT work_idx FROM fw
@@ -95,19 +154,15 @@ def build_one(db, tx: int, fx: str, tau_u: int) -> int:
         -- ── Per-work author and institution counts (for weight computation) ─
         work_author_counts AS (
             SELECT work_idx,
-                   COUNT(DISTINCT author_idx)     AS n_authors,
+                   COUNT(DISTINCT author_idx)      AS n_authors,
                    COUNT(DISTINCT institution_idx) AS n_institutions
-            FROM '{PARQUET}/corpus_authorships.parquet'
-            WHERE institution_idx IS NOT NULL
-              AND work_idx IN (SELECT work_idx FROM fw)
+            FROM _auths_tmp
             GROUP BY work_idx
         ),
         author_inst_counts AS (
             SELECT work_idx, author_idx,
                    COUNT(DISTINCT institution_idx) AS n_inst_per_author
-            FROM '{PARQUET}/corpus_authorships.parquet'
-            WHERE institution_idx IS NOT NULL
-              AND work_idx IN (SELECT work_idx FROM fw)
+            FROM _auths_tmp
             GROUP BY work_idx, author_idx
         ),
         -- ── Institution weights per (work, institution) — pre-τ_U ──────────
@@ -118,23 +173,14 @@ def build_one(db, tx: int, fx: str, tau_u: int) -> int:
                    a.institution_idx,
                    SUM(1.0 / wac.n_authors / aic.n_inst_per_author) AS inst_weight,
                    ANY_VALUE(1.0 / wac.n_institutions)               AS direct_inst_weight
-            FROM (SELECT DISTINCT work_idx, author_idx, institution_idx
-                  FROM '{PARQUET}/corpus_authorships.parquet'
-                  WHERE institution_idx IS NOT NULL
-                    AND work_idx IN (SELECT work_idx FROM fw)) a
+            FROM _auths_tmp a
             JOIN work_author_counts wac ON a.work_idx = wac.work_idx
             JOIN author_inst_counts aic ON a.work_idx = aic.work_idx
                                        AND a.author_idx = aic.author_idx
             GROUP BY a.work_idx, a.institution_idx
         ),
-        -- ── Retained institutions: mean census works / census year ≥ τ_U ─────
-        retained_inst AS (
-            SELECT institution_idx
-            FROM iw_raw
-            WHERE work_idx IN (SELECT work_idx FROM fw_census)
-            GROUP BY institution_idx
-            HAVING COUNT(DISTINCT work_idx) / {census_years}.0 >= {tau_u}
-        ),
+        -- ── Retained institutions ────────────────────────────────────────────
+{retained_inst_sql}
         -- ── Restrict weights to retained institutions ───────────────────────
         iw AS (
             SELECT * FROM iw_raw
@@ -228,6 +274,9 @@ def build_one(db, tx: int, fx: str, tau_u: int) -> int:
         JOIN cited cj ON r.cited_idx = cj.work_idx
     """)
 
+    db.execute("DROP TABLE IF EXISTS _fw_tmp")
+    db.execute("DROP TABLE IF EXISTS _auths_tmp")
+
     return db.execute(f"SELECT COUNT(*) FROM {tname}").fetchone()[0]
 
 
@@ -307,22 +356,60 @@ def update_catalog(db, tx: int, fx: str, tau_u: int, n_rows: int):
     )
 
 
+def clean_stale(db) -> None:
+    """Drop edge-list and units tables not in the current schedule."""
+    expected = set()
+    for tx in range(1, 8):
+        for fx in ['A'] + FIELD_SUBSETS:
+            tau_u = TAU_U_FLOOR[fx]
+            expected.add(table_name(tx, fx, tau_u))
+            expected.add(f'_units_t{tx}_{fx}_tau{tau_u}')
+
+    all_tables = {row[0] for row in db.execute('SHOW TABLES').fetchall()}
+    stale = [t for t in all_tables
+             if (t.startswith('el_') or t.startswith('_units_'))
+             and t not in expected]
+
+    for t in sorted(stale):
+        db.execute(f'DROP TABLE IF EXISTS {t}')
+        db.execute("DELETE FROM _catalog WHERE table_name = ?", [t])
+        print(f'  Dropped stale table: {t}')
+
+    if not stale:
+        print('  No stale tables found.')
+
+
 def main():
     with duckdb.connect(str(DB_PATH)) as db:
         db.execute(f"SET temp_directory = '{paths.working}/.tmp'")
         db.execute("SET memory_limit = '56GB'")
         ensure_catalog(db)
+        print('=== Cleaning stale tables ===')
+        clean_stale(db)
 
         for tx in range(1, 8):
-            for fx in ['E', 'B', 'A']:
-                tau_u = TAU_U_FLOOR[fx]
+            # ── 1. Build A first to establish the canonical institution set ──
+            tau_u_A = TAU_U_FLOOR['A']
+            tname_A = table_name(tx, 'A', tau_u_A)
+            a_units_table = f'_units_t{tx}_A_tau{tau_u_A}'
+            print(f"  Building {tname_A} ...", end='  ', flush=True)
+            n = build_one(db, tx, 'A', tau_u_A)
+            update_catalog(db, tx, 'A', tau_u_A, n)
+            n_units = build_units(db, tx, 'A', tau_u_A)
+            print(f"{n:,} rows  Units: {n_units} (sources + institutions)",
+                  flush=True)
+
+            # ── 2. Build field subsets inheriting institution set from A ─────
+            for fx in FIELD_SUBSETS:
+                tau_u = TAU_U_FLOOR[fx]   # same as A (10)
                 tname = table_name(tx, fx, tau_u)
                 print(f"  Building {tname} ...", end='  ', flush=True)
-                n = build_one(db, tx, fx, tau_u)
+                n = build_one(db, tx, fx, tau_u,
+                              inherited_inst_table=a_units_table)
                 update_catalog(db, tx, fx, tau_u, n)
                 n_units = build_units(db, tx, fx, tau_u)
-                print(f"  Units: {n_units} (sources + institutions)", flush=True)
-                print(f"{n:,} rows", flush=True)
+                print(f"{n:,} rows  Units: {n_units} (sources + institutions)",
+                      flush=True)
 
         print("\n=== Catalog ===")
         db.sql("SELECT * FROM _catalog ORDER BY t_x, F_x, tau_u").show()

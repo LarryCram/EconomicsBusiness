@@ -87,19 +87,32 @@ def build_csr(db, tx: int, fx: str, tau_u: int, rho: int, m: tuple) -> CSRData:
     n_s = len(source_ids)
     n_u = len(inst_ids)
 
-    # Dense index maps: original idx → 0-based position
-    src_map  = pd.Series(np.arange(n_s, dtype=np.int32), index=source_ids)
-    inst_map = pd.Series(np.arange(n_u, dtype=np.int32), index=inst_ids)
+    # Vectorised index maps — pd.Index.get_indexer is a single hash-table
+    # pass over the array; avoids the intermediate Series allocation of .loc[]
+    src_idx  = pd.Index(source_ids)
+    inst_idx = pd.Index(inst_ids)
 
-    # ── ρ weighting ────────────────────────────────────────────────────────
+    # ── Materialise slim, ρ-weighted temp table (one scan of {tname}) ──────
+    # Drops the five a_* / direct_inst_weight columns not needed here.
+    # All block queries below read _tmp_el from memory rather than
+    # re-scanning the on-disk edge-list table each time.
     if rho == 0:
-        # Fixed count: ρ_i = R̄ / R_i  where R̄ = mean over distinct citer works
         r_bar = db.execute(
-            f"SELECT AVG(R_i) FROM (SELECT DISTINCT citer_work_idx, R_i FROM {tname})"
+            f"SELECT AVG(rval) FROM "
+            f"(SELECT DISTINCT citer_work_idx, CAST(R_i AS DOUBLE) AS rval FROM {tname})"
         ).fetchone()[0]
-        rho_expr = f"CAST({r_bar} AS DOUBLE) / CAST(R_i AS DOUBLE)"
+        rho_col = f"{r_bar} / CAST(R_i AS DOUBLE)"
     else:
-        rho_expr = "1.0"
+        rho_col = "1.0"
+
+    db.execute(f"""
+        CREATE OR REPLACE TEMP TABLE _tmp_el AS
+        SELECT citer_work_idx, citer_source_idx, citer_inst_idx,
+               cited_work_idx,  cited_source_idx, cited_inst_idx,
+               inst_weight, cited_inst_weight,
+               {rho_col} AS rho_w
+        FROM {tname}
+    """)
 
     # ── Block builders ─────────────────────────────────────────────────────
 
@@ -108,19 +121,17 @@ def build_csr(db, tx: int, fx: str, tau_u: int, rho: int, m: tuple) -> CSRData:
         C_SS: de-duplicate on (citer_work, cited_work) to count each
         reference once regardless of how many institution combinations exist.
         """
-        sql = f"""
+        df = db.execute("""
             SELECT citer_source_idx, cited_source_idx, SUM(rho_w) AS weight
             FROM (
                 SELECT DISTINCT citer_work_idx, citer_source_idx,
-                                cited_work_idx,  cited_source_idx,
-                                {rho_expr} AS rho_w
-                FROM {tname}
+                                cited_work_idx,  cited_source_idx, rho_w
+                FROM _tmp_el
             )
             GROUP BY citer_source_idx, cited_source_idx
-        """
-        df = db.execute(sql).fetchdf()
-        rows = src_map.loc[df['citer_source_idx'].values].values
-        cols = src_map.loc[df['cited_source_idx'].values].values
+        """).fetchdf()
+        rows = src_idx.get_indexer(df['citer_source_idx'].to_numpy())
+        cols = src_idx.get_indexer(df['cited_source_idx'].to_numpy())
         return sp.coo_matrix(
             (df['weight'].to_numpy(dtype=np.float64), (rows, cols)),
             shape=(n_s, n_s)
@@ -131,20 +142,19 @@ def build_csr(db, tx: int, fx: str, tau_u: int, rho: int, m: tuple) -> CSRData:
         C_SI: de-duplicate over citer_inst so each (citer_work, cited_work,
         cited_inst) contributes ρ_i × ω_jv exactly once.
         """
-        sql = f"""
+        df = db.execute("""
             SELECT citer_source_idx, cited_inst_idx,
                    SUM(rho_w * cited_inst_weight) AS weight
             FROM (
                 SELECT DISTINCT citer_work_idx, citer_source_idx,
                                 cited_work_idx,  cited_inst_idx,
-                                {rho_expr} AS rho_w, cited_inst_weight
-                FROM {tname}
+                                rho_w, cited_inst_weight
+                FROM _tmp_el
             )
             GROUP BY citer_source_idx, cited_inst_idx
-        """
-        df = db.execute(sql).fetchdf()
-        rows = src_map.loc[df['citer_source_idx'].values].values
-        cols = inst_map.loc[df['cited_inst_idx'].values].values
+        """).fetchdf()
+        rows = src_idx.get_indexer(df['citer_source_idx'].to_numpy())
+        cols = inst_idx.get_indexer(df['cited_inst_idx'].to_numpy())
         return sp.coo_matrix(
             (df['weight'].to_numpy(dtype=np.float64), (rows, cols)),
             shape=(n_s, n_u)
@@ -155,20 +165,19 @@ def build_csr(db, tx: int, fx: str, tau_u: int, rho: int, m: tuple) -> CSRData:
         C_IS: de-duplicate over cited_inst so each (citer_work, citer_inst,
         cited_work) contributes ρ_i × ω_iu exactly once.
         """
-        sql = f"""
+        df = db.execute("""
             SELECT citer_inst_idx, cited_source_idx,
                    SUM(rho_w * inst_weight) AS weight
             FROM (
                 SELECT DISTINCT citer_work_idx, citer_inst_idx,
                                 cited_work_idx,  cited_source_idx,
-                                {rho_expr} AS rho_w, inst_weight
-                FROM {tname}
+                                rho_w, inst_weight
+                FROM _tmp_el
             )
             GROUP BY citer_inst_idx, cited_source_idx
-        """
-        df = db.execute(sql).fetchdf()
-        rows = inst_map.loc[df['citer_inst_idx'].values].values
-        cols = src_map.loc[df['cited_source_idx'].values].values
+        """).fetchdf()
+        rows = inst_idx.get_indexer(df['citer_inst_idx'].to_numpy())
+        cols = src_idx.get_indexer(df['cited_source_idx'].to_numpy())
         return sp.coo_matrix(
             (df['weight'].to_numpy(dtype=np.float64), (rows, cols)),
             shape=(n_u, n_s)
@@ -179,15 +188,14 @@ def build_csr(db, tx: int, fx: str, tau_u: int, rho: int, m: tuple) -> CSRData:
         C_II: no de-duplication — every (citer_inst, cited_inst) combination
         is a genuine cross-product contribution ρ_i × ω_iu × ω_jv.
         """
-        sql = f"""
+        df = db.execute("""
             SELECT citer_inst_idx, cited_inst_idx,
-                   SUM(({rho_expr}) * inst_weight * cited_inst_weight) AS weight
-            FROM {tname}
+                   SUM(rho_w * inst_weight * cited_inst_weight) AS weight
+            FROM _tmp_el
             GROUP BY citer_inst_idx, cited_inst_idx
-        """
-        df = db.execute(sql).fetchdf()
-        rows = inst_map.loc[df['citer_inst_idx'].values].values
-        cols = inst_map.loc[df['cited_inst_idx'].values].values
+        """).fetchdf()
+        rows = inst_idx.get_indexer(df['citer_inst_idx'].to_numpy())
+        cols = inst_idx.get_indexer(df['cited_inst_idx'].to_numpy())
         return sp.coo_matrix(
             (df['weight'].to_numpy(dtype=np.float64), (rows, cols)),
             shape=(n_u, n_u)
@@ -199,6 +207,8 @@ def build_csr(db, tx: int, fx: str, tau_u: int, rho: int, m: tuple) -> CSRData:
     C_SI = _build_si() if m_SI else None
     C_IS = _build_is() if m_IS else None
     C_II = _build_ii() if m_II else None
+
+    db.execute("DROP TABLE IF EXISTS _tmp_el")
 
     return CSRData(
         C_SS=C_SS, C_SI=C_SI, C_IS=C_IS, C_II=C_II,

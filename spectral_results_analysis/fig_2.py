@@ -55,7 +55,14 @@ def fetch_all(db) -> tuple:
     catalog       : DataFrame with one row per available run
     """
     catalog = db.execute(
-        "SELECT table_name, label FROM _catalog ORDER BY label"
+        """SELECT table_name, label
+           FROM (
+               SELECT table_name, label, created_at,
+                      ROW_NUMBER() OVER (PARTITION BY label ORDER BY created_at DESC) AS rn
+               FROM _catalog
+           )
+           WHERE rn = 1
+           ORDER BY label"""
     ).df()
 
     # ── Baseline: establish the x-axis lock ──────────────────────────────
@@ -106,17 +113,18 @@ def plot2(src_rank_map: dict, inst_rank_map: dict, runs: list) -> None:
     n_i = len(inst_rank_map)
     n_runs = len(runs)
 
-    # Baseline in black; first two non-baseline runs in red and blue; rest skipped.
-    OVERLAY_COLOURS = ['#e41a1c', '#377eb8']  # red, blue
-    colour_iter = iter(OVERLAY_COLOURS)
+    # Explicit colour map; any label not listed is skipped.
+    OVERLAY_COLOURS = {
+        'F=E':  '#e41a1c',   # red
+        'F=B':  '#377eb8',   # blue
+        'F=EB': '#ff7f00',   # orange
+    }
     run_colours = {}
     for label, _, _ in runs:
         if label == BASELINE_LABEL:
             run_colours[label] = 'black'
-        elif len(run_colours) - 1 < len(OVERLAY_COLOURS):
-            run_colours[label] = next(colour_iter)
         else:
-            run_colours[label] = None   # None = skip
+            run_colours[label] = OVERLAY_COLOURS.get(label)  # None = skip
 
     sns.set_theme(style='whitegrid', font_scale=0.95)
     fig, axes = plt.subplots(2, 1, figsize=(9, 8))
@@ -137,22 +145,46 @@ def plot2(src_rank_map: dict, inst_rank_map: dict, runs: list) -> None:
             if colour is None:
                 continue
             is_baseline = (label == BASELINE_LABEL)
-            lw      = 1.4 if is_baseline else 0.75
-            alpha   = 1.0 if is_baseline else 0.65
-            zorder  = 3  if is_baseline else 2
             # Coverage annotation: how many baseline units appear in this run
             n_overlap = len(df)
 
-            ax.plot(
-                df['baseline_rank'].values,
-                df['v'].values,
-                color=colour,
-                linewidth=lw,
-                alpha=alpha,
-                zorder=zorder,
-                label=f'{label}  ({n_overlap:,}/{n_baseline:,})'
-                      if not is_baseline else f'{label}',
-            )
+            if is_baseline:
+                ax.plot(
+                    df['baseline_rank'].values,
+                    df['v'].values,
+                    color=colour,
+                    linewidth=1.4,
+                    alpha=1.0,
+                    zorder=3,
+                    label=label,
+                )
+            elif label == 'F=~EB':
+                ax.scatter(
+                    df['baseline_rank'].values,
+                    df['v'].values,
+                    s=30,
+                    facecolors='none',
+                    edgecolors=colour,
+                    linewidths=0.8,
+                    zorder=1,
+                    label=f'{label}  ({n_overlap:,}/{n_baseline:,})',
+                )
+            else:
+                MARKERS = {'F=B': 'x', 'F=E': '+'}
+                marker = MARKERS.get(label, 'o')
+                is_line_marker = marker in ('x', '+')
+                ax.scatter(
+                    df['baseline_rank'].values,
+                    df['v'].values,
+                    color=colour,
+                    s=45 if is_line_marker else 30,
+                    alpha=0.2 if label == 'F=EB' else 1.0,
+                    zorder=2,
+                    marker=marker,
+                    edgecolors=colour if is_line_marker else 'white',
+                    linewidths=0.8 if is_line_marker else 0.4,
+                    label=f'{label}  ({n_overlap:,}/{n_baseline:,})',
+                )
 
         ax.set_yscale('log')
         ax.axhline(1.0, color='#999999', linewidth=0.8, linestyle='--', zorder=0)
@@ -167,12 +199,13 @@ def plot2(src_rank_map: dict, inst_rank_map: dict, runs: list) -> None:
         ax.set_ylabel('Prestige per work $v$', labelpad=4)
         ax.set_title(panel_label, fontsize=10, pad=6)
 
-        ax.legend(
-            fontsize=7,
-            framealpha=0.85,
-            loc='upper right',
-            ncol=2 if n_runs > 5 else 1,
-        )
+        if ax is axes[0]:
+            ax.legend(
+                fontsize=7,
+                framealpha=0.85,
+                loc='upper right',
+                ncol=1,
+            )
 
     sup = fig.suptitle(
         'Parameter sensitivity — prestige per work  '

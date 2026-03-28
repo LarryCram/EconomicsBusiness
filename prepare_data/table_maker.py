@@ -97,6 +97,7 @@ def build_table2_data(db):
                                                                 AND harzing_journal_name IS NOT NULL) AS all_three_oas,
             COUNT(*) AS total_oas
         FROM '{PARQUET}/source_master.parquet'
+        WHERE has_corpus_refs = true
     """).fetchone()
     jql_oas, mql_oas, sjl_oas, mql_sjl_oas, mql_jql_oas, sjl_jql_oas, all_three_oas, total_oas = oas
 

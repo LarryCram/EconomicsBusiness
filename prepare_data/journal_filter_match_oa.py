@@ -28,7 +28,8 @@ def filter_and_match(db):
             FROM '{PARQUET}/comprehensive_journal_list.parquet' j
             LEFT JOIN '{OPENALEX}/sources.parquet' s
             ON list_has_any(j.unique_issn_list, s.issn)
-            AND j.unique_issn_list IS NOT NULL AND s.issn IS NOT NULL;
+            AND j.unique_issn_list IS NOT NULL AND s.issn IS NOT NULL
+            AND s.type = 'journal';
 
         -- 1b. Exact title matches for registry journals not matched by ISSN
         CREATE OR REPLACE TEMP TABLE title_matches AS
@@ -52,7 +53,8 @@ def filter_and_match(db):
                 u.era_journal_name, u.harzing_journal_name, u.wos_journal_name
             FROM unmatched u
             JOIN '{OPENALEX}/sources.parquet' s
-                ON LOWER(s.display_name) = LOWER(u.ref_name);
+                ON LOWER(s.display_name) = LOWER(u.ref_name)
+               AND s.type = 'journal';
 
         INSERT INTO source_list
             SELECT * FROM title_matches

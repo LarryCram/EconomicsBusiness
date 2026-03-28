@@ -74,10 +74,14 @@ STAGE1 = [
               m=(0, 1, 1, 0), chi=0.5, alpha=0.85,   label='rho1'),
     RunParams(tx=5, fx='A', tau_u=10, rho=0,
               m=(0, 1, 1, 0), chi=0.5, alpha=0.50,   label='alpha0.5'),
-    RunParams(tx=5, fx='E', tau_u=5,  rho=0,
+    RunParams(tx=5, fx='E',   tau_u=10, rho=0,
               m=(0, 1, 1, 0), chi=0.5, alpha=0.85,   label='F=E'),
-    RunParams(tx=5, fx='B', tau_u=5,  rho=0,
+    RunParams(tx=5, fx='B',   tau_u=10, rho=0,
               m=(0, 1, 1, 0), chi=0.5, alpha=0.85,   label='F=B'),
+    RunParams(tx=5, fx='EB',  tau_u=10, rho=0,
+              m=(0, 1, 1, 0), chi=0.5, alpha=0.85,   label='F=EB'),
+    RunParams(tx=5, fx='NEB', tau_u=10, rho=0,
+              m=(0, 1, 1, 0), chi=0.5, alpha=0.85,   label='F=~EB'),
     RunParams(tx=5, fx='A', tau_u=10, rho=0,
               m=(1, 0, 0, 0), chi=0.5, alpha=0.85,   label='SS-only'),
     RunParams(tx=5, fx='A', tau_u=10, rho=0,
@@ -254,6 +258,22 @@ def run_one(el_db, rk_db, p: RunParams, verbose: bool = True) -> bool:
     return True
 
 
+def clean_stale(rk_db) -> None:
+    """Drop ranking tables not in any known schedule."""
+    expected = {table_name(p) for p in STAGE1 + STAGE2}
+    all_tables = {row[0] for row in rk_db.execute('SHOW TABLES').fetchall()}
+    stale = [t for t in all_tables
+             if t.startswith('rk_') and t not in expected]
+
+    for t in sorted(stale):
+        rk_db.execute(f'DROP TABLE IF EXISTS {t}')
+        rk_db.execute("DELETE FROM _catalog WHERE table_name = ?", [t])
+        print(f'  Dropped stale table: {t}')
+
+    if not stale:
+        print('  No stale tables found.')
+
+
 def main():
     parser = argparse.ArgumentParser(description='Spectral ranking pipeline')
     parser.add_argument('--stage', type=int, choices=[1, 2], default=1,
@@ -277,6 +297,8 @@ def main():
 
         rk_db.execute(f"SET temp_directory = '{paths.working}/.tmp'")
         ensure_catalog(rk_db)
+        print('=== Cleaning stale tables ===')
+        clean_stale(rk_db)
 
         n_ok = n_skip = 0
         for p in schedule:

@@ -78,6 +78,35 @@ def load_references(db):
     print("REFERENCES EXTRACT COMPLETE!")
 
 
+def flag_no_refs(db):
+    """
+    Add has_corpus_refs boolean to source_master.parquet.
+
+    True if the source has at least one work appearing as citer_idx in
+    corpus_references.parquet.  Sources with no outgoing intra-corpus
+    references are flagged False and excluded from edge-list construction
+    and published tables.
+    """
+    db.sql(f"""
+        CREATE OR REPLACE TEMP TABLE _sm_flagged AS
+        SELECT sm.*,
+               sm.source_idx IN (
+                   SELECT DISTINCT cw.source_idx
+                   FROM '{PARQUET}/corpus_references.parquet' cr
+                   JOIN '{PARQUET}/corpus_works.parquet' cw ON cr.citer_idx = cw.work_idx
+               ) AS has_corpus_refs
+        FROM '{PARQUET}/source_master.parquet' sm
+    """)
+    n_flagged = db.sql(
+        "SELECT COUNT(*) FROM _sm_flagged WHERE has_corpus_refs = false"
+    ).fetchone()[0]
+    db.sql(f"""
+        COPY (SELECT * FROM _sm_flagged)
+        TO '{PARQUET}/source_master.parquet' (FORMAT PARQUET)
+    """)
+    print(f"FLAG NO-REFS COMPLETE — {n_flagged} sources flagged has_corpus_refs=false")
+
+
 
 def main():
     with duckdb.connect() as db:
@@ -89,6 +118,7 @@ def main():
         load_works(db)
         load_authorships(db)
         load_references(db)
+        flag_no_refs(db)
 
 if __name__ == "__main__":
     main()
