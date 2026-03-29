@@ -63,10 +63,14 @@ def build_csr(db, tx: int, fx: str, tau_u: int, rho: int, m: tuple) -> CSRData:
     -------
     CSRData with requested blocks populated; others None.
     """
+    import time
+    _t = {}   # timing dict — remove when no longer needed
+
     tname  = f'el_t{tx}_{fx}_tau{tau_u}'
     uname  = f'_units_t{tx}_{fx}_tau{tau_u}'
 
     # ── Load unit index ────────────────────────────────────────────────────
+    t0 = time.perf_counter()
     try:
         units_df = db.execute(
             f"SELECT unit_idx, unit_type, a_p FROM {uname} ORDER BY unit_type, unit_idx"
@@ -91,11 +95,13 @@ def build_csr(db, tx: int, fx: str, tau_u: int, rho: int, m: tuple) -> CSRData:
     # pass over the array; avoids the intermediate Series allocation of .loc[]
     src_idx  = pd.Index(source_ids)
     inst_idx = pd.Index(inst_ids)
+    _t['units'] = time.perf_counter() - t0
 
     # ── Materialise slim, ρ-weighted temp table (one scan of {tname}) ──────
     # Drops the five a_* / direct_inst_weight columns not needed here.
     # All block queries below read _tmp_el from memory rather than
     # re-scanning the on-disk edge-list table each time.
+    t0 = time.perf_counter()
     if rho == 0:
         r_bar = db.execute(
             f"SELECT AVG(rval) FROM "
@@ -113,6 +119,7 @@ def build_csr(db, tx: int, fx: str, tau_u: int, rho: int, m: tuple) -> CSRData:
                {rho_col} AS rho_w
         FROM {tname}
     """)
+    _t['tmp_el'] = time.perf_counter() - t0
 
     # ── Block builders ─────────────────────────────────────────────────────
 
@@ -203,12 +210,17 @@ def build_csr(db, tx: int, fx: str, tau_u: int, rho: int, m: tuple) -> CSRData:
 
     # ── Assemble requested blocks ──────────────────────────────────────────
     m_SS, m_SI, m_IS, m_II = m
-    C_SS = _build_ss() if m_SS else None
-    C_SI = _build_si() if m_SI else None
-    C_IS = _build_is() if m_IS else None
-    C_II = _build_ii() if m_II else None
+    t0 = time.perf_counter(); C_SS = _build_ss() if m_SS else None; _t['SS'] = time.perf_counter() - t0
+    t0 = time.perf_counter(); C_SI = _build_si() if m_SI else None; _t['SI'] = time.perf_counter() - t0
+    t0 = time.perf_counter(); C_IS = _build_is() if m_IS else None; _t['IS'] = time.perf_counter() - t0
+    t0 = time.perf_counter(); C_II = _build_ii() if m_II else None; _t['II'] = time.perf_counter() - t0
 
     db.execute("DROP TABLE IF EXISTS _tmp_el")
+
+    total = sum(_t.values())
+    print(f"    build_csr timing (s): "
+          + "  ".join(f"{k}={v:.2f}" for k, v in _t.items())
+          + f"  TOTAL={total:.2f}", flush=True)
 
     return CSRData(
         C_SS=C_SS, C_SI=C_SI, C_IS=C_IS, C_II=C_II,

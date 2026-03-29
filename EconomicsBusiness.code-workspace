@@ -17,7 +17,8 @@
 				"alias": "rankings",
 				"type": "file",
 				"path": "/media/m-drive/working/econ_bus/rankings.duckdb",
-				"attached": false
+				"attached": false,
+				"readOnly": false
 			}
 		],
 		"duckdb.defaultDatabase": "rankings"

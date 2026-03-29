@@ -89,14 +89,14 @@ Seven cases defined in `params.yaml`. Cases 1–5 are symmetric 5-year windows. 
 are asymmetric (see issues above).
 
 ### Institution threshold (τ_U)
-`tau_u_floor` in `params.yaml` sets per-field-subset floors: E=5, B=5, A=10 mean works/year.
-The final τ_U was chosen as 10 for F=A from the institution retention diagnostic curve
-(Fig 1 in paper: ~1,900 institutions retained, ~75% of works).
+`tau_u_floor` in `params.yaml` sets per-field-subset floors: all fields = 20 mean works/year.
+The final τ_U was chosen as 20 for F=A from the institution retention diagnostic curve
+(retention plot: ~1,734 institutions retained, ~85% of works before SCC filtering).
 
-## Corpus characteristics (baseline: t_x=5, F=A, τ_U=10)
-From Table 4 of the paper:
-- Works: 966,687 (2000–2024)
-- Sources: up to 1,624 in a single year
-- Institutions: 1,742 retained
-- References (out-degree): 14,897,377
-- Citations (in-degree): 14,751,724
+## Corpus characteristics (baseline: t_x=5, F=A, τ_U=20, post-SCC filter)
+- Sources: N_s = 1,322
+- Institutions: N_u = 1,732
+- χ* = 0.567 (N_u / (N_s + N_u))
+
+Note: SCC filtering in `build_edge_lists.py` runs after τ_U retention and removes
+sources not in the giant SCC of C_SS and institutions not in the giant SCC of C_full.

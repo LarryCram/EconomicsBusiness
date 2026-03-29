@@ -49,7 +49,11 @@ built before its field subsets.
 import sys
 from pathlib import Path
 from datetime import datetime
+import numpy as np
+import pandas as pd
 import duckdb
+from scipy.sparse import csr_matrix, bmat as sp_bmat
+from scipy.sparse.csgraph import connected_components
 
 sys.path.insert(0, str(Path(__file__).parent.parent))
 from util import load_config, load_params
@@ -322,6 +326,114 @@ def build_units(db, tx: int, fx: str, tau_u: int) -> int:
     return db.execute(f"SELECT COUNT(*) FROM {uname}").fetchone()[0]
 
 
+def filter_singletons(db, tx: int, fx: str, tau_u: int) -> tuple:
+    """
+    Remove units not in the giant SCC of their governing graph, then rebuild
+    the units table.  Iterates until no further removals occur.
+
+    Criterion:
+      Sources     : must be in giant SCC of C_SS (strict).  This also excludes
+                    sources that are connected only through institutional paths
+                    (IN/OUT-component in C_SS) — they cite or are cited via
+                    institutions but have no source-to-source cycle with the
+                    main literature.
+      Institutions: must be in giant SCC of the full joint C (lenient).
+
+    Returns (total_sources_dropped, total_insts_dropped).
+    """
+    tname = table_name(tx, fx, tau_u)
+    uname = f'_units_t{tx}_{fx}_tau{tau_u}'
+    total_s, total_u = 0, 0
+
+    for iteration in range(20):   # safety cap; typically 1–2 passes
+        # ── Load current unit index ───────────────────────────────────────
+        units = db.execute(
+            f"SELECT unit_idx, unit_type FROM {uname}"
+        ).fetchdf()
+        src_ids  = units[units['unit_type'] == 'S']['unit_idx'].to_numpy(dtype=np.int64)
+        inst_ids = units[units['unit_type'] == 'U']['unit_idx'].to_numpy(dtype=np.int64)
+        n_s, n_u = len(src_ids), len(inst_ids)
+
+        if n_s == 0 and n_u == 0:
+            break
+
+        src_index  = pd.Index(src_ids)
+        inst_index = pd.Index(inst_ids)
+
+        def _block(q, row_ix, col_ix, shape):
+            df = db.execute(q).fetchdf()
+            if len(df) == 0:
+                return csr_matrix(shape)
+            r = row_ix.get_indexer(df.iloc[:, 0].to_numpy(dtype=np.int64))
+            c = col_ix.get_indexer(df.iloc[:, 1].to_numpy(dtype=np.int64))
+            v = df.iloc[:, 2].to_numpy(dtype=np.float64)
+            mask = (r >= 0) & (c >= 0)
+            return csr_matrix((v[mask], (r[mask], c[mask])), shape=shape)
+
+        C_SS = _block(
+            f"SELECT citer_source_idx, cited_source_idx, COUNT(*) FROM {tname} GROUP BY 1,2",
+            src_index, src_index, (n_s, n_s))
+        C_SI = _block(
+            f"SELECT citer_source_idx, cited_inst_idx, COUNT(*) FROM {tname} GROUP BY 1,2",
+            src_index, inst_index, (n_s, n_u))
+        C_IS = _block(
+            f"SELECT citer_inst_idx, cited_source_idx, COUNT(*) FROM {tname} GROUP BY 1,2",
+            inst_index, src_index, (n_u, n_s))
+        C_II = _block(
+            f"SELECT citer_inst_idx, cited_inst_idx, COUNT(*) FROM {tname} GROUP BY 1,2",
+            inst_index, inst_index, (n_u, n_u))
+
+        C_full = sp_bmat([[C_SS, C_SI], [C_IS, C_II]], format='csr')
+
+        from collections import Counter
+
+        # Sources: giant SCC of C_SS
+        _, labels_ss = connected_components(C_SS, directed=True, connection='strong')
+        giant_ss = Counter(labels_ss).most_common(1)[0][0]
+        drop_src = src_ids[labels_ss != giant_ss]
+
+        # Institutions: giant SCC of full joint C
+        _, labels_full = connected_components(C_full, directed=True, connection='strong')
+        giant_full = Counter(labels_full).most_common(1)[0][0]
+        drop_inst = inst_ids[labels_full[n_s:] != giant_full]
+
+        if len(drop_src) == 0 and len(drop_inst) == 0:
+            print(f"    filter_singletons: stable after {iteration} pass(es)")
+            break
+
+        print(f"    filter_singletons pass {iteration+1}: "
+              f"drop {len(drop_src)} sources, {len(drop_inst)} institutions")
+        total_s += len(drop_src)
+        total_u += len(drop_inst)
+
+        # ── Delete edges involving dropped units ──────────────────────────
+        # Use a temp table to avoid huge IN(...) lists
+        if len(drop_src) > 0:
+            drop_src_df = pd.DataFrame({'idx': drop_src})
+            db.register('_drop_src', drop_src_df)
+            db.execute(f"""
+                DELETE FROM {tname}
+                WHERE citer_source_idx IN (SELECT idx FROM _drop_src)
+                   OR cited_source_idx  IN (SELECT idx FROM _drop_src)
+            """)
+            db.unregister('_drop_src')
+
+        if len(drop_inst) > 0:
+            drop_inst_df = pd.DataFrame({'idx': drop_inst})
+            db.register('_drop_inst', drop_inst_df)
+            db.execute(f"""
+                DELETE FROM {tname}
+                WHERE citer_inst_idx IN (SELECT idx FROM _drop_inst)
+                   OR cited_inst_idx  IN (SELECT idx FROM _drop_inst)
+            """)
+            db.unregister('_drop_inst')
+
+        # ── Rebuild units table ───────────────────────────────────────────
+        build_units(db, tx, fx, tau_u)
+
+    return total_s, total_u
+
+
 def ensure_catalog(db):
     db.execute("""
         CREATE TABLE IF NOT EXISTS _catalog (
@@ -394,9 +506,13 @@ def main():
             a_units_table = f'_units_t{tx}_A_tau{tau_u_A}'
             print(f"  Building {tname_A} ...", end='  ', flush=True)
             n = build_one(db, tx, 'A', tau_u_A)
-            update_catalog(db, tx, 'A', tau_u_A, n)
-            n_units = build_units(db, tx, 'A', tau_u_A)
-            print(f"{n:,} rows  Units: {n_units} (sources + institutions)",
+            build_units(db, tx, 'A', tau_u_A)
+            n_s, n_u = filter_singletons(db, tx, 'A', tau_u_A)
+            n_units_final = db.execute(f"SELECT COUNT(*) FROM {a_units_table}").fetchone()[0]
+            n_rows_final  = db.execute(f"SELECT COUNT(*) FROM {tname_A}").fetchone()[0]
+            update_catalog(db, tx, 'A', tau_u_A, n_rows_final)
+            print(f"{n_rows_final:,} rows  Units: {n_units_final}  "
+                  f"(dropped {n_s} sources, {n_u} insts as non-giant-SCC)",
                   flush=True)
 
             # ── 2. Build field subsets inheriting institution set from A ─────
@@ -406,9 +522,15 @@ def main():
                 print(f"  Building {tname} ...", end='  ', flush=True)
                 n = build_one(db, tx, fx, tau_u,
                               inherited_inst_table=a_units_table)
-                update_catalog(db, tx, fx, tau_u, n)
-                n_units = build_units(db, tx, fx, tau_u)
-                print(f"{n:,} rows  Units: {n_units} (sources + institutions)",
+                build_units(db, tx, fx, tau_u)
+                n_s, n_u = filter_singletons(db, tx, fx, tau_u)
+                n_units_final = db.execute(
+                    f"SELECT COUNT(*) FROM _units_t{tx}_{fx}_tau{tau_u}"
+                ).fetchone()[0]
+                n_rows_final = db.execute(f"SELECT COUNT(*) FROM {tname}").fetchone()[0]
+                update_catalog(db, tx, fx, tau_u, n_rows_final)
+                print(f"{n_rows_final:,} rows  Units: {n_units_final}  "
+                      f"(dropped {n_s} sources, {n_u} insts as non-giant-SCC)",
                       flush=True)
 
         print("\n=== Catalog ===")

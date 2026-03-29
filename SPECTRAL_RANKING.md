@@ -6,7 +6,7 @@ Read pre-built edge lists from `edge_lists.duckdb`, assemble sparse block citati
 matrices C(χ, m, ρ), row-normalise to H, run katz and katz_bipartite power iteration as required by parameters, and output prestige scores π and prestige-per-work v.
 #### Parameter space exploration
 -- Parameter exploration is in two stages.
--- Stage 1: compare to baseline [t_5, \rho = \bar{R}/R_i, F=A, \tau_u = 10, \alpha=0.85, SI/IS katz_biparite] effects of one-at-at time changes \rho = 1, \tau_u = 8, \alpha=0.5, F=E, F=B, C=SS/II and C=SS/SI/IS/II.
+-- Stage 1: compare to baseline [t_5, \rho = \bar{R}/R_i, F=A, \tau_u = 20, \alpha=0.85, SI/IS katz_biparite] effects of one-at-at time changes \rho = 1, \tau_u = 10, \alpha=0.5, F=E, F=B, C=SS/II and C=SS/SI/IS/II.
 -- Stage 2: compare baseline to t_1...4 and t_6
 #### Diagnostic displays
 -- An early task is to explore ways to illustrate the findings. 
@@ -119,13 +119,23 @@ C = bmat([[(1-χ)**2 * C_SS,  χ*(1-χ) * C_SI],
 Row-normalise the assembled N×N matrix → H. μ = (1/N) · **1**_N.
 Use standard Katz. Output: π_S, π_I, v_S, v_I.
 
+### SCC filtering (applied in build_edge_lists.py)
+After building the edge list and units table, `filter_singletons()` removes units not
+in the giant SCC of their governing graph and rebuilds the units table. Iterates until
+stable (typically 1–2 passes).
+
+- **Sources**: must be in the giant SCC of C_SS. This drops both zero-out-row sinks
+  (publisher omission / τ_U-induced) and sources connected only through institutional
+  paths but with no source-to-source citation cycle with the main literature.
+- **Institutions**: must be in the giant SCC of the full joint C (all four blocks).
+
+Effect at baseline (t5, A, τ_U=20): dropped 108 sources (first pass) + 7 further
+sources (C_SS OUT/IN-component), 2 institutions. Final: N_s=1,322, N_u=1,732, χ*=0.567.
+
 ### Unit index
-Nodes with corpus works but zero intra-corpus references do not appear in any edge
-list aggregation. They are dangling nodes that receive score only from the prior and
-must still appear in the output. Add a `_units_t{tx}_{fx}_tau{tau_u}` table to
-`edge_lists.duckdb` (from `build_edge_lists.py`) with columns `(unit_idx, unit_type,
-a_p)` covering all retained sources and institutions. `build_csr.py` reads this table
-to set matrix dimensions and the a_p denominators for v.
+`_units_t{tx}_{fx}_tau{tau_u}` in `edge_lists.duckdb` records all post-filter retained
+sources and institutions with columns `(unit_idx, unit_type, a_p)`. `build_csr.py`
+reads this table to set matrix dimensions and the `a_p` denominators for v.
 
 ---
 
@@ -190,7 +200,7 @@ Note: the LHS uses α (= α_step²) not α_step. This is the round-trip attenuat
 equal to α in SS, making the community amplification 1/(1−α λ₂) directly
 comparable across all modes.
 
-With N_s ≈ 1,600 this is a small system. Form the LHS explicitly as a dense or sparse
+With N_s ≈ 1,322 this is a small system. Form the LHS explicitly as a dense or sparse
 matrix and solve directly with `scipy.sparse.linalg.spsolve`. No inner iteration needed.
 
 Recover institutions from (B): `π_I = α_step H_SI^T π_S + (1−α_step) μ_I`.
@@ -221,7 +231,7 @@ Store results in `WORKING/rankings.duckdb`. One table per parameter combination:
 
 ```
 Table name: rk_t{tx}_{fx}_tau{tau_u}_rho{rho}_m{mstr}_chi{chi_int}_alpha{alpha_int}
-  e.g. rk_t5_A_tau10_rho0_m0110_chi50_alpha85   (baseline)
+  e.g. rk_t5_A_tau20_rho0_m0110_chi50_alpha85   (baseline)
 
 Columns:
   unit_idx       BIGINT    -- source_idx or institution_idx
@@ -241,7 +251,7 @@ iterations to convergence, final L1 norm, and timestamp.
 ## Parameter sweep
 
 ### Baseline
-t_x=5, F=A, τ_U=10, ρ=R̄/R_i (fixed count), m=(0,1,1,0), α=0.85.
+t_x=5, F=A, τ_U=20, ρ=R̄/R_i (fixed count), m=(0,1,1,0), α=0.85.
 χ is not a free parameter for the bipartite case (no effect after normalisation).
 
 ### Stage 1 — one-at-a-time from baseline
@@ -250,13 +260,14 @@ Each run changes one parameter; all others held at baseline:
 | Variant | Change |
 |---|---|
 | ρ=1 | full reference count |
-| τ_U=8 | relaxed institution threshold |
+| τ_U=10 | relaxed institution threshold (sensitivity) |
 | α=0.5 | lower damping |
 | F=E | economics sources only |
 | F=B | business sources only |
 | m=(1,0,0,0) | source-only SS |
 | m=(0,0,0,1) | institution-only II |
 | m=(1,1,1,1), χ=0.5 | full joint |
+| m=(1,1,1,1), χ=χ* | full joint at dimensional balance |
 
 Run baseline and ρ=1 first. Begin diagnostic display work as soon as these two runs
 are available.

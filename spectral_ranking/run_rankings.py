@@ -133,66 +133,41 @@ def ensure_catalog(db) -> None:
 
 def write_result(db, tname: str, p: RunParams, result, csr_data) -> None:
     """Write ranking table and update _catalog."""
-    rows = []
+    import pandas as pd
 
+    parts = []
     if result.pi_s is not None:
-        for i in range(csr_data.n_s):
-            rows.append((
-                int(csr_data.source_ids[i]),
-                'S',
-                float(result.pi_s[i]),
-                float(result.v_s[i]),
-                float(csr_data.a_s[i]),
-            ))
-
+        parts.append(pd.DataFrame({
+            'unit_idx':  csr_data.source_ids.astype(np.int64),
+            'unit_type': 'S',
+            'pi':        result.pi_s.astype(np.float64),
+            'v':         result.v_s.astype(np.float64),
+            'a_p':       csr_data.a_s.astype(np.float64),
+        }))
     if result.pi_u is not None:
-        for i in range(csr_data.n_u):
-            rows.append((
-                int(csr_data.inst_ids[i]),
-                'U',
-                float(result.pi_u[i]),
-                float(result.v_u[i]),
-                float(csr_data.a_u[i]),
-            ))
+        parts.append(pd.DataFrame({
+            'unit_idx':  csr_data.inst_ids.astype(np.int64),
+            'unit_type': 'U',
+            'pi':        result.pi_u.astype(np.float64),
+            'v':         result.v_u.astype(np.float64),
+            'a_p':       csr_data.a_u.astype(np.float64),
+        }))
 
-    if not rows:
+    if not parts:
         raise RuntimeError(f"No results to write for {tname}")
 
-    # Sort for rank computation (pi descending)
-    rows_arr = np.array(
-        rows,
-        dtype=[('unit_idx', np.int64), ('unit_type', 'U1'),
-               ('pi', np.float64), ('v', np.float64), ('a_p', np.float64)]
-    )
+    df = pd.concat(parts, ignore_index=True)
 
-    # Build and insert
+    # Compute ranks
+    df['rank_pi'] = _dense_rank_desc(df['pi'].to_numpy()).astype(np.int32)
+    df['rank_v']  = _dense_rank_desc(df['v'].to_numpy()).astype(np.int32)
+    df = df[['unit_idx', 'unit_type', 'pi', 'v', 'rank_pi', 'rank_v', 'a_p']]
+
+    # Bulk insert via register — single vectorised copy, no row-by-row overhead
     db.execute(f"DROP TABLE IF EXISTS {tname}")
-    db.execute(f"""
-        CREATE TABLE {tname} (
-            unit_idx   BIGINT,
-            unit_type  VARCHAR,
-            pi         DOUBLE,
-            v          DOUBLE,
-            rank_pi    INTEGER,
-            rank_v     INTEGER,
-            a_p        DOUBLE
-        )
-    """)
-
-    # Compute ranks (ties broken by unit_idx for determinism)
-    pi_vals = np.array([r[2] for r in rows], dtype=np.float64)
-    v_vals  = np.array([r[3] for r in rows], dtype=np.float64)
-    rank_pi = _dense_rank_desc(pi_vals)
-    rank_v  = _dense_rank_desc(v_vals)
-
-    insert_rows = [
-        (int(r[0]), r[1], float(r[2]), float(r[3]), int(rank_pi[i]), int(rank_v[i]), float(r[4]))
-        for i, r in enumerate(rows)
-    ]
-    db.executemany(
-        f"INSERT INTO {tname} VALUES (?,?,?,?,?,?,?)",
-        insert_rows
-    )
+    db.register('_write_df', df)
+    db.execute(f"CREATE TABLE {tname} AS SELECT * FROM _write_df")
+    db.unregister('_write_df')
 
     # Update catalog
     n_s = csr_data.n_s if result.pi_s is not None else 0
@@ -249,15 +224,21 @@ def run_one(el_db, rk_db, p: RunParams, verbose: bool = True) -> bool:
 
     t0 = datetime.now()
     data = build_csr(el_db, p.tx, p.fx, p.tau_u, p.rho, p.m)
-    result = rank(data, p.m, p.chi, p.alpha)
-    elapsed = (datetime.now() - t0).total_seconds()
+    t_csr = (datetime.now() - t0).total_seconds()
 
+    t1 = datetime.now()
+    result = rank(data, p.m, p.chi, p.alpha)
+    t_rank = (datetime.now() - t1).total_seconds()
+
+    t2 = datetime.now()
     write_result(rk_db, tname, p, result, data)
+    t_write = (datetime.now() - t2).total_seconds()
 
     if verbose:
         iters_str = f"{result.iters} iters" if result.iters else "direct"
         print(f"n_s={data.n_s}, n_u={data.n_u}, {iters_str}, "
-              f"norm={result.final_norm:.2e}, {elapsed:.1f}s")
+              f"norm={result.final_norm:.2e}, "
+              f"csr={t_csr:.1f}s  rank={t_rank:.1f}s  write={t_write:.1f}s  total={t_csr+t_rank+t_write:.1f}s")
     return True
 
 
@@ -289,7 +270,15 @@ def clean_stale(rk_db, schedule: list) -> None:
         rk_db.execute("DELETE FROM _catalog WHERE table_name = ?", [t])
         print(f'  Dropped stale table: {t}')
 
-    if not stale:
+    # Also purge catalog entries with no corresponding table
+    orphans = [row[0] for row in rk_db.execute(
+        "SELECT table_name FROM _catalog WHERE table_name NOT IN (SELECT name FROM (SHOW TABLES))"
+    ).fetchall()]
+    for t in sorted(orphans):
+        rk_db.execute("DELETE FROM _catalog WHERE table_name = ?", [t])
+        print(f'  Removed orphaned catalog entry: {t}')
+
+    if not stale and not orphans:
         print('  No stale tables found.')
 
 
@@ -309,10 +298,16 @@ def main():
         raise FileNotFoundError(f"edge_lists.duckdb not found at {el_path}. "
                                 f"Run prepare_data/build_edge_lists.py first.")
 
+    import time as _time
+    _T = {}
+
+    t0 = _time.perf_counter()
     with duckdb.connect(str(el_path), read_only=True) as el_db, \
          duckdb.connect(str(rk_path)) as rk_db:
+        _T['open_db'] = _time.perf_counter() - t0
 
         # Build schedule — χ* requires N_s, N_u from the units table
+        t0 = _time.perf_counter()
         if args.baseline_only:
             schedule = [BASELINE]
         elif args.stage == 2:
@@ -326,11 +321,17 @@ def main():
             )
             print(f"χ* = {chi_star:.4f}  →  {table_name(chi_star_run)}")
             schedule = list(STAGE1) + [chi_star_run]
+        _T['schedule'] = _time.perf_counter() - t0
 
+        t0 = _time.perf_counter()
         rk_db.execute(f"SET temp_directory = '{paths.working}/.tmp'")
         ensure_catalog(rk_db)
+        _T['ensure_catalog'] = _time.perf_counter() - t0
+
+        t0 = _time.perf_counter()
         print('=== Cleaning stale tables ===')
         clean_stale(rk_db, schedule)
+        _T['clean_stale'] = _time.perf_counter() - t0
 
         n_ok = n_skip = 0
         for p in schedule:
@@ -340,13 +341,17 @@ def main():
             else:
                 n_skip += 1
 
+
     print(f"\nDone: {n_ok} completed, {n_skip} skipped.")
+    print("main() overhead (s): " + "  ".join(f"{k}={v:.2f}" for k, v in _T.items()))
 
     # Summary
+    t0 = _time.perf_counter()
     with duckdb.connect(str(rk_path), read_only=True) as db:
         print("\n=== Catalog ===")
         db.sql("SELECT table_name, n_s, n_u, iters, final_norm, label, created_at "
                "FROM _catalog ORDER BY created_at").show()
+    print(f"catalog_query={_time.perf_counter()-t0:.2f}s")
 
 
 if __name__ == '__main__':
