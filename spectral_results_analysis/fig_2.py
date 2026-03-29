@@ -1,7 +1,7 @@
 """
 fig_2.py — Prestige-per-work distribution with parameter sensitivity overlay.
 
-Baseline parameters: t_x=5, F=A, τ_U=10, ρ=fixed, m=(0,1,1,0), α=0.85.
+Baseline parameters: t_x=5, F=A, τ_U=20, ρ=fixed, m=(0,1,1,0), α=0.85.
 
 Two-panel figure:
   Top:    sources (journals)
@@ -30,9 +30,10 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 
 sys.path.insert(0, str(Path(__file__).parent.parent))
-from util import load_config
+from util import load_config, load_params
 
-BASELINE_TABLE = 'rk_t5_A_tau10_rho0_m0110_chi50_alpha85'
+_tau           = load_params()['tau_u_floor']['A']
+BASELINE_TABLE = f'rk_t5_A_tau{_tau}_rho0_m0110_chi50_alpha85'
 BASELINE_LABEL = 'baseline'
 
 

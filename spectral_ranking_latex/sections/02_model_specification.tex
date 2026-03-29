@@ -9,6 +9,7 @@ Then we select $N_w$ works $\mathfrak{W}$ published in $\mathfrak{S}$ within the
 window years $t_c = [t^c_0 \ldots t^c_1]$ or target years $t_t = [t^t_0 \ldots t^t_1]$.
 From the reference lists of the set of census works $\mathfrak{W}^c$ we identify the set of target works $\mathfrak{W}^t$ and form the filtered reference set $\mathfrak{R}=\{(i,j):w_i\in\mathfrak{W}^c,\,w_j\in\mathfrak{W}^t\}$.
 Author affiliations in $\mathfrak{W}$ establish a set of authors $\mathfrak{A}'$ and institutions $\mathfrak{U}'$.
+In practice many institutions (and authors) publishing only a few works per year can be dropped from the corpus. 
 Let $\bar{w}_u$ be the mean annual work count for institution $u$.
 We determine a lower limit $\tau_U$ on $\bar{w}_u$ by examining the work-institution frequency
 distribution and define $\mathfrak{U}\subseteq\mathfrak{U}'$ as the institutions with
@@ -23,9 +24,9 @@ Each retained work $w_i$ has an \textit{institution weight} under author-fractio
   \label{eq:omega}
 \end{equation}
 where $\ell$ indexes the retained authors of work $w_i$, $a_i$ is their count, and $u_{i\ell}$ the number of
-retained institutions of author $\ell$, so that $\sum_u\omega_{iu}=1$.
+retained institutions of author $\ell$, so that $\sum_u\omega_{iu}=1$. Re-weighting fractional counts as a consequence of pruning the number of institutions is a trade-off between boosting the residual institutions and diminishing the total contribution of a work. 
 
-When a work $w_i$ references another work $w_j$ we say that $w_i$ gives attention to $w_j$. The attention given by a work can be either (a) the number of references, or (b) a fixed amount \citep{zittModifyingJournalImpact2008}. Let $R_i=|\{j:(i,j)\in\mathfrak{R}\}|$ be the reference count of work $w_i$ and $\bar{R}=|\mathfrak{R}|/N_w$ the mean reference count over $\mathfrak{W}$. We use the \textit{reference normalisation weight} $\rho_i$ to select case (a) or case (b) respectively:
+When a work $w_i$ references another work $w_j$ we say that $w_i$ gives attention to $w_j$. The amount of attention given by a work can be either (a) the number of references, or (b) a fixed amount \citep{zittModifyingJournalImpact2008}. Let $R_i=|\{j:(i,j)\in\mathfrak{R}\}|$ be the reference count of work $w_i$ and $\bar{R}=|\mathfrak{R}|/N_w$ the mean reference count over $\mathfrak{W}$. We use the \textit{reference normalisation weight} $\rho_i$ to select case (a) or case (b) respectively:
 \begin{equation}
 	\rho_i \;=\;
 	\begin{cases}
@@ -59,12 +60,12 @@ with $\mathbf{b}^X_i$ weighting the referencing (citing) side and $\mathbf{b}^Y_
 The citation matrix assembles the four blocks:
 \begin{equation}
 	\mathbf{C}(\chi,\mathbf{m},\rho) \;=\;
-	\begin{pmatrix}
+	\begin{bmatrix}
 		m_{SS}(1-\chi)^2\,\mathbf{C}_{SS} &
 		m_{SI}\,\chi(1-\chi)\,\mathbf{C}_{SI} \\[4pt]
 		m_{IS}\,\chi(1-\chi)\,\mathbf{C}_{IS} &
 		m_{II}\,\chi^2\,\mathbf{C}_{II}
-	\end{pmatrix},
+	\end{bmatrix},
 	\label{eq:C}
 \end{equation}
 where the binary \textit{block mask} $\mathbf{m}=(m_{SS},m_{SI},m_{IS},m_{II})\in\{0,1\}^4$
@@ -77,7 +78,7 @@ The $\chi$ scaling preserves total citation flow across all block combinations,
 since $(1-\chi)^2+2\chi(1-\chi)+\chi^2=1$.
 We could name $\mathbf{C}$ the reference, attention or citation matrix and prefer the latter.
 
-The model parameters are summarised in Table \ref{tab:params}. Note that the corpus excludes (a) census work references not giving attention to  target works, (b) non-census works giving attention to target works, and (c) authorships that include an omitted institution.
+Table \ref{tab:params} sets out the parameters of the model. Note that the corpus excludes (a) census work references not giving attention to  target works, (b) non-census works giving attention to target works, and (c) authorships that include an omitted institution.
 
 \begin{table}[h]
 	\centering
@@ -101,18 +102,17 @@ The model parameters are summarised in Table \ref{tab:params}. Note that the cor
 \end{tabularx}
 \end{table}
 
-\paragraph{Spectral ranking.}
+\paragraph{Ordinal spectral ranking.}
 Let $r_p=\sum_q C_{pq}$ be the total outgoing citation flow from unit $p$,
-$\mathbf{D}_r=\mathrm{diag}(r_p)$ the corresponding diagonal matrix.
-If $r_p=0$ (a dangling unit with no outgoing citations) the corresponding
-row of $\mathbf{C}$ is zero and $\mathbf{H}$ is defined to have a zero row
-there; the boundary condition below then supplies the necessary probability
-mass.
-Let $\boldsymbol{\mu}$ be an initial preference, or boundary condition
-\citep{hubbellInputoutputApproachClique1965, vignaSpectralRanking2016},
-with $\mu_p = 1/N$ for all $p\in\mathfrak{P}$.
+and $\mathbf{D}_r=\mathrm{diag}(r_p)$ the corresponding diagonal matrix.
+Let $\boldsymbol{\mu}$ be a prior (boundary condition;
+\citealp{hubbellInputoutputApproachClique1965, vignaSpectralRanking2016}),
+with $\mu_p = 1/N_{\mathfrak{P}}$ for $p\in\mathfrak{P}$.
 The row-stochastic citation matrix is
-$\mathbf{H}=\mathbf{D}_r^{-1}\mathbf{C}$.
+$\mathbf{H}=\mathbf{D}_r^{-1}\mathbf{C}$. If $r_p=0$ (a dangling unit with no outgoing citations) the corresponding
+row of $\mathbf{C}$ is zero and $\mathbf{H}$ is defined to have a zero row
+there; the prior below then supplies the necessary probability
+mass.
 
 The spectral ranking $\boldsymbol{\pi}$
 \citep[see][for an overview]{vignaSpectralRanking2016}
@@ -207,28 +207,34 @@ vector $\boldsymbol{\pi}^{(0)}$.
 
 \paragraph{Bipartite structure.}
 With $\mathbf{m}=(0,1,1,0)$, equation~\eqref{eq:C} gives a block off-diagonal $\mathbf{H}$,
-forming a bipartite directed graph between sources and institutions.
+forming a directed bipartite graph between sources and institutions.
 Since the product of row-stochastic matrices is row-stochastic, $\mathbf{H}^2$ is
 block-diagonal and row-stochastic, with one-mode projection blocks
 $\mathbf{M}_S=\mathbf{H}_{SI}\mathbf{H}_{IS}$ and $\mathbf{M}_I=\mathbf{H}_{IS}\mathbf{H}_{SI}$.
 The bipartite structure makes $\mathbf{H}$ periodic with period~2, so the undamped
 equation~\eqref{eq:eig} need not have a unique solution; $\tilde{\mathbf{H}}$ in
 equation~\eqref{eq:Hstar} restores primitivity for any $\alpha\in(0,1)$.
-Partitioning equation~\eqref{eq:spectral} and eliminating $\boldsymbol{\pi}_I$ yields
-the Katz--Hubbell resolvent for sources,
+By using a weight of $\sqrt{\alpha}$ per step, each traversal of an
+$SI$ or $IS$ arc is attenuated by $\sqrt{\alpha}$, and the round-trip
+attenuation through $\mathbf{M}_S$ equals $\alpha$, matching the
+single-step damping used in the SS and II modes and making all four modes
+directly comparable at the same $\alpha$.
+Partitioning $\boldsymbol{\pi}=\sqrt{\alpha}\mathbf{H}^\top\boldsymbol{\pi}+(1-\sqrt{\alpha})\boldsymbol{\mu}$
+and eliminating $\boldsymbol{\pi}_I$ yields
+the bipartite resolvent for sources,
 \begin{equation}
-  \bigl(\mathbf{I}-\alpha^2\mathbf{M}_S^\top\bigr)\boldsymbol{\pi}_S
+  \bigl(\mathbf{I}-\alpha\mathbf{M}_S^\top\bigr)\boldsymbol{\pi}_S
   \;=\;
-  (1-\alpha)\bigl(\boldsymbol{\mu}_S+\alpha\,\mathbf{H}_{IS}^\top\boldsymbol{\mu}_I\bigr),
+  (1-\sqrt{\alpha})\bigl(\boldsymbol{\mu}_S+\sqrt{\alpha}\,\mathbf{H}_{IS}^\top\boldsymbol{\mu}_I\bigr),
   \label{eq:kh_source}
 \end{equation}
-where the effective damping is $\alpha^2$ and the effective prior transports institution
+where the effective round-trip damping is $\alpha$ and the effective prior transports institution
 mass back to sources through $\mathbf{H}_{IS}^\top$. The institution ranking is then
 recovered by a single matrix--vector product,
 \begin{equation}
   \boldsymbol{\pi}_I
   \;=\;
-  \alpha\,\mathbf{H}_{SI}^\top\boldsymbol{\pi}_S+(1-\alpha)\boldsymbol{\mu}_I.
+  \sqrt{\alpha}\,\mathbf{H}_{SI}^\top\boldsymbol{\pi}_S+(1-\sqrt{\alpha})\boldsymbol{\mu}_I.
   \label{eq:kh_inst}
 \end{equation}
 

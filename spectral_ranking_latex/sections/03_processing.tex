@@ -18,32 +18,9 @@ After filtering, 1,602~journals remain.
 \textit{Clarivate Web of Science Journal Citation Reports} ~\cite[][JCR]{clarivateanalyticsJournalCitationReports2026} assign each
 journal a Web of Science category. We retain those in Economics, Management, Business, Transportation or Business, Finance. After filtering, 1,413~journals remain.
 
-Every journal in JQL, SJL, and MJL has at least one ISSN, and may have several. These registry ISSNs are joined independently to the February 2026 OpenAlex sources snapshot in using its list of ISSNs as the matching key. Journal titles are examined to identify around 30 additional matches where the OpenAlex source does not have an ISSN. The list of OpenAlex sources that are matched is designated OAS\textsuperscript{*}. The long list OAS\textsuperscript{*} includes sources publishing works in disciplines beyond  economics and business. We use OpenAlex source-topic assignments to exclude sources having a minority of works in economics/business. A source has work-topic counts for up to five topics, each within a single sub-field, field, and domain. We accumulate the work-topic counts for OpenAlex Field~14 (Economics, Econometrics and Finance) and Field~20 (Business and Management) and define the work-topic density as the ratio of this count to the total topic count in the source. Sources are dropped if this ratio is below 50\%. The 1,659 surviving sources, labeled OAS, are used to extract the corpus. Matching outcomes are summarised in Table \ref{tab:source_matching}.
+Every journal in JQL, SJL, and MJL has at least one ISSN, and may have several. These registry ISSNs are joined independently to the February 2026 OpenAlex sources snapshot using its list of ISSNs as the matching key and selecting only the `journal' type. Journal titles are examined to identify around 30 additional matches where the OpenAlex source does not have an ISSN. The list of OpenAlex sources that are matched is designated OAS\textsuperscript{*}. The long list OAS\textsuperscript{*} includes sources publishing works in disciplines beyond  economics and business. We use OpenAlex source-topic assignments to exclude sources having a minority of works in economics/business. A source has work-topic counts for up to five topics, each within a single sub-field, field, and domain. We accumulate the work-topic counts for OpenAlex Field~14 (Economics, Econometrics and Finance) and Field~20 (Business and Management) and define the work-topic density as the ratio of this count to the total topic count in the source. Sources are dropped if this ratio is below 50\%. The 1,659 surviving sources, labeled OAS, are used to extract the corpus. Matching outcomes are summarised in Table \ref{tab:source_matching}.
 
-\begin{table}[htbp]
-	\centering
-	\caption{Registry source matches to OpenAlex source identifiers}
-	\label{tab:source_matching}
-	\begin{tabular}{p{6cm} rrrr}
-		\toprule
-		Register & Journals & Matched & Match rate & Unmatched \\
-		\midrule
-		JQL (Harzing's journal quality list) & 842 & 839 & 99.6\% & 3 \\
-		MJL (Clarivate master journal list) & 1,413 & 1,392 & 98.5\% & 21 \\
-		SJL (ERA submission journal list)& 1,602 & 1,388 & 86.6\% & 214 \\
-		\midrule
-		\multicolumn{5}{l}{Registries pairwise overlap} \\
-		\multicolumn{5}{l}{MJL $\cap$ SJL \hfill 783 sources} \\
-		\multicolumn{5}{l}{MJL $\cap$ JQL \hfill 566 sources} \\
-		\multicolumn{5}{l}{SJL $\cap$ JQL \hfill 424 sources} \\
-		\multicolumn{5}{l}{MJL $\cap$ SJL $\cap$ JQL \hfill 393 sources} \\
-		\midrule
-		\multicolumn{5}{l}{OpenAlex topic filtering} \\
-	    \multicolumn{5}{l}{MJL $\cap$ SJL $\cap$ JQL $\cap$ OA (OAS\textsuperscript{*} long-list) \hfill 2,380 sources} \\
- 	    \multicolumn{5}{l}{OA sources with topics specifically in Economics or Commerce (OAS) \hfill 1,659 sources} \\
-		\bottomrule
-	\end{tabular}
-\end{table}
+\input{../data/table2_source_matching}
 
 Each corpus extraction is parameterised by a field subset $F$ and a time window $t_x$. The field subset restricts the source set $\mathfrak{S}$ to sources whose OpenAlex topic counts fall exclusively in Field~14 ($F=E$), exclusively in Field~20 ($F=B$), or in either field ($F=A$, all OAS sources). The time window encodes the census and target year ranges via $t_x\in\{1,\ldots,7\}$; the seven cases are listed in Table~\ref{tab:windows}. The five symmetric windows correspond to conventional five-year citation windows; cases~6 and~7 are asymmetric windows analogous to the Journal Impact Factor and reference spectroscopy respectively.
 
@@ -74,7 +51,7 @@ $t_x$ & Census window $[t^c_0,t^c_1]$ & Target window $[t^t_0,t^t_1]$ & Label \\
 \end{tabular}
 \end{table}
 
-We extract an initial corpus of works in the OAS source list ($F=A$, $t_x=5$), by retaining article and review types with publication years between 2020 and 2024 inclusive and excluding works that are paratext or retracted, or without an authorship entity. The institution retention curve Fig. \ref{fig:retention} implies that the preferred minimum cut for works per institution per year could be chosen as $\tau_U = 10$, leaving approximately 1,900 institutions and 75\% of the works. The authorships and references for the initial corpus are then attached and the value of $\omega_{iu}$ computed for each work. The characteristics of the initial data set are exhibited in Table \ref{tab:corpus_features}.
+We extract an initial corpus of works in the OAS source list ($F=A$, $t_x=5$), by retaining article and review types with publication years between 2020 and 2024 inclusive and excluding works that are paratext or retracted, or without an authorship entity. The institution retention curve (Fig.~\ref{fig:retention}) implies a preferred minimum cut of $\tau_U = 20$ works per institution per year, retaining approximately 1,734 institutions and 85\% of the works. The authorships and references for the initial corpus are then attached and the value of $\omega_{iu}$ computed for each work. The characteristics of the initial data set are exhibited in Table~\ref{tab:corpus_features}.
 
 \begin{figure}[htbp]
 	\centering
@@ -83,29 +60,5 @@ We extract an initial corpus of works in the OAS source list ($F=A$, $t_x=5$), b
 	\label{fig:retention}
 \end{figure}
 
-\begin{table}[htbp]
-\centering
-\caption{Corpus features by year ($\tau_U > 10$). Upper panel: unique-item counts. Lower panel: $D_1$ and $D_9$ deciles of per-entity distributions. The 2000--24 column pools the full period.}
-\label{tab:corpus_features}
-\begin{tabular}{lrrrrrr}
-\toprule
- & \multicolumn{2}{c}{2000} & \multicolumn{2}{c}{2024} & \multicolumn{2}{c}{2000--24} \\
-\cmidrule(lr){2-3}\cmidrule(lr){4-5}\cmidrule(lr){6-7}
-Quantity & \multicolumn{2}{c}{count} & \multicolumn{2}{c}{count} & \multicolumn{2}{c}{count} \\
-\midrule
-Works & \multicolumn{2}{r}{16,190} & \multicolumn{2}{r}{59,802} & \multicolumn{2}{r}{966,687} \\
-Sources & \multicolumn{2}{r}{669} & \multicolumn{2}{r}{1,327} & \multicolumn{2}{r}{1,624} \\
-Institutions & \multicolumn{2}{r}{1,329} & \multicolumn{2}{r}{1,739} & \multicolumn{2}{r}{1,742} \\
-Reference counts (out-degree) & \multicolumn{2}{r}{6,304} & \multicolumn{2}{r}{1,546,508} & \multicolumn{2}{r}{14,897,377} \\
-Citation counts (in-degree) & \multicolumn{2}{r}{580,260} & \multicolumn{2}{r}{31,558} & \multicolumn{2}{r}{14,751,724} \\
-\midrule
-Quantity & $D_1$ & $D_9$ & $D_1$ & $D_9$ & $D_1$ & $D_9$ \\
-\midrule
-Works per source & 3.0 & 49.0 & 5.0 & 84.4 & 32.0 & 1283.9 \\
-Institutions per work & 1.0 & 3.0 & 1.0 & 4.0 & 1.0 & 4.0 \\
-References per work (out-degree) & 1.0 & 3.0 & 5.0 & 60.0 & 2.0 & 44.0 \\
-Citations per work (in-degree) & 2.0 & 92.0 & 1.0 & 4.0 & 1.0 & 44.0 \\
-\bottomrule
-\end{tabular}
-\end{table}
+\input{../data/table3_corpus_features}
 

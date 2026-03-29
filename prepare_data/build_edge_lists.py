@@ -33,7 +33,7 @@ SI block: GROUP BY (citer_source, cited_inst)    — deduplicate on citer work
 IS block: GROUP BY (citer_inst,   cited_source)  — deduplicate on cited work
 II block: no deduplication needed (full cross product intended)
 
-Tables are named  el_t{t_x}_{F_x}_tau{τ_U},  e.g. el_t5_A_tau10.
+Tables are named  el_t{t_x}_{F_x}_tau{τ_U},  e.g. el_t5_A_tau20.
 A _catalog table records parameters and summary statistics.
 
 Institution retention
@@ -414,8 +414,9 @@ def main():
         print("\n=== Catalog ===")
         db.sql("SELECT * FROM _catalog ORDER BY t_x, F_x, tau_u").show()
 
-        print("\n=== Baseline edge list sample (el_t5_A_tau10) ===")
-        db.sql("SELECT * FROM el_t5_A_tau10 LIMIT 20").show()
+        _tau_a = TAU_U_FLOOR['A']
+        print(f"\n=== Baseline edge list sample (el_t5_A_tau{_tau_a}) ===")
+        db.sql(f"SELECT * FROM el_t5_A_tau{_tau_a} LIMIT 20").show()
 
 
 if __name__ == '__main__':

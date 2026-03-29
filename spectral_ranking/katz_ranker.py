@@ -127,22 +127,25 @@ def bipartite_resolvent(
     """
     Direct resolvent solve for the bipartite SI/IS case.
 
-    The block-off-diagonal system π = αH^T π + (1−α)μ partitions as:
-        π_S = α H_IS^T π_I + (1−α) μ_S          (A)
-        π_I = α H_SI^T π_S + (1−α) μ_I          (B)
+    Uses the sqrt(alpha) per-step convention so that round-trip attenuation
+    equals alpha, matching the single-step damping of the SS and II modes.
+
+    The system π = sqrt(α) H^T π + (1−sqrt(α)) μ partitions as:
+        π_S = sqrt(α) H_IS^T π_I + (1−sqrt(α)) μ_S          (A)
+        π_I = sqrt(α) H_SI^T π_S + (1−sqrt(α)) μ_I          (B)
     Substituting (B) into (A) and using the Breiger one-mode projection
     M_S = H_SI @ H_IS yields a small (N_s × N_s) linear system:
-        (I − α² M_S^T) π_S = (1−α)(μ_S + α H_IS^T μ_I)
+        (I − α M_S^T) π_S = (1−sqrt(α))(μ_S + sqrt(α) H_IS^T μ_I)
     solved directly via spsolve.  Institutions are then recovered from (B).
 
-    Prior: μ_p = 1/N for all p, with N = N_s + N_u (eq. 5 of paper).
+    Prior: μ_p = 1/N_P for p in P, with N_P = N_s + N_u.
 
     Parameters
     ----------
     H_SI : csr_matrix, shape (N_s, N_u). Row-stochastic; dangling rows as zeros.
     H_IS : csr_matrix, shape (N_u, N_s). Row-stochastic; dangling rows as zeros.
     N_s, N_u : dimensions
-    alpha : float in (0, 1)
+    alpha : float in (0, 1). Round-trip damping; per-step damping is sqrt(alpha).
 
     Returns
     -------
@@ -154,19 +157,21 @@ def bipartite_resolvent(
     mu_s = np.full(N_s, 1.0 / N)
     mu_u = np.full(N_u, 1.0 / N)
 
+    sqrt_alpha = np.sqrt(alpha)
+
     # One-mode projection M_S = H_SI @ H_IS  (N_s × N_s)
     M_S = H_SI.dot(H_IS)
 
-    # LHS: (I − α² M_S^T)  in CSC for direct solver
-    A = eye(N_s, format='csc') - (alpha ** 2) * M_S.T.tocsc()
+    # LHS: (I − α M_S^T) — effective round-trip damping α
+    A = eye(N_s, format='csc') - alpha * M_S.T.tocsc()
 
-    # RHS: (1−α)(μ_S + α H_IS^T μ_I)
-    rhs = (1.0 - alpha) * (mu_s + alpha * H_IS.T.dot(mu_u))
+    # RHS: (1−sqrt(α))(μ_S + sqrt(α) H_IS^T μ_I)
+    rhs = (1.0 - sqrt_alpha) * (mu_s + sqrt_alpha * H_IS.T.dot(mu_u))
 
     pi_s = spsolve(A, rhs)
 
-    # Recover institutions: π_I = α H_SI^T π_S + (1−α) μ_I
-    pi_u = alpha * H_SI.T.dot(pi_s) + (1.0 - alpha) * mu_u
+    # Recover institutions: π_I = sqrt(α) H_SI^T π_S + (1−sqrt(α)) μ_I
+    pi_u = sqrt_alpha * H_SI.T.dot(pi_s) + (1.0 - sqrt_alpha) * mu_u
 
     # Joint normalisation
     pi_s = np.maximum(pi_s, 0.0)

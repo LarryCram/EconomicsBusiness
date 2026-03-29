@@ -12,7 +12,7 @@ Usage
 Output table naming
 -------------------
   rk_t{tx}_{fx}_tau{tau_u}_rho{rho}_m{mstr}_chi{chi_int}_alpha{alpha_int}
-  e.g. rk_t5_A_tau10_rho0_m0110_chi50_alpha85   (baseline)
+  e.g. rk_t5_A_tau20_rho0_m0110_chi50_alpha85   (baseline)
 
 Each table has columns: unit_idx, unit_type, pi, v, rank_pi, rank_v, a_p.
 A _catalog table records all run parameters and diagnostics.
@@ -31,9 +31,12 @@ import duckdb
 sys.path.insert(0, str(Path(__file__).parent))        # spectral_ranking/
 sys.path.insert(0, str(Path(__file__).parent.parent)) # project root for util
 
-from util import load_config
+from util import load_config, load_params
 from build_csr import build_csr
 from katz_ranker import rank
+
+_params     = load_params()
+TAU_U_FLOOR = _params['tau_u_floor']   # keyed by fx; all currently 20
 
 
 # ─── Parameter set definition ─────────────────────────────────────────────────
@@ -62,7 +65,7 @@ def table_name(p: RunParams) -> str:
 
 # Baseline parameters
 BASELINE = RunParams(
-    tx=5, fx='A', tau_u=10, rho=0,
+    tx=5, fx='A', tau_u=TAU_U_FLOOR['A'], rho=0,
     m=(0, 1, 1, 0), chi=0.5, alpha=0.85,
     label='baseline',
 )
@@ -70,32 +73,32 @@ BASELINE = RunParams(
 # Stage 1: one-at-a-time deviations from baseline
 STAGE1 = [
     BASELINE,
-    RunParams(tx=5, fx='A', tau_u=10, rho=1,
+    RunParams(tx=5, fx='A', tau_u=TAU_U_FLOOR['A'], rho=1,
               m=(0, 1, 1, 0), chi=0.5, alpha=0.85,   label='rho1'),
-    RunParams(tx=5, fx='A', tau_u=10, rho=0,
+    RunParams(tx=5, fx='A', tau_u=TAU_U_FLOOR['A'], rho=0,
               m=(0, 1, 1, 0), chi=0.5, alpha=0.50,   label='alpha0.5'),
-    RunParams(tx=5, fx='E',   tau_u=10, rho=0,
+    RunParams(tx=5, fx='E',   tau_u=TAU_U_FLOOR['E'], rho=0,
               m=(0, 1, 1, 0), chi=0.5, alpha=0.85,   label='F=E'),
-    RunParams(tx=5, fx='B',   tau_u=10, rho=0,
+    RunParams(tx=5, fx='B',   tau_u=TAU_U_FLOOR['B'], rho=0,
               m=(0, 1, 1, 0), chi=0.5, alpha=0.85,   label='F=B'),
-    RunParams(tx=5, fx='EB',  tau_u=10, rho=0,
+    RunParams(tx=5, fx='EB',  tau_u=TAU_U_FLOOR['EB'], rho=0,
               m=(0, 1, 1, 0), chi=0.5, alpha=0.85,   label='F=EB'),
-    RunParams(tx=5, fx='NEB', tau_u=10, rho=0,
+    RunParams(tx=5, fx='NEB', tau_u=TAU_U_FLOOR['NEB'], rho=0,
               m=(0, 1, 1, 0), chi=0.5, alpha=0.85,   label='F=~EB'),
-    RunParams(tx=5, fx='A', tau_u=10, rho=0,
+    RunParams(tx=5, fx='A', tau_u=TAU_U_FLOOR['A'], rho=0,
               m=(1, 0, 0, 0), chi=0.5, alpha=0.85,   label='SS-only'),
-    RunParams(tx=5, fx='A', tau_u=10, rho=0,
+    RunParams(tx=5, fx='A', tau_u=TAU_U_FLOOR['A'], rho=0,
               m=(0, 0, 0, 1), chi=0.5, alpha=0.85,   label='II-only'),
-    RunParams(tx=5, fx='A', tau_u=10, rho=0,
+    RunParams(tx=5, fx='A', tau_u=TAU_U_FLOOR['A'], rho=0,
               m=(1, 1, 1, 1), chi=0.5, alpha=0.85,   label='full-joint'),
-    # τ_U=8 variant requires el_t5_A_tau8 — build that edge list first
-    RunParams(tx=5, fx='A', tau_u=8,  rho=0,
-              m=(0, 1, 1, 0), chi=0.5, alpha=0.85,   label='tau8'),
+    # τ_U sensitivity variant (τ_U=10) — requires el_t5_A_tau10 edge list
+    RunParams(tx=5, fx='A', tau_u=10, rho=0,
+              m=(0, 1, 1, 0), chi=0.5, alpha=0.85,   label='tau10'),
 ]
 
 # Stage 2: time-series sweep (baseline parameters, vary tx)
 STAGE2 = [
-    RunParams(tx=tx, fx='A', tau_u=10, rho=0,
+    RunParams(tx=tx, fx='A', tau_u=TAU_U_FLOOR['A'], rho=0,
               m=(0, 1, 1, 0), chi=0.5, alpha=0.85,
               label=f't{tx}')
     for tx in [1, 2, 3, 4, 6]
@@ -258,9 +261,25 @@ def run_one(el_db, rk_db, p: RunParams, verbose: bool = True) -> bool:
     return True
 
 
-def clean_stale(rk_db) -> None:
-    """Drop ranking tables not in any known schedule."""
-    expected = {table_name(p) for p in STAGE1 + STAGE2}
+def compute_chi_star(el_db, p: RunParams) -> float:
+    """
+    Compute χ* = N_u / (N_s + N_u) from the units table for RunParams p.
+    Provides dimensional balance: equal expected prestige per unit across
+    sources and institutions.
+    """
+    uname = f'_units_t{p.tx}_{p.fx}_tau{p.tau_u}'
+    rows = el_db.execute(
+        f"SELECT unit_type, COUNT(*) AS n FROM {uname} GROUP BY unit_type"
+    ).fetchall()
+    counts = {r[0]: r[1] for r in rows}
+    n_s = counts.get('S', 0)
+    n_u = counts.get('U', 0)
+    return n_u / (n_s + n_u)
+
+
+def clean_stale(rk_db, schedule: list) -> None:
+    """Drop ranking tables not in the current schedule."""
+    expected = {table_name(p) for p in schedule}
     all_tables = {row[0] for row in rk_db.execute('SHOW TABLES').fetchall()}
     stale = [t for t in all_tables
              if t.startswith('rk_') and t not in expected]
@@ -290,15 +309,28 @@ def main():
         raise FileNotFoundError(f"edge_lists.duckdb not found at {el_path}. "
                                 f"Run prepare_data/build_edge_lists.py first.")
 
-    schedule = [BASELINE] if args.baseline_only else (STAGE2 if args.stage == 2 else STAGE1)
-
     with duckdb.connect(str(el_path), read_only=True) as el_db, \
          duckdb.connect(str(rk_path)) as rk_db:
+
+        # Build schedule — χ* requires N_s, N_u from the units table
+        if args.baseline_only:
+            schedule = [BASELINE]
+        elif args.stage == 2:
+            schedule = list(STAGE2)
+        else:
+            chi_star = compute_chi_star(el_db, BASELINE)
+            chi_star_run = RunParams(
+                tx=BASELINE.tx, fx=BASELINE.fx, tau_u=BASELINE.tau_u, rho=0,
+                m=(1, 1, 1, 1), chi=chi_star, alpha=0.85,
+                label='full-joint-chi*',
+            )
+            print(f"χ* = {chi_star:.4f}  →  {table_name(chi_star_run)}")
+            schedule = list(STAGE1) + [chi_star_run]
 
         rk_db.execute(f"SET temp_directory = '{paths.working}/.tmp'")
         ensure_catalog(rk_db)
         print('=== Cleaning stale tables ===')
-        clean_stale(rk_db)
+        clean_stale(rk_db, schedule)
 
         n_ok = n_skip = 0
         for p in schedule:

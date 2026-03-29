@@ -16,8 +16,8 @@ time_windows:
 # Minimum mean annual works per institution (τ_U) by field subset
 # E/B subsets are smaller so a lower floor is appropriate
 tau_u_floor:
-  E: 10    # inherits institution set from A corpus
-  B: 10    # inherits institution set from A corpus
-  EB: 10   # inherits institution set from A corpus
-  NEB: 10  # inherits institution set from A corpus
-  A: 10
+  E: 20    # inherits institution set from A corpus
+  B: 20    # inherits institution set from A corpus
+  EB: 20   # inherits institution set from A corpus
+  NEB: 20  # inherits institution set from A corpus
+  A: 20

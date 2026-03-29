@@ -22,24 +22,26 @@ Table 3: Corpus features.
         table3_corpus_features.csv
 """
 
+import sys
 from pathlib import Path
+sys.path.insert(0, str(Path(__file__).parent.parent))
+from util import load_config, load_params
+
 import duckdb
-import yaml
 import pandas as pd
 import subprocess
 import tempfile
 
-# Load config
-config_path = Path('./config.yaml')
-with open(config_path) as f:
-    config = yaml.safe_load(f)
-    PROJECT_FOLDER = Path(config['PROJECT_ROOT'])
-    DATA = PROJECT_FOLDER / Path(config.get('DATA'))
-    WORKING = Path(config.get('WORKING'))
-PARQUET = WORKING / 'parquet'
+paths  = load_config()
+params = load_params()
 
-# Institution threshold (τ_U); sensitivity runs at 5 and 15
-TAU_U = 10
+PROJECT_FOLDER = paths.project_root
+DATA           = paths.data
+WORKING        = paths.working
+PARQUET        = paths.parquet
+
+TAU_U_FLOOR = params['tau_u_floor']
+TAU_U       = TAU_U_FLOOR['A']
 
 
 # ---------------------------------------------------------------------------
@@ -196,7 +198,7 @@ def write_latex_table2(rows, overlaps, out_path):
     L.append(r"\centering")
     L.append(
         r"\caption{Matching of the three register-based sources to OpenAlex source identifiers."
-        r" Pairwise overlaps are based on shared matched entries.}"
+        r" Overlaps count shared matched entries; OAS$^*$ is the union across all three registries.}"
     )
     L.append(r"\label{tab:source_matching}")
     L.append(r"\begin{tabular}{lrrrr}")
@@ -206,23 +208,18 @@ def write_latex_table2(rows, overlaps, out_path):
     for reg, total, matched, unmatched in rows:
         L.append(f"{reg} & {_i(total)} & {_i(matched)} & {_pct(matched, total)} & {_i(unmatched)} \\\\")
     L.append(r"\midrule")
-    L.append(r"\multicolumn{5}{l}{\textit{Pairwise overlap of matched OAS$^*$}} \\")
     pairs = [
-        (r"MJL $\cap$ SJL",              mql_sjl),
-        (r"MJL $\cap$ JQL",              mql_jql),
-        (r"SJL $\cap$ JQL",              sjl_jql),
-        (r"MJL $\cap$ SJL $\cap$ JQL",  all_three),
+        (r"Overlap: $\mathrm{MJL} \cap \mathrm{SJL}$",                                                          mql_sjl),
+        (r"Overlap: $\mathrm{MJL} \cap \mathrm{JQL}$",                                                          mql_jql),
+        (r"Overlap: $\mathrm{SJL} \cap \mathrm{JQL}$",                                                          sjl_jql),
+        (r"Overlap: $\mathrm{MJL} \cap \mathrm{SJL} \cap \mathrm{JQL}$",                                        all_three),
+        (r"$(\mathrm{JQL} \cup \mathrm{MJL} \cup \mathrm{SJL}) \cap \mathrm{OA}$\quad (OAS$^*$)", total_oas_star),
     ]
     for label, count in pairs:
         L.append(
             f"\\multicolumn{{2}}{{l}}{{{label}}} & "
             f"\\multicolumn{{3}}{{r}}{{{_i(count)} sources}} \\\\"
         )
-    L.append(r"\midrule")
-    L.append(
-        f"\\multicolumn{{2}}{{l}}{{\\textbf{{Union (long-list)}}}} & "
-        f"\\multicolumn{{3}}{{r}}{{\\textbf{{{_i(total_oas_star)} unique OAS}}}} \\\\"
-    )
     L.append(r"\bottomrule")
     L.append(r"\end{tabular}")
     L.append(r"\end{table}")
