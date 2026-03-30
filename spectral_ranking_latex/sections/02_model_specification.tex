@@ -24,9 +24,9 @@ Each retained work $w_i$ has an \textit{institution weight} under author-fractio
   \label{eq:omega}
 \end{equation}
 where $\ell$ indexes the retained authors of work $w_i$, $a_i$ is their count, and $u_{i\ell}$ the number of
-retained institutions of author $\ell$, so that $\sum_u\omega_{iu}=1$. Re-weighting fractional counts as a consequence of pruning the number of institutions is a trade-off between boosting the residual institutions and diminishing the total contribution of a work. 
+retained institutions of author $\ell$, so that $\sum_u\omega_{iu}=1$. Re-weighting fractional counts as a consequence of pruning the number of institutions is a trade-off between boosting a work's remaining institutions and diminishing the work's total contribution. 
 
-When a work $w_i$ references another work $w_j$ we say that $w_i$ gives attention to $w_j$. The amount of attention given by a work can be either (a) the number of references, or (b) a fixed amount \citep{zittModifyingJournalImpact2008}. Let $R_i=|\{j:(i,j)\in\mathfrak{R}\}|$ be the reference count of work $w_i$ and $\bar{R}=|\mathfrak{R}|/N_w$ the mean reference count over $\mathfrak{W}$. We use the \textit{reference normalisation weight} $\rho_i$ to select case (a) or case (b) respectively:
+When a work $w_i$ references another work $w_j$ we say that $w_i$ gives attention to $w_j$. The amount of attention given by a work' references can be either (a) the number of references, or (b) a fixed amount \citep{zittModifyingJournalImpact2008}. Let $R_i=|\{j:(i,j)\in\mathfrak{R}\}|$ be the reference count of work $w_i$ and $\bar{R}=|\mathfrak{R}|/N_w$ the mean reference count over $\mathfrak{W}$. We use the \textit{reference normalisation weight} $\rho_i$ to select case (a) or case (b) respectively:
 \begin{equation}
 	\rho_i \;=\;
 	\begin{cases}
@@ -37,9 +37,9 @@ When a work $w_i$ references another work $w_j$ we say that $w_i$ gives attentio
 \end{equation}
 
 We construct the set of \emph{units} [sources or institutions; \cite{pinskiCitationInfluenceJournal1976}]
-$\mathfrak{P}=\mathfrak{S}\cup\mathfrak{U}$ with $N=N_s+N_u$ elements, ordered so that
+$\mathfrak{P}=\mathfrak{S}\ \cup\ \mathfrak{U}$ with $N=N_s+N_u$ elements, ordered so that
 sources occupy indices $1,\dots,N_s$ and institutions indices $N_s+1,\dots,N$.
-A reference $(i,j) \in \mathfrak{R}$ gives attention across unit-type pairs:
+A reference $(i,j) \in \mathfrak{R}$ gives attention across four unit-type pairs:
 source--source ($SS$), source--institution ($SI$), institution--source ($IS$), and
 institution--institution ($II$).
 
@@ -48,7 +48,7 @@ $\mathbf{b}^S_i\in\mathbb{R}^{N_s}$ with $[\mathbf{b}^S_i]_s=\mathbf{1}[w_i\in s
 and the institution weight distribution vector
 $\mathbf{b}^U_i\in\mathbb{R}^{N_u}$ with $[\mathbf{b}^U_i]_u=\omega_{iu}$
 from \eqref{eq:omega}.
-Attention flow between pairs of unit types is accumulated as four blocks over $\mathfrak{R}$ as rank-1 outer products,
+Attention transfer between pairs of unit types is accumulated as four blocks over $\mathfrak{R}$ as rank-1 outer products,
 \begin{equation}
 	\mathbf{C}_{XY} \;=\; \sum_{(i,j)\,\in\,\mathfrak{R}}
 	\rho_i\;\mathbf{b}^X_i\,\bigl(\mathbf{b}^Y_j\bigr)^\top,
@@ -70,49 +70,25 @@ The citation matrix assembles the four blocks:
 \end{equation}
 where the binary \textit{block mask} $\mathbf{m}=(m_{SS},m_{SI},m_{IS},m_{II})\in\{0,1\}^4$
 is bibliometrically meaningful for
-source-only $(1,0,0,0)$, institution-only $(0,0,0,1)$,
-bipartite $(0,1,1,0)$, and full-joint $(1,1,1,1)$ combined blocks.
+source-only $(1000)$, institution-only $(0001)$,
+bipartite $(0110)$, and full-joint $(1111)$ combined blocks.
 The mixing weight $\chi$ controls the source--institution balance
 in the bipartite and full-joint cases and is inert in the single-mode cases.
 The $\chi$ scaling preserves total citation flow across all block combinations,
 since $(1-\chi)^2+2\chi(1-\chi)+\chi^2=1$.
 We could name $\mathbf{C}$ the reference, attention or citation matrix and prefer the latter.
 
-Table \ref{tab:params} sets out the parameters of the model. Note that the corpus excludes (a) census work references not giving attention to  target works, (b) non-census works giving attention to target works, and (c) authorships that include an omitted institution.
-
-\begin{table}[h]
-	\centering
-	\caption{Model parameters $\boldsymbol{\theta}$.}
-	\label{tab:params}
-	\begin{tabularx}{\textwidth}{lllX}
-		\toprule
-		Symbol & Name & Type & Role \\
-		\midrule
-		\multicolumn{4}{@{}l@{}}{\textit{Corpus construction}} \\[2pt]
-		$F\in\{E,B,A\}$          & field subset          & category        & restrict $\mathfrak{S}$ to Economics ($E$), Business ($B$), or all OAS ($A$); see Table~\ref{tab:windows} \\
-		$t_x\in\{1,\ldots,7\}$  & time window           & integer         & census and target year ranges; see Table~\ref{tab:windows} \\
-		$\tau_U$                 & institution threshold & integer         & minimum mean annual works to retain an institution \\[4pt]
-		\multicolumn{4}{@{}l@{}}{\textit{Matrix construction}} \\[2pt]
-		$\rho\in\{0,1\}$         & reference normalisation & binary        & 0: a work contributes $\bar{R}$ units \newline 1: a work contributes $R_i$ units \\
-		$\mathbf{m}\in\{0,1\}^4$ & block mask            & binary 4-vector & select active unit-type pairs ($SS$, $SI$, $IS$, $II$) \\
-		$\chi\in[0,1]$           & mixing weight         & continuous      & source--institution balance within each work \\[4pt]
-		\multicolumn{4}{@{}l@{}}{\textit{Ranking}} \\[2pt]
-		$\alpha\in[0,1)$         & damping factor        & continuous      & controls propagation through citation network \newline \hspace*{1em} ensures convergence \\
-		\bottomrule
-\end{tabularx}
-\end{table}
+Note that the corpus excludes (a) census work references not giving attention to  target works, (b) non-census works giving attention to target works, and (c) authorships that include an omitted institution.
 
 \paragraph{Ordinal spectral ranking.}
-Let $r_p=\sum_q C_{pq}$ be the total outgoing citation flow from unit $p$,
+Let $r_p=\sum_q C_{pq}$ be the total weighted citations from unit $p$,
 and $\mathbf{D}_r=\mathrm{diag}(r_p)$ the corresponding diagonal matrix.
-Let $\boldsymbol{\mu}$ be a prior (boundary condition;
+Let $\boldsymbol{\mu}$ be a prior distribution (boundary condition;
 \citealp{hubbellInputoutputApproachClique1965, vignaSpectralRanking2016}),
 with $\mu_p = 1/N_{\mathfrak{P}}$ for $p\in\mathfrak{P}$.
 The row-stochastic citation matrix is
 $\mathbf{H}=\mathbf{D}_r^{-1}\mathbf{C}$. If $r_p=0$ (a dangling unit with no outgoing citations) the corresponding
-row of $\mathbf{C}$ is zero and $\mathbf{H}$ is defined to have a zero row
-there; the prior below then supplies the necessary probability
-mass.
+row of $\mathbf{C}$ is zero and $\mathbf{H}$ is defined to have a zero row too.
 
 The spectral ranking $\boldsymbol{\pi}$
 \citep[see][for an overview]{vignaSpectralRanking2016}
@@ -128,58 +104,49 @@ is defined as the solution to the damped eigenvector problem
     \boldsymbol{\pi}\ge 0,
     \label{eq:spectral}
 \end{equation}
-with damping factor $\alpha\in[0,1)$.
-The prior $\boldsymbol{\mu}$ encodes the distribution over
-units weighted by scholarly output, and $\alpha$ controls the degree to
-which influence propagates through the citation network rather than
-being absorbed by that prior.
+with the factor $\alpha\in(0,1)$. As explained by \cite{vignaSpectralRanking2016}, $\alpha$ can be regarded as a damping factor applied to walks over the citation network \citep{katzNewStatusIndex1953} or a parameter that controls the 
+relative strength of the prior \citep{hubbellInputoutputApproachClique1965}.  
 In the limit $\alpha\to 1$, equation~\eqref{eq:spectral} reduces to the
 principal eigenvector problem
 \begin{equation}
-    \boldsymbol{\pi}^{\infty}
+    \boldsymbol{\pi}^{'}
     \;=\;
-    \mathbf{H}^\top\boldsymbol{\pi}^{\infty},
+    \mathbf{H}^\top\boldsymbol{\pi}^{'},
     \qquad
-    \mathbf{1}^\top\boldsymbol{\pi}^{\infty}=1,
+    \mathbf{1}^\top\boldsymbol{\pi}^{'}=1,
     \quad
-    \boldsymbol{\pi}^{\infty}\ge 0,
+    \boldsymbol{\pi}^{'}\ge 0,
     \label{eq:eig}
 \end{equation}
 whose solution is unique when $\mathbf{H}$ is primitive (irreducible and
 aperiodic). \cite{gellerCitationInfluenceMethodology1978} shows that
-$\boldsymbol{\pi}^{\infty}$ is then the stationary distribution of the
+$\boldsymbol{\pi}^{'}$ is then the stationary distribution of the
 Markov chain with transition matrix $\mathbf{H}$, and that it coincides
 with the \textit{influence weight} of \cite{pinskiCitationInfluenceJournal1976}
 scaled by the reference count proportion $r_p / \sum_q r_q$.
 
-The spectral ranking $\boldsymbol{\pi}$ reflects the total citation flow
-received by each unit and therefore depends on unit size.
-\emph{Prestige per work} \citep{palacios-huertaMeasurementIntellectualInfluence2004},
+The spectral ranking $\boldsymbol{\pi}$ reflects the total influence of each unit and depends on unit size.
+The \emph{influence per work} \citep{palacios-huertaMeasurementIntellectualInfluence2004},
 \begin{equation}
-    \mathbf{v}(\alpha)
+    \mathbf{v}
     \;=\;
-    A\,\mathbf{A}^{-1}\boldsymbol{\pi}(\alpha),
+    A\,\mathbf{A}^{-1}\boldsymbol{\pi},
     \qquad
     \mathbf{A}=\mathrm{diag}(a_p),
     \qquad
     A = \mathbf{a}^{\top}\mathbf{1} = \textstyle\sum_p a_p,
     \label{eq:vstar}
 \end{equation}
-removes this dependence, where $a_p = |\{i:w_i\in s\}|$ for source $p=s$
-and $a_p = \sum_i\omega_{iu}$ for institution $p=u$ via \eqref{eq:omega} are the work-counts,
-$\boldsymbol{\pi}(\alpha)$ denotes the solution to \eqref{eq:spectral},
-and $\boldsymbol{\pi}^{\infty}$ the limiting case \eqref{eq:eig}.
+removes this dependence, where the unit work count $a_p = |\{i:w_i\in p\}|$ where $p$ is a specific source or institution,
+$\boldsymbol{\pi}$ denotes the solution to \eqref{eq:spectral},
+and $\boldsymbol{\pi}^{'}$ the limiting case \eqref{eq:eig}.
 The scalar $A$ normalises $\mathbf{v}$ so that its $a_p$-weighted mean equals one:
 $\mathbf{a}^{\top}\mathbf{v}/A=\mathbf{1}^{\top}\boldsymbol{\pi}=1$.
-A unit with $v_p=1$ therefore has exactly the corpus-average prestige per work;
-$v_p=2$ indicates twice the average.
+A unit with $v_p=1$ therefore has the corpus-average influence per work and 
+$v_p=2$ indicates twice the average influence per work.
 \cite{palacios-huertaMeasurementIntellectualInfluence2004} show that
 $\mathbf{v}$ is uniquely characterised by several reasonable axiomatic
 constraints \citep[but see][]{serranoMeasurementIntellectualInfluence2004}.
-Note that $A\,\mathbf{A}^{-1}$ must be applied after convergence; applying
-it inside the iteration loop would iterate on $\mathbf{H}^\top\mathbf{A}$,
-which is not norm-preserving and yields a fixed point with no clean
-interpretation.
 
 To compute $\boldsymbol{\pi}$ we define the modified matrix
 \begin{equation}
@@ -203,17 +170,16 @@ power iteration
 	\label{eq:power}
 \end{equation}
 converging to $\boldsymbol{\pi}$ from any strictly positive starting
-vector $\boldsymbol{\pi}^{(0)}$.
+vector $\boldsymbol{\pi}^{(0)}$. Note that the conversion from total to per-work influence by the scaling $A\,\mathbf{A}^{-1}$ must be applied after $\pi$ has converged.
 
-\paragraph{Bipartite structure.}
-With $\mathbf{m}=(0,1,1,0)$, equation~\eqref{eq:C} gives a block off-diagonal $\mathbf{H}$,
-forming a directed bipartite graph between sources and institutions.
+\paragraph{Bipartite ranking.}
+With $\mathbf{m}=(0110)$, equation~\eqref{eq:C} yields block off-diagonal matrices $\mathbf{C}$ and $\mathbf{H}$,
+forming a directed bipartite network between sources and institutions. The bipartite structure makes $\mathbf{H}$ periodic with period~2, and the undamped equation~\eqref{eq:eig} has no unique solution. The modification 
+$\tilde{\mathbf{H}}$ in equation~\eqref{eq:Hstar} restores primitivity for any $\alpha\in(0,1)$.
 Since the product of row-stochastic matrices is row-stochastic, $\mathbf{H}^2$ is
 block-diagonal and row-stochastic, with one-mode projection blocks
 $\mathbf{M}_S=\mathbf{H}_{SI}\mathbf{H}_{IS}$ and $\mathbf{M}_I=\mathbf{H}_{IS}\mathbf{H}_{SI}$.
-The bipartite structure makes $\mathbf{H}$ periodic with period~2, so the undamped
-equation~\eqref{eq:eig} need not have a unique solution; $\tilde{\mathbf{H}}$ in
-equation~\eqref{eq:Hstar} restores primitivity for any $\alpha\in(0,1)$.
+
 By using a weight of $\sqrt{\alpha}$ per step, each traversal of an
 $SI$ or $IS$ arc is attenuated by $\sqrt{\alpha}$, and the round-trip
 attenuation through $\mathbf{M}_S$ equals $\alpha$, matching the

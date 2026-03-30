@@ -62,3 +62,27 @@ We extract an initial corpus of works in the OAS source list ($F=A$, $t_x=5$), b
 
 \input{../data/table3_corpus_features}
 
+
+\begin{table}[h]
+	\centering
+	\caption{Model parameters $\boldsymbol{\theta}$.}
+	\label{tab:params}
+	\begin{tabularx}{\textwidth}{lllX}
+		\toprule
+		Symbol & Name & Type & Role \\
+		\midrule
+		\multicolumn{4}{@{}l@{}}{\textit{Corpus construction}} \\[2pt]
+		$F\in\{E,B,A\}$          & field subset          & category        & restrict $\mathfrak{S}$ to Economics ($E$), Business ($B$), or all OAS ($A$); see Table~\ref{tab:windows} \\
+		$t_x\in\{1,\ldots,7\}$  & time window           & integer         & census and target year ranges; see Table~\ref{tab:windows} \\
+		$\tau_U$                 & institution threshold & integer         & minimum mean annual works to retain an institution \\[4pt]
+		\multicolumn{4}{@{}l@{}}{\textit{Matrix construction}} \\[2pt]
+		$\rho\in\{0,1\}$         & reference normalisation & binary        & 0: a work contributes $\bar{R}$ units \newline 1: a work contributes $R_i$ units \\
+		$\mathbf{m}\in\{0,1\}^4$ & block mask            & binary 4-vector & select active unit-type pairs ($SS$, $SI$, $IS$, $II$) \\
+		$\chi\in[0,1]$           & mixing weight         & continuous      & source--institution balance within each work \\[4pt]
+		\multicolumn{4}{@{}l@{}}{\textit{Ranking}} \\[2pt]
+		$\alpha\in[0,1)$         & damping factor        & continuous      & controls propagation through citation network \newline \hspace*{1em} ensures convergence \\
+		\bottomrule
+\end{tabularx}
+\end{table}
+
+
