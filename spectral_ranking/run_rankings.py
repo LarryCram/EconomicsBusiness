@@ -317,7 +317,7 @@ def main():
             chi_star_run = RunParams(
                 tx=BASELINE.tx, fx=BASELINE.fx, tau_u=BASELINE.tau_u, rho=0,
                 m=(1, 1, 1, 1), chi=chi_star, alpha=0.85,
-                label='full-joint-chi*',
+                label='full-joint-chi-star',
             )
             print(f"χ* = {chi_star:.4f}  →  {table_name(chi_star_run)}")
             schedule = list(STAGE1) + [chi_star_run]

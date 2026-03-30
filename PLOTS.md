@@ -17,14 +17,26 @@ for the baseline corpus (F=A, t_x=5, 2020–2024). Annotations show institution 
 key thresholds. Selected cut: τ_U=10, ~1,900 institutions, ~75% works retained.
 
 
-#### Figure 2 - spectral ranking versus rank order
+#### Figure 2 - spectral ranking versus rank order with effects of E/B/All
 -- get v_i for S and I.
 -- sort v_i and allocate a unique rank to the sorted values
 -- facet with top panel S and bottom panel I
 -- x-axis is rank (different for top and bottom)
 -- y-axis is v_i score for S or I at index=x
 
-### Figure 3 — Second eigenpair community analysis
+#### Figure 3 - spectral ranking versus rank order with effects of m=1000/0001; 1111; 0110
+-- get v_i for S and I.
+-- sort v_i and allocate a unique rank to the sorted values
+-- facet with top panel S and bottom panel I
+-- x-axis is rank (different for top and bottom)
+-- y-axis is v_i score for S or I at index=x
+-- plot m=0110 in black as baseline
+-- plot m=1000 (for S) and m=0001 (for I) as visible red X
+-- plot m=1111 as visible green X
+
+## SKIP ALL THE FOLLOWING
+
+### Figure 4 — Second eigenpair community analysis
 **Script**: `spectral_results_analysis/community.py`
 **Files**: `plots/fig3_community_eigenpair.pdf`
 **In paper**: Section 4 (results), community structure subsection
@@ -63,17 +75,10 @@ Panel D (bottom right) — Full joint φ₂ at χ=0.5 vs χ*:
 **Data sources**: edge_lists.duckdb (CSR blocks via build_csr), rankings.duckdb
 (π, v, a_p for unit labels), data/ (F-label lookup by source_idx).
 
-## SKIP FOLLOWING Plots
 
-### Figure 2 — Baseline ranking: source and institution prestige scores
-Top-N sources and institutions ranked by prestige per work v(α) under the baseline
-parameter set (t_x=5, F=A, τ_U=10, ρ=1, m=(1,0,0,0), χ=0.5, α=0.85).
-
-### Figure 3 — Parameter sensitivity
+### Figure 5 — Parameter sensitivity
 Rank correlation (Spearman) heatmap across parameter combinations (α, χ, m, ρ).
 
-### Figure 4 — Time series
+### Figure 6 — Time series
 Rank stability of top sources and institutions across t_x=1–5 symmetric windows.
 
-### Figure 5 — Bipartite vs. full-joint comparison
-Scatter or rank-shift plot comparing source rankings under m=(0,1,1,0) vs. m=(1,1,1,1).

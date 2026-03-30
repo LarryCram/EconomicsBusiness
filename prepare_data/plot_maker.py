@@ -1,11 +1,15 @@
 """
 plot_maker.py — Plots for the paper.
 
-Plot 1: Institution works-count elbow.
+Plot 1: Institution and source works-count elbow.
     x = minimum works_count threshold (cutoff, in works/year)
-    y = % of total works from institutions with >= cutoff works/year
-    Computed over the baseline window (t_x=5, 2020–2024) so the institution
-    counts on the secondary x-axis match institution_retention.py at τ_U=10.
+    y = % of total works retained at that threshold
+    Blue curve: institution retention (work retained if ≥1 author at institution
+                with >= τ works/year)
+    Green curve: source retention (work retained if its source has >= τ works/year)
+    Upper x-axis row 1: sources retained at each τ tick
+    Upper x-axis row 2: institutions retained at each τ tick
+    Computed over the baseline window (t_x=5, 2020–2024).
 """
 import sys
 from pathlib import Path
@@ -15,7 +19,6 @@ from util import load_config, load_params
 import duckdb
 import pandas as pd
 import matplotlib.pyplot as plt
-import seaborn.objects as so
 import seaborn as sns
 
 paths  = load_config()
@@ -109,45 +112,118 @@ def fetch_elbow_data(db) -> pd.DataFrame:
         ORDER BY works_count
     """).df()
 
-def plot1(df: pd.DataFrame) -> None:
-    df = df.copy()
-    df['works_per_year'] = df['works_count'] / N_YEARS
+def fetch_source_elbow_data(db) -> pd.DataFrame:
+    """
+    Returns one row per distinct source works_count with:
+        works_count          -- source size (distinct works in the baseline window)
+        sources_count        -- sources at exactly this size
+        cum_sources_above    -- sources with works_count >= this value
+        pct_retained         -- % of total corpus works from sources with >= this works_count
+    """
+    return db.sql(f"""
+        WITH source_works AS (
+            SELECT source_idx,
+                   COUNT(DISTINCT work_idx) AS works_count
+            FROM '{PARQUET}/corpus_works.parquet'
+            WHERE publication_year BETWEEN {_YEAR_MIN} AND {_YEAR_MAX}
+            GROUP BY source_idx
+        ),
+        src_freq AS (
+            SELECT works_count,
+                   COUNT(*)          AS sources_count,
+                   SUM(works_count)  AS works_at_level
+            FROM source_works
+            GROUP BY works_count
+        ),
+        totals AS (
+            SELECT SUM(sources_count)  AS total_sources,
+                   SUM(works_at_level) AS total_works
+            FROM src_freq
+        ),
+        cumul AS (
+            SELECT works_count, sources_count, works_at_level,
+                   SUM(sources_count) OVER (ORDER BY works_count
+                       ROWS UNBOUNDED PRECEDING) AS cum_src_to,
+                   SUM(works_at_level) OVER (ORDER BY works_count
+                       ROWS UNBOUNDED PRECEDING) AS cum_works_to,
+                   total_sources, total_works
+            FROM src_freq CROSS JOIN totals
+        )
+        SELECT works_count,
+               sources_count,
+               (total_sources - COALESCE(LAG(cum_src_to)    OVER (ORDER BY works_count), 0))
+                   AS cum_sources_above,
+               (total_works  - COALESCE(LAG(cum_works_to)   OVER (ORDER BY works_count), 0))
+                   * 100.0 / total_works AS pct_retained
+        FROM cumul
+        ORDER BY works_count
+    """).df()
 
-    plot_df = df[df['works_per_year'] <= 40].copy()
 
-    fig = plt.figure(figsize=(9, 3.5))
-    (
-        so.Plot(plot_df, x='works_per_year', y='pct_retained')
-        .add(so.Line(linewidth=1.5, color='steelblue'))
-        .label(x=r'Annual work count threshold ($\tau_U$)',
-               y='% works retained')
-        .theme(sns.axes_style('whitegrid'))
-        .on(fig)
-        .plot()
-    )
+def _count_at_tick(df: pd.DataFrame, count_col: str, t: float) -> str:
+    """Return formatted count from df for the lowest works_per_year >= t."""
+    candidates = df[df['works_per_year'] >= t]
+    if candidates.empty:
+        return '0'
+    return f'{int(candidates.iloc[0][count_col]):,}'
 
-    ax = fig.axes[0]
+
+def plot1(df_inst: pd.DataFrame, df_src: pd.DataFrame) -> None:
+    df_inst = df_inst.copy()
+    df_inst['works_per_year'] = df_inst['works_count'] / N_YEARS
+    df_src = df_src.copy()
+    df_src['works_per_year'] = df_src['works_count'] / N_YEARS
+
+    x_max = 40
+    plot_inst = df_inst[df_inst['works_per_year'] <= x_max]
+    plot_src  = df_src[df_src['works_per_year']  <= x_max]
+
+    sns.set_theme(style='whitegrid', font_scale=0.95)
+    fig, ax = plt.subplots(figsize=(9, 4.5))
+
+    total_inst = int(df_inst['cum_institutions_above'].iloc[0])
+    total_src  = int(df_src['cum_sources_above'].iloc[0])
+
+    ax.plot(plot_inst['works_per_year'], plot_inst['pct_retained'],
+            color='steelblue', linewidth=1.5,
+            label=f'Institutions  (total = {total_inst:,})')
+    ax.plot(plot_src['works_per_year'],  plot_src['pct_retained'],
+            color='green',     linewidth=1.5,
+            label=f'Sources  (total = {total_src:,})')
+
     ax.set_ylim(60, 100)
+    ax.set_xlim(0, x_max)
+    ax.set_xlabel(r'Annual work count threshold ($\tau_U$)', labelpad=4)
+    ax.set_ylabel('% works retained', labelpad=4)
+    ax.legend(loc='lower left', framealpha=1.0)
 
     for level in (75, 85, 90, 95, 99):
-        ax.axhline(level, color='grey', linewidth=0.7, linestyle='--', alpha=0.6)
+        ax.axhline(level, color='grey', linewidth=0.7, linestyle='--', alpha=0.6, zorder=0)
         ax.text(1.01, level, f'{level}%', va='center', fontsize=8, color='grey',
                 transform=ax.get_yaxis_transform())
 
-    # Secondary x-axis: institutions included at each tick (in works_per_year units)
+    ticks = [t for t in ax.get_xticks() if 0 < t <= x_max]
+
+    # ── Lower secondary axis: institutions retained ───────────────────────────
     ax2 = ax.twiny()
     ax2.set_xlim(ax.get_xlim())
-    ticks = [t for t in ax.get_xticks() if ax.get_xlim()[0] < t <= ax.get_xlim()[1]]
     ax2.set_xticks(ticks)
-    label_size = ax.xaxis.label.get_size()
-    ax2.set_xticklabels([
-        f'{int(df.loc[df["works_per_year"] >= t, "cum_institutions_above"].iloc[0]):,}'
-        if len(df[df['works_per_year'] >= t]) > 0 else '0'
-        for t in ticks
-    ], fontsize=ax.get_xticklabels()[0].get_size() if ax.get_xticklabels() else 10)
-    ax2.set_xlabel('Institutions retained', fontsize=label_size, labelpad=8)
+    ax2.set_xticklabels(
+        [_count_at_tick(df_inst, 'cum_institutions_above', t) for t in ticks],
+    )
+    ax2.set_xlabel('Institutions retained', labelpad=8)
 
-    sup = fig.suptitle('Institution retention curve', fontsize=label_size, y=1.08)
+    # ── Upper secondary axis: sources retained (offset above ax2) ────────────
+    ax3 = ax.twiny()
+    ax3.set_xlim(ax.get_xlim())
+    ax3.set_xticks(ticks)
+    ax3.set_xticklabels(
+        [_count_at_tick(df_src, 'cum_sources_above', t) for t in ticks],
+    )
+    ax3.spines['top'].set_position(('outward', 50))
+    ax3.set_xlabel('Sources retained', labelpad=8)
+
+    sup = fig.suptitle('Institution and source retention curves', y=1.02)
     fig.tight_layout()
 
     out_path = PLOTS / 'plot1_institution_elbow.pdf'
@@ -160,19 +236,25 @@ def plot1(df: pd.DataFrame) -> None:
     print(f'Saved {latex_path}')
     sup.set_visible(True)
 
-    # Print threshold values at reference levels
-    print(f'\nWorks-per-year cutoff at each retention level (÷{N_YEARS} years, baseline t_x={_BASELINE_TX}):')
-    for level in (75, 90, 95, 99):
-        row = df[df['pct_retained'] >= level].iloc[-1]
-        n_inst = int(row['cum_institutions_above'])
-        print(f'  >= {level}%: {row["works_per_year"]:.1f} works/yr '
-              f'({int(row["works_count"])} total)  institutions = {n_inst:,}')
+    # Console summary
+    print(f'\nRetention at reference levels (baseline t_x={_BASELINE_TX}):')
+    print(f'  {"τ":>4}  {"inst%":>6}  {"N_inst":>7}  {"src%":>6}  {"N_src":>6}')
+    for t in [5, 10, 15, 20]:
+        ri = df_inst[df_inst['works_per_year'] >= t]
+        rs = df_src[df_src['works_per_year'] >= t]
+        if ri.empty or rs.empty:
+            continue
+        print(f'  {t:>4}  {ri.iloc[0]["pct_retained"]:>6.1f}  '
+              f'{int(ri.iloc[0]["cum_institutions_above"]):>7,}  '
+              f'{rs.iloc[0]["pct_retained"]:>6.1f}  '
+              f'{int(rs.iloc[0]["cum_sources_above"]):>6,}')
 
 
 def main():
     with duckdb.connect() as db:
-        df = fetch_elbow_data(db)
-    plot1(df)
+        df_inst = fetch_elbow_data(db)
+        df_src  = fetch_source_elbow_data(db)
+    plot1(df_inst, df_src)
 
 
 if __name__ == '__main__':
