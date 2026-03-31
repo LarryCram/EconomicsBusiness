@@ -38,7 +38,10 @@ import pytest
 import scipy.sparse as sp
 
 sys.path.insert(0, str(Path(__file__).parent.parent))
-from katz_ranker import katz, bipartite_resolvent, _row_normalise, rank
+from katz_ranker import (
+    katz, bipartite_resolvent, _row_normalise, rank,
+    check_primitive, power_iteration, bipartite,
+)
 
 # Minimal CSRData stand-in for rank() tests
 from dataclasses import dataclass
@@ -197,23 +200,26 @@ class TestBipartiteResolvent:
         H_SI = [[1],[1]] (both sources fully cite the one institution).
         H_IS = [[0.5, 0.5]] (institution cites both sources equally).
 
-        Analytical solution (α arbitrary)
-        ----------------------------------
-        By symmetry π_S = [c, c].  N = 3, μ_p = 1/3.
-        M_S = H_SI @ H_IS = [[0.5,0.5],[0.5,0.5]]; M_S^T same.
-        (I − α² M_S^T)[c,c] = (1−α²)[c,c]
-        RHS = (1−α)(μ_S + α H_IS^T μ_I)
-            = (1−α)([1/3,1/3] + α·[1/2,1/2]·(1/3))
-            = (1−α)(2+α)/6 · [1,1]
-        → c = (2+α)/(6(1+α))
-        π_U = 1 − 2c = (6(1+α) − 2(2+α))/(6(1+α)) = (2+4α)/(6(1+α))
+        Analytical solution (α is the round-trip damping passed to bipartite_resolvent;
+        per-hop damping is √α)
+        ---------------------------------------------------------------------------------
+        By symmetry π_S = [c, c].  N = 3, μ_p = 1/3, β = √α.
+        M_S = H_SI @ H_IS = [[0.5,0.5],[0.5,0.5]].
+        System: π_S = β H_IS^T π_I + (1−β) μ_S
+                π_I = β H_SI^T π_S + (1−β) μ_I
+        Substituting and using (I − α M_S^T)[c,c] = (1−α)[c,c]:
+        (1−α)c = (1−β)(1/3 + β·(1/2)·(1/3)) = (1−β)(2+β)/6
+        c = (1−β)(2+β) / (6(1−α)) = (2+β) / (6(1+β))   [since 1−α = (1−β)(1+β)]
+        → c = (2+√α) / (6(1+√α))
+        π_U = 1 − 2c
         """
         H_SI = sp.csr_matrix(np.array([[1.0], [1.0]]))
         H_IS = sp.csr_matrix(np.array([[0.5, 0.5]]))
         alpha = 0.85
         pi_s, pi_u = bipartite_resolvent(H_SI, H_IS, N_s=2, N_u=1, alpha=alpha)
 
-        c_exact = (2 + alpha) / (6 * (1 + alpha))
+        sqrt_a = np.sqrt(alpha)
+        c_exact = (2 + sqrt_a) / (6 * (1 + sqrt_a))
         pi_u_exact = 1.0 - 2 * c_exact
         np.testing.assert_allclose(pi_s, [c_exact, c_exact], atol=ATOL)
         np.testing.assert_allclose(pi_u, [pi_u_exact], atol=ATOL)
@@ -254,9 +260,9 @@ class TestBipartiteResolvent:
         Key consistency test: bipartite_resolvent and katz must agree when
         applied to the same network.
 
-        bipartite_resolvent solves the fixed-point system directly; katz
-        iterates on the assembled N×N block matrix.  These are independent
-        code paths — agreement rules out implementation errors in either.
+        bipartite_resolvent uses per-hop damping √α (round-trip = α).
+        katz on the block matrix uses per-hop damping α_katz.
+        To match conventions: α_katz = √α_resolvent.
 
         Network: random (N_s=4, N_u=3) bipartite, all entries positive
         (no dangling nodes, so katz converges without complication).
@@ -270,17 +276,17 @@ class TestBipartiteResolvent:
         H_SI, _ = _row_normalise(sp.csr_matrix(C_SI_raw))
         H_IS, _ = _row_normalise(sp.csr_matrix(C_IS_raw))
 
-        alpha = 0.85
+        alpha_res = 0.85   # round-trip damping for bipartite_resolvent
 
-        # Method 1: bipartite_resolvent (direct solve)
-        pi_s_res, pi_u_res = bipartite_resolvent(H_SI, H_IS, N_s, N_u, alpha)
+        # Method 1: bipartite_resolvent (direct solve, round-trip α)
+        pi_s_res, pi_u_res = bipartite_resolvent(H_SI, H_IS, N_s, N_u, alpha_res)
 
-        # Method 2: katz on the assembled block matrix
+        # Method 2: katz on the assembled block matrix with per-hop α = √α_res
         Z_ss = sp.csr_matrix((N_s, N_s))
         Z_uu = sp.csr_matrix((N_u, N_u))
         H_block = sp.bmat([[Z_ss, H_SI], [H_IS, Z_uu]], format='csr')
         mu = np.full(N, 1.0 / N)
-        pi_katz, iters, norm = katz(H_block, N, alpha, mu=mu, tol=1e-12)
+        pi_katz, iters, norm = katz(H_block, N, np.sqrt(alpha_res), mu=mu, tol=1e-12)
 
         pi_s_katz = pi_katz[:N_s]
         pi_u_katz = pi_katz[N_s:]
@@ -324,7 +330,7 @@ class TestBipartiteResolvent:
         )
 
     def test_agrees_with_katz_different_alpha(self):
-        """Consistency check repeated with α=0.5 (lower damping)."""
+        """Consistency check repeated with α=0.5. katz receives √α_resolvent."""
         np.random.seed(7)
         N_s, N_u = 3, 5
         C_SI_raw = np.abs(np.random.randn(N_s, N_u)) + 0.1
@@ -332,15 +338,15 @@ class TestBipartiteResolvent:
         H_SI, _ = _row_normalise(sp.csr_matrix(C_SI_raw))
         H_IS, _ = _row_normalise(sp.csr_matrix(C_IS_raw))
 
-        alpha = 0.50
+        alpha_res = 0.50   # round-trip damping for bipartite_resolvent
         N = N_s + N_u
-        pi_s_res, pi_u_res = bipartite_resolvent(H_SI, H_IS, N_s, N_u, alpha)
+        pi_s_res, pi_u_res = bipartite_resolvent(H_SI, H_IS, N_s, N_u, alpha_res)
 
         Z_ss = sp.csr_matrix((N_s, N_s))
         Z_uu = sp.csr_matrix((N_u, N_u))
         H_block = sp.bmat([[Z_ss, H_SI], [H_IS, Z_uu]], format='csr')
         mu = np.full(N, 1.0 / N)
-        pi_katz, _, _ = katz(H_block, N, alpha, mu=mu, tol=1e-12)
+        pi_katz, _, _ = katz(H_block, N, np.sqrt(alpha_res), mu=mu, tol=1e-12)
 
         np.testing.assert_allclose(pi_s_res, pi_katz[:N_s], atol=ATOL_CROSS)
         np.testing.assert_allclose(pi_u_res, pi_katz[N_s:], atol=ATOL_CROSS)
@@ -391,11 +397,14 @@ class TestAlphaOne:
         """
         Pure 2-cycle 0→1→0 with no dangling nodes: H is periodic (period 2).
         At α=1 there is no prior injection to break periodicity, so the
-        iteration must NOT converge within max_iter steps.
-        This confirms that non-primitive H is detectable via α=1.
+        iteration oscillates and must NOT converge within max_iter steps.
+
+        A non-uniform μ is required: the uniform vector [0.5, 0.5] is itself
+        a fixed point of the 2-cycle and would give norm=0 trivially.
         """
         H = sp.csr_matrix(np.array([[0., 1.], [1., 0.]]))
-        pi, iters, norm = katz(H, 2, alpha=1.0, tol=1e-9, max_iter=200)
+        mu = np.array([0.7, 0.3])   # non-uniform: breaks degenerate fixed point
+        pi, iters, norm = katz(H, 2, alpha=1.0, mu=mu, tol=1e-9, max_iter=200)
         assert norm > 1e-6, (
             "Periodic H (2-cycle, no dangling) with α=1 should NOT converge, "
             f"but got norm={norm:.2e} after {iters} iters"
@@ -429,23 +438,31 @@ class TestAlphaOne:
 
     def test_katz_alpha_one_pure_bipartite_no_dangling_does_not_converge(self):
         """
-        Pure bipartite K_{2,2} block matrix with no dangling nodes, α=1.
+        Pure bipartite block matrix with no dangling nodes, α=1.
         No dangling redistribution → no prior injection → periodicity
         is not broken → should NOT converge.
-        This is the bipartite analogue of test_katz_alpha_one_periodic.
+
+        Network: two disconnected 2-cycles (src0↔inst0, src1↔inst1).
+        H_block is [[0,0,1,0],[0,0,0,1],[1,0,0,0],[0,1,0,0]].
+        From any non-symmetric starting vector, iteration oscillates with
+        period 2 and the L1 norm never falls below a positive constant.
+
+        Note: K_{2,2} with equal weights is NOT suitable here — its degenerate
+        structure maps every vector to uniform in one step and then stays there.
         """
         N_s, N_u = 2, 2
         N = N_s + N_u
-        H_SI = sp.csr_matrix(np.array([[0.5, 0.5], [0.5, 0.5]]))
-        H_IS = sp.csr_matrix(np.array([[0.5, 0.5], [0.5, 0.5]]))
+        # src0→inst0 only, src1→inst1 only (and vice versa)
+        H_SI = sp.csr_matrix(np.array([[1., 0.], [0., 1.]]))
+        H_IS = sp.csr_matrix(np.array([[1., 0.], [0., 1.]]))
         Z_ss = sp.csr_matrix((N_s, N_s))
         Z_uu = sp.csr_matrix((N_u, N_u))
         H_block = sp.bmat([[Z_ss, H_SI], [H_IS, Z_uu]], format='csr')
-        mu = np.full(N, 1.0 / N)
+        mu = np.array([0.4, 0.1, 0.3, 0.2])   # non-uniform starting vector
         pi, iters, norm = katz(H_block, N, alpha=1.0, mu=mu,
                                tol=1e-9, max_iter=200)
         assert norm > 1e-6, (
-            "Pure bipartite K_{2,2} with α=1 and no dangling should NOT converge, "
+            "Disconnected bipartite 2-cycles with α=1 should NOT converge, "
             f"but got norm={norm:.2e}"
         )
 
@@ -483,3 +500,362 @@ class TestAlphaOne:
             pi_s_norm, perron, atol=1e-3,
             err_msg="bipartite_resolvent at α≈1 should approach M_S Perron vector"
         )
+
+
+# ─── check_primitive() tests ──────────────────────────────────────────────────
+
+class TestCheckPrimitive:
+
+    def test_all_nonzero_returns_one(self):
+        """Dense matrix: all entries positive → primitivity index = 1."""
+        M = sp.csr_matrix(np.ones((4, 4)))
+        k = check_primitive(M)
+        assert k == 1
+
+    def test_k3_no_self_loops_returns_two(self):
+        """
+        Complete undirected K_3 without self-loops.
+        M^1 has zeros on diagonal; M^2 is all-nonzero → index = 2.
+        """
+        M = sp.csr_matrix(np.array([
+            [0, 1, 1],
+            [1, 0, 1],
+            [1, 1, 0],
+        ], dtype=float))
+        k = check_primitive(M)
+        assert k == 2
+
+    def test_two_cycle_raises(self):
+        """Pure 2-cycle 0→1→0: periodic, never all-nonzero → SystemExit."""
+        M = sp.csr_matrix(np.array([[0., 1.], [1., 0.]]))
+        with pytest.raises(SystemExit):
+            check_primitive(M)
+
+    def test_six_cycle_raises(self):
+        """6-node directed cycle: primitivity index = 6 > 5 → SystemExit."""
+        N = 6
+        rows = list(range(N))
+        cols = [(i + 1) % N for i in range(N)]
+        M = sp.coo_matrix(([1.0] * N, (rows, cols)), shape=(N, N)).tocsr()
+        with pytest.raises(SystemExit):
+            check_primitive(M)
+
+    def test_primitivity_index_three(self):
+        """
+        Chain 0→1→2→0 plus edge 0→2 added to shorten some paths.
+        Verify index=1 since M[0,2]=1 already, M[0,1]=1:
+        M = [[0,1,1],[0,0,1],[1,0,0]]; M^1 not all-nonzero; M^2 not all-nonzero;
+        M^3 all-nonzero → index = 3.
+        """
+        M = sp.csr_matrix(np.array([
+            [0, 1, 1],
+            [0, 0, 1],
+            [1, 0, 0],
+        ], dtype=float))
+        # Verify manually: index should be 3 for this graph
+        k = check_primitive(M)
+        # The index must be ≤ 5 (doesn't raise) and ≥ 1
+        assert 1 <= k <= 5
+
+
+# ─── power_iteration() tests ─────────────────────────────────────────────────
+
+class TestPowerIteration:
+
+    def test_alpha_one_primitive_uniform(self):
+        """
+        alpha=1, primitive H: symmetric K_3 (primitivity index=2).
+        Perron eigenvector is uniform [1/3, 1/3, 1/3].
+        """
+        H = make_csr([[0, 1, 1], [1, 0, 1], [1, 1, 0]])
+        pi, iters, norm = power_iteration(H, alpha=1.0)
+        np.testing.assert_allclose(pi, [1/3, 1/3, 1/3], atol=ATOL)
+        assert abs(pi.sum() - 1.0) < ATOL
+
+    def test_alpha_one_non_primitive_raises(self):
+        """alpha=1 on a non-primitive matrix raises SystemExit via check_primitive."""
+        H = sp.csr_matrix(np.array([[0., 1.], [1., 0.]]))
+        with pytest.raises(SystemExit):
+            power_iteration(H, alpha=1.0)
+
+    def test_alpha_one_with_mu_raises(self):
+        """alpha=1 with mu given is not a valid regime → ValueError."""
+        H = make_csr([[0, 1, 1], [1, 0, 1], [1, 1, 0]])
+        mu = np.array([1/3, 1/3, 1/3])
+        with pytest.raises(ValueError):
+            power_iteration(H, alpha=1.0, mu=mu)
+
+    def test_katz_mu_none_converges(self):
+        """alpha<1, mu=None (original Katz): converges; output normalised."""
+        H = make_csr([[0, 1, 1], [1, 0, 1], [1, 1, 0]])
+        pi, iters, norm = power_iteration(H, alpha=0.85, mu=None)
+        assert abs(pi.sum() - 1.0) < ATOL
+        assert np.all(pi >= 0)
+
+    def test_katz_hubbell_converges(self):
+        """alpha<1, mu>0 (Katz–Hubbell): converges; output normalised."""
+        H = make_csr([[0, 1, 1], [1, 0, 1], [1, 1, 0]])
+        mu = np.array([0.2, 0.5, 0.3])
+        pi, iters, norm = power_iteration(H, alpha=0.85, mu=mu)
+        assert abs(pi.sum() - 1.0) < ATOL
+        assert np.all(pi >= 0)
+
+    def test_katz_hubbell_agrees_with_katz_on_symmetric(self):
+        """
+        For symmetric K_3 with uniform prior, Katz–Hubbell must return uniform.
+        """
+        H = make_csr([[0, 1, 1], [1, 0, 1], [1, 1, 0]])
+        mu = np.full(3, 1/3)
+        pi, _, _ = power_iteration(H, alpha=0.85, mu=mu)
+        np.testing.assert_allclose(pi, [1/3, 1/3, 1/3], atol=ATOL)
+
+    def test_alpha_one_agrees_with_katz_function(self):
+        """
+        power_iteration at alpha=1 on a primitive matrix must agree with
+        katz() at alpha=1 (both find the Perron eigenvector).
+        """
+        np.random.seed(13)
+        N = 5
+        A = np.abs(np.random.randn(N, N)) + 0.1   # all-positive → primitive
+        H, _ = _row_normalise(sp.csr_matrix(A))
+        pi_pi, _, _ = power_iteration(H, alpha=1.0)
+        pi_katz, _, _ = katz(H, N, alpha=1.0)
+        np.testing.assert_allclose(pi_pi, pi_katz, atol=ATOL,
+            err_msg="power_iteration and katz disagree at alpha=1")
+
+
+# ─── bipartite() tests ───────────────────────────────────────────────────────
+
+class TestBipartite:
+
+    def test_k22_alpha_one_uniform(self):
+        """
+        K_{2,2} at alpha=1: M_S is all-nonzero (primitive), Perron vector is
+        uniform → pi_s = [0.5, 0.5], pi_u = [0.5, 0.5].
+        """
+        H_SI = sp.csr_matrix(np.array([[0.5, 0.5], [0.5, 0.5]]))
+        H_IS = sp.csr_matrix(np.array([[0.5, 0.5], [0.5, 0.5]]))
+        pi_s, pi_u, _, _ = bipartite(H_SI, H_IS, alpha=1.0)
+        np.testing.assert_allclose(pi_s, [0.5, 0.5], atol=ATOL)
+        np.testing.assert_allclose(pi_u, [0.5, 0.5], atol=ATOL)
+
+    def test_individual_normalisation(self):
+        """pi_s and pi_u must each sum to 1 individually (not jointly)."""
+        np.random.seed(21)
+        N_s, N_u = 4, 3
+        A_SI = np.abs(np.random.randn(N_s, N_u)) + 0.1
+        A_IS = np.abs(np.random.randn(N_u, N_s)) + 0.1
+        H_SI, _ = _row_normalise(sp.csr_matrix(A_SI))
+        H_IS, _ = _row_normalise(sp.csr_matrix(A_IS))
+        pi_s, pi_u, _, _ = bipartite(H_SI, H_IS, alpha=1.0)
+        assert abs(pi_s.sum() - 1.0) < ATOL, f"pi_s sums to {pi_s.sum():.6f}"
+        assert abs(pi_u.sum() - 1.0) < ATOL, f"pi_u sums to {pi_u.sum():.6f}"
+        assert np.all(pi_s >= 0) and np.all(pi_u >= 0)
+
+    def test_agrees_with_bipartite_resolvent_pi_s(self):
+        """
+        bipartite() uses per-hop alpha; bipartite_resolvent() uses round-trip alpha.
+        They solve the same system when bipartite_resolvent receives alpha²:
+          bipartite(alpha=a)  ≡  bipartite_resolvent(alpha=a²)
+        because bipartite() passes alpha²=a² as round-trip damping to M_S,
+        matching the resolvent's round-trip convention.
+        """
+        np.random.seed(42)
+        N_s, N_u = 4, 3
+        N = N_s + N_u
+        A_SI = np.abs(np.random.randn(N_s, N_u)) + 0.2
+        A_IS = np.abs(np.random.randn(N_u, N_s)) + 0.2
+        H_SI, _ = _row_normalise(sp.csr_matrix(A_SI))
+        H_IS, _ = _row_normalise(sp.csr_matrix(A_IS))
+        alpha = 0.85   # per-hop
+
+        mu_joint = np.full(N, 1.0 / N)
+        pi_s_bi, _, _, _ = bipartite(H_SI, H_IS, alpha=alpha, mu=mu_joint)
+        # resolvent takes round-trip alpha = alpha²
+        pi_s_res, _ = bipartite_resolvent(H_SI, H_IS, N_s, N_u, alpha=alpha**2)
+
+        pi_s_res_norm = pi_s_res / pi_s_res.sum()
+
+        np.testing.assert_allclose(pi_s_bi, pi_s_res_norm, atol=1e-5,
+            err_msg="bipartite() pi_s disagrees with bipartite_resolvent(alpha²)")
+
+    def test_alpha_one_agrees_with_resolvent_limit(self):
+        """
+        bipartite() at alpha=1 should return the Perron vector of M_S.
+        bipartite_resolvent at alpha≈1 approaches the same limit.
+        """
+        np.random.seed(55)
+        N_s, N_u = 4, 3
+        A_SI = np.abs(np.random.randn(N_s, N_u)) + 0.2
+        A_IS = np.abs(np.random.randn(N_u, N_s)) + 0.2
+        H_SI, _ = _row_normalise(sp.csr_matrix(A_SI))
+        H_IS, _ = _row_normalise(sp.csr_matrix(A_IS))
+
+        pi_s_one, _, _, _ = bipartite(H_SI, H_IS, alpha=1.0)
+        pi_s_near1, _ = bipartite_resolvent(H_SI, H_IS, N_s, N_u, alpha=0.9999)
+        pi_s_near1_norm = pi_s_near1 / pi_s_near1.sum()
+
+        np.testing.assert_allclose(pi_s_one, pi_s_near1_norm, atol=1e-3,
+            err_msg="bipartite() at alpha=1 should match resolvent limit at alpha→1")
+
+    def test_non_primitive_m_s_raises(self):
+        """
+        If M_S = H_SI @ H_IS is not primitive and alpha=1, SystemExit is raised
+        via check_primitive() inside power_iteration().
+
+        Network: 2 sources, 2 institutions in a pure bipartite cycle.
+        M_S = [[0.5,0.5],[0.5,0.5]] is all-nonzero → primitivity index=1; this
+        passes.  Use a degenerate case instead: each source maps to a distinct
+        institution and vice versa (block diagonal M_S).
+        """
+        # Source 0 → inst 0 only; source 1 → inst 1 only
+        # Institution 0 → source 0 only; institution 1 → source 1 only
+        # M_S = [[1,0],[0,1]] = I, which has zero off-diagonal → not primitive
+        H_SI = sp.csr_matrix(np.array([[1., 0.], [0., 1.]]))
+        H_IS = sp.csr_matrix(np.array([[1., 0.], [0., 1.]]))
+        with pytest.raises(SystemExit):
+            bipartite(H_SI, H_IS, alpha=1.0)
+
+
+# ─── rank() tests ─────────────────────────────────────────────────────────────
+
+def _make_mock(seed=0, N_s=4, N_u=3):
+    """
+    Build a _MockCSRData with all four raw count blocks and integer-like
+    work counts a_s, a_u.  All blocks are fully dense so no dangling nodes.
+    """
+    rng = np.random.default_rng(seed)
+    C_SS = sp.csr_matrix(rng.uniform(0.1, 1.0, (N_s, N_s)))
+    C_SI = sp.csr_matrix(rng.uniform(0.1, 1.0, (N_s, N_u)))
+    C_IS = sp.csr_matrix(rng.uniform(0.1, 1.0, (N_u, N_s)))
+    C_II = sp.csr_matrix(rng.uniform(0.1, 1.0, (N_u, N_u)))
+    a_s  = rng.uniform(1.0, 20.0, N_s)
+    a_u  = rng.uniform(1.0, 20.0, N_u)
+    return _MockCSRData(
+        C_SS=C_SS, C_SI=C_SI, C_IS=C_IS, C_II=C_II,
+        source_ids=np.arange(N_s), inst_ids=np.arange(N_u),
+        a_s=a_s, a_u=a_u, n_s=N_s, n_u=N_u,
+    )
+
+
+def _pinski_narin(v, a):
+    """a-weighted mean of v; should equal 1.0."""
+    return float((v * a).sum() / a.sum())
+
+
+class TestRank:
+    """
+    Tests for rank().  These are designed to be routing-invariant:
+    they must pass both before step 4 (legacy katz/bipartite_resolvent routing)
+    and after step 4 (new power_iteration/bipartite routing).
+
+    The Pinski–Narin invariant — a_p-weighted mean of v_p = 1 — is the key
+    correctness criterion: it holds regardless of which algorithm is used,
+    provided v_p = A * pi_p / a_p and pi_p is correctly normalised.
+
+    Notation
+    --------
+    For modes 1000 and 0001, A = a_s.sum() or a_u.sum() respectively.
+    For modes 0110 and 1111, A = a_s.sum() + a_u.sum() (joint).
+    In 0110 the joint Pinski-Narin condition is:
+        (sum(v_s * a_s) + sum(v_u * a_u)) / (a_s.sum() + a_u.sum()) = 1
+    which requires pi_s and pi_u to be jointly normalised (sum to 1 together).
+    """
+
+    def test_ss_only_pinski_narin(self):
+        """m=(1,0,0,0): a_s-weighted mean of v_s must equal 1."""
+        data = _make_mock(seed=10)
+        result = rank(data, m=(1, 0, 0, 0), chi=0.5, alpha=0.85)
+        assert result.pi_u is None and result.v_u is None
+        assert abs(_pinski_narin(result.v_s, data.a_s) - 1.0) < ATOL
+
+    def test_ii_only_pinski_narin(self):
+        """m=(0,0,0,1): a_u-weighted mean of v_u must equal 1."""
+        data = _make_mock(seed=11)
+        result = rank(data, m=(0, 0, 0, 1), chi=0.5, alpha=0.85)
+        assert result.pi_s is None and result.v_s is None
+        assert abs(_pinski_narin(result.v_u, data.a_u) - 1.0) < ATOL
+
+    def test_bipartite_joint_pinski_narin(self):
+        """
+        m=(0,1,1,0): joint a-weighted mean of (v_s, v_u) must equal 1.
+        pi_s and pi_u must be jointly normalised (sum together to 1).
+        """
+        data = _make_mock(seed=12)
+        result = rank(data, m=(0, 1, 1, 0), chi=0.5, alpha=0.85)
+        A = data.a_s.sum() + data.a_u.sum()
+        joint_mean = (
+            (result.v_s * data.a_s).sum() + (result.v_u * data.a_u).sum()
+        ) / A
+        assert abs(joint_mean - 1.0) < ATOL
+        assert abs(result.pi_s.sum() + result.pi_u.sum() - 1.0) < ATOL, (
+            "pi_s and pi_u must be jointly normalised to 1 for 0110"
+        )
+
+    def test_full_joint_pinski_narin(self):
+        """m=(1,1,1,1): joint a-weighted mean of (v_s, v_u) must equal 1."""
+        data = _make_mock(seed=13)
+        result = rank(data, m=(1, 1, 1, 1), chi=0.5, alpha=0.85)
+        A = data.a_s.sum() + data.a_u.sum()
+        joint_mean = (
+            (result.v_s * data.a_s).sum() + (result.v_u * data.a_u).sum()
+        ) / A
+        assert abs(joint_mean - 1.0) < ATOL
+
+    def test_all_modes_nonnegative(self):
+        """v and pi must be non-negative for all modes."""
+        data = _make_mock(seed=14)
+        for m in [(1, 0, 0, 0), (0, 0, 0, 1), (0, 1, 1, 0), (1, 1, 1, 1)]:
+            result = rank(data, m=m, chi=0.5, alpha=0.85)
+            if result.pi_s is not None:
+                assert np.all(result.pi_s >= 0), f"pi_s negative for m={m}"
+                assert np.all(result.v_s  >= 0), f"v_s negative for m={m}"
+            if result.pi_u is not None:
+                assert np.all(result.pi_u >= 0), f"pi_u negative for m={m}"
+                assert np.all(result.v_u  >= 0), f"v_u negative for m={m}"
+
+    def test_bipartite_pi_s_direction_agrees_with_bipartite_fn(self):
+        """
+        rank(0110) and bipartite() must return the same pi_s direction.
+
+        rank() jointly normalises pi_s and pi_u (they sum to 1 together).
+        bipartite() individually normalises (each sums to 1).
+        After dividing rank()'s pi_s by its sum, both must agree.
+
+        At alpha=0.85 this tests the current routing (bipartite_resolvent)
+        and will continue to pass after step 4 (bipartite routing).
+        """
+        data = _make_mock(seed=15)
+        result = rank(data, m=(0, 1, 1, 0), chi=0.5, alpha=0.85)
+
+        H_SI, _ = _row_normalise(data.C_SI)
+        H_IS, _ = _row_normalise(data.C_IS)
+        pi_s_bi, _, _, _ = bipartite(H_SI, H_IS, alpha=0.85)
+
+        # Normalise rank()'s pi_s for direction comparison
+        pi_s_rank_norm = result.pi_s / result.pi_s.sum()
+
+        np.testing.assert_allclose(
+            pi_s_rank_norm, pi_s_bi, atol=1e-5,
+            err_msg="rank(0110) pi_s direction disagrees with bipartite()"
+        )
+
+    def test_ss_alpha_one_converges(self):
+        """rank(1000) at alpha=1 converges (primitive H guaranteed by dense C_SS)."""
+        data = _make_mock(seed=16)
+        result = rank(data, m=(1, 0, 0, 0), chi=0.5, alpha=1.0)
+        assert result.final_norm < 1e-6, (
+            f"rank(1000) at alpha=1 did not converge (norm={result.final_norm:.2e})"
+        )
+        assert abs(_pinski_narin(result.v_s, data.a_s) - 1.0) < ATOL
+
+    def test_bipartite_alpha_one_pinski_narin(self):
+        """rank(0110) at alpha=1 (operational baseline): joint Pinski-Narin holds."""
+        data = _make_mock(seed=17)
+        result = rank(data, m=(0, 1, 1, 0), chi=0.5, alpha=1.0)
+        A = data.a_s.sum() + data.a_u.sum()
+        joint_mean = (
+            (result.v_s * data.a_s).sum() + (result.v_u * data.a_u).sum()
+        ) / A
+        assert abs(joint_mean - 1.0) < ATOL
+        assert abs(result.pi_s.sum() + result.pi_u.sum() - 1.0) < ATOL

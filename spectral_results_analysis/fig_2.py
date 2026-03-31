@@ -35,7 +35,7 @@ from util import load_config, load_params
 _p             = load_params()
 _tau_u         = _p['tau_u_floor']['A']
 _tau_s         = _p['tau_s_floor']['A']
-BASELINE_TABLE = f'rk_t5_A_tauU{_tau_u}_tauS{_tau_s}_rho0_m0110_chi50_alpha85'
+BASELINE_TABLE = f'rk_t5_A_tauU{_tau_u}_tauS{_tau_s}_rho0_m0110_chi50_alpha100'
 BASELINE_LABEL = 'baseline'
 
 

@@ -25,6 +25,8 @@ _row_normalise(C)
     Internal helper; exposed so tests and build_csr.py can use it.
 """
 
+import sys
+
 import numpy as np
 from dataclasses import dataclass
 from typing import Optional
@@ -117,6 +119,222 @@ def katz(
     return pi, max_iter, final_norm
 
 
+# ─── New spectral utilities ──────────────────────────────────────────────────
+
+def check_primitive(M: csr_matrix) -> int:
+    """
+    Test primitivity of M via boolean power iteration on the sparsity pattern.
+
+    Returns the primitivity index k: the smallest k in {1,...,5} such that M^k
+    has no zero entries.  Raises SystemExit if k > 5 (M is not primitive within
+    the search depth; use alpha<1 or a prior to ensure convergence).
+
+    Parameters
+    ----------
+    M : csr_matrix, shape (N, N)
+
+    Returns
+    -------
+    k : int, primitivity index in {1, ..., 5}
+    """
+    N = M.shape[0]
+    B = M.astype(bool)
+    Bk = B.copy()
+    for k in range(1, 6):
+        if Bk.nnz == N * N:
+            return k
+        if k < 5:
+            Bk = (Bk @ B).astype(bool)
+    raise SystemExit(
+        f"check_primitive: M is not primitive within k=5 "
+        f"(nnz={Bk.nnz}/{N * N} at k=5). "
+        "Use alpha<1 or a prior (mu) to ensure convergence."
+    )
+
+
+def power_iteration(
+    M: csr_matrix,
+    alpha: float,
+    mu: Optional[np.ndarray] = None,
+    tol: float = 1e-9,
+    max_iter: int = 500,
+) -> tuple:
+    """
+    Power iteration for the spectral ranking fixed point π = M̃^T π.
+
+    Three valid regimes
+    -------------------
+    (alpha=1, mu=None)   Pure Perron iteration.  Requires M to be primitive;
+                         check_primitive() is called and raises SystemExit if not.
+    (alpha<1, mu=None)   Original Katz damping.  π_new ← alpha·M^T·π, renormalised.
+                         Convergence to the dominant eigenvector of M; no prior.
+    (alpha<1, mu>0)      Katz–Hubbell.  π_new ← alpha·M^T·π + (1−alpha)·mu,
+                         renormalised.
+
+    Parameters
+    ----------
+    M : csr_matrix, shape (N, N).  Row-stochastic; dangling rows as zero rows.
+    alpha : float in [0, 1].  Damping factor.
+    mu : prior, shape (N,), or None.  Must be None when alpha=1.
+    tol : L1 convergence tolerance (default 1e-9).
+    max_iter : maximum iterations (default 500).
+
+    Returns
+    -------
+    pi : np.ndarray, shape (N,), L1-normalised, non-negative
+    iters : int, iterations taken
+    final_norm : float, L1 residual on exit
+    """
+    N = M.shape[0]
+
+    if alpha == 1.0:
+        if mu is not None:
+            raise ValueError(
+                "mu must be None when alpha=1 (pure Perron iteration). "
+                "Use alpha<1 for Katz–Hubbell."
+            )
+        check_primitive(M)
+        pi = np.full(N, 1.0 / N)
+        final_norm = 0.0
+        for i in range(1, max_iter + 1):
+            pi_new = M.T.dot(pi)
+            pi_new = np.maximum(pi_new, 0.0)
+            pi_new /= pi_new.sum()
+            final_norm = float(np.abs(pi_new - pi).sum())
+            pi = pi_new
+            if final_norm < tol:
+                return pi, i, final_norm
+        return pi, max_iter, final_norm
+
+    # alpha < 1
+    if mu is None:
+        # Original Katz: no prior injection
+        pi = np.full(N, 1.0 / N)
+        final_norm = 0.0
+        for i in range(1, max_iter + 1):
+            pi_new = alpha * M.T.dot(pi)
+            pi_new = np.maximum(pi_new, 0.0)
+            s = pi_new.sum()
+            if s > 0:
+                pi_new /= s
+            final_norm = float(np.abs(pi_new - pi).sum())
+            pi = pi_new
+            if final_norm < tol:
+                return pi, i, final_norm
+        return pi, max_iter, final_norm
+
+    else:
+        # Katz–Hubbell: prior injection at each step
+        pi = mu.copy()
+        final_norm = 0.0
+        for i in range(1, max_iter + 1):
+            pi_new = alpha * M.T.dot(pi) + (1.0 - alpha) * mu
+            pi_new = np.maximum(pi_new, 0.0)
+            pi_new /= pi_new.sum()
+            final_norm = float(np.abs(pi_new - pi).sum())
+            pi = pi_new
+            if final_norm < tol:
+                return pi, i, final_norm
+        return pi, max_iter, final_norm
+
+
+def bipartite(
+    H_SI: csr_matrix,
+    H_IS: csr_matrix,
+    alpha: float = 1.0,
+    mu: Optional[np.ndarray] = None,
+    tol: float = 1e-9,
+    max_iter: int = 500,
+) -> tuple:
+    """
+    Bipartite spectral ranking via one-mode projection and power iteration.
+
+    Builds M_S = H_SI @ H_IS (N_s × N_s) and solves for the source prestige
+    vector π_S via power_iteration(), then recovers π_I.
+
+    Mode summary
+    ------------
+    alpha has the same per-hop meaning as in SS (1000) and II (0001) modes:
+    each traversal of one edge is attenuated by alpha.  A round trip S→I→S
+    therefore attenuates by alpha², and power_iteration is called on M_S with
+    alpha² as its damping argument.  This ensures v_S is directly comparable
+    across modes at the same alpha.
+
+    alpha=1, mu=None:
+        π_S = Perron eigenvector of M_S (requires M_S to be primitive).
+        π_I = H_SI^T @ π_S, individually normalised.
+
+    alpha<1, mu=None:
+        Original Katz on M_S; no prior injection.
+        π_I = alpha · H_SI^T @ π_S, individually normalised.
+
+    alpha<1, mu given (joint prior, length N_s + N_u):
+        mu_eff = normalise(mu_S + alpha · H_IS^T @ mu_I)
+        π_S from Katz–Hubbell power iteration on M_S with mu_eff.
+        π_I = alpha · H_SI^T @ π_S + (1−alpha) · mu_I.
+        Both individually normalised.
+
+    Parameters
+    ----------
+    H_SI : csr_matrix, shape (N_s, N_u).  Row-stochastic; dangling rows as zeros.
+    H_IS : csr_matrix, shape (N_u, N_s).  Row-stochastic; dangling rows as zeros.
+    alpha : float in (0, 1].  Per-hop damping, same convention as SS/II modes.
+    mu : joint prior, shape (N_s + N_u,), or None.  Default: None (α=1 regime).
+    tol : L1 convergence tolerance (default 1e-9).
+    max_iter : maximum iterations (default 500).
+
+    Returns
+    -------
+    pi_s : np.ndarray, shape (N_s,), individually L1-normalised.
+    pi_u : np.ndarray, shape (N_u,), individually L1-normalised.
+    iters : int
+    final_norm : float, L1 residual on exit
+    Note: joint renormalisation (divide each by 2) is left to the caller.
+    """
+    N_s = H_SI.shape[0]
+    N_u = H_SI.shape[1]
+
+    # One-mode projection: M_S = H_SI @ H_IS  (N_s × N_s)
+    M_S = H_SI.dot(H_IS)
+
+    # alpha² is the round-trip damping for M_S; alpha is per-hop
+    alpha_rt = alpha * alpha
+
+    # Construct effective prior for power_iteration on M_S
+    if mu is None:
+        mu_eff = None
+        mu_u = None
+    else:
+        mu_s = mu[:N_s]
+        mu_u = mu[N_s:]
+        mu_eff = mu_s + alpha * H_IS.T.dot(mu_u)
+        s = mu_eff.sum()
+        if s > 0:
+            mu_eff = mu_eff / s
+
+    # Solve for pi_S via power iteration (round-trip damping alpha²)
+    pi_s, iters, final_norm = power_iteration(
+        M_S, alpha_rt, mu=mu_eff, tol=tol, max_iter=max_iter
+    )
+
+    # Recover π_I (one hop from pi_S, attenuated by alpha)
+    pi_u = alpha * H_SI.T.dot(pi_s)
+    if mu_u is not None:
+        pi_u = pi_u + (1.0 - alpha) * mu_u
+
+    # Individually normalise each side
+    pi_s = np.maximum(pi_s, 0.0)
+    pi_u = np.maximum(pi_u, 0.0)
+    s_s = pi_s.sum()
+    s_u = pi_u.sum()
+    if s_s > 0:
+        pi_s /= s_s
+    if s_u > 0:
+        pi_u /= s_u
+
+    return pi_s, pi_u, iters, final_norm
+
+
 def bipartite_resolvent(
     H_SI: csr_matrix,
     H_IS: csr_matrix,
@@ -204,51 +422,47 @@ def rank(csr_data, m: tuple, chi: float, alpha: float) -> RankResult:
     RankResult with pi_s, pi_u, v_s, v_u, iters, final_norm.
     """
     if m == (1, 0, 0, 0):
-        # Source-only: SS Katz on (N_s × N_s) matrix
+        # Source-only: power iteration on (N_s × N_s) H_SS
         H, _ = _row_normalise(csr_data.C_SS)
-        N_s = csr_data.n_s
-        mu = np.full(N_s, 1.0 / N_s)
-        pi, iters, norm = katz(H, N_s, alpha, mu=mu)
+        pi, iters, norm = power_iteration(H, alpha)
         A = csr_data.a_s.sum()
         v_s = A * pi / csr_data.a_s
         return RankResult(pi_s=pi, pi_u=None, v_s=v_s, v_u=None,
                           iters=iters, final_norm=norm)
 
     elif m == (0, 0, 0, 1):
-        # Institution-only: II Katz on (N_u × N_u) matrix
-        # Prior is uniform over institutions only; no ω involvement.
+        # Institution-only: power iteration on (N_u × N_u) H_II
         H, _ = _row_normalise(csr_data.C_II)
-        N_u = csr_data.n_u
-        mu = np.full(N_u, 1.0 / N_u)
-        pi, iters, norm = katz(H, N_u, alpha, mu=mu)
+        pi, iters, norm = power_iteration(H, alpha)
         A = csr_data.a_u.sum()
         v_u = A * pi / csr_data.a_u
         return RankResult(pi_s=None, pi_u=pi, v_s=None, v_u=v_u,
                           iters=iters, final_norm=norm)
 
     elif m == (0, 1, 1, 0):
-        # Bipartite SI/IS: direct resolvent, no iteration
+        # Bipartite SI/IS: power iteration on M_S = H_SI @ H_IS
         H_SI, _ = _row_normalise(csr_data.C_SI)
         H_IS, _ = _row_normalise(csr_data.C_IS)
-        pi_s, pi_u = bipartite_resolvent(H_SI, H_IS, csr_data.n_s, csr_data.n_u, alpha)
-        # A = total fractional works across all units in the joint ranking
+        pi_s_ind, pi_u_ind, iters, norm = bipartite(H_SI, H_IS, alpha)
+        # Joint-normalise (each individually sums to 1; divide by 2 to sum jointly to 1)
+        pi_s = pi_s_ind / 2.0
+        pi_u = pi_u_ind / 2.0
+        # A = total fractional works; v=1 means average influence across both sides
         A = csr_data.a_s.sum() + csr_data.a_u.sum()
         v_s = A * pi_s / csr_data.a_s
         v_u = A * pi_u / csr_data.a_u
         return RankResult(pi_s=pi_s, pi_u=pi_u, v_s=v_s, v_u=v_u,
-                          iters=0, final_norm=0.0)
+                          iters=iters, final_norm=norm)
 
     elif m == (1, 1, 1, 1):
-        # Full joint: assemble χ-scaled N×N matrix, then Katz
+        # Full joint: assemble χ-scaled N×N matrix, then power iteration
         C = bmat(
             [[(1 - chi) ** 2 * csr_data.C_SS,  chi * (1 - chi) * csr_data.C_SI],
              [chi * (1 - chi) * csr_data.C_IS,  chi ** 2        * csr_data.C_II]],
             format='csr',
         )
         H, _ = _row_normalise(C)
-        N = csr_data.n_s + csr_data.n_u
-        mu = np.full(N, 1.0 / N)
-        pi, iters, norm = katz(H, N, alpha, mu=mu)
+        pi, iters, norm = power_iteration(H, alpha)
         pi_s = pi[:csr_data.n_s]
         pi_u = pi[csr_data.n_s:]
         A = csr_data.a_s.sum() + csr_data.a_u.sum()

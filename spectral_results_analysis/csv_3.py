@@ -34,8 +34,8 @@ _p     = load_params()
 _tau_u = _p['tau_u_floor']['A']
 _tau_s = _p['tau_s_floor']['A']
 
-BASELINE_TABLE = f'rk_t5_A_tauU{_tau_u}_tauS{_tau_s}_rho0_m0110_chi50_alpha85'
-SS_TABLE       = f'rk_t5_A_tauU{_tau_u}_tauS{_tau_s}_rho0_m1000_chi50_alpha85'
+BASELINE_TABLE = f'rk_t5_A_tauU{_tau_u}_tauS{_tau_s}_rho0_m0110_chi50_alpha100'
+SS_TABLE       = f'rk_t5_A_tauU{_tau_u}_tauS{_tau_s}_rho0_m1000_chi50_alpha100'
 OUT_NAME       = 'csv_3_mode_comparison.csv'
 
 
@@ -50,7 +50,7 @@ def resolve_chi_star_table(db) -> str | None:
         "SELECT table_name FROM _catalog "
         "WHERE m_SS=1 AND m_SI=1 AND m_IS=1 AND m_II=1 "
         f"  AND tx=5 AND fx='A' AND tau_u={_tau} AND rho=0 "
-        "  AND round(alpha*100)=85 AND round(chi*100) != 50 "
+        "  AND round(alpha*100)=100 AND round(chi*100) != 50"
         "ORDER BY created_at DESC LIMIT 1"
     ).fetchall()
     if not rows:

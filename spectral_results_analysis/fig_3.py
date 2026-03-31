@@ -13,7 +13,7 @@ x-axis: LOCKED to baseline (m=0110) rank order.
   Each unit sits at its baseline rank; units absent from an alternative run
   (e.g. institutions in m=1000) are simply omitted from that series.
 
-All runs: F=A, t_x=5, τ_U=tau_u_floor['A'], ρ=fixed, α=0.85.
+All runs: F=A, t_x=5, τ_U=tau_u_floor['A'], ρ=fixed, α=1 (baseline, SS-only, II-only); α=0.85 (sensitivity variants).
 
 Outputs:
   plots/fig_3.pdf        — with title (exploration)
@@ -36,9 +36,9 @@ _p     = load_params()
 _tau_u = _p['tau_u_floor']['A']
 _tau_s = _p['tau_s_floor']['A']
 
-BASELINE_TABLE = f'rk_t5_A_tauU{_tau_u}_tauS{_tau_s}_rho0_m0110_chi50_alpha85'
-SS_TABLE       = f'rk_t5_A_tauU{_tau_u}_tauS{_tau_s}_rho0_m1000_chi50_alpha85'
-II_TABLE       = f'rk_t5_A_tauU{_tau_u}_tauS{_tau_s}_rho0_m0001_chi50_alpha85'
+BASELINE_TABLE = f'rk_t5_A_tauU{_tau_u}_tauS{_tau_s}_rho0_m0110_chi50_alpha100'
+SS_TABLE       = f'rk_t5_A_tauU{_tau_u}_tauS{_tau_s}_rho0_m1000_chi50_alpha100'
+II_TABLE       = f'rk_t5_A_tauU{_tau_u}_tauS{_tau_s}_rho0_m0001_chi50_alpha100'
 
 # Visual spec per label
 STYLE = {
@@ -91,7 +91,7 @@ def resolve_chi_star_table(db) -> str | None:
         "SELECT table_name, chi, label FROM _catalog "
         "WHERE m_SS=1 AND m_SI=1 AND m_IS=1 AND m_II=1 "
         f"  AND tx=5 AND fx='A' AND tau_u={_tau_u} AND tau_s={_tau_s} AND rho=0 "
-        "  AND round(alpha*100)=85 AND round(chi*100) != 50 "
+        "  AND round(alpha*100)=100 AND round(chi*100) != 50"
         "ORDER BY created_at DESC LIMIT 1"
     ).fetchall()
     if not rows:

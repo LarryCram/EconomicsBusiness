@@ -11,9 +11,10 @@ Computes λ₂, φ₂, spectral gap and community amplification for:
     full χ=0.5 m=(1,1,1,1)
     full χ=χ*  m=(1,1,1,1)
 
-Under the √α per-step convention for the bipartite case, the effective
-round-trip damping on M_S is α (not α²), so amplification is 1/(1−α·λ₂)
-consistently across all modes.
+α is a per-hop parameter with the same meaning in all modes.  For the
+bipartite case, M_S = H_SI @ H_IS represents a two-hop round trip, so
+power iteration uses α² as the round-trip damping.  Amplification for
+M_S is therefore 1/(1−α²·λ₂(M_S)), consistent with rank().
 
 Usage
 -----
@@ -102,7 +103,9 @@ def second_eigenpair_unipartite(C, alpha, label=''):
 def second_eigenpair_bipartite(C_SI, C_IS, alpha, label='bipartite'):
     """
     Bipartite M_S = H_SI @ H_IS.
-    Under the √α convention, effective round-trip damping = α.
+    α is per-hop; M_S represents a two-hop round trip, so _second_eigenpair
+    is called with α² as the round-trip damping, matching rank().
+    Amplification = 1/(1−α²·λ₂(M_S)).
     Returns (lambda2, phi2_S, phi2_I, gap, amplification).
     phi2_I = H_SI.T @ phi2_S, normalised to unit Euclidean norm.
     """
@@ -110,7 +113,7 @@ def second_eigenpair_bipartite(C_SI, C_IS, alpha, label='bipartite'):
     H_IS, _ = _row_normalise(C_IS)
     M_S = H_SI.dot(H_IS)
 
-    lam2, phi2_S, gap, ampl = _second_eigenpair(M_S, alpha, label)
+    lam2, phi2_S, gap, ampl = _second_eigenpair(M_S, alpha ** 2, label)
 
     # Institution community vector induced by the source walk
     phi2_I = H_SI.T.dot(phi2_S)
@@ -257,7 +260,7 @@ def print_phi2_top(label, phi2, unit_ids, field_labels, source_names, n=15):
 def run(paths, params):
     tau_u = params['tau_u_floor']['A']
     tau_s = params['tau_s_floor']['A']
-    alpha = 0.85
+    alpha = 1.0
     tx, fx, rho = 5, 'A', 0
 
     el_path = paths.working / 'edge_lists.duckdb'

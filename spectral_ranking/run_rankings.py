@@ -12,7 +12,7 @@ Usage
 Output table naming
 -------------------
   rk_t{tx}_{fx}_tauU{tau_u}_tauS{tau_s}_rho{rho}_m{mstr}_chi{chi_int}_alpha{alpha_int}
-  e.g. rk_t5_A_tauU20_tauS20_rho0_m0110_chi50_alpha85   (baseline)
+  e.g. rk_t5_A_tauU20_tauS20_rho0_m0110_chi50_alpha100   (baseline)
 
 Each table has columns: unit_idx, unit_type, pi, v, rank_pi, rank_v, a_p.
 A _catalog table records all run parameters and diagnostics.
@@ -68,7 +68,7 @@ def table_name(p: RunParams) -> str:
 # Baseline parameters
 BASELINE = RunParams(
     tx=5, fx='A', tau_u=TAU_U_FLOOR['A'], tau_s=TAU_S_FLOOR['A'], rho=0,
-    m=(0, 1, 1, 0), chi=0.5, alpha=0.85,
+    m=(0, 1, 1, 0), chi=0.5, alpha=1.0,
     label='baseline',
 )
 
@@ -88,9 +88,9 @@ STAGE1 = [
     RunParams(tx=5, fx='NEB', tau_u=TAU_U_FLOOR['NEB'], tau_s=TAU_S_FLOOR['NEB'], rho=0,
               m=(0, 1, 1, 0), chi=0.5, alpha=0.85,   label='F=~EB'),
     RunParams(tx=5, fx='A', tau_u=TAU_U_FLOOR['A'], tau_s=TAU_S_FLOOR['A'], rho=0,
-              m=(1, 0, 0, 0), chi=0.5, alpha=0.85,   label='SS-only'),
+              m=(1, 0, 0, 0), chi=0.5, alpha=1.0,    label='SS-only'),
     RunParams(tx=5, fx='A', tau_u=TAU_U_FLOOR['A'], tau_s=TAU_S_FLOOR['A'], rho=0,
-              m=(0, 0, 0, 1), chi=0.5, alpha=0.85,   label='II-only'),
+              m=(0, 0, 0, 1), chi=0.5, alpha=1.0,    label='II-only'),
     RunParams(tx=5, fx='A', tau_u=TAU_U_FLOOR['A'], tau_s=TAU_S_FLOOR['A'], rho=0,
               m=(1, 1, 1, 1), chi=0.5, alpha=0.85,   label='full-joint'),
     # τ_U sensitivity variant (τ_U=10) — requires corresponding edge list
@@ -328,7 +328,7 @@ def main():
             chi_star = compute_chi_star(el_db, BASELINE)
             chi_star_run = RunParams(
                 tx=BASELINE.tx, fx=BASELINE.fx, tau_u=BASELINE.tau_u, tau_s=BASELINE.tau_s, rho=0,
-                m=(1, 1, 1, 1), chi=chi_star, alpha=0.85,
+                m=(1, 1, 1, 1), chi=chi_star, alpha=1.0,
                 label='full-joint-chi-star',
             )
             print(f"χ* = {chi_star:.4f}  →  {table_name(chi_star_run)}")

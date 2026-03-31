@@ -1,17 +1,17 @@
 # Fdb version 4
-["bibtex main"] 1774929908.78573 "main.aux" "main.bbl" "main" 1774930529.95324 0
-  "./MyLibrary.bib" 1774925529.32746 6584020 0317dbe10beee599bcca248767c7ed8b ""
+["bibtex main"] 1774944937.77239 "main.aux" "main.bbl" "main" 1774949769.8983 0
+  "./MyLibrary.bib" 1774943659.03282 6585796 d1c195978ca21ced9548743051cdd3b8 ""
   "./sciomtcs.bib" 1758004733 38814 e32becf37c07e9c5a5ecec51c1c262af ""
   "./spbasic.bst" 1757517455 33250 b27924137faccbc3d13ebae5a7538c63 ""
-  "main.aux" 1774930529.57171 11890 1e6dd88e4d0e744b6a5aa1ca68f8d180 "pdflatex"
+  "main.aux" 1774949769.55282 11890 618e2a41674049ddd263e0a799cf5510 "pdflatex"
   (generated)
   "main.bbl"
   "main.blg"
   (rewritten before read)
-["pdflatex"] 1774930528.79927 "/home/lc/Projects/EconomicsBusiness/spectral_ranking_latex/main.tex" "main.pdf" "main" 1774930529.95351 0
+["pdflatex"] 1774949768.8528 "/home/lc/Projects/EconomicsBusiness/spectral_ranking_latex/main.tex" "main.pdf" "main" 1774949769.89851 0
   "../plots/plot1_institution_elbow_latex.pdf" 1774861992.13731 19533 5832775f0e79b94c72702f46314217dc ""
-  "../tables/table2_source_matching.tex" 1774919832.7878 1046 bf3b0a99e2f9486d4dc94f11e2714780 ""
-  "../tables/table3_corpus_features.tex" 1774919833.07068 1457 2e7c92d0fcc90ced034d78dec7f5bbb0 ""
+  "../tables/table2_source_matching.tex" 1774949768.66107 1046 087bf9b1a8002278c3ebc6671a51458c ""
+  "../tables/table3_corpus_features.tex" 1774949768.95263 1457 2e7c92d0fcc90ced034d78dec7f5bbb0 ""
   "/etc/texmf/web2c/texmf.cnf" 1768766222.50773 475 c0e671620eb5563b2130f56340a5fde8 ""
   "/home/lc/Projects/EconomicsBusiness/spectral_ranking_latex/main.tex" 1774926130.26882 1641 beb50aab3b2019310cdfd1cba5e14779 ""
   "/usr/share/texlive/texmf-dist/fonts/map/fontname/texfonts.map" 1577235249 3524 cb3e574dea2d1052e39280babc910dc8 ""
@@ -215,13 +215,13 @@
   "/usr/share/texmf/web2c/texmf.cnf" 1741904018 41538 c016915c1d51223b6dbbfe27341748a8 ""
   "/var/lib/texmf/fonts/map/pdftex/updmap/pdftex.map" 1768766240 5467255 9a64d1b40e0b893fc5588ecce9d8accf ""
   "/var/lib/texmf/web2c/pdftex/pdflatex.fmt" 1768766286 3347051 b210dd19afa7cdfe2454020fc7cff434 ""
-  "main.aux" 1774930529.57171 11890 1e6dd88e4d0e744b6a5aa1ca68f8d180 "pdflatex"
-  "main.bbl" 1774929908.99865 7724 fe891aa8a3fc0fca435f6999adfa10c0 "bibtex main"
-  "main.out" 1774930529.57371 2529 46951cf0b641f24e2196830ec509b1d5 "pdflatex"
+  "main.aux" 1774949769.55282 11890 618e2a41674049ddd263e0a799cf5510 "pdflatex"
+  "main.bbl" 1774944937.96439 7724 fe891aa8a3fc0fca435f6999adfa10c0 "bibtex main"
+  "main.out" 1774949769.55382 2529 46951cf0b641f24e2196830ec509b1d5 "pdflatex"
   "main.tex" 1774926130.26882 1641 beb50aab3b2019310cdfd1cba5e14779 ""
   "sections/01_introduction.tex" 1774864803.0047 6518 5aa04a17324e27092de2bb68c9730b63 ""
   "sections/02_model_specification.tex" 1774930528.62193 12525 310ca8e2e765a77c2981a09d990205af ""
-  "sections/03_processing.tex" 1774929905.95851 3768 81c276ab0cac12b89082b913bb308d3e ""
+  "sections/03_processing.tex" 1774944936.54338 4125 d7971a378de8118776a2c339e9b1d64b ""
   "sections/04_results.tex" 1774929384.81887 11334 a4766a06277c4418bc7f168270acebce ""
   "sections/05_discussion.tex" 1774429456.14359 392 753ef4e6e9875bf5a51fb9052b90440e ""
   "sections/06_prospects.tex" 1773282420.00526 190 4eccb76168b576fb53f3c3cec6a10a7a ""
