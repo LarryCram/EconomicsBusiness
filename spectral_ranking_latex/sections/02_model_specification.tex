@@ -9,12 +9,13 @@ Then we select $N_w$ works $\mathfrak{W}$ published in $\mathfrak{S}$ within the
 window years $t_c = [t^c_0 \ldots t^c_1]$ or target years $t_t = [t^t_0 \ldots t^t_1]$.
 From the reference lists of the set of census works $\mathfrak{W}^c$ we identify the set of target works $\mathfrak{W}^t$ and form the filtered reference set $\mathfrak{R}=\{(i,j):w_i\in\mathfrak{W}^c,\,w_j\in\mathfrak{W}^t\}$.
 Author affiliations in $\mathfrak{W}$ establish a set of authors $\mathfrak{A}'$ and institutions $\mathfrak{U}'$.
-In practice many institutions (and authors) publishing only a few works per year can be dropped from the corpus. 
-Let $\bar{w}_u$ be the mean annual work count for institution $u$.
-We determine a lower limit $\tau_U$ on $\bar{w}_u$ by examining the work-institution frequency
-distribution and define $\mathfrak{U}\subseteq\mathfrak{U}'$ as the institutions with
-$\bar{w}_u\geq\tau_U$, with corresponding author set $\mathfrak{A}\subseteq\mathfrak{A}'$.
-Works that lose all their authorships under this filter are dropped.
+In practice many institutions (and sources) publishing only a few works per year can be dropped from the corpus.
+Let $\bar{w}_u$ be the mean annual census-window work count for institution $u$ and $\bar{w}_s$ the corresponding count for source $s$.
+We determine lower limits $\tau_U$ and $\tau_S$ by examining the respective frequency distributions and define
+$\mathfrak{U}\subseteq\mathfrak{U}'$ as the institutions with $\bar{w}_u\geq\tau_U$,
+and $\mathfrak{S}\subseteq\mathfrak{S}'$ as the sources with $\bar{w}_s\geq\tau_S$,
+with corresponding author set $\mathfrak{A}\subseteq\mathfrak{A}'$.
+Works that lose all their authorships under the institution filter, or whose source is dropped by the source filter, are removed from the corpus.
 Each retained work $w_i$ has an \textit{institution weight} under author-fractional counting
 \citep{waltmanFieldnormalizedCitationImpact2015},
 \begin{equation}
@@ -75,7 +76,7 @@ bipartite $(0110)$, and full-joint $(1111)$ combined blocks.
 The mixing weight $\chi$ controls the source--institution balance
 in the bipartite and full-joint cases and is inert in the single-mode cases.
 The $\chi$ scaling preserves total citation flow across all block combinations,
-since $(1-\chi)^2+2\chi(1-\chi)+\chi^2=1$.
+since $(1-\chi)^2+2\chi(1-\chi)+\chi^2=1$. 
 We could name $\mathbf{C}$ the reference, attention or citation matrix and prefer the latter.
 
 Note that the corpus excludes (a) census work references not giving attention to  target works, (b) non-census works giving attention to target works, and (c) authorships that include an omitted institution.
@@ -173,7 +174,7 @@ converging to $\boldsymbol{\pi}$ from any strictly positive starting
 vector $\boldsymbol{\pi}^{(0)}$. Note that the conversion from total to per-work influence by the scaling $A\,\mathbf{A}^{-1}$ must be applied after $\pi$ has converged.
 
 \paragraph{Bipartite ranking.}
-With $\mathbf{m}=(0110)$, equation~\eqref{eq:C} yields block off-diagonal $\mathbf{C}$ and $\mathbf{H}$,
+With $\mathbf{m}=(0110)$, equation~\eqref{eq:C} yields block off-diagonal matrices z$\mathbf{C}$ and $\mathbf{H}$,
 forming a directed bipartite network between sources~($S$) and institutions~($I$).
 Partitioning rows and columns into the $S$ and $I$ blocks, the stochastic matrix takes the form
 \begin{equation}
@@ -200,7 +201,7 @@ block-diagonal one-mode projections
   \quad
   \mathbf{M}_I = \mathbf{H}_{IS}\mathbf{H}_{SI}.
 \]
-Both $\mathbf{M}_S$ and $\mathbf{M}_I$ are row-stochastic (as products of row-stochastic matrices).
+Both $\mathbf{M}_S$ and $\mathbf{M}_I$ are row-stochastic products of row-stochastic matrices.
 
 To make the bipartite mode directly comparable with the unipartite SS and II modes at the same
 $\alpha$, each single arc $SI$ or $IS$ is damped by $\sqrt{\alpha}$, so every
@@ -225,38 +226,6 @@ matrix--vector product,
   \label{eq:kh_inst}
 \end{equation}
 
-
-% \paragraph{Bipartite ranking.}
-% With $\mathbf{m}=(0110)$, equation~\eqref{eq:C} yields block off-diagonal matrices $\mathbf{C}$ and $\mathbf{H}$,
-% forming a directed bipartite network between sources and institutions. The bipartite structure makes $\mathbf{H}$ periodic with period~2, and the undamped equation~\eqref{eq:eig} has no unique solution. The modification 
-% $\tilde{\mathbf{H}}$ in equation~\eqref{eq:Hstar} restores primitivity for any $\alpha\in(0,1)$.
-% Since the product of row-stochastic matrices is row-stochastic, $\mathbf{H}^2$ is
-% block-diagonal and row-stochastic, with one-mode projection blocks
-% $\mathbf{M}_S=\mathbf{H}_{SI}\mathbf{H}_{IS}$ and $\mathbf{M}_I=\mathbf{H}_{IS}\mathbf{H}_{SI}$.
-
-% By using a weight of $\sqrt{\alpha}$ per step, each traversal of an
-% $SI$ or $IS$ arc is attenuated by $\sqrt{\alpha}$, and the round-trip
-% attenuation through $\mathbf{M}_S$ equals $\alpha$, matching the
-% single-step damping used in the SS and II modes and making all four modes
-% directly comparable at the same $\alpha$.
-% Partitioning $\boldsymbol{\pi}=\sqrt{\alpha}\mathbf{H}^\top\boldsymbol{\pi}+(1-\sqrt{\alpha})\boldsymbol{\mu}$
-% and eliminating $\boldsymbol{\pi}_I$ yields
-% the bipartite resolvent for sources,
-% \begin{equation}
-%   \bigl(\mathbf{I}-\alpha\mathbf{M}_S^\top\bigr)\boldsymbol{\pi}_S
-%   \;=\;
-%   (1-\sqrt{\alpha})\bigl(\boldsymbol{\mu}_S+\sqrt{\alpha}\,\mathbf{H}_{IS}^\top\boldsymbol{\mu}_I\bigr),
-%   \label{eq:kh_source}
-% \end{equation}
-% where the effective round-trip damping is $\alpha$ and the effective prior transports institution
-% mass back to sources through $\mathbf{H}_{IS}^\top$. The institution ranking is then
-% recovered by a single matrix--vector product,
-% \begin{equation}
-%   \boldsymbol{\pi}_I
-%   \;=\;
-%   \sqrt{\alpha}\,\mathbf{H}_{SI}^\top\boldsymbol{\pi}_S+(1-\sqrt{\alpha})\boldsymbol{\mu}_I.
-%   \label{eq:kh_inst}
-% \end{equation}
 
 $\mathbf{C}(\chi,\mathbf{m},\rho)$ is a sparse matrix built from a
 weighted edge list $\mathcal{E}$ accumulated over $\mathfrak{R}$ with

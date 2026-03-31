@@ -28,10 +28,11 @@ _PARAMS_PATH = Path(__file__).parent.parent / 'params.yaml'
 class Paths:
     project_root: Path   # PROJECT_ROOT in config.yaml
     data: Path           # PROJECT_ROOT / DATA  (small files, git-tracked)
+    tables: Path         # PROJECT_ROOT / TABLES  (LaTeX table fragments)
     working: Path        # WORKING  (SSD root for large parquets)
     openalex: Path       # OPENALEX (OA parquet snapshot)
     parquet: Path        # WORKING / parquet  (pipeline intermediates)
-    plots: Path          # PROJECT_ROOT / plots
+    plots: Path          # PROJECT_ROOT / PLOTS
 
 
 def load_params(params_path: Path = _PARAMS_PATH) -> dict:
@@ -47,8 +48,9 @@ def load_config(config_path: Path = _CONFIG_PATH) -> Paths:
     return Paths(
         project_root=project_root,
         data=project_root / cfg['DATA'],
+        tables=project_root / cfg['TABLES'],
         working=working,
         openalex=Path(cfg['OPENALEX']),
         parquet=working / 'parquet',
-        plots=project_root / 'plots',
+        plots=project_root / cfg['PLOTS'],
     )

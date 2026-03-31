@@ -4,6 +4,8 @@
 # === Paths ===
 PROJECT_ROOT: '/home/lc/Projects/EconomicsBusiness'
 DATA: 'data'                                    # relative to PROJECT_ROOT
+TABLES: 'tables'                                # relative to PROJECT_ROOT
+PLOTS: 'plots'                                  # relative to PROJECT_ROOT
 WORKING: '/home/lc/m/working/econ_bus'         # SSD root; parquet/ subfolder derived
 OPENALEX: '/home/lc/m/openalex_feb26/parquet'  # OA snapshot
 

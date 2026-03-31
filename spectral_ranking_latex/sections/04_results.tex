@@ -6,6 +6,61 @@
 \subsection{Network modes and analysis sequence}
 \label{sub:modes}
 
+
+Each corpus extraction is parameterised by a field subset $F$ and a time window $t_x$. The field subset restricts the source set $\mathfrak{S}$ to sources whose OpenAlex topic counts fall exclusively in Field~14 ($F=E$), exclusively in Field~20 ($F=B$), or in either field ($F=A$, all OAS sources). The time window encodes the census and target year ranges via $t_x\in\{1,\ldots,7\}$; the seven cases are listed in Table~\ref{tab:windows}. The five symmetric windows correspond to conventional five-year citation windows; cases~6 and~7 are asymmetric windows analogous to the Journal Impact Factor and reference spectroscopy respectively.
+
+
+\begin{table}[h]
+	\centering
+	\caption{Model parameters $\boldsymbol{\theta}$.}
+	\label{tab:params}
+	\begin{tabularx}{\textwidth}{lllX}
+		\toprule
+		Symbol & Name & Type & Role \\
+		\midrule
+		\multicolumn{4}{@{}l@{}}{\textit{Corpus construction}} \\[2pt]
+		$F\in\{E,B,A\}$          & field subset          & category        & restrict $\mathfrak{S}$ to Economics ($E$), Business ($B$), or all OAS ($A$); see Table~\ref{tab:windows} \\
+		$t_x\in\{1,\ldots,7\}$  & time window           & integer         & census and target year ranges; see Table~\ref{tab:windows} \\
+		$\tau_U$                 & institution threshold & integer         & minimum mean annual works to retain an institution \\
+		$\tau_S$                 & source threshold      & integer         & minimum mean annual works to retain a source \\[4pt]
+		\multicolumn{4}{@{}l@{}}{\textit{Matrix construction}} \\[2pt]
+		$\rho\in\{0,1\}$         & reference normalisation & binary        & 0: a work contributes $\bar{R}$ units \newline 1: a work contributes $R_i$ units \\
+		$\mathbf{m}\in\{0,1\}^4$ & block mask            & binary 4-vector & select active unit-type pairs ($SS$, $SI$, $IS$, $II$) \\
+		$\chi\in[0,1]$           & mixing weight         & continuous      & source--institution balance within each work \\[4pt]
+		\multicolumn{4}{@{}l@{}}{\textit{Ranking}} \\[2pt]
+		$\alpha\in[0,1)$         & damping factor        & continuous      & controls propagation through citation network \newline \hspace*{1em} ensures convergence \\
+		\bottomrule
+\end{tabularx}
+\end{table}
+
+\begin{table}[htbp]
+\centering
+\caption{Corpus construction parameters: field subsets ($F$) and time windows ($t_x$).}
+\label{tab:windows}
+\begin{tabular}{clll}
+\toprule
+\multicolumn{4}{@{}l@{}}{\textit{Panel A\,: Field subsets ($F$)}} \\[2pt]
+$F$ & \multicolumn{3}{@{}l}{Sources included in $\mathfrak{S}$} \\
+\midrule
+$E$ & \multicolumn{3}{@{}l}{Topic counts exclusively in Field~14 (Economics, Econometrics and Finance)} \\
+$B$ & \multicolumn{3}{@{}l}{Topic counts exclusively in Field~20 (Business, Management and Accounting)} \\
+$A$ & \multicolumn{3}{@{}l}{All OAS sources; topic counts in Fields~14 and/or~20 \textit{(baseline)}} \\
+\midrule
+\multicolumn{4}{@{}l@{}}{\textit{Panel B\,: Time windows ($t_x$)}} \\[2pt]
+$t_x$ & Census window $[t^c_0,t^c_1]$ & Target window $[t^t_0,t^t_1]$ & Label \\
+\midrule
+1 & 2000--2004 & 2000--2004 & Symmetric 5-year \\
+2 & 2005--2009 & 2005--2009 & Symmetric 5-year \\
+3 & 2010--2014 & 2010--2014 & Symmetric 5-year \\
+4 & 2015--2019 & 2015--2019 & Symmetric 5-year \\
+5 & 2020--2024 & 2020--2024 & Symmetric 5-year \textit{(baseline)} \\
+6 & 2024       & 2000--2024 & JIF analogue \\
+7 & 2020--2024 & 2020       & Reference spectroscopy \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+
 The corpus comprises $N_s$ sources and $N_u$ institutions linked by a
 reference network whose attention flow decomposes into four block types
 ($SS$, $SI$, $IS$, $II$) as defined in Section~\ref{sec:networks}.

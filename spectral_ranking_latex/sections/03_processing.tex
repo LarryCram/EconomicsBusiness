@@ -2,8 +2,8 @@
 \section{Corpus selection}
 \label{sec:sources}
 
-Corpus extraction starts with a list of eligible sources. We require each source to have three features: an OpenAlex source identifier for corpus extraction, evidence from one of our journal registries that the source 
-publishes economics or business research, and relatively high OpenAlex source topic density to exclude cross-disciplinary journals and other edge cases.
+OpenAlex \citep{priemOpenAlexFullyopenIndex2022} provides our bibliometric data. Corpus selection starts with a list of eligible sources having four features: an OpenAlex source identifier for corpus extraction, evidence from one of our journal registries that the source 
+publishes economics or business research, a sufficient number of published works per year, and relatively high OpenAlex source topic density to exclude cross-disciplinary journals.
 
 The journal registries are as follows. Harzing's \textit{71st Edition of the Journal Quality List}~\cite[][JQL]{harzinga.-w.JournalQualityList2024} assembles
 peer assessments of journal quality across business and economics
@@ -18,71 +18,28 @@ After filtering, 1,602~journals remain.
 \textit{Clarivate Web of Science Journal Citation Reports} ~\cite[][JCR]{clarivateanalyticsJournalCitationReports2026} assign each
 journal a Web of Science category. We retain those in Economics, Management, Business, Transportation or Business, Finance. After filtering, 1,413~journals remain.
 
-Every journal in JQL, SJL, and MJL has at least one ISSN, and may have several. These registry ISSNs are joined independently to the February 2026 OpenAlex sources snapshot using its list of ISSNs as the matching key and selecting only the `journal' type. Journal titles are examined to identify around 30 additional matches where the OpenAlex source does not have an ISSN. The list of OpenAlex sources that are matched is designated OAS\textsuperscript{*}. The long list OAS\textsuperscript{*} includes sources publishing works in disciplines beyond  economics and business. We use OpenAlex source-topic assignments to exclude sources having a minority of works in economics/business. A source has work-topic counts for up to five topics, each within a single sub-field, field, and domain. We accumulate the work-topic counts for OpenAlex Field~14 (Economics, Econometrics and Finance) and Field~20 (Business and Management) and define the work-topic density as the ratio of this count to the total topic count in the source. Sources are dropped if this ratio is below 50\%. The 1,659 surviving sources, labeled OAS, are used to extract the corpus. Matching outcomes are summarised in Table \ref{tab:source_matching}.
+Every journal in JQL, SJL, and MJL has at least one ISSN, and may have several. These registry ISSNs are joined independently to the February 2026 OpenAlex sources snapshot using its list of ISSNs as the matching key and selecting only the `journal' source-type. Journal titles are examined to identify around 30 additional matches where the OpenAlex source does not have an ISSN. The list of OpenAlex sources that are matched is designated OAS\textsuperscript{*}. 
 
-\input{../data/table2_source_matching}
+\input{../tables/table2_source_matching}
 
-Each corpus extraction is parameterised by a field subset $F$ and a time window $t_x$. The field subset restricts the source set $\mathfrak{S}$ to sources whose OpenAlex topic counts fall exclusively in Field~14 ($F=E$), exclusively in Field~20 ($F=B$), or in either field ($F=A$, all OAS sources). The time window encodes the census and target year ranges via $t_x\in\{1,\ldots,7\}$; the seven cases are listed in Table~\ref{tab:windows}. The five symmetric windows correspond to conventional five-year citation windows; cases~6 and~7 are asymmetric windows analogous to the Journal Impact Factor and reference spectroscopy respectively.
+The long list OAS\textsuperscript{*} includes sources publishing many works in disciplines beyond  economics and business, and we use OpenAlex source-topic assignments to exclude them as follows. A source has work-topic counts for up to five topics, each within a single sub-field, field, and domain. We accumulate the work-topic counts for OpenAlex Field~14 (Economics, Econometrics and Finance) and Field~20 (Business and Management) and drop sources if this count is below 50\% of the total count. 
 
-\begin{table}[htbp]
-\centering
-\caption{Corpus construction parameters: field subsets ($F$) and time windows ($t_x$).}
-\label{tab:windows}
-\begin{tabular}{clll}
-\toprule
-\multicolumn{4}{@{}l@{}}{\textit{Panel A\,: Field subsets ($F$)}} \\[2pt]
-$F$ & \multicolumn{3}{@{}l}{Sources included in $\mathfrak{S}$} \\
-\midrule
-$E$ & \multicolumn{3}{@{}l}{Topic counts exclusively in Field~14 (Economics, Econometrics and Finance)} \\
-$B$ & \multicolumn{3}{@{}l}{Topic counts exclusively in Field~20 (Business, Management and Accounting)} \\
-$A$ & \multicolumn{3}{@{}l}{All OAS sources; topic counts in Fields~14 and/or~20 \textit{(baseline)}} \\
-\midrule
-\multicolumn{4}{@{}l@{}}{\textit{Panel B\,: Time windows ($t_x$)}} \\[2pt]
-$t_x$ & Census window $[t^c_0,t^c_1]$ & Target window $[t^t_0,t^t_1]$ & Label \\
-\midrule
-1 & 2000--2004 & 2000--2004 & Symmetric 5-year \\
-2 & 2005--2009 & 2005--2009 & Symmetric 5-year \\
-3 & 2010--2014 & 2010--2014 & Symmetric 5-year \\
-4 & 2015--2019 & 2015--2019 & Symmetric 5-year \\
-5 & 2020--2024 & 2020--2024 & Symmetric 5-year \textit{(baseline)} \\
-6 & 2024       & 2000--2024 & JIF analogue \\
-7 & 2020--2024 & 2020       & Reference spectroscopy \\
-\bottomrule
-\end{tabular}
-\end{table}
-
-We extract an initial corpus of works in the OAS source list ($F=A$, $t_x=5$), by retaining article and review types with publication years between 2020 and 2024 inclusive and excluding works that are paratext or retracted, or without an authorship entity. The institution retention curve (Fig.~\ref{fig:retention}) implies a preferred minimum cut of $\tau_U = 20$ works per institution per year, retaining approximately 1,734 institutions and 85\% of the works. The authorships and references for the initial corpus are then attached and the value of $\omega_{iu}$ computed for each work. The characteristics of the initial data set are exhibited in Table~\ref{tab:corpus_features}.
+For the surviving OAS\textsuperscript{*} sources we extract work and authorship data revealing units that can be excluded because they publish very few works. To find a suitable threshold for excluding these units, we examine source and institution retention curves (Fig.~\ref{fig:retention}), selecting thresholds of $\tau_U = 20$ works/institution/year and $\tau_S = 20$ works/source/year. We designate the residual set of sources OAS.
 
 \begin{figure}[htbp]
 	\centering
 	\includegraphics[width=0.8\textwidth]{../plots/plot1_institution_elbow_latex}
-	\caption{Institution retention curve}
+	\caption{Institution and source retention curves}
 	\label{fig:retention}
 \end{figure}
 
-\input{../data/table3_corpus_features}
+Using units that satisfy these thresholds, we extract a full corpus of works, authorships and references retaining article and review types with publication years from 2000 to 2024, excluding works that are paratext or retracted, or without an authorship entity, and compute $\omega_{iu}$ for each work. The characteristics of the full corpus are exhibited in Table~\ref{tab:corpus_features}.
+
+\input{../tables/table3_corpus_features}
 
 
-\begin{table}[h]
-	\centering
-	\caption{Model parameters $\boldsymbol{\theta}$.}
-	\label{tab:params}
-	\begin{tabularx}{\textwidth}{lllX}
-		\toprule
-		Symbol & Name & Type & Role \\
-		\midrule
-		\multicolumn{4}{@{}l@{}}{\textit{Corpus construction}} \\[2pt]
-		$F\in\{E,B,A\}$          & field subset          & category        & restrict $\mathfrak{S}$ to Economics ($E$), Business ($B$), or all OAS ($A$); see Table~\ref{tab:windows} \\
-		$t_x\in\{1,\ldots,7\}$  & time window           & integer         & census and target year ranges; see Table~\ref{tab:windows} \\
-		$\tau_U$                 & institution threshold & integer         & minimum mean annual works to retain an institution \\[4pt]
-		\multicolumn{4}{@{}l@{}}{\textit{Matrix construction}} \\[2pt]
-		$\rho\in\{0,1\}$         & reference normalisation & binary        & 0: a work contributes $\bar{R}$ units \newline 1: a work contributes $R_i$ units \\
-		$\mathbf{m}\in\{0,1\}^4$ & block mask            & binary 4-vector & select active unit-type pairs ($SS$, $SI$, $IS$, $II$) \\
-		$\chi\in[0,1]$           & mixing weight         & continuous      & source--institution balance within each work \\[4pt]
-		\multicolumn{4}{@{}l@{}}{\textit{Ranking}} \\[2pt]
-		$\alpha\in[0,1)$         & damping factor        & continuous      & controls propagation through citation network \newline \hspace*{1em} ensures convergence \\
-		\bottomrule
-\end{tabularx}
-\end{table}
+
+
+
 
 

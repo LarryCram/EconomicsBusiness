@@ -344,3 +344,142 @@ class TestBipartiteResolvent:
 
         np.testing.assert_allclose(pi_s_res, pi_katz[:N_s], atol=ATOL_CROSS)
         np.testing.assert_allclose(pi_u_res, pi_katz[N_s:], atol=ATOL_CROSS)
+
+
+# ─── α=1 primitivity tests ────────────────────────────────────────────────────
+
+class TestAlphaOne:
+    """
+    Tests for α=1 (no damping).  Convergence at α=1 requires H̃ to be
+    primitive (strongly connected + aperiodic).
+
+    katz() at α=1:
+      - The update is π ← H^T π + dangling_mass·μ (the prior injection
+        from dangling nodes is the only non-H term when α=1).
+      - A primitive H converges to its Perron eigenvector.
+      - A periodic H with no dangling nodes oscillates (does not converge).
+      - A periodic bipartite H with dangling nodes may converge because the
+        dangling redistribution breaks periodicity.
+
+    bipartite_resolvent() at α=1:
+      - The per-step damping is sqrt(1)=1; the RHS collapses to zero and
+        LHS (I − M_S^T) is singular.  spsolve cannot find a unique solution.
+      - The correct limit is the Perron eigenvector of M_S (and then π_I
+        recovered by π_I = H_SI^T π_S).  This test verifies that the limit
+        of bipartite_resolvent as α→1 matches the M_S Perron vector.
+    """
+
+    def test_katz_alpha_one_primitive_converges(self):
+        """
+        Primitive H: 3-cycle 0→1→2→0 plus self-loop on node 0.
+        The self-loop makes gcd(cycle lengths) = gcd(1,3) = 1 → aperiodic.
+        katz must converge at α=1 and return the Perron eigenvector.
+        """
+        A = [[1, 1, 0],
+             [0, 0, 1],
+             [1, 0, 0]]
+        H = make_csr(A)
+        pi, iters, norm = katz(H, 3, alpha=1.0, tol=1e-9, max_iter=500)
+        assert norm < 1e-6, (
+            f"α=1 failed to converge for primitive H after {iters} iters "
+            f"(final norm={norm:.2e})"
+        )
+        assert abs(pi.sum() - 1.0) < ATOL
+        assert np.all(pi >= 0)
+
+    def test_katz_alpha_one_periodic_does_not_converge(self):
+        """
+        Pure 2-cycle 0→1→0 with no dangling nodes: H is periodic (period 2).
+        At α=1 there is no prior injection to break periodicity, so the
+        iteration must NOT converge within max_iter steps.
+        This confirms that non-primitive H is detectable via α=1.
+        """
+        H = sp.csr_matrix(np.array([[0., 1.], [1., 0.]]))
+        pi, iters, norm = katz(H, 2, alpha=1.0, tol=1e-9, max_iter=200)
+        assert norm > 1e-6, (
+            "Periodic H (2-cycle, no dangling) with α=1 should NOT converge, "
+            f"but got norm={norm:.2e} after {iters} iters"
+        )
+
+    def test_katz_alpha_one_bipartite_with_dangling_converges(self):
+        """
+        Bipartite block matrix at α=1.  Source 1 is dangling (no SI edges),
+        so the dangling redistribution injects prior mass at every step even
+        though (1−α)=0.  This breaks the bipartite periodicity and allows
+        convergence.
+
+        Network: source 0 ↔ inst 0 (cycle); source 1 dangling.
+        """
+        N_s, N_u = 2, 1
+        N = N_s + N_u
+        H_SI = sp.csr_matrix(np.array([[1.0], [0.0]]))   # src1 is dangling
+        H_IS = sp.csr_matrix(np.array([[1.0, 0.0]]))
+        Z_ss = sp.csr_matrix((N_s, N_s))
+        Z_uu = sp.csr_matrix((N_u, N_u))
+        H_block = sp.bmat([[Z_ss, H_SI], [H_IS, Z_uu]], format='csr')
+        mu = np.full(N, 1.0 / N)
+        pi, iters, norm = katz(H_block, N, alpha=1.0, mu=mu,
+                               tol=1e-9, max_iter=500)
+        assert norm < 1e-6, (
+            f"Bipartite with dangling source and α=1 should converge "
+            f"(norm={norm:.2e} after {iters} iters)"
+        )
+        assert abs(pi.sum() - 1.0) < ATOL
+        assert np.all(pi >= 0)
+
+    def test_katz_alpha_one_pure_bipartite_no_dangling_does_not_converge(self):
+        """
+        Pure bipartite K_{2,2} block matrix with no dangling nodes, α=1.
+        No dangling redistribution → no prior injection → periodicity
+        is not broken → should NOT converge.
+        This is the bipartite analogue of test_katz_alpha_one_periodic.
+        """
+        N_s, N_u = 2, 2
+        N = N_s + N_u
+        H_SI = sp.csr_matrix(np.array([[0.5, 0.5], [0.5, 0.5]]))
+        H_IS = sp.csr_matrix(np.array([[0.5, 0.5], [0.5, 0.5]]))
+        Z_ss = sp.csr_matrix((N_s, N_s))
+        Z_uu = sp.csr_matrix((N_u, N_u))
+        H_block = sp.bmat([[Z_ss, H_SI], [H_IS, Z_uu]], format='csr')
+        mu = np.full(N, 1.0 / N)
+        pi, iters, norm = katz(H_block, N, alpha=1.0, mu=mu,
+                               tol=1e-9, max_iter=200)
+        assert norm > 1e-6, (
+            "Pure bipartite K_{2,2} with α=1 and no dangling should NOT converge, "
+            f"but got norm={norm:.2e}"
+        )
+
+    def test_bipartite_resolvent_alpha_approaches_one(self):
+        """
+        As α→1, bipartite_resolvent must approach the Perron eigenvector of M_S.
+
+        At α=1 the resolvent system is singular, so we use α=1−ε and verify
+        that the solution converges to the M_S Perron vector as ε→0.
+
+        Network: random (N_s=4, N_u=3), all entries positive (primitive M_S).
+        The Perron vector of M_S is computed via scipy.sparse.linalg.eigs.
+        """
+        from scipy.sparse.linalg import eigs
+
+        np.random.seed(55)
+        N_s, N_u = 4, 3
+        C_SI_raw = np.abs(np.random.randn(N_s, N_u)) + 0.2
+        C_IS_raw = np.abs(np.random.randn(N_u, N_s)) + 0.2
+        H_SI, _ = _row_normalise(sp.csr_matrix(C_SI_raw))
+        H_IS, _ = _row_normalise(sp.csr_matrix(C_IS_raw))
+        M_S = H_SI.dot(H_IS)   # N_s × N_s one-mode projection
+
+        # Perron vector of M_S (dominant left eigenvector of M_S^T)
+        _, vecs = eigs(M_S.T.toarray(), k=1, which='LM')
+        perron = np.abs(vecs[:, 0].real)
+        perron /= perron.sum()
+
+        # bipartite_resolvent at α close to 1: π_S should approach perron
+        pi_s_near1, _ = bipartite_resolvent(H_SI, H_IS, N_s, N_u, alpha=0.9999)
+        # Normalise π_S alone for comparison with perron
+        pi_s_norm = pi_s_near1 / pi_s_near1.sum()
+
+        np.testing.assert_allclose(
+            pi_s_norm, perron, atol=1e-3,
+            err_msg="bipartite_resolvent at α≈1 should approach M_S Perron vector"
+        )

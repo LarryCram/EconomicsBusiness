@@ -37,6 +37,7 @@ params = load_params()
 
 PROJECT_FOLDER = paths.project_root
 DATA           = paths.data
+TABLES         = paths.tables
 WORKING        = paths.working
 PARQUET        = paths.parquet
 
@@ -360,7 +361,7 @@ def build_table_exclusions(db):
     L.append(r"\end{tabular}")
     L.append(r"\end{table}")
 
-    out_tex = DATA / 'table_exclusions.tex'
+    out_tex = TABLES / 'table_exclusions.tex'
     out_tex.write_text("\n".join(L) + "\n")
     print(f"LaTeX written to {out_tex}")
 
@@ -413,7 +414,7 @@ def build_table_dropped_sources(db):
     L.append(r"\end{tabular}")
     L.append(r"\end{table}")
 
-    out_tex = DATA / 'table_dropped_sources.tex'
+    out_tex = TABLES / 'table_dropped_sources.tex'
     out_tex.write_text("\n".join(L) + "\n")
     print(f"LaTeX written to {out_tex}")
 
@@ -787,12 +788,12 @@ def main():
         sjl_dropped_by_topic_filter(db)
         t3_counts = build_table3_data(db)
         t3_dists  = build_table3_distributions(db)
-    write_latex_table2(rows, overlaps, DATA / 'table2_source_matching.tex')
-    write_csv_table2(rows, overlaps, DATA / 'table2_source_matching.csv')
-    compile_pdf(DATA / 'table2_source_matching.tex')
-    write_latex_table3(t3_counts, t3_dists, DATA / 'table3_corpus_features.tex')
-    write_csv_table3(t3_counts, t3_dists, DATA / 'table3_corpus_features.csv')
-    compile_pdf(DATA / 'table3_corpus_features.tex')
+    write_latex_table2(rows, overlaps, TABLES / 'table2_source_matching.tex')
+    write_csv_table2(rows, overlaps, DATA   / 'table2_source_matching.csv')
+    compile_pdf(TABLES / 'table2_source_matching.tex')
+    write_latex_table3(t3_counts, t3_dists, TABLES / 'table3_corpus_features.tex')
+    write_csv_table3(t3_counts, t3_dists, DATA     / 'table3_corpus_features.csv')
+    compile_pdf(TABLES / 'table3_corpus_features.tex')
 
 
 if __name__ == "__main__":
