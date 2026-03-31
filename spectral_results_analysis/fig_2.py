@@ -32,8 +32,10 @@ import seaborn as sns
 sys.path.insert(0, str(Path(__file__).parent.parent))
 from util import load_config, load_params
 
-_tau           = load_params()['tau_u_floor']['A']
-BASELINE_TABLE = f'rk_t5_A_tau{_tau}_rho0_m0110_chi50_alpha85'
+_p             = load_params()
+_tau_u         = _p['tau_u_floor']['A']
+_tau_s         = _p['tau_s_floor']['A']
+BASELINE_TABLE = f'rk_t5_A_tauU{_tau_u}_tauS{_tau_s}_rho0_m0110_chi50_alpha85'
 BASELINE_LABEL = 'baseline'
 
 

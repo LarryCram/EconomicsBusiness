@@ -11,8 +11,8 @@ Usage
 
 Output table naming
 -------------------
-  rk_t{tx}_{fx}_tau{tau_u}_rho{rho}_m{mstr}_chi{chi_int}_alpha{alpha_int}
-  e.g. rk_t5_A_tau20_rho0_m0110_chi50_alpha85   (baseline)
+  rk_t{tx}_{fx}_tauU{tau_u}_tauS{tau_s}_rho{rho}_m{mstr}_chi{chi_int}_alpha{alpha_int}
+  e.g. rk_t5_A_tauU20_tauS20_rho0_m0110_chi50_alpha85   (baseline)
 
 Each table has columns: unit_idx, unit_type, pi, v, rank_pi, rank_v, a_p.
 A _catalog table records all run parameters and diagnostics.
@@ -37,6 +37,7 @@ from katz_ranker import rank
 
 _params     = load_params()
 TAU_U_FLOOR = _params['tau_u_floor']   # keyed by fx; all currently 20
+TAU_S_FLOOR = _params['tau_s_floor']   # keyed by fx; all currently 20
 
 
 # ─── Parameter set definition ─────────────────────────────────────────────────
@@ -46,6 +47,7 @@ class RunParams:
     tx:    int
     fx:    str
     tau_u: int
+    tau_s: int
     rho:   int     # 0 = fixed count (R̄/R_i); 1 = full count
     m:     tuple   # (m_SS, m_SI, m_IS, m_II)
     chi:   float   # mixing weight (only material for m=(1,1,1,1))
@@ -57,7 +59,7 @@ def table_name(p: RunParams) -> str:
     mstr     = ''.join(str(x) for x in p.m)
     chi_int  = round(p.chi * 100)
     alpha_int = round(p.alpha * 100)
-    return (f'rk_t{p.tx}_{p.fx}_tau{p.tau_u}'
+    return (f'rk_t{p.tx}_{p.fx}_tauU{p.tau_u}_tauS{p.tau_s}'
             f'_rho{p.rho}_m{mstr}_chi{chi_int}_alpha{alpha_int}')
 
 
@@ -65,7 +67,7 @@ def table_name(p: RunParams) -> str:
 
 # Baseline parameters
 BASELINE = RunParams(
-    tx=5, fx='A', tau_u=TAU_U_FLOOR['A'], rho=0,
+    tx=5, fx='A', tau_u=TAU_U_FLOOR['A'], tau_s=TAU_S_FLOOR['A'], rho=0,
     m=(0, 1, 1, 0), chi=0.5, alpha=0.85,
     label='baseline',
 )
@@ -73,32 +75,32 @@ BASELINE = RunParams(
 # Stage 1: one-at-a-time deviations from baseline
 STAGE1 = [
     BASELINE,
-    RunParams(tx=5, fx='A', tau_u=TAU_U_FLOOR['A'], rho=1,
+    RunParams(tx=5, fx='A', tau_u=TAU_U_FLOOR['A'], tau_s=TAU_S_FLOOR['A'], rho=1,
               m=(0, 1, 1, 0), chi=0.5, alpha=0.85,   label='rho1'),
-    RunParams(tx=5, fx='A', tau_u=TAU_U_FLOOR['A'], rho=0,
+    RunParams(tx=5, fx='A', tau_u=TAU_U_FLOOR['A'], tau_s=TAU_S_FLOOR['A'], rho=0,
               m=(0, 1, 1, 0), chi=0.5, alpha=0.50,   label='alpha0.5'),
-    RunParams(tx=5, fx='E',   tau_u=TAU_U_FLOOR['E'], rho=0,
+    RunParams(tx=5, fx='E',   tau_u=TAU_U_FLOOR['E'],   tau_s=TAU_S_FLOOR['E'],   rho=0,
               m=(0, 1, 1, 0), chi=0.5, alpha=0.85,   label='F=E'),
-    RunParams(tx=5, fx='B',   tau_u=TAU_U_FLOOR['B'], rho=0,
+    RunParams(tx=5, fx='B',   tau_u=TAU_U_FLOOR['B'],   tau_s=TAU_S_FLOOR['B'],   rho=0,
               m=(0, 1, 1, 0), chi=0.5, alpha=0.85,   label='F=B'),
-    RunParams(tx=5, fx='EB',  tau_u=TAU_U_FLOOR['EB'], rho=0,
+    RunParams(tx=5, fx='EB',  tau_u=TAU_U_FLOOR['EB'],  tau_s=TAU_S_FLOOR['EB'],  rho=0,
               m=(0, 1, 1, 0), chi=0.5, alpha=0.85,   label='F=EB'),
-    RunParams(tx=5, fx='NEB', tau_u=TAU_U_FLOOR['NEB'], rho=0,
+    RunParams(tx=5, fx='NEB', tau_u=TAU_U_FLOOR['NEB'], tau_s=TAU_S_FLOOR['NEB'], rho=0,
               m=(0, 1, 1, 0), chi=0.5, alpha=0.85,   label='F=~EB'),
-    RunParams(tx=5, fx='A', tau_u=TAU_U_FLOOR['A'], rho=0,
+    RunParams(tx=5, fx='A', tau_u=TAU_U_FLOOR['A'], tau_s=TAU_S_FLOOR['A'], rho=0,
               m=(1, 0, 0, 0), chi=0.5, alpha=0.85,   label='SS-only'),
-    RunParams(tx=5, fx='A', tau_u=TAU_U_FLOOR['A'], rho=0,
+    RunParams(tx=5, fx='A', tau_u=TAU_U_FLOOR['A'], tau_s=TAU_S_FLOOR['A'], rho=0,
               m=(0, 0, 0, 1), chi=0.5, alpha=0.85,   label='II-only'),
-    RunParams(tx=5, fx='A', tau_u=TAU_U_FLOOR['A'], rho=0,
+    RunParams(tx=5, fx='A', tau_u=TAU_U_FLOOR['A'], tau_s=TAU_S_FLOOR['A'], rho=0,
               m=(1, 1, 1, 1), chi=0.5, alpha=0.85,   label='full-joint'),
-    # τ_U sensitivity variant (τ_U=10) — requires el_t5_A_tau10 edge list
-    RunParams(tx=5, fx='A', tau_u=10, rho=0,
-              m=(0, 1, 1, 0), chi=0.5, alpha=0.85,   label='tau10'),
+    # τ_U sensitivity variant (τ_U=10) — requires corresponding edge list
+    RunParams(tx=5, fx='A', tau_u=10, tau_s=TAU_S_FLOOR['A'], rho=0,
+              m=(0, 1, 1, 0), chi=0.5, alpha=0.85,   label='tauU10'),
 ]
 
 # Stage 2: time-series sweep (baseline parameters, vary tx)
 STAGE2 = [
-    RunParams(tx=tx, fx='A', tau_u=TAU_U_FLOOR['A'], rho=0,
+    RunParams(tx=tx, fx='A', tau_u=TAU_U_FLOOR['A'], tau_s=TAU_S_FLOOR['A'], rho=0,
               m=(0, 1, 1, 0), chi=0.5, alpha=0.85,
               label=f't{tx}')
     for tx in [1, 2, 3, 4, 6]
@@ -114,6 +116,7 @@ def ensure_catalog(db) -> None:
             tx          INTEGER,
             fx          VARCHAR,
             tau_u       INTEGER,
+            tau_s       INTEGER,
             rho         INTEGER,
             m_SS        INTEGER,
             m_SI        INTEGER,
@@ -129,6 +132,11 @@ def ensure_catalog(db) -> None:
             created_at  VARCHAR
         )
     """)
+    # Migrate pre-tau_s schema: add column if absent
+    cols = {row[0] for row in db.execute("DESCRIBE _catalog").fetchall()}
+    if 'tau_s' not in cols:
+        db.execute("ALTER TABLE _catalog ADD COLUMN tau_s INTEGER")
+        db.execute("UPDATE _catalog SET tau_s = 0")
 
 
 def write_result(db, tname: str, p: RunParams, result, csr_data) -> None:
@@ -173,8 +181,12 @@ def write_result(db, tname: str, p: RunParams, result, csr_data) -> None:
     n_s = csr_data.n_s if result.pi_s is not None else 0
     n_u = csr_data.n_u if result.pi_u is not None else 0
     db.execute(
-        "INSERT OR REPLACE INTO _catalog VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)",
-        [tname, p.tx, p.fx, p.tau_u, p.rho,
+        """INSERT OR REPLACE INTO _catalog
+           (table_name, tx, fx, tau_u, tau_s, rho,
+            m_SS, m_SI, m_IS, m_II, chi, alpha,
+            n_s, n_u, iters, final_norm, label, created_at)
+           VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)""",
+        [tname, p.tx, p.fx, p.tau_u, p.tau_s, p.rho,
          p.m[0], p.m[1], p.m[2], p.m[3],
          p.chi, p.alpha,
          n_s, n_u,
@@ -205,8 +217,8 @@ def run_one(el_db, rk_db, p: RunParams, verbose: bool = True) -> bool:
     required edge list table is absent (soft skip).
     """
     tname = table_name(p)
-    el_tname = f'el_t{p.tx}_{p.fx}_tau{p.tau_u}'
-    units_tname = f'_units_t{p.tx}_{p.fx}_tau{p.tau_u}'
+    el_tname = f'el_t{p.tx}_{p.fx}_tauU{p.tau_u}_tauS{p.tau_s}'
+    units_tname = f'_units_t{p.tx}_{p.fx}_tauU{p.tau_u}_tauS{p.tau_s}'
 
     # Check tables exist before committing compute time
     existing = {row[0] for row in el_db.execute("SHOW TABLES").fetchall()}
@@ -223,7 +235,7 @@ def run_one(el_db, rk_db, p: RunParams, verbose: bool = True) -> bool:
         print(f"  {tname} [{p.label}] ...", end='  ', flush=True)
 
     t0 = datetime.now()
-    data = build_csr(el_db, p.tx, p.fx, p.tau_u, p.rho, p.m)
+    data = build_csr(el_db, p.tx, p.fx, p.tau_u, p.tau_s, p.rho, p.m)
     t_csr = (datetime.now() - t0).total_seconds()
 
     t1 = datetime.now()
@@ -248,7 +260,7 @@ def compute_chi_star(el_db, p: RunParams) -> float:
     Provides dimensional balance: equal expected prestige per unit across
     sources and institutions.
     """
-    uname = f'_units_t{p.tx}_{p.fx}_tau{p.tau_u}'
+    uname = f'_units_t{p.tx}_{p.fx}_tauU{p.tau_u}_tauS{p.tau_s}'
     rows = el_db.execute(
         f"SELECT unit_type, COUNT(*) AS n FROM {uname} GROUP BY unit_type"
     ).fetchall()
@@ -315,7 +327,7 @@ def main():
         else:
             chi_star = compute_chi_star(el_db, BASELINE)
             chi_star_run = RunParams(
-                tx=BASELINE.tx, fx=BASELINE.fx, tau_u=BASELINE.tau_u, rho=0,
+                tx=BASELINE.tx, fx=BASELINE.fx, tau_u=BASELINE.tau_u, tau_s=BASELINE.tau_s, rho=0,
                 m=(1, 1, 1, 1), chi=chi_star, alpha=0.85,
                 label='full-joint-chi-star',
             )

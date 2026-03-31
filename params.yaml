@@ -21,3 +21,11 @@ tau_u_floor:
   EB: 20   # inherits institution set from A corpus
   NEB: 20  # inherits institution set from A corpus
   A: 20
+
+# Minimum mean annual works per source (τ_S) by field subset
+tau_s_floor:
+  E: 20
+  B: 20
+  EB: 20
+  NEB: 20
+  A: 20

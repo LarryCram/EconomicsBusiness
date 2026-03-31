@@ -173,36 +173,90 @@ converging to $\boldsymbol{\pi}$ from any strictly positive starting
 vector $\boldsymbol{\pi}^{(0)}$. Note that the conversion from total to per-work influence by the scaling $A\,\mathbf{A}^{-1}$ must be applied after $\pi$ has converged.
 
 \paragraph{Bipartite ranking.}
-With $\mathbf{m}=(0110)$, equation~\eqref{eq:C} yields block off-diagonal matrices $\mathbf{C}$ and $\mathbf{H}$,
-forming a directed bipartite network between sources and institutions. The bipartite structure makes $\mathbf{H}$ periodic with period~2, and the undamped equation~\eqref{eq:eig} has no unique solution. The modification 
-$\tilde{\mathbf{H}}$ in equation~\eqref{eq:Hstar} restores primitivity for any $\alpha\in(0,1)$.
-Since the product of row-stochastic matrices is row-stochastic, $\mathbf{H}^2$ is
-block-diagonal and row-stochastic, with one-mode projection blocks
-$\mathbf{M}_S=\mathbf{H}_{SI}\mathbf{H}_{IS}$ and $\mathbf{M}_I=\mathbf{H}_{IS}\mathbf{H}_{SI}$.
+With $\mathbf{m}=(0110)$, equation~\eqref{eq:C} yields block off-diagonal $\mathbf{C}$ and $\mathbf{H}$,
+forming a directed bipartite network between sources~($S$) and institutions~($I$).
+Partitioning rows and columns into the $S$ and $I$ blocks, the stochastic matrix takes the form
+\begin{equation}
+  \mathbf{H}
+  \;=\;
+  \begin{pmatrix} \mathbf{0} & \mathbf{H}_{SI} \\ \mathbf{H}_{IS} & \mathbf{0} \end{pmatrix},
+  \label{eq:H_bipartite}
+\end{equation}
+where $\mathbf{H}_{SI}$ distributes a source's attention across institutions and
+$\mathbf{H}_{IS}$ does the reverse.
+Because every path alternates $S\to I\to S\to\cdots$, this structure makes $\mathbf{H}$ periodic with
+period~2 and the undamped eigenvector equation~\eqref{eq:eig} has no unique solution.
+The modification $\tilde{\mathbf{H}}$ in equation~\eqref{eq:Hstar} restores primitivity for
+any $\alpha\in(0,1)$.
 
-By using a weight of $\sqrt{\alpha}$ per step, each traversal of an
-$SI$ or $IS$ arc is attenuated by $\sqrt{\alpha}$, and the round-trip
-attenuation through $\mathbf{M}_S$ equals $\alpha$, matching the
-single-step damping used in the SS and II modes and making all four modes
-directly comparable at the same $\alpha$.
-Partitioning $\boldsymbol{\pi}=\sqrt{\alpha}\mathbf{H}^\top\boldsymbol{\pi}+(1-\sqrt{\alpha})\boldsymbol{\mu}$
-and eliminating $\boldsymbol{\pi}_I$ yields
-the bipartite resolvent for sources,
+Squaring $\mathbf{H}$ collapses the two-step walks back onto each node type, giving the
+block-diagonal one-mode projections
+\[
+  \mathbf{H}^2
+  \;=\;
+  \begin{pmatrix} \mathbf{M}_S & \mathbf{0} \\ \mathbf{0} & \mathbf{M}_I \end{pmatrix},
+  \qquad
+  \mathbf{M}_S = \mathbf{H}_{SI}\mathbf{H}_{IS},
+  \quad
+  \mathbf{M}_I = \mathbf{H}_{IS}\mathbf{H}_{SI}.
+\]
+Both $\mathbf{M}_S$ and $\mathbf{M}_I$ are row-stochastic (as products of row-stochastic matrices).
+
+To make the bipartite mode directly comparable with the unipartite SS and II modes at the same
+$\alpha$, each single arc $SI$ or $IS$ is damped by $\sqrt{\alpha}$, so every
+round-trip through $\mathbf{M}_S$ incurs attenuation $\sqrt{\alpha}\cdot\sqrt{\alpha}=\alpha$,
+matching the single-step damping elsewhere.
+Substituting $\sqrt{\alpha}$ for $\alpha$ in equation~\eqref{eq:eig},
+partitioning $\boldsymbol{\pi}=(\boldsymbol{\pi}_S,\boldsymbol{\pi}_I)$,
+and eliminating $\boldsymbol{\pi}_I$ yields the bipartite resolvent for sources,
 \begin{equation}
   \bigl(\mathbf{I}-\alpha\mathbf{M}_S^\top\bigr)\boldsymbol{\pi}_S
   \;=\;
   (1-\sqrt{\alpha})\bigl(\boldsymbol{\mu}_S+\sqrt{\alpha}\,\mathbf{H}_{IS}^\top\boldsymbol{\mu}_I\bigr),
   \label{eq:kh_source}
 \end{equation}
-where the effective round-trip damping is $\alpha$ and the effective prior transports institution
-mass back to sources through $\mathbf{H}_{IS}^\top$. The institution ranking is then
-recovered by a single matrix--vector product,
+where the right-hand side transports institution prior mass back to sources through
+$\mathbf{H}_{IS}^\top$.  The institution scores are then recovered by a single
+matrix--vector product,
 \begin{equation}
   \boldsymbol{\pi}_I
   \;=\;
   \sqrt{\alpha}\,\mathbf{H}_{SI}^\top\boldsymbol{\pi}_S+(1-\sqrt{\alpha})\boldsymbol{\mu}_I.
   \label{eq:kh_inst}
 \end{equation}
+
+
+% \paragraph{Bipartite ranking.}
+% With $\mathbf{m}=(0110)$, equation~\eqref{eq:C} yields block off-diagonal matrices $\mathbf{C}$ and $\mathbf{H}$,
+% forming a directed bipartite network between sources and institutions. The bipartite structure makes $\mathbf{H}$ periodic with period~2, and the undamped equation~\eqref{eq:eig} has no unique solution. The modification 
+% $\tilde{\mathbf{H}}$ in equation~\eqref{eq:Hstar} restores primitivity for any $\alpha\in(0,1)$.
+% Since the product of row-stochastic matrices is row-stochastic, $\mathbf{H}^2$ is
+% block-diagonal and row-stochastic, with one-mode projection blocks
+% $\mathbf{M}_S=\mathbf{H}_{SI}\mathbf{H}_{IS}$ and $\mathbf{M}_I=\mathbf{H}_{IS}\mathbf{H}_{SI}$.
+
+% By using a weight of $\sqrt{\alpha}$ per step, each traversal of an
+% $SI$ or $IS$ arc is attenuated by $\sqrt{\alpha}$, and the round-trip
+% attenuation through $\mathbf{M}_S$ equals $\alpha$, matching the
+% single-step damping used in the SS and II modes and making all four modes
+% directly comparable at the same $\alpha$.
+% Partitioning $\boldsymbol{\pi}=\sqrt{\alpha}\mathbf{H}^\top\boldsymbol{\pi}+(1-\sqrt{\alpha})\boldsymbol{\mu}$
+% and eliminating $\boldsymbol{\pi}_I$ yields
+% the bipartite resolvent for sources,
+% \begin{equation}
+%   \bigl(\mathbf{I}-\alpha\mathbf{M}_S^\top\bigr)\boldsymbol{\pi}_S
+%   \;=\;
+%   (1-\sqrt{\alpha})\bigl(\boldsymbol{\mu}_S+\sqrt{\alpha}\,\mathbf{H}_{IS}^\top\boldsymbol{\mu}_I\bigr),
+%   \label{eq:kh_source}
+% \end{equation}
+% where the effective round-trip damping is $\alpha$ and the effective prior transports institution
+% mass back to sources through $\mathbf{H}_{IS}^\top$. The institution ranking is then
+% recovered by a single matrix--vector product,
+% \begin{equation}
+%   \boldsymbol{\pi}_I
+%   \;=\;
+%   \sqrt{\alpha}\,\mathbf{H}_{SI}^\top\boldsymbol{\pi}_S+(1-\sqrt{\alpha})\boldsymbol{\mu}_I.
+%   \label{eq:kh_inst}
+% \end{equation}
 
 $\mathbf{C}(\chi,\mathbf{m},\rho)$ is a sparse matrix built from a
 weighted edge list $\mathcal{E}$ accumulated over $\mathfrak{R}$ with

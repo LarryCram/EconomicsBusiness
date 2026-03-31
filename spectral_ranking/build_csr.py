@@ -1,8 +1,9 @@
 """
 build_csr.py — Build raw CSR blocks from a pre-built edge list.
 
-Reads one edge list table (el_t{tx}_{fx}_tau{tau_u}) and the corresponding
-unit index table (_units_t{tx}_{fx}_tau{tau_u}) from edge_lists.duckdb.
+Reads one edge list table (el_t{tx}_{fx}_tauU{tau_u}_tauS{tau_s}) and the
+corresponding unit index table (_units_t{tx}_{fx}_tauU{tau_u}_tauS{tau_s})
+from edge_lists.duckdb.
 Applies ρ weighting, builds scipy CSR matrices for the requested blocks,
 and returns a CSRData object.
 
@@ -14,7 +15,7 @@ prepare_data/build_edge_lists.py first).
 
 Public API
 ----------
-build_csr(db, tx, fx, tau_u, rho, m) -> CSRData
+build_csr(db, tx, fx, tau_u, tau_s, rho, m) -> CSRData
 """
 
 import numpy as np
@@ -46,16 +47,17 @@ class CSRData:
     n_u: int
 
 
-def build_csr(db, tx: int, fx: str, tau_u: int, rho: int, m: tuple) -> CSRData:
+def build_csr(db, tx: int, fx: str, tau_u: int, tau_s: int, rho: int, m: tuple) -> CSRData:
     """
-    Build raw CSR blocks for corpus (tx, fx, tau_u) with ρ weighting.
+    Build raw CSR blocks for corpus (tx, fx, tau_u, tau_s) with ρ weighting.
 
     Parameters
     ----------
     db : duckdb connection (open, writeable not required).
     tx : time window index (1–7).
     fx : field subset ('E', 'B', 'A').
-    tau_u : institution retention threshold.
+    tau_u : institution retention threshold (mean annual census works).
+    tau_s : source retention threshold (mean annual census works).
     rho : 0 → fixed count (ρ_i = R̄/R_i); 1 → full count (ρ_i = 1).
     m : (m_SS, m_SI, m_IS, m_II) ∈ {0,1}^4 — which blocks to build.
 
@@ -66,8 +68,8 @@ def build_csr(db, tx: int, fx: str, tau_u: int, rho: int, m: tuple) -> CSRData:
     import time
     _t = {}   # timing dict — remove when no longer needed
 
-    tname  = f'el_t{tx}_{fx}_tau{tau_u}'
-    uname  = f'_units_t{tx}_{fx}_tau{tau_u}'
+    tname  = f'el_t{tx}_{fx}_tauU{tau_u}_tauS{tau_s}'
+    uname  = f'_units_t{tx}_{fx}_tauU{tau_u}_tauS{tau_s}'
 
     # ── Load unit index ────────────────────────────────────────────────────
     t0 = time.perf_counter()

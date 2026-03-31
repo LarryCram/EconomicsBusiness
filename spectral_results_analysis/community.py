@@ -255,7 +255,8 @@ def print_phi2_top(label, phi2, unit_ids, field_labels, source_names, n=15):
 # ─── Main driver ──────────────────────────────────────────────────────────────
 
 def run(paths, params):
-    tau   = params['tau_u_floor']['A']
+    tau_u = params['tau_u_floor']['A']
+    tau_s = params['tau_s_floor']['A']
     alpha = 0.85
     tx, fx, rho = 5, 'A', 0
 
@@ -270,7 +271,7 @@ def run(paths, params):
     with duckdb.connect(str(el_path), read_only=True) as db:
 
         # ── χ* ────────────────────────────────────────────────────────────────
-        uname = f'_units_t{tx}_{fx}_tau{tau}'
+        uname = f'_units_t{tx}_{fx}_tauU{tau_u}_tauS{tau_s}'
         counts = {r[0]: r[1] for r in db.execute(
             f"SELECT unit_type, COUNT(*) FROM {uname} GROUP BY unit_type"
         ).fetchall()}
@@ -280,7 +281,7 @@ def run(paths, params):
 
         # ── SS ────────────────────────────────────────────────────────────────
         print("\n=== SS mode ===")
-        csr = build_csr(db, tx, fx, tau, rho, (1,0,0,0))
+        csr = build_csr(db, tx, fx, tau_u, tau_s, rho, (1,0,0,0))
         scc_report(csr.C_SS, csr.source_ids, 'C_SS', field_labels, source_names)
         lam2, phi2, gap, ampl = second_eigenpair_unipartite(csr.C_SS, alpha, 'SS')
         summary.append(('SS', lam2, gap, ampl))
@@ -288,14 +289,14 @@ def run(paths, params):
 
         # ── II ────────────────────────────────────────────────────────────────
         print("\n=== II mode ===")
-        csr = build_csr(db, tx, fx, tau, rho, (0,0,0,1))
+        csr = build_csr(db, tx, fx, tau_u, tau_s, rho, (0,0,0,1))
         scc_report(csr.C_II, csr.inst_ids, 'C_II', None, None)
         lam2, phi2, gap, ampl = second_eigenpair_unipartite(csr.C_II, alpha, 'II')
         summary.append(('II', lam2, gap, ampl))
 
         # ── Bipartite ─────────────────────────────────────────────────────────
         print("\n=== Bipartite SI/IS ===")
-        csr = build_csr(db, tx, fx, tau, rho, (0,1,1,0))
+        csr = build_csr(db, tx, fx, tau_u, tau_s, rho, (0,1,1,0))
         lam2, phi2_S, phi2_I, gap, ampl = second_eigenpair_bipartite(
             csr.C_SI, csr.C_IS, alpha, 'bipartite')
         summary.append(('bipartite M_S', lam2, gap, ampl))
@@ -303,7 +304,7 @@ def run(paths, params):
 
         # ── Full joint χ=0.5 ──────────────────────────────────────────────────
         print("\n=== Full joint χ=0.5 ===")
-        csr = build_csr(db, tx, fx, tau, rho, (1,1,1,1))
+        csr = build_csr(db, tx, fx, tau_u, tau_s, rho, (1,1,1,1))
         # SCC on the assembled block matrix (sources first, then institutions)
         from scipy.sparse import bmat as sp_bmat
         C_full = sp_bmat(

@@ -32,11 +32,13 @@ import seaborn as sns
 sys.path.insert(0, str(Path(__file__).parent.parent))
 from util import load_config, load_params
 
-_tau = load_params()['tau_u_floor']['A']
+_p     = load_params()
+_tau_u = _p['tau_u_floor']['A']
+_tau_s = _p['tau_s_floor']['A']
 
-BASELINE_TABLE = f'rk_t5_A_tau{_tau}_rho0_m0110_chi50_alpha85'
-SS_TABLE       = f'rk_t5_A_tau{_tau}_rho0_m1000_chi50_alpha85'
-II_TABLE       = f'rk_t5_A_tau{_tau}_rho0_m0001_chi50_alpha85'
+BASELINE_TABLE = f'rk_t5_A_tauU{_tau_u}_tauS{_tau_s}_rho0_m0110_chi50_alpha85'
+SS_TABLE       = f'rk_t5_A_tauU{_tau_u}_tauS{_tau_s}_rho0_m1000_chi50_alpha85'
+II_TABLE       = f'rk_t5_A_tauU{_tau_u}_tauS{_tau_s}_rho0_m0001_chi50_alpha85'
 
 # Visual spec per label
 STYLE = {
@@ -88,7 +90,7 @@ def resolve_chi_star_table(db) -> str | None:
     rows = db.execute(
         "SELECT table_name, chi, label FROM _catalog "
         "WHERE m_SS=1 AND m_SI=1 AND m_IS=1 AND m_II=1 "
-        f"  AND tx=5 AND fx='A' AND tau_u={_tau} AND rho=0 "
+        f"  AND tx=5 AND fx='A' AND tau_u={_tau_u} AND tau_s={_tau_s} AND rho=0 "
         "  AND round(alpha*100)=85 AND round(chi*100) != 50 "
         "ORDER BY created_at DESC LIMIT 1"
     ).fetchall()
