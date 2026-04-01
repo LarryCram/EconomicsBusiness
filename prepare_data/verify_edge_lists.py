@@ -101,8 +101,11 @@ def check_direct_weight_sum(db, t):
     return n == 0, f"{n} violations"
 
 
-@check("5. R_i = COUNT(DISTINCT cited_work) per citer work")
+@check("5. R_i ≥ COUNT(DISTINCT cited_work) per citer work")
 def check_ri_matches_count(db, t):
+    # R_i is computed before source-retention filtering, so it can exceed the
+    # edge-list cited count (references to non-retained sources are excluded).
+    # Flag only when R_i < edge-list count, which would indicate undercounting.
     n = db.sql(f"""
         SELECT COUNT(*) FROM (
             SELECT citer_work_idx,
@@ -110,10 +113,10 @@ def check_ri_matches_count(db, t):
                    COUNT(DISTINCT cited_work_idx) AS computed
             FROM {t}
             GROUP BY citer_work_idx
-            HAVING stored != computed
+            HAVING stored < computed
         )
     """).fetchone()[0]
-    return n == 0, f"{n} mismatches"
+    return n == 0, f"{n} works where R_i < edge-list distinct cited count"
 
 
 @check("6. R_i unique per citer work")

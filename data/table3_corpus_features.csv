@@ -2,8 +2,8 @@ Quantity,type,2000_D1,2000_D9,2024_D1,2024_D9,2000-24_D1,2000-24_D9
 Works,count,15011.0,15011.0,51902.0,51902.0,860101.0,860101.0
 Sources,count,664.0,664.0,1307.0,1307.0,1610.0,1610.0
 Institutions,count,875.0,875.0,1010.0,1010.0,1012.0,1012.0
-Reference counts (out-degree),count,5997.0,5997.0,1378383.0,1378383.0,13590934.0,13590934.0
-Citation counts (in-degree),count,559649.0,559649.0,28613.0,28613.0,14036195.0,14036195.0
+Reference counts (out-degree),count,5997.0,5997.0,1378852.0,1378852.0,13599071.0,13599071.0
+Citation counts (in-degree),count,560044.0,560044.0,28622.0,28622.0,14044614.0,14044614.0
 Works per source,distribution,3.0,46.0,4.0,78.0,26.900000000000006,1191.200000000003
 Institutions per work,distribution,1.0,3.0,1.0,5.0,1.0,4.0
 References per work (out-degree),distribution,1.0,3.0,5.0,60.0,2.0,44.0

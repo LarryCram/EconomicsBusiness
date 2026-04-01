@@ -70,21 +70,12 @@ def main():
         n_cited = db.execute("SELECT COUNT(*) FROM _cited_ids").fetchone()[0]
         print(f"  {n_cited:,} distinct cited works")
 
-        # Probe the snapshot schema to find the source column name
-        sample = db.execute(f"SELECT * FROM '{OA}/works/*.parquet' LIMIT 0").description
-        snap_cols = {d[0] for d in sample}
-        if 'source_idx' in snap_cols:
-            src_col = 'source_idx'
-        else:
-            # Fallback: string source_id needs stripping
-            src_col = "CAST(regexp_replace(source_id, 'https://openalex.org/S', '') AS BIGINT)"
-
         db.execute(f"""
             CREATE TEMP TABLE _cited_sources AS
-            SELECT work_idx, {src_col} AS source_idx
+            SELECT work_idx, source_idx
             FROM '{OA}/works/*.parquet'
             WHERE work_idx IN (SELECT cited_idx FROM _cited_ids)
-              AND {src_col} IS NOT NULL
+              AND source_idx IS NOT NULL
         """)
 
         print("Step 4: compute exogenous fraction per citer source ...")

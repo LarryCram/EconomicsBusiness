@@ -2,13 +2,16 @@
 load_corpus_entities.py — Extract corpus entities from the OpenAlex snapshot.
 
 Run after journal_filter_match_oa.py has produced source_master.parquet.
-Produces three parquet files in WORKING/parquet/:
+Produces four parquet files in WORKING/parquet/:
 
     corpus_works.parquet        -- articles and reviews in OAS sources, 2000-2024,
                                    excluding paratext and retracted works
     corpus_authorships.parquet  -- author-institution pairs for corpus works
                                    (both author_idx and institution_idx must be present)
     corpus_references.parquet   -- intra-corpus reference pairs (citer_idx, cited_idx)
+    corpus_institutions.parquet -- one row per institution in corpus_authorships,
+                                   enriched with OpenAlex metadata and works_per_year
+                                   (used as the τ_U institution-retention filter)
 
 Institution retention analysis (selecting τ_U) is in institution_retention.py.
 """
@@ -38,10 +41,10 @@ def load_works(db):
     db.sql(f"""
         COPY (
             SELECT w.* EXCLUDE (source_id),
-                   CAST(regexp_replace(w.source_id, 'https://openalex.org/S', '') AS BIGINT) AS source_idx
+                   w.source_id AS source_idx
             FROM '{OPENALEX}/works/*.parquet' w
             JOIN '{PARQUET}/source_master.parquet' sm
-                ON CAST(regexp_replace(w.source_id, 'https://openalex.org/S', '') AS BIGINT) = sm.source_idx
+                ON w.source_id = sm.source_idx
             WHERE w.publication_year BETWEEN {YEAR_MIN} AND {YEAR_MAX}
               AND list_contains(['article', 'review'], w."type")
               AND w.is_paratext = false
@@ -76,6 +79,48 @@ def load_references(db):
     """)
     db.sql(f"SELECT * FROM '{PARQUET}/corpus_references.parquet'").show()
     print("REFERENCES EXTRACT COMPLETE!")
+
+
+def load_institutions(db):
+    """
+    Build corpus_institutions.parquet.
+
+    Aggregates corpus_authorships by institution, computes works_count and
+    works_per_year = works_count / CORPUS_YEARS, and enriches with OpenAlex
+    institution metadata.  institution_idx is derived from the OpenAlex
+    institution id by stripping the 'https://openalex.org/I' prefix.
+    """
+    db.sql(f"""
+        COPY (
+            WITH inst_works AS (
+                SELECT institution_idx,
+                       COUNT(DISTINCT work_idx) AS works_count
+                FROM '{PARQUET}/corpus_authorships.parquet'
+                WHERE institution_idx IS NOT NULL
+                GROUP BY institution_idx
+            ),
+            inst_meta AS (
+                SELECT CAST(REGEXP_REPLACE(id, 'https://openalex.org/I', '') AS BIGINT)
+                           AS institution_idx,
+                       display_name AS institution_name,
+                       country_code,
+                       type
+                FROM '{OPENALEX}/institutions.parquet'
+            )
+            SELECT iw.institution_idx,
+                   im.institution_name,
+                   im.country_code,
+                   im.type,
+                   iw.works_count,
+                   ROUND(iw.works_count / {CORPUS_YEARS}.0, 4) AS works_per_year
+            FROM inst_works iw
+            LEFT JOIN inst_meta im USING (institution_idx)
+            ORDER BY iw.works_count DESC
+        ) TO '{PARQUET}/corpus_institutions.parquet' (FORMAT PARQUET)
+    """)
+    n = db.sql(f"SELECT COUNT(*) FROM '{PARQUET}/corpus_institutions.parquet'").fetchone()[0]
+    print(f"corpus_institutions.parquet: {n:,} total institutions")
+    print("INSTITUTIONS EXTRACT COMPLETE!")
 
 
 def flag_no_refs(db):
@@ -118,6 +163,7 @@ def main():
         load_works(db)
         load_authorships(db)
         load_references(db)
+        load_institutions(db)
         flag_no_refs(db)
 
 if __name__ == "__main__":

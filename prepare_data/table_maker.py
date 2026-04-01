@@ -40,9 +40,11 @@ DATA           = paths.data
 TABLES         = paths.tables
 WORKING        = paths.working
 PARQUET        = paths.parquet
+OPENALEX       = paths.openalex
 
-TAU_U_FLOOR = params['tau_u_floor']
-TAU_U       = TAU_U_FLOOR['A']
+TAU_U_FLOOR  = params['tau_u_floor']
+TAU_U        = TAU_U_FLOOR['A']
+CORPUS_YEARS = 25  # 2000-2024 inclusive
 
 
 # ---------------------------------------------------------------------------
