@@ -1,11 +1,32 @@
-No additional steps needed. All the files modified in this session — LATEX.md, WORKPLAN.md, PLOTS.md, COMMUNITY_ANALYSIS.md, and SPECTRAL_RANKING.md — are saved directly to your Dropbox folder (`ZZ_STAGING/SpectralRankingClaude`) and will sync automatically.
+# WRAPUP.md — Project Status Summary (April 2026)
 
-The one thing worth doing on the Linux side when you return is committing the updated documentation files to the project git repo, since CLAUDE.md notes that the LaTeX and docs sync via GitHub. The files to move across are:
+## Project Status: LARGELY COMPLETE
 
-- `LATEX.md` (substantially rewritten this session)
-- `WORKPLAN.md` (new — the main handoff to Claude Code)
-- `PLOTS.md` (Figure 3 added)
-- `COMMUNITY_ANALYSIS.md` (new — background rationale)
-- `SPECTRAL_RANKING.md` (√α convention added)
+All major pipeline components have been successfully implemented and completed:
 
-You can safely close Cowork now.
+**Data preparation pipeline** (Stages 1-6): Complete
+- Source list construction 
+- OpenAlex matching and topic filtering
+- Corpus extraction  
+- Institution retention diagnostics
+- Edge list construction with SCC filtering
+- Paper tables generation
+
+**Spectral ranking pipeline** (Stage 7): Complete  
+- CSR assembly and block construction
+- Katz and bipartite resolvent iteration
+- Parameter space exploration (all planned runs)
+- Community structure analysis with second eigenpair computation
+
+**Paper writing**: Substantially complete
+- Sections 1-3: Complete (Introduction, Methods, Data)
+- Section 4: In progress (Results - structure defined, content being developed)  
+- Sections 5-6: Placeholder (Discussion, Prospects)
+
+**Outstanding work**:
+- Bootstrap uncertainty analysis (defined in BOOTSTRAP.md but not yet implemented)
+- Final ranking tables (Tables 6-8) 
+- Results section completion
+- Discussion and prospects sections
+
+All documentation files have been updated to reflect current completion status.

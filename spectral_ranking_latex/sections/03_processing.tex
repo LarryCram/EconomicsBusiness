@@ -18,17 +18,17 @@ After filtering, 1,602~journals remain.
 \textit{Clarivate Web of Science Journal Citation Reports} ~\cite[][JCR]{clarivateanalyticsJournalCitationReports2026} assign each
 journal a Web of Science category. We retain those in Economics, Management, Business, Transportation or Business, Finance. After filtering, 1,413~journals remain.
 
-Every journal in JQL, SJL, and MJL has at least one ISSN, and may have several. These registry ISSNs are joined independently to the February 2026 OpenAlex sources snapshot using its list of ISSNs as the matching key and selecting only the `journal' source-type. Journal titles are examined to identify around 30 additional matches where the OpenAlex source does not have an ISSN. The list of OpenAlex sources that are matched is designated OAS\textsuperscript{*}. 
+Every journal in JQL, SJL, and JCR has at least one ISSN, and may have several. These registry ISSNs are joined independently to the February 2026 OpenAlex sources snapshot using its list of ISSNs as the matching key and selecting only the `journal' source-type. Journal titles are examined to identify around 30 additional matches where the OpenAlex source does not have an ISSN. The list of OpenAlex sources that are matched is designated OAS\textsuperscript{*}. 
 
 \input{../tables/table2_source_matching}
 
-The long list OAS\textsuperscript{*} includes sources publishing many works in disciplines beyond  economics and business, and we use OpenAlex source-topic assignments to exclude them as follows. A source has work-topic counts for up to five topics, each within a single sub-field, field, and domain. We accumulate the work-topic counts for OpenAlex Field~14 (Economics, Econometrics and Finance) and Field~20 (Business and Management) and drop sources if this count is below 50\% of the total count. 
+The long list OAS\textsuperscript{*} includes sources publishing many works in disciplines beyond economics and business, and we use OpenAlex source-topic assignments to exclude them as follows. A source has work-topic counts for up to five topics, each within a single sub-field, field, and domain. We accumulate the work-topic counts for OpenAlex Field~14 (Economics, Econometrics and Finance) and Field~20 (Business and Management) and drop sources if this count is below 50\% of the total count. 
 
 For the surviving OAS\textsuperscript{*} sources we extract work and authorship data revealing units that can be excluded because they publish very few works. To find a suitable threshold for excluding these units, we examine source and institution retention curves (Fig.~\ref{fig:retention}), selecting thresholds of $\tau_U = 20$ works/institution/year and $\tau_S = 20$ works/source/year. We designate the residual set of sources OAS.
 
 \begin{figure}[htbp]
 	\centering
-	\includegraphics[width=0.8\textwidth]{../plots/plot1_institution_elbow_latex}
+	\includegraphics[width=0.8\textwidth]{../plots/fig_1_latex}
 	\caption{Institution and source retention curves}
 	\label{fig:retention}
 \end{figure}
@@ -38,7 +38,7 @@ Using units that satisfy these thresholds, we extract a full corpus of works, au
 \input{../tables/table3_corpus_features}
 
 
-For the bipartite mode, the one-mode projection $M_S = H_{SI} H_{IS}$ represents a two-hop walk $S \to I \to S$, so the damping applied to $M_S$ in power iteration is $\alpha^2$, ensuring that the per-hop attenuation is $\alpha$ in all modes and that $v_s$ scores are directly comparable across the source-only and bipartite rankings at the same $\alpha$.
+
 
 
 

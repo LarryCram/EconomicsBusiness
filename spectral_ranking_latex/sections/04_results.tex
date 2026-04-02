@@ -3,11 +3,11 @@
 \label{sec:results}
 % ---------------------------------------------------------------
 
-\subsection{Network modes and analysis sequence}
-\label{sub:modes}
+[Opening paragraph to be drafted]
 
+The results are presented in four phases that systematically explore the effects of network structure, disciplinary communities, and model parameters on the dual ranking of sources and institutions. Our baseline employs the pure spectral ranking approach ($\alpha=1$, $\mu=0$) as defined by equation~\eqref{eq:eig}, which extracts prestige scores directly from the citation network structure without artificial damping or exogenous priors.
 
-Each corpus extraction is parameterised by a field subset $F$ and a time window $t_x$. The field subset restricts the source set $\mathfrak{S}$ to sources whose OpenAlex topic counts fall exclusively in Field~14 ($F=E$), exclusively in Field~20 ($F=B$), or in either field ($F=A$, all OAS sources). The time window encodes the census and target year ranges via $t_x\in\{1,\ldots,7\}$; the seven cases are listed in Table~\ref{tab:windows}. The five symmetric windows correspond to conventional five-year citation windows; cases~6 and~7 are asymmetric windows analogous to the Journal Impact Factor and reference spectroscopy respectively.
+Phase~1 examines field effects by comparing rankings across Economics-only ($F=E$), Business-only ($F=B$), and combined ($F=A$) source sets, establishing the disciplinary community structure within the literature. Phase~2 compares the four network modes---source-only ($SS$), institution-only ($II$), bipartite ($SI/IS$), and full joint---to understand how citation network architecture affects ranking outcomes. The bipartite mode $\mathbf{m}=(0,1,1,0)$ serves as our primary baseline, representing the novel contribution of institution-mediated influence propagation. Phase~3 tests parameter sensitivity by systematically varying the damping factor ($\alpha$), reference normalisation ($\rho$), and corpus boundaries ($\tau_U$, $\tau_S$) to establish robustness. Phase~4 explores time dependence across the five census windows ($t_x=1\ldots 5$), each covering symmetric five-year periods from 2000 to 2024.
 
 
 \begin{table}[h]
@@ -37,121 +37,27 @@ Each corpus extraction is parameterised by a field subset $F$ and a time window 
 \centering
 \caption{Corpus construction parameters: field subsets ($F$) and time windows ($t_x$).}
 \label{tab:windows}
-\begin{tabular}{clll}
+\begin{tabular}{cll}
 \toprule
-\multicolumn{4}{@{}l@{}}{\textit{Panel A\,: Field subsets ($F$)}} \\[2pt]
-$F$ & \multicolumn{3}{@{}l}{Sources included in $\mathfrak{S}$} \\
+\multicolumn{3}{@{}l@{}}{\textit{Panel A\,: Field subsets ($F$)}} \\[2pt]
+$F$ & \multicolumn{2}{@{}l}{Sources included in $\mathfrak{S}$} \\
 \midrule
-$E$ & \multicolumn{3}{@{}l}{Topic counts exclusively in Field~14 (Economics, Econometrics and Finance)} \\
-$B$ & \multicolumn{3}{@{}l}{Topic counts exclusively in Field~20 (Business, Management and Accounting)} \\
-$A$ & \multicolumn{3}{@{}l}{All OAS sources; topic counts in Fields~14 and/or~20 \textit{(baseline)}} \\
+$E$ & \multicolumn{2}{@{}l}{Topic counts exclusively in Field~14 (Economics, Econometrics and Finance)} \\
+$B$ & \multicolumn{2}{@{}l}{Topic counts exclusively in Field~20 (Business, Management and Accounting)} \\
+$A$ & \multicolumn{2}{@{}l}{All OAS sources; topic counts in Fields~14 and/or~20 \textit{(baseline)}} \\
 \midrule
-\multicolumn{4}{@{}l@{}}{\textit{Panel B\,: Time windows ($t_x$)}} \\[2pt]
-$t_x$ & Census window $[t^c_0,t^c_1]$ & Target window $[t^t_0,t^t_1]$ & Label \\
+\multicolumn{3}{@{}l@{}}{\textit{Panel B\,: Time windows ($t_x$)}} \\[2pt]
+$t_x$ & Window $[t^c_0,t^c_1] = [t^t_0,t^t_1]$ & Label \\
 \midrule
-1 & 2000--2004 & 2000--2004 & Symmetric 5-year \\
-2 & 2005--2009 & 2005--2009 & Symmetric 5-year \\
-3 & 2010--2014 & 2010--2014 & Symmetric 5-year \\
-4 & 2015--2019 & 2015--2019 & Symmetric 5-year \\
-5 & 2020--2024 & 2020--2024 & Symmetric 5-year \textit{(baseline)} \\
-6 & 2024       & 2000--2024 & JIF analogue \\
-7 & 2020--2024 & 2020       & Reference spectroscopy \\
+1 & $t_{00} = [2000,2004]$ & Symmetric 5-year \\
+2 & $t_{05} = [2005,2009]$ & Symmetric 5-year \\
+3 & $t_{10} = [2010,2014]$ & Symmetric 5-year \\
+4 & $t_{15} = [2015,2019]$ & Symmetric 5-year \\
+5 & $t_{20} = [2020,2024]$ & Symmetric 5-year \textit{(baseline)} \\
 \bottomrule
 \end{tabular}
 \end{table}
 
-
-The corpus comprises $N_s$ sources and $N_u$ institutions linked by a
-reference network whose attention flow decomposes into four block types
-($SS$, $SI$, $IS$, $II$) as defined in Section~\ref{sec:networks}.
-The block mask $\mathbf{m}\in\{0,1\}^4$ selects which blocks enter the
-assembled citation matrix; the mixing weight $\chi$ governs the
-source--institution balance in cases where both unit types are active.
-Four choices of $\mathbf{m}$ are bibliometrically meaningful, and the
-results are organised around them in sequence.
-
-\paragraph{SS mode $\mathbf{m}=(1,0,0,0)$: source ranking in isolation.}
-With only the source block active, the ranking reduces to a
-Katz--Hubbell prestige index on the journal-to-journal reference
-network, the setting most familiar from prior bibliometric
-work~\citep[e.g.][]{pinskiCitationInfluenceJournal1976,
-palacios-huertaMeasurementIntellectualInfluence2004}.
-In this mode, Economics and Business journals form well-separated
-citation communities. The second eigenvector $\boldsymbol{\phi}_2$ of
-the ranking operator $\mathbf{H}_{SS}^{\top}$ encodes this partition:
-journals with strongly positive $\phi_2$ cluster in one field,
-strongly negative in the other, and finance journals appear near
-$\phi_2=0$ as disciplinary bridges drawing prestige from both sides.
-The spectral gap $g=1-\lambda_2$ and the community amplification
-factor $1/(1-\alpha\lambda_2)$ quantify how strongly field membership
-shapes the ranking.
-SS results provide the reference point against which the institution
-modes are assessed.
-
-\paragraph{II mode $\mathbf{m}=(0,0,0,1)$: institution ranking in isolation.}
-With only the institution block active, the ranking measures the
-prestige of research environments rather than publication venues.
-The community structure visible in the SS mode largely dissolves:
-multi-faculty universities simultaneously host Economics and Business
-researchers, so institution-to-institution references cross
-disciplinary lines far more freely than journal-to-journal references
-do.
-The spectral gap of $\mathbf{H}_{II}^{\top}$ is accordingly larger
-than that of $\mathbf{H}_{SS}^{\top}$, and the amplification of field
-effects on rankings is correspondingly weaker.
-Comparing SS and II therefore separates what is specific to the
-journal channel from what is attributable to the institutional
-environment.
-
-\paragraph{Full joint mode $\mathbf{m}=(1,1,1,1)$: blending source and institution flows.}
-All four blocks are assembled into a single $N\times N$ matrix with
-$\chi$ controlling the blend.
-At $\chi=0$ the full joint collapses to the SS mode; at $\chi=1$ to
-the II mode; intermediate values interpolate.
-The baseline value $\chi=0.5$ allocates equal total citation flow to
-each mode, but because $N_u>N_s$ this implies a lower expected
-prestige per unit for institutions than for sources.
-The dimensionally neutral calibration
-\begin{equation}
-  \chi^* \;=\; \frac{N_u}{N_s+N_u}
-  \label{eq:chistar}
-\end{equation}
-corrects this, equalising expected prestige per unit across both
-types. With $N_s\approx 1{,}600$ and $N_u\approx 2{,}600$ at the
-baseline corpus, $\chi^*\approx 0.619$. In the full joint case the
-second eigenvector of the ranking operator may encode the
-Economics/Business field partition, the source/institution type
-partition, or a mixture; we examine which dominates at $\chi=0.5$
-and $\chi=\chi^*$.
-
-\paragraph{SI/IS mode $\mathbf{m}=(0,1,1,0)$: the bipartite baseline.}
-Removing the direct $SS$ and $II$ blocks retains only cross-type
-flows: sources accumulate prestige exclusively through the
-institutions with which their works are affiliated, and institutions
-exclusively through the sources associated with them.
-This is not an intermediate point on the SS-to-II spectrum but a
-structurally distinct architecture.
-The one-mode projection $\mathbf{M}_S=\mathbf{H}_{SI}\mathbf{H}_{IS}$
-eliminates institutions analytically (Section~\ref{sec:networks}),
-and its second eigenvector encodes the residual community structure
-after institution-mediated mixing --- attenuated relative to the SS
-case because each source now communicates with others only via its
-specific institutional affiliates, which act as partial community
-mixers.
-The SI/IS mode is the paper's primary baseline.
-
-\paragraph{Robustness parameters.}
-The reference-count normalisation $\rho$, the damping factor $\alpha$,
-the institution work-count threshold $\tau_U$, and the time window
-$t_x$ govern details of corpus construction and prestige propagation
-rather than the architecture of the citation network.
-Baseline values and the full set of values explored are listed in
-Table~\ref{tab:paramvalues}; one-at-a-time sensitivity analysis is
-reported in Part~E.
-Readers primarily interested in the empirical rankings may read
-Parts~A--D independently.
-
-% ---------------------------------------------------------------
 
 \begin{table}[htbp]
 \centering
@@ -161,59 +67,19 @@ Parts~A--D independently.
 \toprule
 Symbol & Name & Baseline & Values explored \\
 \midrule
-\multicolumn{4}{@{}l@{}}{\textit{Corpus construction (see Tables~\ref{tab:params} and~\ref{tab:windows})}} \\[2pt]
-$t_x$          & Time window            & \textit{5}              & 1,\ 2,\ 3,\ 4,\ \textit{5},\ 6 \\
+\multicolumn{4}{@{}l@{}}{\textit{Corpus construction}} \\[2pt]
+$t_x$          & Time window            & \textit{5}              & 1,\ 2,\ 3,\ 4,\ \textit{5} \\
 $F$            & Field subset           & \textit{$A$}            & $E$,\ $B$,\ \textit{$A$} \\
-$\tau_U$       & Institution threshold  & \textit{10}             & 8,\ \textit{10} \\[4pt]
+$\tau_U$       & Institution threshold  & \textit{20}             & \textit{20},\ 40 \\
+$\tau_S$       & Source threshold       & \textit{20}             & \textit{20},\ 40 \\[4pt]
 \multicolumn{4}{@{}l@{}}{\textit{Matrix construction}} \\[2pt]
 $\rho$         & Reference normalisation & \textit{0 (fixed)}     & \textit{0} (fixed),\ 1 (full) \\
 $\mathbf{m}$   & Block mask             & \textit{$(0,1,1,0)$}   & $(1,0,0,0)$,\ $(0,0,0,1)$,\ \textit{$(0,1,1,0)$},\ $(1,1,1,1)$ \\
 $\chi$         & Mixing weight          & \textit{n/a (bipartite)} & \textit{0.50},\ $\chi^*$ [full joint only] \\[4pt]
 \multicolumn{4}{@{}l@{}}{\textit{Ranking}} \\[2pt]
-$\alpha$       & Damping factor         & \textit{0.85}           & 0.50,\ \textit{0.85} \\
+$\alpha$       & Damping factor         & \textit{1.0}           & 0.1,\ 0.5,\ \textit{1.0} \\
+$\mu$          & Prior weight           & \textit{0}             & \textit{0} (pure spectral) \\
 \bottomrule
 \end{tabular}
 \end{table}
-
-% ---------------------------------------------------------------
-\subsection{Part A --- Source ranking: SS mode}
-\label{sub:partA}
-
-[Placeholder: Tables S1--S3 (top sources SS F=A/E/B), rank-shift exhibit,
-community partition Table S4, Figure~3 Panel~A.]
-
-% ---------------------------------------------------------------
-\subsection{Part B --- Institution ranking: II mode}
-\label{sub:partB}
-
-[Placeholder: Table S5 (top institutions II F=A), Figure~3 Panel~B,
-SS vs II community comparison.]
-
-% ---------------------------------------------------------------
-\subsection{Part C --- Bipartite SI/IS baseline}
-\label{sub:partC}
-
-[Placeholder: Tables 1--2 (primary source and institution rankings),
-Figure~2 updated, rank correlations SS vs SI/IS and II vs SI/IS,
-Figure~3 Panel~C (spectral gap summary).]
-
-% ---------------------------------------------------------------
-\subsection{Part D --- Full joint mode and $\chi$ sensitivity}
-\label{sub:partD}
-
-[Placeholder: Tables S6--S7 (full joint $\chi=0.5$), Figure~3 Panel~D
-($\phi_2$ at $\chi=0.5$ vs $\chi^*$), rank correlations.]
-
-% ---------------------------------------------------------------
-\subsection{Part E --- Parameter sensitivity}
-\label{sub:sensitivity}
-
-[Placeholder: Table S8 (Spearman $\rho$ summary, all Stage~1 variants
-vs bipartite baseline). Note on $\rho=0$ vs $\rho=1$.]
-
-% ---------------------------------------------------------------
-\subsection{Part F --- Time series stability}
-\label{sub:timeseries}
-
-[Placeholder: Figure~4 (bump chart top-20 sources across $t_x=1$--6),
-Table S9 (pairwise Spearman $\rho$ matrix).]
+\end{table}

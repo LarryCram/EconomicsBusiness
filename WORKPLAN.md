@@ -1,11 +1,11 @@
 # WORKPLAN.md — Instructions for Claude Code
-# Session 2026-03-28
+# Session 2026-03-28 — **COMPLETED 2026-04**
 
-This file specifies all code changes and new scripts agreed in the session of
-2026-03-28. It is written for Claude Code operating in the project root
-`/home/lc/Projects/EconomicsBusiness`. Read SPECTRAL_RANKING.md and CLAUDE.md
-for background before implementing. Read COMMUNITY_ANALYSIS.md for the
-analytical rationale behind the community/eigenpair work.
+**STATUS: WORK COMPLETED**
+This file specified all code changes and new scripts agreed in the session of
+2026-03-28. All items listed below have been successfully implemented and the 
+spectral ranking pipeline is now complete. Retained for historical reference
+and technical documentation.
 
 ---
 
@@ -102,7 +102,7 @@ In `main()`, after opening `el_db` and before building the schedule, compute
 ```python
 units_row = el_db.execute(
     "SELECT unit_type, COUNT(*) AS n "
-    "FROM _units_t5_A_tau10 GROUP BY unit_type"
+    "FROM _units_t5_A_tau20 GROUP BY unit_type"
 ).fetchdf()
 n_s_base = int(units_row.loc[units_row.unit_type == 'S', 'n'].iloc[0])
 n_u_base = int(units_row.loc[units_row.unit_type == 'U', 'n'].iloc[0])
@@ -113,7 +113,7 @@ print(f"  χ* = {chi_star:.4f}  (N_s={n_s_base}, N_u={n_u_base})")
 Add to STAGE1 list (after the existing full-joint entry):
 
 ```python
-RunParams(tx=5, fx='A', tau_u=10, rho=0,
+RunParams(tx=5, fx='A', tau_u=20, tau_s=20, rho=0,
           m=(1, 1, 1, 1), chi=chi_star, alpha=0.85,
           label='full-joint-chi-star'),
 ```

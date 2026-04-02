@@ -21,7 +21,7 @@ Four scripts run in order:
 
 **OAS* → OAS**: density filter; `source_master.parquet` is the final OAS.
 
-**Institution threshold τ_U**: works_per_year > 10 (hardcoded as TAU_U in table_maker.py). Sensitivity runs planned at 5 and 15. works_per_year = works_count / 25 (CORPUS_YEARS). Drops ~25% of works.
+**Institution threshold τ_U**: works_per_year > 20 (hardcoded as TAU_U in table_maker.py). Sensitivity runs planned at 5 and 15. works_per_year = works_count / 25 (CORPUS_YEARS). Drops ~25% of works.
 
 ## Parquets saved (all under WORKING/parquet/)
 - `comprehensive_journal_list.parquet` — registry union (ERA+Harzing+WOS)

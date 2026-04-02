@@ -93,10 +93,16 @@ are asymmetric (see issues above).
 The final τ_U was chosen as 20 for F=A from the institution retention diagnostic curve
 (retention plot: ~1,734 institutions retained, ~85% of works before SCC filtering).
 
+### Source threshold (τ_S)
+Final τ_S = 20 mean works/year for sources.
+
 ## Corpus characteristics (baseline: t_x=5, F=A, τ_U=20, post-SCC filter)
 - Sources: N_s = 1,322
 - Institutions: N_u = 1,732
 - χ* = 0.567 (N_u / (N_s + N_u))
+
+Note: Final corpus numbers reflect singleton SCC filtering implemented in `build_edge_lists.py`. 
+This dropped 108+7 sources and 2 institutions that were not in the giant strongly connected component.
 
 Note: SCC filtering in `build_edge_lists.py` runs after τ_U retention and removes
 sources not in the giant SCC of C_SS and institutions not in the giant SCC of C_full.

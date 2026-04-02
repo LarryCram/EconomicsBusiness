@@ -29,19 +29,22 @@ with census window, target window, label.
 **Content**: Upper panel: unique-item counts (works, sources, institutions, references,
 citations) for years 2000, 2024, and 2000–24. Lower panel: D1 and D9 deciles of
 per-entity distributions (works/source, institutions/work, out/in-degree per work).
-Institution filter: τ_U > 10.
+Institution filter: τ_U > 20.
 
 ### Table 5 — Parameters and values explored (done, hand-coded LaTeX)
 **In paper**: Table 5, Section 4
 **Content**: All parameters with baseline values and explored values.
 
-## Upcoming tables (spectral ranking results needed)
+## Upcoming tables (spectral ranking results available)
 
 ### Table 6 — Baseline source ranking
+**Status**: Data available, table generation pending
 Top sources by prestige per work under baseline parameters.
 
-### Table 7 — Baseline institution ranking
+### Table 7 — Baseline institution ranking  
+**Status**: Data available, table generation pending
 Top institutions by prestige per work under baseline parameters.
 
 ### Table 8 — Parameter sensitivity summary
+**Status**: Data available, table generation pending
 Rank correlation table across parameter combinations.

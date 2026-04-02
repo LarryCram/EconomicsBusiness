@@ -1,16 +1,15 @@
-# Spectral Ranking Pipeline
+# Spectral Ranking Pipeline — COMPLETE
 
 ## Purpose
 #### Spectral ranking
 Read pre-built edge lists from `edge_lists.duckdb`, assemble sparse block citation
 matrices C(χ, m, ρ), row-normalise to H, run katz and katz_bipartite power iteration as required by parameters, and output prestige scores π and prestige-per-work v.
 #### Parameter space exploration
--- Parameter exploration is in two stages.
--- Stage 1: compare to baseline [t_5, \rho = \bar{R}/R_i, F=A, \tau_u = 20, \alpha=0.85, SI/IS katz_biparite] effects of one-at-at time changes \rho = 1, \tau_u = 10, \alpha=0.5, F=E, F=B, C=SS/II and C=SS/SI/IS/II.
--- Stage 2: compare baseline to t_1...4 and t_6
+-- Parameter exploration completed in two stages as planned.
+-- Stage 1: baseline [t_5, ρ = R̄/R_i, F=A, τ_u = 20, τ_s = 20, α=0.85, SI/IS katz_bipartite] compared to one-at-a-time changes ρ = 1, τ_u = 10, α=0.5, F=E, F=B, C=SS/II and C=SS/SI/IS/II.
+-- Stage 2: baseline compared to t_1...4 and t_6
 #### Diagnostic displays
--- An early task is to explore ways to illustrate the findings. 
--- Work on this as soon as we have the baseline and one comparison \rho=1.
+-- Analysis framework implemented in `spectral_results_analysis/` with community structure analysis and ranking comparisons.
 
 ## Notation summary (from paper)
 

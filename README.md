@@ -47,17 +47,16 @@ EconomicsBusiness/
 `prepare_data/table_maker.py`
 → LaTeX/CSV tables in `data/`
 
-### Stage 7 — Spectral ranking *(not yet started)*
+### Stage 7 — Spectral ranking *(complete)*
 `spectral_ranking/`
 → CSR assembly, Katz iteration, prestige scores
 
 ## Current status
-- Stages 1–6: complete
-- Stage 7 (spectral ranking): not yet started
-- Paper: Sections 1–3 complete; Sections 4–6 and Supplement placeholder
+- Stages 1–7: complete
+- Paper: Sections 1–3 complete; Sections 4–6 and Supplement in progress
 
 ## Key parameters
-See `params.yaml` (time windows, τ_U floors) and Table 1 in the paper (ρ, m, χ, α).
+See `params.yaml` (time windows, τ_U=20, τ_S=20 floors) and Table 1 in the paper (ρ, m, χ, α).
 
 ## Key documents
 - [CLAUDE.md](CLAUDE.md) — project conventions and C_ij convention

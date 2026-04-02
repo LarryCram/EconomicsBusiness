@@ -8,46 +8,36 @@
 
 ## Plot inventory
 
-### Figure 1 — Institution retention curve (SKIP)
+### Figure 1 — Institution retention curve 
 **Script**: `prepare_data/plot_maker.py`
 **Files**: `plots/plot1_institution_elbow.pdf`, `plots/plot1_institution_elbow_latex.pdf`
 **In paper**: Fig. 1, Section 3
+**Status**: Complete
 **Description**: Long-tail elbow plot of % works retained vs. annual work-count threshold τ_U,
 for the baseline corpus (F=A, t_x=5, 2020–2024). Annotations show institution counts at
-key thresholds. Selected cut: τ_U=10, ~1,900 institutions, ~75% works retained.
+key thresholds. Selected cut: τ_U=20, ~1,734 institutions, ~85% works retained.
 
+### Figure 2 — Spectral ranking by field (E/B/All)
+**Script**: `spectral_results_analysis/fig_2.py`
+**Status**: In development
+**Description**: Spectral ranking versus rank order with effects of E/B/All field subsets.
+Faceted plot with source and institution rankings showing sensitivity to field selection.
 
-#### Figure 2 - spectral ranking versus rank order with effects of E/B/All
--- get v_i for S and I.
--- sort v_i and allocate a unique rank to the sorted values
--- facet with top panel S and bottom panel I
--- x-axis is rank (different for top and bottom)
--- y-axis is v_i score for S or I at index=x
+### Figure 3 — Spectral ranking by network mode 
+**Script**: `spectral_results_analysis/fig_3.py`
+**Status**: In development  
+**Description**: Spectral ranking versus rank order with effects of network modes
+(m=SS-only/II-only; full-joint; bipartite). Baseline bipartite in black, alternatives
+as colored markers.
 
-#### Figure 3 - spectral ranking versus rank order with effects of m=1000/0001; 1111; 0110
--- get v_i for S and I.
--- sort v_i and allocate a unique rank to the sorted values
--- facet with top panel S and bottom panel I
--- x-axis is rank (different for top and bottom)
--- y-axis is v_i score for S or I at index=x
--- plot m=0110 in black as baseline
--- plot m=1000 (for S) and m=0001 (for I) as visible red X
--- plot m=1111 as visible green X
-
-## SKIP ALL THE FOLLOWING
-
-### Figure 4 — Second eigenpair community analysis
+### Figure 4 — Community structure analysis
 **Script**: `spectral_results_analysis/community.py`
-**Files**: `plots/fig3_community_eigenpair.pdf`
+**Files**: `plots/fig4_community_eigenpair.pdf`
+**Status**: Complete
 **In paper**: Section 4 (results), community structure subsection
 **Description**: Four-panel figure showing the second eigenvector φ₂ and spectral
-gap across network modes. All eigenpairs are computed from the directed ranking
-operator H^T (or M_S^T for bipartite) using eigs(H.T, k=2, which='LM') with real
-parts taken. Sign convention: the unit with the largest a_p (most works) has phi2 > 0.
-
-Panel A (top left) — SS source community:
-  x-axis: sources sorted by φ₂ value (rank 1 = most negative)
-  y-axis: φ₂ value
+gap across network modes. All eigenpairs computed from the directed ranking
+operator H^T using eigs(H.T, k=2, which='LM') with real parts taken.
   colour: F label (E=blue, B=orange, unlabelled/bridge=grey)
   Expected: clear sign split between E and B journals; finance journals near zero.
 
