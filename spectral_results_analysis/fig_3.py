@@ -30,15 +30,16 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 
 sys.path.insert(0, str(Path(__file__).parent.parent))
-from util import load_config, load_params
+from util import load_config, load_runs
 
-_p     = load_params()
-_tau_u = _p['tau_u_floor']['A']
-_tau_s = _p['tau_s_floor']['A']
+_baseline      = next(r for r in load_runs() if r['label'] == 'baseline')
+_run_code      = _baseline['run_code']
+_tau_u         = _baseline['tau_u']
+_tau_s         = _baseline['tau_s']
 
-BASELINE_TABLE = f'rk_t5_A_tauU{_tau_u}_tauS{_tau_s}_rho0_m0110_chi50_alpha100'
-SS_TABLE       = f'rk_t5_A_tauU{_tau_u}_tauS{_tau_s}_rho0_m1000_chi50_alpha100'
-II_TABLE       = f'rk_t5_A_tauU{_tau_u}_tauS{_tau_s}_rho0_m0001_chi50_alpha100'
+BASELINE_TABLE = f'rk_{_run_code}_A_tauU{_tau_u}_tauS{_tau_s}_rho0_m0110_chi50_alpha100'
+SS_TABLE       = f'rk_{_run_code}_A_tauU{_tau_u}_tauS{_tau_s}_rho0_m1000_chi50_alpha100'
+II_TABLE       = f'rk_{_run_code}_A_tauU{_tau_u}_tauS{_tau_s}_rho0_m0001_chi50_alpha100'
 
 # Visual spec per label
 STYLE = {
@@ -72,7 +73,7 @@ def load_inst_field_labels(el_db, tau_u: int, tau_s: int) -> dict:
     'other'→ present in both or neither (appears in F=A but not exclusively E or B)
     """
     def inst_set(fx: str) -> set:
-        tname = f'_units_t5_{fx}_tauU{tau_u}_tauS{tau_s}'
+        tname = f'_units_{_run_code}_{fx}_tauU{tau_u}_tauS{tau_s}'
         tables = {r[0] for r in el_db.execute('SHOW TABLES').fetchall()}
         if tname not in tables:
             return set()
@@ -123,8 +124,8 @@ def resolve_chi_star_table(db) -> str | None:
     rows = db.execute(
         "SELECT table_name, chi, label FROM _catalog "
         "WHERE m_SS=1 AND m_SI=1 AND m_IS=1 AND m_II=1 "
-        f"  AND tx=5 AND fx='A' AND tau_u={_tau_u} AND tau_s={_tau_s} AND rho=0 "
-        "  AND round(alpha*100)=100 AND round(chi*100) != 50"
+        f"  AND run_code='{_run_code}' AND fx='A' AND tau_u={_tau_u} AND tau_s={_tau_s} AND rho=0 "
+        "  AND round(alpha*100)=100 AND round(chi*100) != 50 "
         "ORDER BY created_at DESC LIMIT 1"
     ).fetchall()
     if not rows:

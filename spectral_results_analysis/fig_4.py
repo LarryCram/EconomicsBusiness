@@ -29,15 +29,16 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 
 sys.path.insert(0, str(Path(__file__).parent.parent))
-from util import load_config, load_params
+from util import load_config, load_runs
 from spectral_ranking.build_csr import build_csr
 from spectral_ranking.katz_ranker import _row_normalise
 
-_p     = load_params()
-_tau_u = _p['tau_u_floor']['A']
-_tau_s = _p['tau_s_floor']['A']
+_baseline      = next(r for r in load_runs() if r['label'] == 'baseline')
+_run_code      = _baseline['run_code']
+_tau_u         = _baseline['tau_u']
+_tau_s         = _baseline['tau_s']
 
-BASELINE_TABLE = f'rk_t5_A_tauU{_tau_u}_tauS{_tau_s}_rho0_m0110_chi50_alpha100'
+BASELINE_TABLE = f'rk_{_run_code}_A_tauU{_tau_u}_tauS{_tau_s}_rho0_m0110_chi50_alpha100'
 
 COLOR  = {'E': '#1f77b4', 'B': '#d62728', 'other': '#999999'}
 MARKER = {'E': 'o',       'B': 's',       'other': 'x'}
@@ -78,7 +79,7 @@ def load_inst_field_labels(el_db, tau_u, tau_s) -> dict:
     'other'→ present in A network only (not in E or B sub-networks)
     """
     def inst_set(fx):
-        tname = f'_units_t5_{fx}_tauU{tau_u}_tauS{tau_s}'
+        tname = f'_units_{_run_code}_{fx}_tauU{tau_u}_tauS{tau_s}'
         tables = {r[0] for r in el_db.execute('SHOW TABLES').fetchall()}
         if tname not in tables:
             return set()
@@ -124,7 +125,7 @@ def _eigenpair2(M, alpha_eff):
     return lam2, phi2
 
 
-def compute_eigenpairs(db, tx, fx, tau_u, tau_s, rho, alpha):
+def compute_eigenpairs(db, run_code, fx, tau_u, tau_s, rho, alpha):
     """
     Compute φ₂ for all four panels.
 
@@ -139,21 +140,21 @@ def compute_eigenpairs(db, tx, fx, tau_u, tau_s, rho, alpha):
     df_bi_i  : DataFrame  inst_idx,   phi2  (H_SI^T φ₂_S, unit-norm)
     """
     # SS
-    csr_ss = build_csr(db, tx, fx, tau_u, tau_s, rho, (1, 0, 0, 0))
+    csr_ss = build_csr(db, run_code, fx, tau_u, tau_s, rho, (1, 0, 0, 0))
     H_ss, _ = _row_normalise(csr_ss.C_SS)
     lam2_ss, phi2_ss = _eigenpair2(H_ss, alpha)
     df_ss_s = pd.DataFrame({'source_idx': csr_ss.source_ids.astype(int),
                             'phi2': phi2_ss})
 
     # II
-    csr_ii = build_csr(db, tx, fx, tau_u, tau_s, rho, (0, 0, 0, 1))
+    csr_ii = build_csr(db, run_code, fx, tau_u, tau_s, rho, (0, 0, 0, 1))
     H_ii, _ = _row_normalise(csr_ii.C_II)
     lam2_ii, phi2_ii = _eigenpair2(H_ii, alpha)
     df_ii_i = pd.DataFrame({'inst_idx': csr_ii.inst_ids.astype(int),
                             'phi2': phi2_ii})
 
     # Bipartite
-    csr_bi = build_csr(db, tx, fx, tau_u, tau_s, rho, (0, 1, 1, 0))
+    csr_bi = build_csr(db, run_code, fx, tau_u, tau_s, rho, (0, 1, 1, 0))
     H_SI, _ = _row_normalise(csr_bi.C_SI)
     H_IS, _ = _row_normalise(csr_bi.C_IS)
     M_S = H_SI.dot(H_IS)
@@ -302,12 +303,11 @@ def plot4(lam2_ss, lam2_ii, lam2_bi,
 
 def main():
     paths  = load_config()
-    params = load_params()
-
-    tau_u = params['tau_u_floor']['A']
-    tau_s = params['tau_s_floor']['A']
-    alpha = 1.0
-    tx, fx, rho = 5, 'A', 0
+    tau_u    = _tau_u
+    tau_s    = _tau_s
+    run_code = _run_code
+    alpha    = 1.0
+    fx, rho  = 'A', 0
 
     field_labels, _ = load_field_labels(paths)
     print(f"Field labels: {sum(v=='E' for v in field_labels.values())} E, "
@@ -323,7 +323,7 @@ def main():
     with duckdb.connect(str(el_path), read_only=True) as db:
         print("Computing eigenpairs ...")
         lam2_ss, lam2_ii, lam2_bi, df_ss_s, df_ii_i, df_bi_s, df_bi_i = \
-            compute_eigenpairs(db, tx, fx, tau_u, tau_s, rho, alpha)
+            compute_eigenpairs(db, run_code, fx, tau_u, tau_s, rho, alpha)
         print("Loading institution field-network membership ...")
         inst_field_labels = load_inst_field_labels(db, tau_u, tau_s)
     print(f"  λ₂(SS)={lam2_ss:.4f}  λ₂(II)={lam2_ii:.4f}  λ₂(bipartite)={lam2_bi:.4f}")

@@ -30,12 +30,13 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 
 sys.path.insert(0, str(Path(__file__).parent.parent))
-from util import load_config, load_params
+from util import load_config, load_runs
 
-_p             = load_params()
-_tau_u         = _p['tau_u_floor']['A']
-_tau_s         = _p['tau_s_floor']['A']
-BASELINE_TABLE = f'rk_t5_A_tauU{_tau_u}_tauS{_tau_s}_rho0_m0110_chi50_alpha100'
+_baseline      = next(r for r in load_runs() if r['label'] == 'baseline')
+_run_code      = _baseline['run_code']
+_tau_u         = _baseline['tau_u']
+_tau_s         = _baseline['tau_s']
+BASELINE_TABLE = f'rk_{_run_code}_A_tauU{_tau_u}_tauS{_tau_s}_rho0_m0110_chi50_alpha100'
 BASELINE_LABEL = 'baseline'
 
 

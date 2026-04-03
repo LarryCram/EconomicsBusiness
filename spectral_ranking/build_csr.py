@@ -15,7 +15,7 @@ prepare_data/build_edge_lists.py first).
 
 Public API
 ----------
-build_csr(db, tx, fx, tau_u, tau_s, rho, m) -> CSRData
+build_csr(db, run_code, fx, tau_u, tau_s, rho, m) -> CSRData
 """
 
 import numpy as np
@@ -47,15 +47,15 @@ class CSRData:
     n_u: int
 
 
-def build_csr(db, tx: int, fx: str, tau_u: int, tau_s: int, rho: int, m: tuple) -> CSRData:
+def build_csr(db, run_code: str, fx: str, tau_u: int, tau_s: int, rho: int, m: tuple) -> CSRData:
     """
-    Build raw CSR blocks for corpus (tx, fx, tau_u, tau_s) with ρ weighting.
+    Build raw CSR blocks for corpus (run_code, fx, tau_u, tau_s) with ρ weighting.
 
     Parameters
     ----------
     db : duckdb connection (open, writeable not required).
-    tx : time window index (1–7).
-    fx : field subset ('E', 'B', 'A').
+    run_code : 8-char time window key, e.g. '20242024'.
+    fx : field subset ('E', 'B', 'A', 'EB', 'NEB').
     tau_u : institution retention threshold (mean annual census works).
     tau_s : source retention threshold (mean annual census works).
     rho : 0 → fixed count (ρ_i = R̄/R_i); 1 → full count (ρ_i = 1).
@@ -68,8 +68,8 @@ def build_csr(db, tx: int, fx: str, tau_u: int, tau_s: int, rho: int, m: tuple) 
     import time
     _t = {}   # timing dict — remove when no longer needed
 
-    tname  = f'el_t{tx}_{fx}_tauU{tau_u}_tauS{tau_s}'
-    uname  = f'_units_t{tx}_{fx}_tauU{tau_u}_tauS{tau_s}'
+    tname  = f'el_{run_code}_{fx}_tauU{tau_u}_tauS{tau_s}'
+    uname  = f'_units_{run_code}_{fx}_tauU{tau_u}_tauS{tau_s}'
 
     # ── Load unit index ────────────────────────────────────────────────────
     t0 = time.perf_counter()

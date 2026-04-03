@@ -1,5 +1,7 @@
 """Tests for load_runs()."""
+import os
 import sys
+import tempfile
 from pathlib import Path
 sys.path.insert(0, str(Path(__file__).parent.parent.parent))
 
@@ -9,12 +11,10 @@ RUNS = load_runs()
 
 
 def test_all_rows_not_skipped():
-    # All rows in params.csv currently have skip=0
     assert len(RUNS) == 15
 
 
 def test_skip_filters():
-    import csv, tempfile, os
     content = (
         "skip,run_code,tc0,tc1,tt0,tt1,fx,tau_u,tau_s,rho,m,chi,alpha,mu_type,label,stage\n"
         "0,20242024,2020,2024,2020,2024,A,20,20,0,0110,0.5,1.0,,baseline,1\n"
@@ -33,14 +33,18 @@ def test_skip_filters():
 
 def test_types():
     r = RUNS[0]
-    assert isinstance(r['tau_u'], int)
-    assert isinstance(r['tau_s'], int)
-    assert isinstance(r['rho'],   int)
-    assert isinstance(r['stage'], int)
-    assert isinstance(r['chi'],   float)
-    assert isinstance(r['alpha'], float)
-    assert isinstance(r['m'],     str)
-    assert isinstance(r['run_code'], str)
+    assert isinstance(r['tc0'],   int),   f"tc0 should be int, got {type(r['tc0'])}"
+    assert isinstance(r['tc1'],   int),   f"tc1 should be int, got {type(r['tc1'])}"
+    assert isinstance(r['tt0'],   int),   f"tt0 should be int, got {type(r['tt0'])}"
+    assert isinstance(r['tt1'],   int),   f"tt1 should be int, got {type(r['tt1'])}"
+    assert isinstance(r['tau_u'], int),   f"tau_u should be int, got {type(r['tau_u'])}"
+    assert isinstance(r['tau_s'], int),   f"tau_s should be int, got {type(r['tau_s'])}"
+    assert isinstance(r['rho'],   int),   f"rho should be int, got {type(r['rho'])}"
+    assert isinstance(r['stage'], int),   f"stage should be int, got {type(r['stage'])}"
+    assert isinstance(r['chi'],   float), f"chi should be float, got {type(r['chi'])}"
+    assert isinstance(r['alpha'], float), f"alpha should be float, got {type(r['alpha'])}"
+    assert isinstance(r['m'],     str),   f"m should be str, got {type(r['m'])}"
+    assert isinstance(r['run_code'], str), f"run_code should be str, got {type(r['run_code'])}"
 
 
 def test_chi_star_is_float():
@@ -51,5 +55,15 @@ def test_chi_star_is_float():
 
 
 def test_m_is_string():
-    # m must not be parsed as int (leading zero would be lost)
     assert RUNS[0]['m'] == '0110'
+
+
+def test_run_code_matches_years():
+    """run_code in CSV must equal last-2-digits of tc0,tc1,tt0,tt1."""
+    for r in RUNS:
+        expected = (f"{r['tc0'] % 100:02d}{r['tc1'] % 100:02d}"
+                    f"{r['tt0'] % 100:02d}{r['tt1'] % 100:02d}")
+        assert r['run_code'] == expected, (
+            f"run_code mismatch for {r['label']}: "
+            f"got {r['run_code']!r}, expected {expected!r}"
+        )

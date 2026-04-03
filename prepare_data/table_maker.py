@@ -25,7 +25,7 @@ Table 3: Corpus features.
 import sys
 from pathlib import Path
 sys.path.insert(0, str(Path(__file__).parent.parent))
-from util import load_config, load_params
+from util import load_config, load_runs
 
 import duckdb
 import pandas as pd
@@ -33,7 +33,7 @@ import subprocess
 import tempfile
 
 paths  = load_config()
-params = load_params()
+_baseline = next(r for r in load_runs() if r['label'] == 'baseline')
 
 PROJECT_FOLDER = paths.project_root
 DATA           = paths.data
@@ -42,8 +42,7 @@ WORKING        = paths.working
 PARQUET        = paths.parquet
 OPENALEX       = paths.openalex
 
-TAU_U_FLOOR  = params['tau_u_floor']
-TAU_U        = TAU_U_FLOOR['A']
+TAU_U        = _baseline['tau_u']
 CORPUS_YEARS = 25  # 2000-2024 inclusive
 
 

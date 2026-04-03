@@ -25,23 +25,29 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 
 sys.path.insert(0, str(Path(__file__).parent.parent))
-from util import load_config, load_params
+from util import load_config, load_runs
 
 paths  = load_config()
-params = load_params()
+_runs  = load_runs()
 PARQUET = paths.parquet
 PLOTS   = paths.plots
 PLOTS.mkdir(exist_ok=True)
 
-# Time windows from params.yaml: t_x → (census_start, census_end, target_start, target_end)
-_tw = params['time_windows']
-TIME_WINDOWS = {
-    tx: (w['census'][0], w['census'][1], w['target'][0], w['target'][1])
-    for tx, w in _tw.items()
-}
+# Unique time windows from params.csv: run_code → (tc0, tc1, tt0, tt1)
+_seen = set()
+TIME_WINDOWS = {}
+for _r in _runs:
+    _rc = _r['run_code']
+    if _rc not in _seen:
+        _seen.add(_rc)
+        TIME_WINDOWS[_rc] = (_r['tc0'], _r['tc1'], _r['tt0'], _r['tt1'])
 
-# Recommended τ_U floor per field subset (informational — logged at runtime)
-TAU_U_FLOOR = params['tau_u_floor']   # {'E': 5, 'B': 5, 'A': 10}
+# Recommended τ_U floor per field subset — first matching row per fx (informational)
+TAU_U_FLOOR = {}
+for _r in _runs:
+    _fx = _r['fx']
+    if _fx not in TAU_U_FLOOR:
+        TAU_U_FLOOR[_fx] = _r['tau_u']
 
 TAU_U_VALUES = [0, 1, 2, 3, 4, 5, 10, 15, 20]
 
@@ -52,20 +58,19 @@ FIELD_COND = {
     'A': "",
 }
 
-# Baseline window for elbow plot: t_x=5 (2020–2024)
-_BASELINE_TX = 5
-_baseline_tw  = params['time_windows'][_BASELINE_TX]
-_YEAR_MIN     = min(_baseline_tw['census'][0], _baseline_tw['target'][0])
-_YEAR_MAX     = max(_baseline_tw['census'][1], _baseline_tw['target'][1])
-N_YEARS       = _YEAR_MAX - _YEAR_MIN + 1   # 5
+# Baseline window for elbow plot
+_baseline_r = next(r for r in _runs if r['label'] == 'baseline')
+_YEAR_MIN   = min(_baseline_r['tc0'], _baseline_r['tt0'])
+_YEAR_MAX   = max(_baseline_r['tc1'], _baseline_r['tt1'])
+N_YEARS     = _YEAR_MAX - _YEAR_MIN + 1   # 5
 
 
 # ---------------------------------------------------------------------------
 # Retention table
 # ---------------------------------------------------------------------------
 
-def compute_retention(db, tx: int, fx: str) -> pd.DataFrame:
-    cs, ce, ts, te = TIME_WINDOWS[tx]
+def compute_retention(db, run_code: str, fx: str) -> pd.DataFrame:
+    cs, ce, ts, te = TIME_WINDOWS[run_code]
     min_year = min(cs, ts)
     max_year = max(ce, te)
     n_years  = max_year - min_year + 1
@@ -133,11 +138,11 @@ def compute_retention(db, tx: int, fx: str) -> pd.DataFrame:
 
 def build_table(db) -> pd.DataFrame:
     rows = []
-    for tx in range(1, 8):
+    for run_code in TIME_WINDOWS:
         for fx in ['E', 'B', 'A']:
-            print(f"  t_x={tx}  F_x={fx} ...", end='  ', flush=True)
-            df = compute_retention(db, tx, fx)
-            row = {'t_x': tx, 'F_x': fx}
+            print(f"  run_code={run_code}  F_x={fx} ...", end='  ', flush=True)
+            df = compute_retention(db, run_code, fx)
+            row = {'run_code': run_code, 'F_x': fx}
             for _, r in df.iterrows():
                 tau = int(r['tau_u'])
                 row[f'tau{tau}_inst']    = int(r['retained_inst'])

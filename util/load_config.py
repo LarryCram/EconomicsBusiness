@@ -47,7 +47,7 @@ def load_runs(runs_path: Path = _RUNS_PATH) -> list[dict]:
         m                                → str  (e.g. '0110')
         all others                       → str
     """
-    int_cols   = {'skip', 'tau_u', 'tau_s', 'rho', 'stage'}
+    int_cols   = {'skip', 'tc0', 'tc1', 'tt0', 'tt1', 'tau_u', 'tau_s', 'rho', 'stage'}
     float_cols = {'chi', 'alpha'}
 
     runs = []

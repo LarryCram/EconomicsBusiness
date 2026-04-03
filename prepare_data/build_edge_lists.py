@@ -1,17 +1,16 @@
 """
 build_edge_lists.py — Build pre-projection citer–cited edge lists.
 
-For each (t_x, F_x, τ_U) corpus definition, writes one table to
-WORKING/edge_lists.duckdb at (citer_work × citer_institution ×
-cited_work × cited_institution) granularity.
+For each corpus configuration derived from params.csv, writes one edge list
+table and one unit index table to WORKING/edge_lists.duckdb.
 
-Schema
-------
+Edge list table schema
+----------------------
 citer_work_idx       BIGINT   -- citing work
-citer_source_idx      BIGINT   -- source of citing work
+citer_source_idx     BIGINT   -- source of citing work
 citer_inst_idx       BIGINT   -- institution of citing work (one row per retained inst)
 cited_work_idx       BIGINT   -- cited work
-cited_source_idx      BIGINT   -- source of cited work
+cited_source_idx     BIGINT   -- source of cited work
 cited_inst_idx       BIGINT   -- institution of cited work (one row per retained inst)
 inst_weight          DOUBLE   -- ω_iu author-fractional (paper eq. 1), citing side
 direct_inst_weight   DOUBLE   -- 1 / n_retained_institutions_of_citing_work
@@ -22,28 +21,25 @@ a_cited_source       BIGINT   -- work count of cited source in this corpus
 a_citer_inst         DOUBLE   -- fractional work count of citer institution (Σ_i ω_iu)
 a_cited_inst         DOUBLE   -- fractional work count of cited institution
 
+Table naming
+------------
+  el_{run_code}_{fx}_tauU{tau_u}_tauS{tau_s}
+  _units_{run_code}_{fx}_tauU{tau_u}_tauS{tau_s}
+
+  run_code  8-char string: last-2-digits of tc0,tc1,tt0,tt1  e.g. '20242024'
+
 At matrix build time supply:
-  ρ ∈ {0,1}  →  full: weight 1; fixed: weight R̄/R_i  (R̄ = corpus mean)
+  ρ ∈ {0,1}  →  full: weight 1; fixed: weight R̄/R_i
   m ∈ {0,1}⁴ →  block mask for SS/SI/IS/II
   χ ∈ [0,1]  →  source–institution mixing
 
-SS block: GROUP BY (citer_source, cited_source)  — deduplicate on (work pair)
-          to avoid counting once per institution combination
-SI block: GROUP BY (citer_source, cited_inst)    — deduplicate on citer work
-IS block: GROUP BY (citer_inst,   cited_source)  — deduplicate on cited work
-II block: no deduplication needed (full cross product intended)
-
-Tables are named  el_t{t_x}_{F_x}_tau{τ_U},  e.g. el_t5_A_tau20.
-A _catalog table records parameters and summary statistics.
-
 Institution retention
 ---------------------
-For F=A the retained institution set is computed from the A corpus itself
-(mean census works ≥ τ_U).  For all field subsets (E, B, EB, NEB) the
-institution set is *inherited* from the corresponding A corpus — i.e. from
-_units_t{tx}_A_tauU{tau_u}_tauS{tau_s} — so that the source and institution sets of the
-field subsets are exact partitions of the A corpus.  A must therefore be
-built before its field subsets.
+For fx='A' the retained institution set is computed from the A corpus itself.
+For all field subsets (E, B, EB, NEB) the institution set is inherited from
+the corresponding A corpus (_units_{run_code}_A_tauU{tau_u}_tauS{tau_s}).
+A must therefore be built before its field subsets within each
+(run_code, tau_u, tau_s) group.
 """
 
 import sys
@@ -56,21 +52,11 @@ from scipy.sparse import csr_matrix, bmat as sp_bmat
 from scipy.sparse.csgraph import connected_components
 
 sys.path.insert(0, str(Path(__file__).parent.parent))
-from util import load_config, load_params
+from util import load_config, load_runs
 
-paths  = load_config()
-params = load_params()
+paths   = load_config()
 PARQUET = paths.parquet
 DB_PATH = paths.working / 'edge_lists.duckdb'
-
-_tw = params['time_windows']
-TIME_WINDOWS = {
-    tx: (w['census'][0], w['census'][1], w['target'][0], w['target'][1])
-    for tx, w in _tw.items()
-}
-TAU_U_FLOOR     = params['tau_u_floor']
-TAU_S_FLOOR     = params['tau_s_floor']
-TAU_SENSITIVITY = params['tau_sensitivity']   # Phase 2 τ sensitivity (F=A, t_x=5 only)
 
 FIELD_COND = {
     'E':   "AND sm.field_subset = 'E'",
@@ -81,15 +67,47 @@ FIELD_COND = {
 }
 
 # Field subsets that inherit their institution set from the A corpus.
-# A must be built first for each (tx, tau_u) before these are processed.
+# A must be built first for each (run_code, tau_u, tau_s) before these.
 FIELD_SUBSETS = ['E', 'B', 'EB', 'NEB']
 
 
-def table_name(tx: int, fx: str, tau_u: int, tau_s: int) -> str:
-    return f'el_t{tx}_{fx}_tauU{tau_u}_tauS{tau_s}'
+def table_name(run_code: str, fx: str, tau_u: int, tau_s: int) -> str:
+    return f'el_{run_code}_{fx}_tauU{tau_u}_tauS{tau_s}'
 
 
-def build_one(db, tx: int, fx: str, tau_u: int, tau_s: int,
+def corpus_configs_from_csv() -> list:
+    """
+    Derive unique corpus configurations from params.csv.
+    Returns list of dicts ordered so that fx='A' precedes non-A within
+    each (run_code, tau_u, tau_s) group.
+    """
+    rows = load_runs()
+    seen = set()
+    configs = []
+    for r in rows:
+        key = (r['run_code'], r['tc0'], r['tc1'], r['tt0'], r['tt1'],
+               r['fx'], r['tau_u'], r['tau_s'])
+        if key not in seen:
+            seen.add(key)
+            configs.append({
+                'run_code': r['run_code'],
+                'tc0': r['tc0'], 'tc1': r['tc1'],
+                'tt0': r['tt0'], 'tt1': r['tt1'],
+                'fx':  r['fx'],
+                'tau_u': r['tau_u'],
+                'tau_s': r['tau_s'],
+            })
+
+    def sort_key(c):
+        # A first within each (run_code, tau_u, tau_s) group
+        return (c['run_code'], c['tau_u'], c['tau_s'],
+                0 if c['fx'] == 'A' else 1, c['fx'])
+
+    return sorted(configs, key=sort_key)
+
+
+def build_one(db, run_code: str, tc0: int, tc1: int, tt0: int, tt1: int,
+              fx: str, tau_u: int, tau_s: int,
               inherited_inst_table: str = None) -> int:
     """
     Build one edge list table.
@@ -101,19 +119,14 @@ def build_one(db, tx: int, fx: str, tau_u: int, tau_s: int,
         (unit_type='U' rows) instead of being computed from the corpus.
         Pass the _units table of the corresponding A corpus.
     """
-    cs, ce, ts, te = TIME_WINDOWS[tx]
+    cs, ce = tc0, tc1   # census window
+    ts, te = tt0, tt1   # target window
     min_year     = min(cs, ts)
     max_year     = max(ce, te)
     census_years = ce - cs + 1
     fc           = FIELD_COND[fx]
-    tname        = table_name(tx, fx, tau_u, tau_s)
+    tname        = table_name(run_code, fx, tau_u, tau_s)
 
-    # ── Pre-materialise filtered parquets (one scan each) ──────────────────
-    # _fw_tmp:    works in the year range and field subset; referenced 4×
-    #             inside the main CTE so worth materialising.
-    # _auths_tmp: deduplicated authorships for those works.  The original CTE
-    #             scanned corpus_authorships.parquet 3× (work_author_counts,
-    #             author_inst_counts, iw_raw); this reduces it to one scan.
     db.execute(f"""
         CREATE OR REPLACE TEMP TABLE _fw_tmp AS
         SELECT w.work_idx, w.source_idx, w.publication_year
@@ -150,14 +163,11 @@ def build_one(db, tx: int, fx: str, tau_u: int, tau_s: int,
     db.execute(f"""
         CREATE OR REPLACE TABLE {tname} AS
         WITH
-        -- ── Works (from temp table) ───────────────────────────────────────
         fw AS (SELECT * FROM _fw_tmp),
-        -- ── Census-window works only — used for τ_U retention filter ─────────
         fw_census AS (
             SELECT work_idx FROM fw
             WHERE publication_year BETWEEN {cs} AND {ce}
         ),
-        -- ── Per-work author and institution counts (for weight computation) ─
         work_author_counts AS (
             SELECT work_idx,
                    COUNT(DISTINCT author_idx)      AS n_authors,
@@ -171,9 +181,6 @@ def build_one(db, tx: int, fx: str, tau_u: int, tau_s: int,
             FROM _auths_tmp
             GROUP BY work_idx, author_idx
         ),
-        -- ── Institution weights per (work, institution) — pre-τ_U ──────────
-        -- inst_weight      = ω_iu = Σ_ℓ (1/a_i)(1/u_iℓ)  [paper eq. 1]
-        -- direct_inst_weight = 1 / n_distinct_institutions_of_work
         iw_raw AS (
             SELECT a.work_idx,
                    a.institution_idx,
@@ -185,9 +192,7 @@ def build_one(db, tx: int, fx: str, tau_u: int, tau_s: int,
                                        AND a.author_idx = aic.author_idx
             GROUP BY a.work_idx, a.institution_idx
         ),
-        -- ── Retained institutions ────────────────────────────────────────────
 {retained_inst_sql}
-        -- ── Retained sources (mean annual census works ≥ τ_S) ───────────────
         retained_source AS (
             SELECT source_idx
             FROM fw
@@ -195,17 +200,13 @@ def build_one(db, tx: int, fx: str, tau_u: int, tau_s: int,
             GROUP BY source_idx
             HAVING COUNT(DISTINCT work_idx) / {census_years}.0 >= {tau_s}
         ),
-        -- ── Restrict weights to retained institutions ───────────────────────
         iw AS (
             SELECT * FROM iw_raw
             WHERE institution_idx IN (SELECT institution_idx FROM retained_inst)
         ),
-        -- ── Retained works: at least one retained institution ───────────────
         retained_works AS (
             SELECT DISTINCT work_idx FROM iw
         ),
-        -- ── Intra-corpus references: citer in census, cited in target ─────────
-        -- Excludes self-loops and cited works > 1 year newer than citer
         rr AS (
             SELECT r.citer_idx, r.cited_idx
             FROM '{PARQUET}/corpus_references.parquet' r
@@ -218,12 +219,10 @@ def build_one(db, tx: int, fx: str, tau_u: int, tau_s: int,
               AND wd.publication_year BETWEEN {ts} AND {te}
               AND wd.publication_year <= wc.publication_year + 1
         ),
-        -- ── R_i: intra-corpus reference count of each citing work ───────────
         R_i AS (
             SELECT citer_idx AS work_idx, COUNT(*) AS ref_count
             FROM rr GROUP BY citer_idx
         ),
-        -- ── a_p: integer work count per source ─────────────────────────────
         a_source AS (
             SELECT fw.source_idx,
                    COUNT(DISTINCT fw.work_idx) AS source_works
@@ -232,13 +231,11 @@ def build_one(db, tx: int, fx: str, tau_u: int, tau_s: int,
               AND fw.source_idx IN (SELECT source_idx FROM retained_source)
             GROUP BY fw.source_idx
         ),
-        -- ── a_p: fractional work count per institution (Σ_i ω_iu) ──────────
         a_inst AS (
             SELECT institution_idx,
                    SUM(inst_weight) AS inst_frac_works
             FROM iw GROUP BY institution_idx
         ),
-        -- ── Citer side: one row per (work, institution) ─────────────────────
         citer AS (
             SELECT iw.work_idx,
                    fw.source_idx,
@@ -254,7 +251,6 @@ def build_one(db, tx: int, fx: str, tau_u: int, tau_s: int,
             JOIN a_source acs ON fw.source_idx    = acs.source_idx
             JOIN a_inst ain   ON iw.institution_idx = ain.institution_idx
         ),
-        -- ── Cited side: one row per (work, institution) ─────────────────────
         cited AS (
             SELECT iw.work_idx,
                    fw.source_idx,
@@ -267,14 +263,12 @@ def build_one(db, tx: int, fx: str, tau_u: int, tau_s: int,
             JOIN a_source acs ON fw.source_idx    = acs.source_idx
             JOIN a_inst ain   ON iw.institution_idx = ain.institution_idx
         )
-        -- ── Final cross product: one row per (citer_work × citer_inst ×
-        --                                      cited_work × cited_inst) ──────
         SELECT
             r.citer_idx          AS citer_work_idx,
-            ci.source_idx         AS citer_source_idx,
+            ci.source_idx        AS citer_source_idx,
             ci.institution_idx   AS citer_inst_idx,
             r.cited_idx          AS cited_work_idx,
-            cj.source_idx         AS cited_source_idx,
+            cj.source_idx        AS cited_source_idx,
             cj.institution_idx   AS cited_inst_idx,
             ci.inst_weight,
             ci.direct_inst_weight,
@@ -295,21 +289,15 @@ def build_one(db, tx: int, fx: str, tau_u: int, tau_s: int,
     return db.execute(f"SELECT COUNT(*) FROM {tname}").fetchone()[0]
 
 
-def build_units(db, tx: int, fx: str, tau_u: int, tau_s: int) -> int:
+def build_units(db, run_code: str, fx: str, tau_u: int, tau_s: int) -> int:
     """
-    Build the unit index table _units_t{tx}_{fx}_tauU{tau_u}_tauS{tau_s} in edge_lists.duckdb.
+    Build the unit index table _units_{run_code}_{fx}_tauU{tau_u}_tauS{tau_s}.
 
     Derives all sources and institutions that appear in the edge list together
-    with their a_p work counts (integer for sources, fractional for institutions).
-    Called immediately after build_one() for each corpus.
-
-    Note: units that have retained works but zero intra-corpus references (isolated
-    nodes) are absent from the edge list and therefore absent from this table.
-    They are very rare in a dense citation corpus; add a parquet-based query here
-    if isolated-node correctness becomes necessary.
+    with their a_p work counts.
     """
-    tname = table_name(tx, fx, tau_u, tau_s)
-    uname = f'_units_t{tx}_{fx}_tauU{tau_u}_tauS{tau_s}'
+    tname = table_name(run_code, fx, tau_u, tau_s)
+    uname = f'_units_{run_code}_{fx}_tauU{tau_u}_tauS{tau_s}'
 
     db.execute(f"""
         CREATE OR REPLACE TABLE {uname} AS
@@ -337,27 +325,18 @@ def build_units(db, tx: int, fx: str, tau_u: int, tau_s: int) -> int:
     return db.execute(f"SELECT COUNT(*) FROM {uname}").fetchone()[0]
 
 
-def filter_singletons(db, tx: int, fx: str, tau_u: int, tau_s: int) -> tuple:
+def filter_singletons(db, run_code: str, fx: str, tau_u: int, tau_s: int) -> tuple:
     """
     Remove units not in the giant SCC of their governing graph, then rebuild
-    the units table.  Iterates until no further removals occur.
-
-    Criterion:
-      Sources     : must be in giant SCC of C_SS (strict).  This also excludes
-                    sources that are connected only through institutional paths
-                    (IN/OUT-component in C_SS) — they cite or are cited via
-                    institutions but have no source-to-source cycle with the
-                    main literature.
-      Institutions: must be in giant SCC of the full joint C (lenient).
+    the units table.  Iterates until stable.
 
     Returns (total_sources_dropped, total_insts_dropped).
     """
-    tname = table_name(tx, fx, tau_u, tau_s)
-    uname = f'_units_t{tx}_{fx}_tauU{tau_u}_tauS{tau_s}'
+    tname = table_name(run_code, fx, tau_u, tau_s)
+    uname = f'_units_{run_code}_{fx}_tauU{tau_u}_tauS{tau_s}'
     total_s, total_u = 0, 0
 
-    for iteration in range(20):   # safety cap; typically 1–2 passes
-        # ── Load current unit index ───────────────────────────────────────
+    for iteration in range(20):
         units = db.execute(
             f"SELECT unit_idx, unit_type FROM {uname}"
         ).fetchdf()
@@ -398,12 +377,10 @@ def filter_singletons(db, tx: int, fx: str, tau_u: int, tau_s: int) -> tuple:
 
         from collections import Counter
 
-        # Sources: giant SCC of C_SS
         _, labels_ss = connected_components(C_SS, directed=True, connection='strong')
         giant_ss = Counter(labels_ss).most_common(1)[0][0]
         drop_src = src_ids[labels_ss != giant_ss]
 
-        # Institutions: giant SCC of full joint C
         _, labels_full = connected_components(C_full, directed=True, connection='strong')
         giant_full = Counter(labels_full).most_common(1)[0][0]
         drop_inst = inst_ids[labels_full[n_s:] != giant_full]
@@ -417,8 +394,6 @@ def filter_singletons(db, tx: int, fx: str, tau_u: int, tau_s: int) -> tuple:
         total_s += len(drop_src)
         total_u += len(drop_inst)
 
-        # ── Delete edges involving dropped units ──────────────────────────
-        # Use a temp table to avoid huge IN(...) lists
         if len(drop_src) > 0:
             drop_src_df = pd.DataFrame({'idx': drop_src})
             db.register('_drop_src', drop_src_df)
@@ -439,8 +414,7 @@ def filter_singletons(db, tx: int, fx: str, tau_u: int, tau_s: int) -> tuple:
             """)
             db.unregister('_drop_inst')
 
-        # ── Rebuild units table ───────────────────────────────────────────
-        build_units(db, tx, fx, tau_u, tau_s)
+        build_units(db, run_code, fx, tau_u, tau_s)
 
     return total_s, total_u
 
@@ -449,7 +423,7 @@ def ensure_catalog(db):
     db.execute("""
         CREATE TABLE IF NOT EXISTS _catalog (
             table_name     VARCHAR PRIMARY KEY,
-            t_x            INTEGER,
+            run_code       VARCHAR,
             F_x            VARCHAR,
             tau_u          INTEGER,
             tau_s          INTEGER,
@@ -459,15 +433,17 @@ def ensure_catalog(db):
             created_at     VARCHAR
         )
     """)
-    # Migrate pre-tau_s schema: add column if absent
+    # Migrate pre-run_code schema
     cols = {row[0] for row in db.execute("DESCRIBE _catalog").fetchall()}
+    if 'run_code' not in cols:
+        db.execute("ALTER TABLE _catalog ADD COLUMN run_code VARCHAR")
     if 'tau_s' not in cols:
         db.execute("ALTER TABLE _catalog ADD COLUMN tau_s INTEGER")
         db.execute("UPDATE _catalog SET tau_s = 0")
 
 
-def update_catalog(db, tx: int, fx: str, tau_u: int, tau_s: int, n_rows: int):
-    tname = table_name(tx, fx, tau_u, tau_s)
+def update_catalog(db, run_code: str, fx: str, tau_u: int, tau_s: int, n_rows: int):
+    tname = table_name(run_code, fx, tau_u, tau_s)
     n_sources = db.execute(f"""
         SELECT COUNT(*) FROM (
             SELECT DISTINCT citer_source_idx AS s FROM {tname}
@@ -480,25 +456,20 @@ def update_catalog(db, tx: int, fx: str, tau_u: int, tau_s: int, n_rows: int):
     ).fetchone()[0]
     db.execute(
         """INSERT OR REPLACE INTO _catalog
-           (table_name, t_x, F_x, tau_u, tau_s, n_rows, n_sources, n_institutions, created_at)
+           (table_name, run_code, F_x, tau_u, tau_s, n_rows, n_sources, n_institutions, created_at)
            VALUES (?,?,?,?,?,?,?,?,?)""",
-        [tname, tx, fx, tau_u, tau_s, n_rows, n_sources, n_inst,
+        [tname, run_code, fx, tau_u, tau_s, n_rows, n_sources, n_inst,
          datetime.now().isoformat(timespec='seconds')]
     )
 
 
 def clean_stale(db) -> None:
     """Drop edge-list and units tables not in the current schedule."""
+    configs = corpus_configs_from_csv()
     expected = set()
-    for tx in TIME_WINDOWS:
-        for fx in ['A'] + FIELD_SUBSETS:
-            tau_u = TAU_U_FLOOR[fx]
-            tau_s = TAU_S_FLOOR[fx]
-            expected.add(table_name(tx, fx, tau_u, tau_s))
-            expected.add(f'_units_t{tx}_{fx}_tauU{tau_u}_tauS{tau_s}')
-    # τ-sensitivity table (t_x=5, F=A only)
-    expected.add(table_name(5, 'A', TAU_SENSITIVITY, TAU_SENSITIVITY))
-    expected.add(f'_units_t5_A_tauU{TAU_SENSITIVITY}_tauS{TAU_SENSITIVITY}')
+    for c in configs:
+        expected.add(table_name(c['run_code'], c['fx'], c['tau_u'], c['tau_s']))
+        expected.add(f"_units_{c['run_code']}_{c['fx']}_tauU{c['tau_u']}_tauS{c['tau_s']}")
 
     all_tables = {row[0] for row in db.execute('SHOW TABLES').fetchall()}
     stale = [t for t in all_tables
@@ -515,6 +486,8 @@ def clean_stale(db) -> None:
 
 
 def main():
+    configs = corpus_configs_from_csv()
+
     with duckdb.connect(str(DB_PATH)) as db:
         db.execute(f"SET temp_directory = '{paths.working}/.tmp'")
         db.execute("SET memory_limit = '56GB'")
@@ -522,64 +495,39 @@ def main():
         print('=== Cleaning stale tables ===')
         clean_stale(db)
 
-        for tx in TIME_WINDOWS:
-            # ── 1. Build A first to establish the canonical institution set ──
-            tau_u_A = TAU_U_FLOOR['A']
-            tau_s_A = TAU_S_FLOOR['A']
-            tname_A = table_name(tx, 'A', tau_u_A, tau_s_A)
-            a_units_table = f'_units_t{tx}_A_tauU{tau_u_A}_tauS{tau_s_A}'
-            print(f"  Building {tname_A} ...", end='  ', flush=True)
-            n = build_one(db, tx, 'A', tau_u_A, tau_s_A)
-            build_units(db, tx, 'A', tau_u_A, tau_s_A)
-            n_s, n_u = filter_singletons(db, tx, 'A', tau_u_A, tau_s_A)
-            n_units_final = db.execute(f"SELECT COUNT(*) FROM {a_units_table}").fetchone()[0]
-            n_rows_final  = db.execute(f"SELECT COUNT(*) FROM {tname_A}").fetchone()[0]
-            update_catalog(db, tx, 'A', tau_u_A, tau_s_A, n_rows_final)
-            print(f"{n_rows_final:,} rows  Units: {n_units_final}  "
-                  f"(dropped {n_s} sources, {n_u} insts as non-giant-SCC)",
-                  flush=True)
+        # Group configs by (run_code, tau_u, tau_s); A is already first within each group
+        from itertools import groupby
+        key_fn = lambda c: (c['run_code'], c['tau_u'], c['tau_s'])
+        for group_key, group in groupby(configs, key=key_fn):
+            run_code, tau_u, tau_s = group_key
+            a_units_table = f'_units_{run_code}_A_tauU{tau_u}_tauS{tau_s}'
 
-            # ── 2. Build field subsets inheriting institution set from A ─────
-            for fx in FIELD_SUBSETS:
-                tau_u = TAU_U_FLOOR[fx]
-                tau_s = TAU_S_FLOOR[fx]
-                tname = table_name(tx, fx, tau_u, tau_s)
+            for c in group:
+                fx    = c['fx']
+                tc0, tc1, tt0, tt1 = c['tc0'], c['tc1'], c['tt0'], c['tt1']
+                tname = table_name(run_code, fx, tau_u, tau_s)
+                inherited = None if fx == 'A' else a_units_table
+
                 print(f"  Building {tname} ...", end='  ', flush=True)
-                n = build_one(db, tx, fx, tau_u, tau_s,
-                              inherited_inst_table=a_units_table)
-                build_units(db, tx, fx, tau_u, tau_s)
-                n_s, n_u = filter_singletons(db, tx, fx, tau_u, tau_s)
-                n_units_final = db.execute(
-                    f"SELECT COUNT(*) FROM _units_t{tx}_{fx}_tauU{tau_u}_tauS{tau_s}"
-                ).fetchone()[0]
-                n_rows_final = db.execute(f"SELECT COUNT(*) FROM {tname}").fetchone()[0]
-                update_catalog(db, tx, fx, tau_u, tau_s, n_rows_final)
+                build_one(db, run_code, tc0, tc1, tt0, tt1, fx, tau_u, tau_s,
+                          inherited_inst_table=inherited)
+                build_units(db, run_code, fx, tau_u, tau_s)
+                n_s, n_u = filter_singletons(db, run_code, fx, tau_u, tau_s)
+                uname = f'_units_{run_code}_{fx}_tauU{tau_u}_tauS{tau_s}'
+                n_units_final = db.execute(f"SELECT COUNT(*) FROM {uname}").fetchone()[0]
+                n_rows_final  = db.execute(f"SELECT COUNT(*) FROM {tname}").fetchone()[0]
+                update_catalog(db, run_code, fx, tau_u, tau_s, n_rows_final)
                 print(f"{n_rows_final:,} rows  Units: {n_units_final}  "
                       f"(dropped {n_s} sources, {n_u} insts as non-giant-SCC)",
                       flush=True)
 
-        # ── τ-sensitivity corpus: F=A, t_x=5 only ────────────────────────────
-        tau_sens = TAU_SENSITIVITY
-        tname_s = table_name(5, 'A', tau_sens, tau_sens)
-        print(f"\n  Building {tname_s} (τ sensitivity) ...", end='  ', flush=True)
-        n = build_one(db, 5, 'A', tau_sens, tau_sens)
-        build_units(db, 5, 'A', tau_sens, tau_sens)
-        n_s, n_u = filter_singletons(db, 5, 'A', tau_sens, tau_sens)
-        uname_s = f'_units_t5_A_tauU{tau_sens}_tauS{tau_sens}'
-        n_units_final = db.execute(f"SELECT COUNT(*) FROM {uname_s}").fetchone()[0]
-        n_rows_final  = db.execute(f"SELECT COUNT(*) FROM {tname_s}").fetchone()[0]
-        update_catalog(db, 5, 'A', tau_sens, tau_sens, n_rows_final)
-        print(f"{n_rows_final:,} rows  Units: {n_units_final}  "
-              f"(dropped {n_s} sources, {n_u} insts as non-giant-SCC)", flush=True)
-
         print("\n=== Catalog ===")
-        db.sql("SELECT * FROM _catalog ORDER BY t_x, F_x, tau_u").show()
+        db.sql("SELECT * FROM _catalog ORDER BY run_code, F_x, tau_u").show()
 
-        _tau_u_a = TAU_U_FLOOR['A']
-        _tau_s_a = TAU_S_FLOOR['A']
-        _sample = table_name(5, 'A', _tau_u_a, _tau_s_a)
-        print(f"\n=== Baseline edge list sample ({_sample}) ===")
-        db.sql(f"SELECT * FROM {_sample} LIMIT 20").show()
+        # Sample baseline edge list
+        baseline_tname = table_name('20242024', 'A', 20, 20)
+        print(f"\n=== Baseline edge list sample ({baseline_tname}) ===")
+        db.sql(f"SELECT * FROM {baseline_tname} LIMIT 20").show()
 
 
 if __name__ == '__main__':

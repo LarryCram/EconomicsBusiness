@@ -34,20 +34,21 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 
 sys.path.insert(0, str(Path(__file__).parent.parent))
-from util import load_config, load_params
+from util import load_config, load_runs
 from spectral_ranking.build_csr import build_csr
 from spectral_ranking.katz_ranker import _row_normalise, bipartite
 
-_p     = load_params()
-_tau_u = _p['tau_u_floor']['A']
-_tau_s = _p['tau_s_floor']['A']
+_baseline      = next(r for r in load_runs() if r['label'] == 'baseline')
+_run_code      = _baseline['run_code']
+_tau_u         = _baseline['tau_u']
+_tau_s         = _baseline['tau_s']
 
-BASELINE_TABLE = f'rk_t5_A_tauU{_tau_u}_tauS{_tau_s}_rho0_m0110_chi50_alpha100'
+BASELINE_TABLE = f'rk_{_run_code}_A_tauU{_tau_u}_tauS{_tau_s}_rho0_m0110_chi50_alpha100'
 
 # Visual style per overlay label (ordered: baseline drawn first)
 STYLE = {
     'baseline': dict(color='black',   marker=None,  lw=1.4, alpha_vis=1.0,  zorder=3),
-    'τ=40':     dict(color='#9467bd', marker='x',   lw=0.8, alpha_vis=0.65, zorder=2, s=40),
+    'τ=40':     dict(color='#9467bd', marker='x',   lw=0.8, alpha_vis=0.65, zorder=4, s=40),
     'ρ=1':      dict(color='#ff7f0e', marker='x',   lw=0.8, alpha_vis=0.65, zorder=2, s=40),
     'α=0.5':    dict(color='#d62728', marker='x',   lw=0.8, alpha_vis=0.65, zorder=2, s=40),
 }
@@ -87,7 +88,7 @@ def load_baseline(rk_db) -> tuple:
 
 def _compute_bipartite_v(
     el_db,
-    tx: int, fx: str, tau_u: int, tau_s: int,
+    run_code: str, fx: str, tau_u: int, tau_s: int,
     rho: int, alpha: float,
     mu: np.ndarray | None = None,
 ) -> tuple:
@@ -97,15 +98,15 @@ def _compute_bipartite_v(
     Returns (df_s, df_u) with columns [unit_idx, v], or (None, None)
     if the required edge-list or units table is absent.
     """
-    tname = f'el_t{tx}_{fx}_tauU{tau_u}_tauS{tau_s}'
-    uname = f'_units_t{tx}_{fx}_tauU{tau_u}_tauS{tau_s}'
+    tname = f'el_{run_code}_{fx}_tauU{tau_u}_tauS{tau_s}'
+    uname = f'_units_{run_code}_{fx}_tauU{tau_u}_tauS{tau_s}'
     tables = {r[0] for r in el_db.execute('SHOW TABLES').fetchall()}
     missing = [t for t in (tname, uname) if t not in tables]
     if missing:
         print(f'  WARNING: tables not found: {missing} — skipping')
         return None, None
 
-    csr = build_csr(el_db, tx, fx, tau_u, tau_s, rho, (0, 1, 1, 0))
+    csr = build_csr(el_db, run_code, fx, tau_u, tau_s, rho, (0, 1, 1, 0))
     H_SI, _ = _row_normalise(csr.C_SI)
     H_IS, _ = _row_normalise(csr.C_IS)
 
@@ -144,7 +145,7 @@ def fetch_data(rk_db, el_db) -> tuple:
 
     # ── τ=40 ──────────────────────────────────────────────────────────────────
     print('  τ=40 ...')
-    df_s, df_u = _compute_bipartite_v(el_db, 5, 'A', 40, 40, 0, 1.0)
+    df_s, df_u = _compute_bipartite_v(el_db, _run_code, 'A', 40, 40, 0, 1.0)
     if df_s is not None:
         series['τ=40'] = {
             'S': project(df_s, src_rank_map),
@@ -153,7 +154,7 @@ def fetch_data(rk_db, el_db) -> tuple:
 
     # ── ρ=1 ───────────────────────────────────────────────────────────────────
     print('  ρ=1 ...')
-    df_s, df_u = _compute_bipartite_v(el_db, 5, 'A', _tau_u, _tau_s, 1, 1.0)
+    df_s, df_u = _compute_bipartite_v(el_db, _run_code, 'A', _tau_u, _tau_s, 1, 1.0)
     if df_s is not None:
         series['ρ=1'] = {
             'S': project(df_s, src_rank_map),
@@ -161,17 +162,17 @@ def fetch_data(rk_db, el_db) -> tuple:
         }
 
     # ── α=0.5, type-balanced prior ────────────────────────────────────────────
-    # μ_p = 1/(2 N_S) for sources, 1/(2 N_U) for institutions.
+    # μ_p = 1/N_S for sources, 1/N_U for institutions.
     # Uses N_S and N_U from the baseline corpus (same τ, so identical corpus).
     print('  α=0.5, μ_block ...')
     N_s = len(df_s_base)
     N_u = len(df_u_base)
     mu_block = np.concatenate([
-        np.full(N_s, 0.5 / N_s),
-        np.full(N_u, 0.5 / N_u),
+        np.full(N_s, 1.0 / N_s),
+        np.full(N_u, 1.0 / N_u),
     ])
     df_s, df_u = _compute_bipartite_v(
-        el_db, 5, 'A', _tau_u, _tau_s, 0, 0.5, mu=mu_block
+        el_db, _run_code, 'A', _tau_u, _tau_s, 0, 0.5, mu=mu_block
     )
     if df_s is not None:
         series['α=0.5'] = {
