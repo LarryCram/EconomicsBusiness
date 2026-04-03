@@ -22,7 +22,7 @@ Large parquets live on a separate SSD. Location is machine-specific and set in `
 ## Paper
 Multi-file LaTeX in `spectral_ranking_latex/`. Master file is `main.tex`; sections are in `sections/`. Bibliography fed by Zotero (`MyLibrary.bib`). Commited to GitHub for backup.
 
-**Convention (critical):** $C_{ij}$ = attention from $i$ (citing, row) to $j$ (cited, column). Row sum = references given out. This is the transpose of economist's convention but consistent with most non-economics bibliometrics. Prefer "reference" over "citation" unless it is precise.
+**Convention (critical):** $C_{ij}$ = attention from $i$ (citing, row) to $j$ (cited, column). Row sum = references given out. This is the transpose of economist's convention but consistent with most non-economics bibliometrics. Prefer "reference" over "citation" unless it is precise. Do not read any folder with archive or ARCHIVE in its name.
 
 ## Current paper status
 - `main.tex` compiles cleanly
