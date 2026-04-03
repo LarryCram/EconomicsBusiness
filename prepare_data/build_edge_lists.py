@@ -68,8 +68,9 @@ TIME_WINDOWS = {
     tx: (w['census'][0], w['census'][1], w['target'][0], w['target'][1])
     for tx, w in _tw.items()
 }
-TAU_U_FLOOR = params['tau_u_floor']
-TAU_S_FLOOR = params['tau_s_floor']
+TAU_U_FLOOR     = params['tau_u_floor']
+TAU_S_FLOOR     = params['tau_s_floor']
+TAU_SENSITIVITY = params['tau_sensitivity']   # Phase 2 τ sensitivity (F=A, t_x=5 only)
 
 FIELD_COND = {
     'E':   "AND sm.field_subset = 'E'",
@@ -489,12 +490,15 @@ def update_catalog(db, tx: int, fx: str, tau_u: int, tau_s: int, n_rows: int):
 def clean_stale(db) -> None:
     """Drop edge-list and units tables not in the current schedule."""
     expected = set()
-    for tx in range(1, 8):
+    for tx in TIME_WINDOWS:
         for fx in ['A'] + FIELD_SUBSETS:
             tau_u = TAU_U_FLOOR[fx]
             tau_s = TAU_S_FLOOR[fx]
             expected.add(table_name(tx, fx, tau_u, tau_s))
             expected.add(f'_units_t{tx}_{fx}_tauU{tau_u}_tauS{tau_s}')
+    # τ-sensitivity table (t_x=5, F=A only)
+    expected.add(table_name(5, 'A', TAU_SENSITIVITY, TAU_SENSITIVITY))
+    expected.add(f'_units_t5_A_tauU{TAU_SENSITIVITY}_tauS{TAU_SENSITIVITY}')
 
     all_tables = {row[0] for row in db.execute('SHOW TABLES').fetchall()}
     stale = [t for t in all_tables
@@ -518,7 +522,7 @@ def main():
         print('=== Cleaning stale tables ===')
         clean_stale(db)
 
-        for tx in range(1, 8):
+        for tx in TIME_WINDOWS:
             # ── 1. Build A first to establish the canonical institution set ──
             tau_u_A = TAU_U_FLOOR['A']
             tau_s_A = TAU_S_FLOOR['A']
@@ -553,6 +557,20 @@ def main():
                 print(f"{n_rows_final:,} rows  Units: {n_units_final}  "
                       f"(dropped {n_s} sources, {n_u} insts as non-giant-SCC)",
                       flush=True)
+
+        # ── τ-sensitivity corpus: F=A, t_x=5 only ────────────────────────────
+        tau_sens = TAU_SENSITIVITY
+        tname_s = table_name(5, 'A', tau_sens, tau_sens)
+        print(f"\n  Building {tname_s} (τ sensitivity) ...", end='  ', flush=True)
+        n = build_one(db, 5, 'A', tau_sens, tau_sens)
+        build_units(db, 5, 'A', tau_sens, tau_sens)
+        n_s, n_u = filter_singletons(db, 5, 'A', tau_sens, tau_sens)
+        uname_s = f'_units_t5_A_tauU{tau_sens}_tauS{tau_sens}'
+        n_units_final = db.execute(f"SELECT COUNT(*) FROM {uname_s}").fetchone()[0]
+        n_rows_final  = db.execute(f"SELECT COUNT(*) FROM {tname_s}").fetchone()[0]
+        update_catalog(db, 5, 'A', tau_sens, tau_sens, n_rows_final)
+        print(f"{n_rows_final:,} rows  Units: {n_units_final}  "
+              f"(dropped {n_s} sources, {n_u} insts as non-giant-SCC)", flush=True)
 
         print("\n=== Catalog ===")
         db.sql("SELECT * FROM _catalog ORDER BY t_x, F_x, tau_u").show()

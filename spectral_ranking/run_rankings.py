@@ -36,8 +36,9 @@ from build_csr import build_csr
 from katz_ranker import rank
 
 _params     = load_params()
-TAU_U_FLOOR = _params['tau_u_floor']   # keyed by fx; all currently 20
-TAU_S_FLOOR = _params['tau_s_floor']   # keyed by fx; all currently 20
+TAU_U_FLOOR     = _params['tau_u_floor']   # keyed by fx; all currently 20
+TAU_S_FLOOR     = _params['tau_s_floor']   # keyed by fx; all currently 20
+TAU_SENSITIVITY = _params['tau_sensitivity']  # Phase 2 τ sensitivity value
 
 
 # ─── Parameter set definition ─────────────────────────────────────────────────
@@ -93,17 +94,20 @@ STAGE1 = [
               m=(0, 0, 0, 1), chi=0.5, alpha=1.0,    label='II-only'),
     RunParams(tx=5, fx='A', tau_u=TAU_U_FLOOR['A'], tau_s=TAU_S_FLOOR['A'], rho=0,
               m=(1, 1, 1, 1), chi=0.5, alpha=0.85,   label='full-joint'),
-    # τ_U sensitivity variant (τ_U=10) — requires corresponding edge list
-    RunParams(tx=5, fx='A', tau_u=10, tau_s=TAU_S_FLOOR['A'], rho=0,
-              m=(0, 1, 1, 0), chi=0.5, alpha=0.85,   label='tauU10'),
+    # τ-sensitivity variant: both thresholds raised to TAU_SENSITIVITY
+    RunParams(tx=5, fx='A', tau_u=TAU_SENSITIVITY, tau_s=TAU_SENSITIVITY, rho=0,
+              m=(0, 1, 1, 0), chi=0.5, alpha=1.0,    label=f'tau{TAU_SENSITIVITY}'),
 ]
 
 # Stage 2: time-series sweep (baseline parameters, vary tx)
+# Excludes t_x=5 (the baseline, already in STAGE1) and t_x=6,7 (dropped from paper).
+_TIME_WINDOWS = _params['time_windows']
 STAGE2 = [
     RunParams(tx=tx, fx='A', tau_u=TAU_U_FLOOR['A'], tau_s=TAU_S_FLOOR['A'], rho=0,
-              m=(0, 1, 1, 0), chi=0.5, alpha=0.85,
+              m=(0, 1, 1, 0), chi=0.5, alpha=1.0,
               label=f't{tx}')
-    for tx in [1, 2, 3, 4, 6]
+    for tx in sorted(_TIME_WINDOWS.keys())
+    if tx != 5 and tx not in (6, 7)   # 5 = baseline; 6,7 dropped from paper
 ]
 
 

@@ -1,0 +1,297 @@
+"""
+fig_5.py — Phase 2 parameter sensitivity: τ, ρ, and (α, μ).
+
+Baseline: t_x=5, F=A, τ_U=τ_S=20, ρ=0, m=0110, α=1, μ=0.
+x-axis locked to baseline rank (same convention as fig_2/fig_3).
+
+Three overlays:
+  τ=40   : raise both τ_U and τ_S to 40; α=1, ρ=0.
+            Computed from el_t5_A_tauU40_tauS40 in edge_lists.duckdb.
+            Units dropped by the higher threshold are absent from the series.
+
+  ρ=1    : full reference count (equal attention per reference);
+            τ=20, α=1.  Computed from el_t5_A_tauU20_tauS20 with rho=1.
+
+  α=0.5  : Katz–Hubbell with type-balanced prior
+            μ_p = 1/(2 N_S) for sources, μ_p = 1/(2 N_U) for institutions;
+            τ=20, ρ=0.  Computed on-the-fly with the bipartite() solver.
+
+All computations use the bipartite m=0110 mode.
+χ is not material for the bipartite mode and is not varied here.
+
+Outputs:
+  plots/fig_5.pdf        — with title (exploration)
+  plots/fig_5_latex.pdf  — without title (paper)
+"""
+
+import sys
+from pathlib import Path
+
+import duckdb
+import numpy as np
+import pandas as pd
+import matplotlib.pyplot as plt
+import seaborn as sns
+
+sys.path.insert(0, str(Path(__file__).parent.parent))
+from util import load_config, load_params
+from spectral_ranking.build_csr import build_csr
+from spectral_ranking.katz_ranker import _row_normalise, bipartite
+
+_p     = load_params()
+_tau_u = _p['tau_u_floor']['A']
+_tau_s = _p['tau_s_floor']['A']
+
+BASELINE_TABLE = f'rk_t5_A_tauU{_tau_u}_tauS{_tau_s}_rho0_m0110_chi50_alpha100'
+
+# Visual style per overlay label (ordered: baseline drawn first)
+STYLE = {
+    'baseline': dict(color='black',   marker=None,  lw=1.4, alpha_vis=1.0,  zorder=3),
+    'τ=40':     dict(color='#9467bd', marker='x',   lw=0.8, alpha_vis=0.65, zorder=2, s=40),
+    'ρ=1':      dict(color='#ff7f0e', marker='x',   lw=0.8, alpha_vis=0.65, zorder=2, s=40),
+    'α=0.5':    dict(color='#d62728', marker='x',   lw=0.8, alpha_vis=0.65, zorder=2, s=40),
+}
+
+
+# ─── Data helpers ─────────────────────────────────────────────────────────────
+
+def load_baseline(rk_db) -> tuple:
+    """
+    Load v from the stored baseline ranking.
+
+    Returns
+    -------
+    src_rank_map  : dict  unit_idx -> baseline_rank  (sources)
+    inst_rank_map : dict  unit_idx -> baseline_rank  (institutions)
+    df_s_base     : DataFrame [unit_idx, baseline_rank, v, a_p]
+    df_u_base     : DataFrame [unit_idx, baseline_rank, v, a_p]
+    """
+    df = rk_db.execute(
+        f"SELECT unit_idx, unit_type, v, a_p FROM {BASELINE_TABLE}"
+    ).df()
+
+    df_s = (df[df['unit_type'] == 'S']
+            .sort_values('v', ascending=False)
+            .reset_index(drop=True))
+    df_s['baseline_rank'] = np.arange(1, len(df_s) + 1)
+    src_rank_map = df_s.set_index('unit_idx')['baseline_rank'].to_dict()
+
+    df_u = (df[df['unit_type'] == 'U']
+            .sort_values('v', ascending=False)
+            .reset_index(drop=True))
+    df_u['baseline_rank'] = np.arange(1, len(df_u) + 1)
+    inst_rank_map = df_u.set_index('unit_idx')['baseline_rank'].to_dict()
+
+    return src_rank_map, inst_rank_map, df_s, df_u
+
+
+def _compute_bipartite_v(
+    el_db,
+    tx: int, fx: str, tau_u: int, tau_s: int,
+    rho: int, alpha: float,
+    mu: np.ndarray | None = None,
+) -> tuple:
+    """
+    Compute bipartite v_s, v_u directly from edge_lists.duckdb.
+
+    Returns (df_s, df_u) with columns [unit_idx, v], or (None, None)
+    if the required edge-list or units table is absent.
+    """
+    tname = f'el_t{tx}_{fx}_tauU{tau_u}_tauS{tau_s}'
+    uname = f'_units_t{tx}_{fx}_tauU{tau_u}_tauS{tau_s}'
+    tables = {r[0] for r in el_db.execute('SHOW TABLES').fetchall()}
+    missing = [t for t in (tname, uname) if t not in tables]
+    if missing:
+        print(f'  WARNING: tables not found: {missing} — skipping')
+        return None, None
+
+    csr = build_csr(el_db, tx, fx, tau_u, tau_s, rho, (0, 1, 1, 0))
+    H_SI, _ = _row_normalise(csr.C_SI)
+    H_IS, _ = _row_normalise(csr.C_IS)
+
+    pi_s_ind, pi_u_ind, iters, norm = bipartite(H_SI, H_IS, alpha=alpha, mu=mu)
+
+    # Joint-normalise matching rank() convention
+    pi_s = pi_s_ind / 2.0
+    pi_u = pi_u_ind / 2.0
+    A = csr.a_s.sum() + csr.a_u.sum()
+    v_s = A * pi_s / csr.a_s
+    v_u = A * pi_u / csr.a_u
+
+    df_s = pd.DataFrame({'unit_idx': csr.source_ids.astype(int), 'v': v_s})
+    df_u = pd.DataFrame({'unit_idx': csr.inst_ids.astype(int),   'v': v_u})
+
+    print(f'    n_s={csr.n_s:,}  n_u={csr.n_u:,}  iters={iters}  norm={norm:.2e}')
+    return df_s, df_u
+
+
+def fetch_data(rk_db, el_db) -> tuple:
+    """
+    Returns
+    -------
+    src_rank_map, inst_rank_map : x-axis lock dicts
+    series : dict  label -> {'S': DataFrame, 'I': DataFrame}
+             Each DataFrame has columns [unit_idx, baseline_rank, v].
+    """
+    src_rank_map, inst_rank_map, df_s_base, df_u_base = load_baseline(rk_db)
+
+    def project(df, rank_map):
+        out = df.copy()
+        out['baseline_rank'] = out['unit_idx'].map(rank_map)
+        return out.dropna(subset=['baseline_rank']).sort_values('baseline_rank')
+
+    series = {'baseline': {'S': df_s_base, 'I': df_u_base}}
+
+    # ── τ=40 ──────────────────────────────────────────────────────────────────
+    print('  τ=40 ...')
+    df_s, df_u = _compute_bipartite_v(el_db, 5, 'A', 40, 40, 0, 1.0)
+    if df_s is not None:
+        series['τ=40'] = {
+            'S': project(df_s, src_rank_map),
+            'I': project(df_u, inst_rank_map),
+        }
+
+    # ── ρ=1 ───────────────────────────────────────────────────────────────────
+    print('  ρ=1 ...')
+    df_s, df_u = _compute_bipartite_v(el_db, 5, 'A', _tau_u, _tau_s, 1, 1.0)
+    if df_s is not None:
+        series['ρ=1'] = {
+            'S': project(df_s, src_rank_map),
+            'I': project(df_u, inst_rank_map),
+        }
+
+    # ── α=0.5, type-balanced prior ────────────────────────────────────────────
+    # μ_p = 1/(2 N_S) for sources, 1/(2 N_U) for institutions.
+    # Uses N_S and N_U from the baseline corpus (same τ, so identical corpus).
+    print('  α=0.5, μ_block ...')
+    N_s = len(df_s_base)
+    N_u = len(df_u_base)
+    mu_block = np.concatenate([
+        np.full(N_s, 0.5 / N_s),
+        np.full(N_u, 0.5 / N_u),
+    ])
+    df_s, df_u = _compute_bipartite_v(
+        el_db, 5, 'A', _tau_u, _tau_s, 0, 0.5, mu=mu_block
+    )
+    if df_s is not None:
+        series['α=0.5'] = {
+            'S': project(df_s, src_rank_map),
+            'I': project(df_u, inst_rank_map),
+        }
+
+    return src_rank_map, inst_rank_map, series
+
+
+# ─── Plot ─────────────────────────────────────────────────────────────────────
+
+def _draw_panel(ax, series: dict, unit_key: str,
+                n_baseline: int, panel_title: str) -> None:
+    for label, style in STYLE.items():
+        if label not in series:
+            continue
+        df = series[label][unit_key]
+        if df.empty:
+            continue
+
+        n_overlap = len(df)
+        is_baseline = style['marker'] is None
+
+        if is_baseline:
+            ax.plot(
+                df['baseline_rank'].values,
+                df['v'].values,
+                color=style['color'],
+                linewidth=style['lw'],
+                alpha=style['alpha_vis'],
+                zorder=style['zorder'],
+                label='baseline',
+            )
+        else:
+            ax.scatter(
+                df['baseline_rank'].values,
+                df['v'].values,
+                color=style['color'],
+                marker=style['marker'],
+                s=style['s'],
+                linewidths=style['lw'],
+                alpha=style['alpha_vis'],
+                zorder=style['zorder'],
+                label=f'{label}  ({n_overlap:,}/{n_baseline:,})',
+            )
+
+    ax.set_yscale('log')
+    ax.axhline(1.0, color='#999999', linewidth=0.8, linestyle='--', zorder=0)
+    ax.text(
+        n_baseline * 0.98, 1.0, '$v=1$',
+        ha='right', va='bottom', fontsize=7.5, color='#999999',
+    )
+    ax.set_xlim(1, n_baseline)
+    ax.set_xlabel('Baseline rank', labelpad=4)
+    ax.set_ylabel('Prestige per work $v$', labelpad=4)
+    ax.set_title(panel_title, fontsize=10, pad=6)
+    ax.legend(fontsize=7.5, framealpha=0.85, loc='upper right')
+
+
+def plot5(src_rank_map: dict, inst_rank_map: dict, series: dict) -> None:
+    paths = load_config()
+    sns.set_theme(style='whitegrid', font_scale=0.95)
+    fig, axes = plt.subplots(2, 1, figsize=(9, 8))
+    fig.subplots_adjust(hspace=0.44)
+
+    _draw_panel(axes[0], series, 'S', len(src_rank_map),  'Sources')
+    _draw_panel(axes[1], series, 'I', len(inst_rank_map), 'Institutions')
+
+    sup = fig.suptitle(
+        'Parameter sensitivity — prestige per work  '
+        '(x-axis locked to bipartite baseline)',
+        fontsize=9, y=1.01,
+    )
+
+    out = paths.plots / 'fig_5.pdf'
+    fig.savefig(out, bbox_inches='tight')
+    print(f'Saved {out}')
+
+    sup.set_visible(False)
+    latex_out = paths.plots / 'fig_5_latex.pdf'
+    fig.savefig(latex_out, bbox_inches='tight')
+    print(f'Saved {latex_out}')
+    sup.set_visible(True)
+
+    plt.close(fig)
+
+    # Console summary
+    print(f'\n{"Label":<14}  {"n_S":>7}  {"n_I":>7}')
+    print('-' * 32)
+    for label, d in series.items():
+        print(f'{label:<14}  {len(d["S"]):>7,}  {len(d["I"]):>7,}')
+
+
+# ─── Main ─────────────────────────────────────────────────────────────────────
+
+def main():
+    paths   = load_config()
+    rk_path = paths.working / 'rankings.duckdb'
+    el_path = paths.working / 'edge_lists.duckdb'
+
+    if not rk_path.exists():
+        raise FileNotFoundError(
+            f'rankings.duckdb not found at {rk_path}. '
+            'Run spectral_ranking/run_rankings.py first.'
+        )
+    if not el_path.exists():
+        raise FileNotFoundError(
+            f'edge_lists.duckdb not found at {el_path}. '
+            'Run prepare_data/build_edge_lists.py first.'
+        )
+
+    with duckdb.connect(str(rk_path), read_only=True) as rk_db, \
+         duckdb.connect(str(el_path), read_only=True) as el_db:
+        print('Computing overlays:')
+        src_rank_map, inst_rank_map, series = fetch_data(rk_db, el_db)
+
+    plot5(src_rank_map, inst_rank_map, series)
+
+
+if __name__ == '__main__':
+    main()
+    print('FINISHED!')

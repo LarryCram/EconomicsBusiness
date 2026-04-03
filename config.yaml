@@ -9,10 +9,5 @@ PLOTS: 'plots'                                  # relative to PROJECT_ROOT
 WORKING: '/home/lc/m/working/econ_bus'         # SSD root; parquet/ subfolder derived
 OPENALEX: '/home/lc/m/openalex_feb26/parquet'  # OA snapshot
 
-# === Spectral ranking parameters ===
-ALPHA: 0.85          # damping factor
-KATZ_TOL: 1.0e-8     # power-iteration convergence tolerance
-KATZ_MAX_ITER: 200   # maximum iterations
-
 # === Development / testing ===
 TEST_SOURCE_ID: "https://openalex.org/S137773608"  # Journal of Economic Literature

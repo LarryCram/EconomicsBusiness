@@ -32,7 +32,7 @@ emphasised. This is the transpose of the economist's convention.
 ## Replace most of the existing 04 tex document with the following plan. Where there is conflict take the plan not 04.
 
 ## Section 04_results.tex
-- Opening paragraph explains the layout of this section
+- Opening paragraph \paragraph{Outline} explains the layout of this section
  - Explain parameters: summary here. earlier partial summaries to be made coherent here only
  - Corpus selection: t_x, F in EBA, \tau_s/i, after specified \chi* is available
  - Mode selection: 
@@ -55,13 +55,11 @@ emphasised. This is the transpose of the economist's convention.
 - t_x=5, F=A, τ_U=20, τ_S=20, ρ=0 (fixed count, R̄/R_i), m=0110, minimal power iterations (α=1, \mu=0, \chi irrelevant should be equaton (5) of the document)
 
 
-## Phase 1
+## Phase 1 \paragraph{Sources, Institutions and Fields}
 - Compare baseline with F=E, F=B, F=EB for sources and institutions.
 - make text align with fig_2 code and insert fig_2 here
 - mention that communities potentially effect spctral ranking and that the second eigenpair can be used to explore this.
 - present second eigenpair 'theory' consistent with fig_4 pl and include fig_4 at this point
-
-## Phase 2
 - Compare baseline with s (1000/1111) and i(0001/1111) as in current fig_3. Make text align with fig_3 code and insert fig_3 here.
 - add E and B symbols to i in fig_3
 
@@ -93,7 +91,7 @@ emphasised. This is the transpose of the economist's convention.
    real parts (warn if |Im(λ₂)|/|λ₂| > 0.01). Do not symmetrise H — that
    discards directed structure and loses the connection to π.
 
-## Phase 3
+## Phase 2 \paragraph{Parameter effects}
 - Explore the nature of changes from baseline for \alpha = 0.1 and 0.5 with \chi^* and \mu consistent with the N_s/i.
 - Explore effect of \rho 
 - Eplore effect of \tau - both to 40
@@ -102,8 +100,9 @@ emphasised. This is the transpose of the economist's convention.
     flow per unit must be equalised: (1−χ)/N_s = χ/N_u Solving: χ* = N_u/(N_s+N_u). 
     With N_s ≈ 1,600 and N_u ≈ 2,600 (baseline F=A, τ_U=10, t_x=5), χ* ≈ 0.619 (numbers are computed at run time). 
     This is the dimensionally neutral calibration examined here
+-Report on bootstrap study (following BOOTSTRAP.md)
 
-## Phase 4
+## Phase 4 \paragraph{Time dependence}
 - Time dependence
 - Compare t_1 ... t_4 to t_5 baseline in all cases
 - We don't know what this looks like yet. It may raise non-primitivity.

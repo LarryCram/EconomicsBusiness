@@ -29,3 +29,7 @@ tau_s_floor:
   EB: 20
   NEB: 20
   A: 20
+
+# τ sensitivity threshold used in Phase 2 (both τ_U and τ_S raised to this value)
+# Applied to F=A, t_x=5 only.
+tau_sensitivity: 40

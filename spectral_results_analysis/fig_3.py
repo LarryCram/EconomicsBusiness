@@ -62,6 +62,39 @@ def load_field_labels(paths) -> dict:
     return dict(zip(sm['source_idx'].astype(int), sm['field_subset']))
 
 
+def load_inst_field_labels(el_db, tau_u: int, tau_s: int) -> dict:
+    """
+    Return {inst_idx (int): 'E' | 'B' | 'other'} by checking which
+    field-subset unit tables the institution appears in.
+
+    'E'    → present in F=E network only
+    'B'    → present in F=B network only
+    'other'→ present in both or neither (appears in F=A but not exclusively E or B)
+    """
+    def inst_set(fx: str) -> set:
+        tname = f'_units_t5_{fx}_tauU{tau_u}_tauS{tau_s}'
+        tables = {r[0] for r in el_db.execute('SHOW TABLES').fetchall()}
+        if tname not in tables:
+            return set()
+        rows = el_db.execute(
+            f"SELECT unit_idx FROM {tname} WHERE unit_type='U'"
+        ).fetchall()
+        return {int(r[0]) for r in rows}
+
+    e_set = inst_set('E')
+    b_set = inst_set('B')
+
+    inst_field: dict = {}
+    for idx in e_set | b_set:
+        if idx in e_set and idx in b_set:
+            inst_field[idx] = 'other'
+        elif idx in e_set:
+            inst_field[idx] = 'E'
+        else:
+            inst_field[idx] = 'B'
+    return inst_field
+
+
 # ─── Data ─────────────────────────────────────────────────────────────────────
 
 def load_run(db, table_name: str) -> pd.DataFrame:
@@ -193,7 +226,8 @@ def fetch_data(db) -> tuple:
 
 def _draw_panel(ax, series: dict, unit_key: str, panel_labels: list,
                 n_baseline: int, panel_title: str,
-                field_labels: dict | None = None) -> None:
+                field_labels: dict | None = None,
+                inst_field_labels: dict | None = None) -> None:
     for label in panel_labels:
         if label not in series:
             continue
@@ -251,6 +285,29 @@ def _draw_panel(ax, series: dict, unit_key: str, panel_labels: list,
                     label=f'{legend_label}  ({len(sub):,})',
                 )
 
+    # ── E/B overlay on I panel (black circles = E, black squares = B) ─────────
+    if unit_key == 'I' and inst_field_labels and 'm=0001' in series:
+        df_ii = series['m=0001']['I']
+        if not df_ii.empty:
+            df_ii = df_ii.copy()
+            df_ii['F'] = df_ii['unit_idx'].map(inst_field_labels)
+            for f_val, marker, legend_label in [('E', 'o', 'E (II)'),
+                                                ('B', 's', 'B (II)')]:
+                sub = df_ii[df_ii['F'] == f_val]
+                if sub.empty:
+                    continue
+                ax.scatter(
+                    sub['baseline_rank'].values,
+                    sub['v'].values,
+                    color='black',
+                    marker=marker,
+                    s=18,
+                    linewidths=0.5,
+                    facecolors='none',
+                    zorder=4,
+                    label=f'{legend_label}  ({len(sub):,})',
+                )
+
     ax.set_yscale('log')
     ax.axhline(1.0, color='#999999', linewidth=0.8, linestyle='--', zorder=0)
     ax.text(
@@ -267,7 +324,8 @@ def _draw_panel(ax, series: dict, unit_key: str, panel_labels: list,
 
 
 def plot3(src_rank_map: dict, inst_rank_map: dict, series: dict,
-          field_labels: dict) -> None:
+          field_labels: dict,
+          inst_field_labels: dict | None = None) -> None:
     paths = load_config()
 
     sns.set_theme(style='whitegrid', font_scale=0.95)
@@ -278,7 +336,8 @@ def plot3(src_rank_map: dict, inst_rank_map: dict, series: dict,
                 n_baseline=len(src_rank_map),  panel_title='Sources',
                 field_labels=field_labels)
     _draw_panel(axes[1], series, 'I', I_LABELS,
-                n_baseline=len(inst_rank_map), panel_title='Institutions')
+                n_baseline=len(inst_rank_map), panel_title='Institutions',
+                inst_field_labels=inst_field_labels)
 
     sup = fig.suptitle(
         'Prestige per work — sensitivity to network mode $m$  '
@@ -302,6 +361,7 @@ def plot3(src_rank_map: dict, inst_rank_map: dict, series: dict,
 def main():
     paths = load_config()
     rk_path = paths.working / 'rankings.duckdb'
+    el_path = paths.working / 'edge_lists.duckdb'
 
     if not rk_path.exists():
         raise FileNotFoundError(
@@ -318,7 +378,18 @@ def main():
     print(f'Field labels loaded: {sum(v=="E" for v in field_labels.values())} E, '
           f'{sum(v=="B" for v in field_labels.values())} B')
 
-    plot3(src_rank_map, inst_rank_map, series, field_labels)
+    inst_field_labels: dict | None = None
+    if el_path.exists():
+        with duckdb.connect(str(el_path), read_only=True) as el_db:
+            inst_field_labels = load_inst_field_labels(el_db, _tau_u, _tau_s)
+        e_only = sum(v == 'E'     for v in inst_field_labels.values())
+        b_only = sum(v == 'B'     for v in inst_field_labels.values())
+        other  = sum(v == 'other' for v in inst_field_labels.values())
+        print(f'Institution field labels: E={e_only}  B={b_only}  other={other}')
+    else:
+        print(f'WARNING: {el_path} not found — institution E/B markers skipped')
+
+    plot3(src_rank_map, inst_rank_map, series, field_labels, inst_field_labels)
 
 
 if __name__ == '__main__':

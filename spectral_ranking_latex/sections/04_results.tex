@@ -3,12 +3,21 @@
 \label{sec:results}
 % ---------------------------------------------------------------
 
-[Opening paragraph to be drafted]
+\paragraph{Outline.}
+Tables~\ref{tab:params}--\ref{tab:paramvalues} define and enumerate the
+parameters; all are consolidated here and not repeated elsewhere.
+The \textit{baseline} is $t_x=5$, $F=A$, $\tau_U=\tau_S=20$, $\rho=0$,
+$\mathbf{m}=0110$, $\alpha=1$, $\mu=0$ --- the pure eigenvector
+equation~\eqref{eq:eig} on the bipartite network.
+Modes $\mathbf{m}=1000$ (SS) and $0001$ (II) are the unipartite analogues
+of standard journal and institution eigenvector methods; $1111$ adds all
+paths between the two unit types; $0110$ is the bipartite focus of this paper.
+Phase~1 fixes $\alpha=1$, $\mu=0$ and varies the corpus ($F$) and
+mode ($\mathbf{m}$); Phase~2 varies $\alpha$, $\rho$, and $\tau$;
+Phase~4 varies $t_x\in\{1,2,3,4,5\}$.
 
-The results are presented in four phases that systematically explore the effects of network structure, disciplinary communities, and model parameters on the dual ranking of sources and institutions. Our baseline employs the pure spectral ranking approach ($\alpha=1$, $\mu=0$) as defined by equation~\eqref{eq:eig}, which extracts prestige scores directly from the citation network structure without artificial damping or exogenous priors.
 
-Phase~1 examines field effects by comparing rankings across Economics-only ($F=E$), Business-only ($F=B$), and combined ($F=A$) source sets, establishing the disciplinary community structure within the literature. Phase~2 compares the four network modes---source-only ($SS$), institution-only ($II$), bipartite ($SI/IS$), and full joint---to understand how citation network architecture affects ranking outcomes. The bipartite mode $\mathbf{m}=(0,1,1,0)$ serves as our primary baseline, representing the novel contribution of institution-mediated influence propagation. Phase~3 tests parameter sensitivity by systematically varying the damping factor ($\alpha$), reference normalisation ($\rho$), and corpus boundaries ($\tau_U$, $\tau_S$) to establish robustness. Phase~4 explores time dependence across the five census windows ($t_x=1\ldots 5$), each covering symmetric five-year periods from 2000 to 2024.
-
+% ─── Parameter tables ─────────────────────────────────────────────────────────
 
 \begin{table}[h]
 	\centering
@@ -20,7 +29,7 @@ Phase~1 examines field effects by comparing rankings across Economics-only ($F=E
 		\midrule
 		\multicolumn{4}{@{}l@{}}{\textit{Corpus construction}} \\[2pt]
 		$F\in\{E,B,A\}$          & field subset          & category        & restrict $\mathfrak{S}$ to Economics ($E$), Business ($B$), or all OAS ($A$); see Table~\ref{tab:windows} \\
-		$t_x\in\{1,\ldots,7\}$  & time window           & integer         & census and target year ranges; see Table~\ref{tab:windows} \\
+		$t_x\in\{1,\ldots,5\}$  & time window           & integer         & census and target year ranges; see Table~\ref{tab:windows} \\
 		$\tau_U$                 & institution threshold & integer         & minimum mean annual works to retain an institution \\
 		$\tau_S$                 & source threshold      & integer         & minimum mean annual works to retain a source \\[4pt]
 		\multicolumn{4}{@{}l@{}}{\textit{Matrix construction}} \\[2pt]
@@ -28,9 +37,10 @@ Phase~1 examines field effects by comparing rankings across Economics-only ($F=E
 		$\mathbf{m}\in\{0,1\}^4$ & block mask            & binary 4-vector & select active unit-type pairs ($SS$, $SI$, $IS$, $II$) \\
 		$\chi\in[0,1]$           & mixing weight         & continuous      & source--institution balance within each work \\[4pt]
 		\multicolumn{4}{@{}l@{}}{\textit{Ranking}} \\[2pt]
-		$\alpha\in[0,1)$         & damping factor        & continuous      & controls propagation through citation network \newline \hspace*{1em} ensures convergence \\
+		$\alpha\in[0,1)$         & damping factor        & continuous      & controls propagation through citation network \\
+		$\mu$                    & prior weight          & continuous      & exogenous prestige prior; $\mu=0$ = pure spectral \\
 		\bottomrule
-\end{tabularx}
+	\end{tabularx}
 \end{table}
 
 \begin{table}[htbp]
@@ -58,7 +68,6 @@ $t_x$ & Window $[t^c_0,t^c_1] = [t^t_0,t^t_1]$ & Label \\
 \end{tabular}
 \end{table}
 
-
 \begin{table}[htbp]
 \centering
 \caption{Parameters and values explored. Baseline values in italics.}
@@ -74,12 +83,133 @@ $\tau_U$       & Institution threshold  & \textit{20}             & \textit{20},
 $\tau_S$       & Source threshold       & \textit{20}             & \textit{20},\ 40 \\[4pt]
 \multicolumn{4}{@{}l@{}}{\textit{Matrix construction}} \\[2pt]
 $\rho$         & Reference normalisation & \textit{0 (fixed)}     & \textit{0} (fixed),\ 1 (full) \\
-$\mathbf{m}$   & Block mask             & \textit{$(0,1,1,0)$}   & $(1,0,0,0)$,\ $(0,0,0,1)$,\ \textit{$(0,1,1,0)$},\ $(1,1,1,1)$ \\
-$\chi$         & Mixing weight          & \textit{n/a (bipartite)} & \textit{0.50},\ $\chi^*$ [full joint only] \\[4pt]
+$\mathbf{m}$   & Block mask             & \textit{0110}          & 1000,\ 0001,\ \textit{0110},\ 1111 \\
+$\chi$         & Mixing weight          & 0.50                   & 0.50,\ $\chi^*$ [full joint only] \\[4pt]
 \multicolumn{4}{@{}l@{}}{\textit{Ranking}} \\[2pt]
 $\alpha$       & Damping factor         & \textit{1.0}           & 0.1,\ 0.5,\ \textit{1.0} \\
 $\mu$          & Prior weight           & \textit{0}             & \textit{0} (pure spectral) \\
 \bottomrule
 \end{tabular}
 \end{table}
-\end{table}
+
+
+% ---------------------------------------------------------------
+\paragraph{Phase~1: Sources, institutions and fields.}
+% ---------------------------------------------------------------
+
+Figure~\ref{fig:fig2} shows the prestige-per-work distribution for the
+baseline and for the field subsets $F=E$ and $F=B$, with the $x$-axis
+locked to the baseline rank so that each unit sits at its baseline
+position and absent units are omitted from that series.
+Sources at the Economics--Business boundary lose prestige flow from one
+side under each restriction; the institution panel reflects the same
+effect through the authorship mapping.
+
+\begin{figure}[htbp]
+  \centering
+  \includegraphics[width=\textwidth]{../plots/fig_2_latex.pdf}
+  \caption{Prestige per work $v$ against baseline rank.
+    Top: sources.  Bottom: institutions.
+    Black line: baseline ($F=A$).
+    Red $+$: $F=E$ ($N_s=[FILL]$).
+    Blue $\times$: $F=B$ ($N_s=[FILL]$).
+    Dashed line: $v=1$ (corpus average).
+    Parameters: $t_x=5$, $\tau_U=\tau_S=20$, $\rho=0$,
+    $\mathbf{m}=0110$, $\alpha=1$.}
+  \label{fig:fig2}
+\end{figure}
+
+The field shifts in Figure~\ref{fig:fig2} reflect community structure in
+the citation network: sources cluster into Economics and Business
+communities that preferentially cite within their own field, and this
+influences rankings because prestige propagates more readily within a
+community than across it.
+
+The second eigenpair $(\lambda_2,\boldsymbol{\phi}_2)$ of $\mathbf{H}^\top$
+characterises this structure precisely.
+For general $\alpha$ and uniform prior $\mu_p=1/N$, the solution
+to~\eqref{eq:spectral} has the spectral expansion
+\begin{equation}
+  \boldsymbol{\pi}
+  \;=\;
+  (1-\alpha)\sum_{i\ge 1}
+  \frac{\boldsymbol{\phi}_i^\top\boldsymbol{\mu}}{1-\alpha\lambda_i}\,u_i,
+  \label{eq:spectral_expansion}
+\end{equation}
+where $(\lambda_i, u_i, \boldsymbol{\phi}_i)$ are the eigenvalues, right
+eigenvectors, and left eigenvectors of $\mathbf{H}^\top$, ordered
+$\lambda_1\ge\lambda_2\ge\cdots$.
+The $i=1$ term recovers $\boldsymbol{\pi}^*$ as $\alpha\to 1$; the $i=2$
+term is the leading community correction, amplified by $1/(1-\alpha\lambda_2)$
+relative to all higher terms.
+The spectral gap $g=1-\lambda_2$ therefore governs community influence:
+small $g$ means community membership strongly shapes rankings; large $g$
+means rankings are community-neutral.
+For the SS mode $\boldsymbol{\phi}_2$ is expected to separate Economics from
+Business sources; for II the partition is more diffuse because institutions
+co-locate faculty from both fields.
+In the bipartite mode the community operator is the one-mode projection
+$\mathbf{M}_S=\mathbf{H}_{SI}\mathbf{H}_{IS}$; $\boldsymbol{\phi}_2^S$
+is its second eigenvector and the institution community vector is recovered
+as $\boldsymbol{\phi}_2^I=\mathbf{H}_{SI}^\top\boldsymbol{\phi}_2^S$
+(unit-normalised).
+Throughout, $\boldsymbol{\phi}_2$ is signed so that the unit with the
+largest work count $a_p$ has $\phi_{2,p}>0$.
+
+Figure~\ref{fig:fig4} illustrates these eigenvectors by plotting the
+size-adjusted community measure $\phi_{2,p}/\sqrt{v_p}$ against $v_p$;
+dividing by $\sqrt{v_p}$ removes the normalisation artefact that suppresses
+$|\phi_{2,p}|$ for low-prestige units.
+
+\begin{figure}[htbp]
+  \centering
+  \includegraphics[width=\textwidth]{../plots/fig_4_latex.pdf}
+  \caption{Community measure $\phi_{2,p}/\sqrt{v_p}$ against prestige
+    per work $v_p$.
+    Top row: sources.  Bottom row: institutions.
+    Left column: SS mode $\mathbf{m}=1000$.
+    Right column: bipartite $\mathbf{m}=0110$.
+    Sources coloured by field: blue circles = Economics ($E$);
+    red squares = Business ($B$); grey crosses = other.
+    Institutions coloured by field-network membership (E-only, B-only, other).
+    $x$-axis: bipartite baseline $v$.
+    Parameters: $t_x=5$, $F=A$, $\tau_U=\tau_S=20$, $\rho=0$, $\alpha=1$.}
+  \label{fig:fig4}
+\end{figure}
+
+In the SS source panel (top left), the sign of $\phi_{2,p}/\sqrt{v_p}$
+[FILL: cleanly separates Economics (positive) from Business (negative)
+journals across the full prestige range, with Finance journals
+concentrated near zero, confirming their role as citation bridges between
+the two communities].
+The bipartite source panel (top right) shows [FILL: a similar partition /
+greater mixing], with spectral gaps $g^{SS}=[FILL]$ and
+$g^{\mathrm{bip}}=[FILL]$ indicating that routing citation flow through
+institutions [FILL: partially dissolves / preserves] the community
+boundary.
+The institution panels (bottom row) show a more diffuse partition,
+consistent with institutions co-locating faculty from both fields;
+the field-network colouring confirms that E-only institutions
+[FILL: concentrate on one side / are scattered].
+
+Figure~\ref{fig:fig3} compares prestige-per-work distributions across the
+four network modes, with the $x$-axis locked to the bipartite baseline.
+For sources, modes 1000 (red $\times$) and 1111 at $\chi^*$ (green $\times$)
+are overlaid on the bipartite baseline; open circles and squares on the
+1000 series mark Economics and Business sources respectively.
+For institutions, mode 0001 and 1111 replace the source alternatives.
+
+\begin{figure}[htbp]
+  \centering
+  \includegraphics[width=\textwidth]{../plots/fig_3_latex.pdf}
+  \caption{Prestige per work $v$ against bipartite baseline rank.
+    Top: sources.  Bottom: institutions.
+    Black line: bipartite baseline $\mathbf{m}=0110$.
+    Red $\times$: $\mathbf{m}=1000$ (top) / $\mathbf{m}=0001$ (bottom).
+    Green $\times$: $\mathbf{m}=1111$, $\chi^*=[FILL]$.
+    Open circles ($\circ$) and squares ($\square$) overlaid on the 1000 series
+    (top) and 0001 series (bottom) mark Economics and Business units
+    respectively, classified by field-network membership.
+    Parameters: $t_x=5$, $F=A$, $\tau_U=\tau_S=20$, $\rho=0$, $\alpha=1$.}
+  \label{fig:fig3}
+\end{figure}
