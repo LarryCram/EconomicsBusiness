@@ -200,16 +200,15 @@ def plot2(src_rank_map: dict, inst_rank_map: dict, runs: list) -> None:
         )
         ax.set_xlim(1, n_baseline)
         ax.set_xlabel('Baseline rank', labelpad=4)
-        ax.set_ylabel('Prestige per work $v$', labelpad=4)
+        ax.set_ylabel('Influence per work $v$', labelpad=4)
         ax.set_title(panel_label, fontsize=10, pad=6)
 
-        if ax is axes[0]:
-            ax.legend(
-                fontsize=7,
-                framealpha=0.85,
-                loc='upper right',
-                ncol=1,
-            )
+        ax.legend(
+            fontsize=7,
+            framealpha=0.85,
+            loc='upper right',
+            ncol=1,
+        )
 
     sup = fig.suptitle(
         'Parameter sensitivity — prestige per work  '

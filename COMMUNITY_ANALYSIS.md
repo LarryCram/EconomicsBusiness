@@ -215,40 +215,34 @@ Add χ* as a dynamic Stage 1 variant for m=(1,1,1,1).
 
 In `main()`, after opening the edge-list database and before building the schedule,
 read n_s and n_u from the units table for the baseline corpus
-(`_units_t5_A_tau10`):
+(`_units_20242024_A_tauU20_tauS20`):
 
 ```python
 units = el_db.execute(
-    "SELECT unit_type, COUNT(*) AS n FROM _units_t5_A_tau10 GROUP BY unit_type"
+    "SELECT unit_type, COUNT(*) AS n FROM _units_20242024_A_tauU20_tauS20 GROUP BY unit_type"
 ).fetchdf()
 n_s_base = int(units.loc[units.unit_type=='S', 'n'].iloc[0])
 n_u_base = int(units.loc[units.unit_type=='U', 'n'].iloc[0])
 chi_star = n_u_base / (n_s_base + n_u_base)
 ```
 
-Then add to STAGE1:
+Then add to params.csv as `full-joint-chi-star` row with `chi=-1` (resolved at runtime).
 
-```python
-RunParams(tx=5, fx='A', tau_u=10, rho=0,
-          m=(1, 1, 1, 1), chi=chi_star, alpha=0.85,
-          label='full-joint-chi-star'),
-```
-
-χ* will vary with corpus but for the primary baseline corpus (t5, A, tau10) it is
+χ* will vary with corpus but for the primary baseline corpus (run_code=20242024, A, tau20) it is
 fixed for the session. Log its value at run time.
 
 ---
 
 ## Data dependency note
 
-The step-wise analysis above uses runs already defined in STAGE1:
-- SS-only:      rk_t5_A_tau10_rho0_m1000_chi50_alpha85
-- II-only:      rk_t5_A_tau10_rho0_m0001_chi50_alpha85
-- baseline SI/IS: rk_t5_A_tau10_rho0_m0110_chi50_alpha85
-- full-joint:   rk_t5_A_tau10_rho0_m1111_chi50_alpha85
-- full-joint χ*: rk_t5_A_tau10_rho0_m1111_chi{chi_star_int}_alpha85  (new)
-- F=E:          rk_t5_E_tau5_rho0_m0110_chi50_alpha85
-- F=B:          rk_t5_B_tau5_rho0_m0110_chi50_alpha85
+The step-wise analysis above uses runs defined in params.csv:
+- SS-only:      rk_20242024_A_tauU20_tauS20_rho0_m1000_chi50_alpha100
+- II-only:      rk_20242024_A_tauU20_tauS20_rho0_m0001_chi50_alpha100
+- baseline SI/IS: rk_20242024_A_tauU20_tauS20_rho0_m0110_chi50_alpha100
+- full-joint:   rk_20242024_A_tauU20_tauS20_rho0_m1111_chi50_alpha100
+- full-joint χ*: rk_20242024_A_tauU20_tauS20_rho0_m1111_chiSTAR_alpha100
+- F=E:          rk_20242024_E_tauU20_tauS20_rho0_m0110_chi50_alpha100
+- F=B:          rk_20242024_B_tauU20_tauS20_rho0_m0110_chi50_alpha100
 
 The community.py script needs the edge-list database (for build_csr) and
 rankings.duckdb (for π and v). It does not modify either.

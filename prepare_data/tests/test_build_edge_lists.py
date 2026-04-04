@@ -86,12 +86,12 @@ def test_year_types_are_int():
         assert isinstance(c['tau_s'], int)
 
 
-def test_no_redundant_field_subsets_in_stage2():
-    """Stage-2 runs are all fx='A'; no E/B/EB/NEB should appear for t1-t4."""
+def test_no_redundant_field_subsets_for_time_series():
+    """Time-series runs (t1-t4) are all fx='A'; no E/B/EB/NEB should appear."""
     configs = corpus_configs_from_csv()
-    stage2_rcs = {'00040004', '05090509', '10141014', '15191519'}
+    time_series_rcs = {'00040004', '05090509', '10141014', '15191519'}
     for c in configs:
-        if c['run_code'] in stage2_rcs:
+        if c['run_code'] in time_series_rcs:
             assert c['fx'] == 'A', (
-                f"Non-A field subset {c['fx']} found for stage-2 run_code {c['run_code']}"
+                f"Non-A field subset {c['fx']} found for time-series run_code {c['run_code']}"
             )

@@ -24,7 +24,10 @@ def filter_and_match(db):
                                 CAST(regexp_replace(s.id, 'https://openalex.org/S', '') AS BIGINT) AS source_idx,
                                 s.display_name AS source_name,
                                 works_count, cited_by_count,
-                                s.issn_l AS issn, j.era_journal_name, j.harzing_journal_name, j.wos_journal_name
+                                s.issn_l AS issn,
+                                j.era_journal_name, j.era_field,
+                                j.harzing_journal_name, j.harzing_field,
+                                j.wos_journal_name, j.wos_categories
             FROM '{PARQUET}/comprehensive_journal_list.parquet' j
             LEFT JOIN '{OPENALEX}/sources.parquet' s
             ON list_has_any(j.unique_issn_list, s.issn)
@@ -36,7 +39,9 @@ def filter_and_match(db):
             WITH unmatched AS (
                 SELECT DISTINCT
                     COALESCE(cjl.era_journal_name, cjl.wos_journal_name, cjl.harzing_journal_name) AS ref_name,
-                    cjl.era_journal_name, cjl.harzing_journal_name, cjl.wos_journal_name
+                    cjl.era_journal_name, cjl.era_field,
+                    cjl.harzing_journal_name, cjl.harzing_field,
+                    cjl.wos_journal_name, cjl.wos_categories
                 FROM '{PARQUET}/comprehensive_journal_list.parquet' cjl
                 WHERE NOT EXISTS (
                     SELECT 1 FROM source_list sl
@@ -50,7 +55,9 @@ def filter_and_match(db):
                 CAST(regexp_replace(s.id, 'https://openalex.org/S', '') AS BIGINT) AS source_idx,
                 s.display_name AS source_name,
                 s.works_count, s.cited_by_count, s.issn_l AS issn,
-                u.era_journal_name, u.harzing_journal_name, u.wos_journal_name
+                u.era_journal_name, u.era_field,
+                u.harzing_journal_name, u.harzing_field,
+                u.wos_journal_name, u.wos_categories
             FROM unmatched u
             JOIN '{OPENALEX}/sources.parquet' s
                 ON LOWER(s.display_name) = LOWER(u.ref_name)
@@ -67,7 +74,10 @@ def filter_and_match(db):
         -- ============================================================
         CREATE OR REPLACE TEMP TABLE source_topics AS
             SELECT s.source_idx, s.source_name, oa.works_count, oa.cited_by_count,
-                    s.issn, s.era_journal_name, s.harzing_journal_name, s.wos_journal_name,
+                    s.issn,
+                    s.era_journal_name, s.era_field,
+                    s.harzing_journal_name, s.harzing_field,
+                    s.wos_journal_name, s.wos_categories,
                 unnest(oa.topics).count AS topic_count,
                 unnest(oa.topics).subfield.display_name AS subfield_name,
                 unnest(oa.topics).field.display_name AS field_name
@@ -99,7 +109,9 @@ def filter_and_match(db):
         COPY (
             WITH ranked AS (
                 SELECT st.source_idx, st.source_name, st.works_count,
-                       st.era_journal_name, st.harzing_journal_name, st.wos_journal_name,
+                       st.era_journal_name, st.era_field,
+                       st.harzing_journal_name, st.harzing_field,
+                       st.wos_journal_name, st.wos_categories,
                        sd.econ_bus_density,
                        st.field_name, st.subfield_name, st.topic_count,
                        ROW_NUMBER() OVER (PARTITION BY st.source_idx ORDER BY st.topic_count DESC, st.subfield_name ASC) AS rn
@@ -110,37 +122,50 @@ def filter_and_match(db):
             SELECT * EXCLUDE rn FROM ranked WHERE rn = 1
         ) TO '{PARQUET}/dropped_sources.parquet' (FORMAT PARQUET);
 
-        -- 4. Final: top topic per approved source, with density and E/B field subset flag
+        -- 4. Final: top topic per approved source, with density and E/B/A/NULL field label
         -- =============================================================================
-        -- field_subset: 'E' = exclusively Field 14 (Economics), 'B' = exclusively Field 20
-        -- (Business), NULL = mixed or neither exclusively
-        CREATE OR REPLACE TEMP TABLE field_subsets AS
-        SELECT source_idx,
-            CASE
-                WHEN SUM(CASE WHEN field_name != 'Economics, Econometrics and Finance'
-                              THEN topic_count ELSE 0 END) = 0 THEN 'E'
-                WHEN SUM(CASE WHEN field_name != 'Business, Management and Accounting'
-                              THEN topic_count ELSE 0 END) = 0 THEN 'B'
-                ELSE NULL
-            END AS field_subset
-        FROM source_topics
-        WHERE topic_count > 0
-        GROUP BY source_idx;
-
+        -- field_eb scoring uses registry fields + OA field_name (each column scores 0/1):
+        --   'E'  econ_score >= 2 AND bus_score < 1
+        --   'B'  bus_score  >= 2 AND econ_score < 1
+        --   'A'  both signals present (econ_score >= 2 AND bus_score >= 1, or vice versa)
+        --   NULL neither signal strong (both scores <= 1)
         CREATE OR REPLACE TEMP TABLE source_master AS
         WITH ranked_topics AS (
             SELECT
-                st.source_idx, st.source_name, st.issn, st.era_journal_name, st.harzing_journal_name,
+                st.source_idx, st.source_name, st.issn,
+                st.era_journal_name, st.era_field,
+                st.harzing_journal_name, st.harzing_field,
                 st.works_count, st.cited_by_count,
-                st.wos_journal_name, st.topic_count, st.subfield_name, st.field_name,
+                st.wos_journal_name, st.wos_categories,
+                st.topic_count, st.subfield_name, st.field_name,
                 ap.econ_bus_density,
-                fs.field_subset,
                 ROW_NUMBER() OVER (PARTITION BY st.source_idx ORDER BY st.topic_count DESC, st.subfield_name ASC) as rn
             FROM source_topics st
             JOIN approved_sources ap ON st.source_idx = ap.source_idx
-            LEFT JOIN field_subsets fs ON st.source_idx = fs.source_idx
+        ),
+        top_topic AS (SELECT * EXCLUDE rn FROM ranked_topics WHERE rn = 1),
+        scored AS (
+            SELECT *,
+                (CASE WHEN regexp_matches(LOWER(era_field),                             'econom|financ|banking') THEN 1 ELSE 0 END
+                   +  CASE WHEN regexp_matches(LOWER(harzing_field),                    'econom|financ|banking') THEN 1 ELSE 0 END
+                   +  CASE WHEN regexp_matches(LOWER(array_to_string(wos_categories, ' ')), 'econom|financ|banking') THEN 1 ELSE 0 END
+                   +  CASE WHEN regexp_matches(LOWER(field_name),                       'econom|financ|banking') THEN 1 ELSE 0 END
+                ) AS econ_score,
+                (CASE WHEN regexp_matches(LOWER(era_field),                             'business|commerc|management|tourism|transport') THEN 1 ELSE 0 END
+                   +  CASE WHEN regexp_matches(LOWER(harzing_field),                    'business|commerc|management|tourism|transport') THEN 1 ELSE 0 END
+                   +  CASE WHEN regexp_matches(LOWER(array_to_string(wos_categories, ' ')), 'business|commerc|management|tourism|transport') THEN 1 ELSE 0 END
+                   +  CASE WHEN regexp_matches(LOWER(field_name),                       'business|commerc|management|tourism|transport') THEN 1 ELSE 0 END
+                ) AS bus_score
+            FROM top_topic
         )
-        SELECT * EXCLUDE rn FROM ranked_topics WHERE rn = 1;
+        SELECT *,
+            CASE
+                WHEN econ_score >= 2 AND bus_score  < 1 THEN 'E'
+                WHEN bus_score  >= 2 AND econ_score < 1 THEN 'B'
+                WHEN bus_score  <= 1 AND econ_score <= 1 THEN NULL
+                ELSE 'A'
+            END AS field_eb
+        FROM scored;
 
         COPY (SELECT * FROM source_master) TO '{PARQUET}/source_master.parquet' (FORMAT PARQUET);
         """
@@ -159,7 +184,9 @@ def filter_and_match(db):
         CREATE OR REPLACE TEMP TABLE unmatched AS
         SELECT
             COALESCE(cjl.era_journal_name, cjl.wos_journal_name, cjl.harzing_journal_name) AS ref_name,
-            cjl.era_journal_name, cjl.harzing_journal_name, cjl.wos_journal_name
+            cjl.era_journal_name, cjl.era_field,
+            cjl.harzing_journal_name, cjl.harzing_field,
+            cjl.wos_journal_name, cjl.wos_categories
         FROM '{PARQUET}/comprehensive_journal_list.parquet' cjl
         WHERE NOT EXISTS (
             SELECT 1 FROM '{PARQUET}/oas_star.parquet' o
@@ -173,7 +200,10 @@ def filter_and_match(db):
     db.sql(f"""
         COPY (
             WITH candidates AS (
-                SELECT u.ref_name, u.era_journal_name, u.harzing_journal_name, u.wos_journal_name,
+                SELECT u.ref_name,
+                       u.era_journal_name, u.era_field,
+                       u.harzing_journal_name, u.harzing_field,
+                       u.wos_journal_name, u.wos_categories,
                        CAST(regexp_replace(oa.id, 'https://openalex.org/S', '') AS BIGINT) AS candidate_source_idx,
                        oa.display_name AS candidate_name,
                        jaro_winkler_similarity(LOWER(u.ref_name), LOWER(oa.display_name)) AS similarity
@@ -186,7 +216,10 @@ def filter_and_match(db):
                     ROW_NUMBER() OVER (PARTITION BY ref_name ORDER BY similarity DESC) AS rn
                 FROM candidates
             )
-            SELECT ref_name, era_journal_name, harzing_journal_name, wos_journal_name,
+            SELECT ref_name,
+                   era_journal_name, era_field,
+                   harzing_journal_name, harzing_field,
+                   wos_journal_name, wos_categories,
                    candidate_source_idx, candidate_name, ROUND(similarity, 3) AS similarity,
                    similarity = 1.0 AS likely_title_match
             FROM best WHERE rn = 1

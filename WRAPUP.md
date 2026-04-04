@@ -24,9 +24,14 @@ All major pipeline components have been successfully implemented and completed:
 - Sections 5-6: Placeholder (Discussion, Prospects)
 
 **Outstanding work**:
-- Bootstrap uncertainty analysis (defined in BOOTSTRAP.md but not yet implemented)
-- Final ranking tables (Tables 6-8) 
+- Bootstrap uncertainty analysis (spec in BOOTSTRAP.md; fig_7.py not yet written)
+- Final ranking tables (Tables 6-8)
 - Results section completion
 - Discussion and prospects sections
+
+**Figure status**:
+- fig_2: created (F field comparison; legend on both panels)
+- fig_6: created (time-series comparison t1–t4 vs baseline 2020–24)
+- fig_7: planned (bootstrap uncertainty)
 
 All documentation files have been updated to reflect current completion status.

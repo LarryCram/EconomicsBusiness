@@ -59,10 +59,10 @@ PARQUET = paths.parquet
 DB_PATH = paths.working / 'edge_lists.duckdb'
 
 FIELD_COND = {
-    'E':   "AND sm.field_subset = 'E'",
-    'B':   "AND sm.field_subset = 'B'",
-    'EB':  "AND sm.field_subset IN ('E', 'B')",
-    'NEB': "AND sm.field_subset IS NULL",
+    'E':   "AND sm.field_eb = 'E'",
+    'B':   "AND sm.field_eb = 'B'",
+    'EB':  "AND sm.field_eb IN ('E', 'B', 'A')",
+    'NEB': "AND sm.field_eb IS NULL",
     'A':   "",
 }
 
@@ -373,16 +373,16 @@ def filter_singletons(db, run_code: str, fx: str, tau_u: int, tau_s: int) -> tup
             f"SELECT citer_inst_idx, cited_inst_idx, COUNT(*) FROM {tname} GROUP BY 1,2",
             inst_index, inst_index, (n_u, n_u))
 
-        C_full = sp_bmat([[C_SS, C_SI], [C_IS, C_II]], format='csr')
-
+        # Single SCC on the full node set: sources 0..n_s-1, institutions n_s..n_s+n_u-1.
+        # Using C_full (all four blocks) means connectivity through any path —
+        # SS, SI, IS, II — is respected.  A source with no SS edges but SI/IS
+        # connections is correctly kept; previously it was wrongly dropped by
+        # a separate connected_components(C_SS) call.
         from collections import Counter
-
-        _, labels_ss = connected_components(C_SS, directed=True, connection='strong')
-        giant_ss = Counter(labels_ss).most_common(1)[0][0]
-        drop_src = src_ids[labels_ss != giant_ss]
-
+        C_full = sp_bmat([[C_SS, C_SI], [C_IS, C_II]], format='csr')
         _, labels_full = connected_components(C_full, directed=True, connection='strong')
         giant_full = Counter(labels_full).most_common(1)[0][0]
+        drop_src  = src_ids[labels_full[:n_s] != giant_full]
         drop_inst = inst_ids[labels_full[n_s:] != giant_full]
 
         if len(drop_src) == 0 and len(drop_inst) == 0:

@@ -81,8 +81,15 @@ correcting `params.yaml`. Issue 4 requires either a re-run or a join at ranking 
 ## Parameter design
 
 ### Field subsets (F)
-`source_master.parquet` has a `field_subset` column: `'E'` (Field 14 only), `'B'` (Field 20 only),
-`'A'` (both). The `build_edge_lists.py` `FIELD_COND` dict translates this to SQL predicates.
+`source_master.parquet` has a `field_eb` column computed from multi-registry scoring
+(`era_field`, `harzing_field`, `wos_categories`, `field_name`):
+- `'E'`: econ_score ≥ 2 AND bus_score < 1 (economics-only)
+- `'B'`: bus_score ≥ 2 AND econ_score < 1 (business-only)
+- `'A'`: both signals present (econ_score ≥ 2 AND bus_score ≥ 1, or vice versa)
+- NULL: neither signal strong
+
+The F=EB corpus filter is `field_eb IN ('E','B','A')`.
+The `build_edge_lists.py` `FIELD_COND` dict translates field subset labels to SQL predicates.
 
 ### Time windows (t_x)
 Seven cases defined in `params.yaml`. Cases 1–5 are symmetric 5-year windows. Cases 6–7

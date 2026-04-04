@@ -67,8 +67,25 @@ Panel D (bottom right) — Full joint φ₂ at χ=0.5 vs χ*:
 
 
 ### Figure 5 — Parameter sensitivity
-Rank correlation (Spearman) heatmap across parameter combinations (α, χ, m, ρ).
+**Script**: `spectral_results_analysis/fig_5.py`
+**Files**: `plots/fig_5.pdf`, `plots/fig_5_latex.pdf`
+**Status**: In development
+**Description**: Phase 2 sensitivity: rank comparison across τ=40 and ρ=1 variants vs baseline.
+Two-panel layout (sources top, institutions bottom).
 
 ### Figure 6 — Time series
-Rank stability of top sources and institutions across t_x=1–5 symmetric windows.
+**Script**: `spectral_results_analysis/fig_6.py`
+**Files**: `plots/fig_6.pdf`, `plots/fig_6_latex.pdf`
+**Status**: Created
+**Description**: Time-series comparison of baseline (2020–24) vs t1 (2000–04), t2 (2005–09),
+t3 (2010–14), t4 (2015–19). Two-panel layout (sources top, institutions bottom). x-axis
+locked to baseline rank. Colours: purple/blue/green/red for t1–t4, black for baseline.
+Running mean curves through scatter points (log-space rolling mean, window=max(30, n//100)).
+Units absent from an earlier-period corpus are omitted from that series.
+
+### Figure 7 — Bootstrap uncertainty
+**Script**: `spectral_results_analysis/fig_7.py` (to be written; spec in `BOOTSTRAP.md`)
+**Status**: Planned
+**Description**: Bootstrap uncertainty bands around baseline prestige-per-work rankings.
+Reads `WORKING/bootstrap/v_s_boot.npy`, `v_u_boot.npy`, `meta.json`.
 

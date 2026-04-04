@@ -2,14 +2,30 @@
 
 ## Goal
 
-Quantify sampling uncertainty in the baseline spectral ranking (m=0110, t5, F=A,
-τ_U=20, τ_S=20, ρ=0, α=1.0) by repeatedly re-fitting v_s and v_u on 80%-with-
-replacement sub-samples of the citation edge list.  Target: B=1000 replicates;
-run B=5–20 during development and timing tests.
+Quantify sampling uncertainty in the baseline spectral ranking
+(m=0110, run_code=20242024, F=A, τ_U=20, τ_S=20, ρ=0, α=1.0) by
+repeatedly re-fitting v_s and v_u on 80%-with-replacement sub-samples
+of the citation edge list.  Target: B=1000 replicates; run B=5–20
+during development and timing tests.
+
+Code lives in: `spectral_ranking_bootstrap/` (new top-level folder, alongside `spectral_ranking/`).
 
 Output:
 - `$WORKING/bootstrap/` — bootstrap v_s, v_u arrays (machine-specific SSD, not git-tracked)
-- `spectral_ranking_bootstrap/fig_5.py` → `plots/fig_5.pdf` / `plots/fig_5_latex.pdf`
+- `spectral_results_analysis/fig_7.py` → `plots/fig_7.pdf` / `plots/fig_7_latex.pdf`
+
+The baseline corpus is identified at runtime via `load_runs()` (label='baseline'):
+
+```python
+from util import load_runs
+_baseline = next(r for r in load_runs() if r['label'] == 'baseline')
+RUN_CODE  = _baseline['run_code']   # '20242024'
+TAU_U     = _baseline['tau_u']      # 20
+TAU_S     = _baseline['tau_s']      # 20
+EL_TABLE  = f'el_{RUN_CODE}_A_tauU{TAU_U}_tauS{TAU_S}'
+UNITS_TABLE = f'_units_{RUN_CODE}_A_tauU{TAU_U}_tauS{TAU_S}'
+RK_TABLE  = f'rk_{RUN_CODE}_A_tauU{TAU_U}_tauS{TAU_S}_rho0_m0110_chi50_alpha100'
+```
 
 ---
 
@@ -17,9 +33,9 @@ Output:
 
 ### Resampling unit
 
-The raw edge list table `el_t5_A_tauU20_tauS20` has one row per
-(citer_work × citer_inst × cited_work × cited_inst) attribution.  The block
-builders deduplicate this before aggregating:
+The edge list table `el_20242024_A_tauU20_tauS20` has one row per
+(citer_work × citer_inst × cited_work × cited_inst) attribution.
+`build_csr.py` deduplicates this before aggregating into block matrices:
 
 - **C_SI** deduplicates on (citer_work, citer_source, cited_work, cited_inst),
   removing the citer_inst ambiguity.  Each remaining row is one *reference
@@ -59,65 +75,80 @@ we call `build_csr` naively per bootstrap.  Instead:
 
 ### SQL to pre-load
 
-Connect to `edge_lists.duckdb` as read-only (or read-write to create the tmp
-table once).  Run:
+Connect to `edge_lists.duckdb` read-only.  Replicate the `_tmp_el`
+construction from `build_csr.py` exactly (ρ=0 fixed-count weighting):
 
 ```python
-# ρ=0 fixed-count weight (pre-compute r_bar once from full edge list)
 r_bar = db.execute(
-    "SELECT AVG(rval) FROM "
-    "(SELECT DISTINCT citer_work_idx, CAST(R_i AS DOUBLE) AS rval FROM el_t5_A_tauU20_tauS20)"
+    f"SELECT AVG(rval) FROM "
+    f"(SELECT DISTINCT citer_work_idx, CAST(R_i AS DOUBLE) AS rval FROM {EL_TABLE})"
 ).fetchone()[0]
+
+db.execute(f"""
+    CREATE OR REPLACE TEMP TABLE _tmp_el AS
+    SELECT citer_work_idx, citer_source_idx, citer_inst_idx,
+           cited_work_idx,  cited_source_idx, cited_inst_idx,
+           inst_weight, cited_inst_weight,
+           {r_bar} / CAST(R_i AS DOUBLE) AS rho_w
+    FROM {EL_TABLE}
+""")
 ```
 
-**SI deduplicated edges (for C_SI bootstrap):**
+**SI deduplicated edges** (matching `_build_si` in `build_csr.py`):
 ```sql
 SELECT citer_source_idx, cited_inst_idx,
-       ({r_bar} / CAST(R_i AS DOUBLE)) * cited_inst_weight AS w
+       rho_w * cited_inst_weight AS w
 FROM (
     SELECT DISTINCT citer_work_idx, citer_source_idx,
                     cited_work_idx,  cited_inst_idx,
-                    R_i, cited_inst_weight
-    FROM el_t5_A_tauU20_tauS20
+                    rho_w, cited_inst_weight
+    FROM _tmp_el
 )
 ```
-→ pandas DataFrame, then `.to_numpy()`.  No GROUP BY yet — we keep individual
-rows so resampling can pick duplicates.
+→ pandas DataFrame, then `.to_numpy()`.  No GROUP BY — keep individual rows
+so resampling can pick duplicates.
 
-**IS deduplicated edges (for C_IS bootstrap):**
+**IS deduplicated edges** (matching `_build_is` in `build_csr.py`):
 ```sql
 SELECT citer_inst_idx, cited_source_idx,
-       ({r_bar} / CAST(R_i AS DOUBLE)) * inst_weight AS w
+       rho_w * inst_weight AS w
 FROM (
     SELECT DISTINCT citer_work_idx, citer_inst_idx,
                     cited_work_idx,  cited_source_idx,
-                    R_i, inst_weight
-    FROM el_t5_A_tauU20_tauS20
+                    rho_w, inst_weight
+    FROM _tmp_el
 )
 ```
 
-**Unit index (sources and institutions, for dense-index maps and a_p):**
-Reuse the same query as `build_csr()` — load once, extract `source_ids`,
-`inst_ids`, `a_s`, `a_u`, `n_s`, `n_u`.  Build `pd.Index(source_ids)` and
-`pd.Index(inst_ids)` for `get_indexer` lookups.
+**Unit index** — reuse the same query as `build_csr.py`:
+```python
+units_df = db.execute(
+    f"SELECT unit_idx, unit_type, a_p FROM {UNITS_TABLE} ORDER BY unit_type, unit_idx"
+).fetchdf()
+```
+Extract `source_ids`, `inst_ids`, `a_s`, `a_u`, `n_s`, `n_u`.
+Build `pd.Index(source_ids)` and `pd.Index(inst_ids)` for `get_indexer` lookups.
+
+Drop `_tmp_el` after loading.
 
 ### Convert to numpy arrays
 
 ```python
 # SI block
-si_src_dense = src_pd_index.get_indexer(df_si['citer_source_idx'].to_numpy())  # int32
-si_inst_dense = inst_pd_index.get_indexer(df_si['cited_inst_idx'].to_numpy())  # int32
+si_src_dense  = src_pd_index.get_indexer(df_si['citer_source_idx'].to_numpy())  # int32
+si_inst_dense = inst_pd_index.get_indexer(df_si['cited_inst_idx'].to_numpy())   # int32
 si_w = df_si['w'].to_numpy(dtype=np.float64)
 N_SI = len(si_w)
 
 # IS block
-is_inst_dense = inst_pd_index.get_indexer(df_is['citer_inst_idx'].to_numpy())  # int32
-is_src_dense  = src_pd_index.get_indexer(df_is['cited_source_idx'].to_numpy()) # int32
+is_inst_dense = inst_pd_index.get_indexer(df_is['citer_inst_idx'].to_numpy())   # int32
+is_src_dense  = src_pd_index.get_indexer(df_is['cited_source_idx'].to_numpy())  # int32
 is_w = df_is['w'].to_numpy(dtype=np.float64)
 N_IS = len(is_w)
 ```
 
-Memory estimate: if N_SI ≈ N_IS ≈ 2M rows, storage is ~2 × 3 arrays × 2M × 8 bytes ≈ 100 MB.  Profile this at startup; if N > 10M consider chunking the IS block (IS is expected to be larger since citer-institution attribution is many-to-one).
+Memory estimate: if N_SI ≈ N_IS ≈ 2M rows, storage is ~2 × 3 arrays × 2M × 8 bytes ≈ 100 MB.
+Profile this at startup; if N > 10M consider the Poisson approximation (section 9).
 
 ---
 
@@ -147,8 +178,6 @@ C_IS = sp.coo_matrix(
 
 `coo_matrix.tocsr()` automatically sums duplicate (row, col) entries, so rows
 that appear multiple times in `boot_si` correctly accumulate their weight.
-This is the "sample the COO" approach — we never explicitly group by (row, col);
-the format conversion handles it.
 
 ### Ranking step
 
@@ -161,7 +190,7 @@ H_SI, _ = _row_normalise(C_SI)
 H_IS, _ = _row_normalise(C_IS)
 pi_s, pi_u, iters, norm = bipartite(H_SI, H_IS, alpha=1.0)
 
-# Joint-normalise and compute v (same as rank() for m=0110)
+# Joint-normalise and compute v (same as run_one() for m=0110)
 pi_s /= 2.0
 pi_u /= 2.0
 A = a_s.sum() + a_u.sum()
@@ -170,8 +199,8 @@ v_u_b = A * pi_u / a_u
 ```
 
 **Important**: use the **baseline** `a_s` and `a_u` throughout (loaded once from
-`_units_t5_A_tauU20_tauS20`).  Do NOT recompute work counts per bootstrap — we
-are bootstrapping reference events, not publications.
+`_units_20242024_A_tauU20_tauS20`).  Do NOT recompute work counts per bootstrap —
+we are bootstrapping reference events, not publications.
 
 ### Timing and convergence
 
@@ -193,7 +222,8 @@ Results go in the machine-specific WORKING folder (read from `config.yaml` via
 $WORKING/bootstrap/
     v_s_boot.npy        # shape (B, n_s), float32
     v_u_boot.npy        # shape (B, n_u), float32
-    meta.json           # provenance: n, seed, tol, n_s, n_u, source_ids, inst_ids
+    meta.json           # provenance: n, seed, tol, n_s, n_u, source_ids, inst_ids,
+                        #             run_code, baseline_table
 ```
 
 Float32 is sufficient (4 decimal places of precision).  At B=1000 and
@@ -204,12 +234,12 @@ runs via `--resume` flag.
 
 ---
 
-## 5. Runner Script: `spectral_ranking/bootstrap_baseline.py`
+## 5. Runner Script: `spectral_ranking_bootstrap/bootstrap_baseline.py`
 
 ### CLI interface
 
 ```
-python spectral_ranking/bootstrap_baseline.py [--n 1000] [--seed 42] [--tol 1e-7] [--resume]
+python spectral_ranking_bootstrap/bootstrap_baseline.py [--n 1000] [--seed 42] [--tol 1e-7] [--resume]
 ```
 
 - `--n`: number of bootstrap replicates (default 1000; use 5–20 for testing)
@@ -219,95 +249,70 @@ python spectral_ranking/bootstrap_baseline.py [--n 1000] [--seed 42] [--tol 1e-7
 
 ### Structure
 
+```
+spectral_ranking_bootstrap/
+    __init__.py
+    bootstrap_baseline.py   # main runner (CLI entry point)
+```
+
 ```python
-# 1. Load config (paths), connect to edge_lists.duckdb (read-only)
-# 2. Load unit index → n_s, n_u, a_s, a_u, source_ids, inst_ids, dense index maps
-# 3. Load baseline ranking from rankings.duckdb for diagnostics
-#    (also used to verify first replicate is close to baseline)
-# 4. Pre-load deduplicated SI and IS edge arrays (SQL → numpy)
-# 5. Bootstrap loop: sample → CSR → bipartite → store v_s, v_u
-# 6. Write checkpoint every 50 replicates
-# 7. Final save to data/bootstrap_results/v_s_boot.npy, v_u_boot.npy
-#    and data/bootstrap_results/meta.json (n, seed, tol, n_s, n_u,
-#    source_ids, inst_ids, baseline_table)
+# bootstrap_baseline.py
+# 1. Load config (paths); identify baseline via load_runs() label='baseline'
+# 2. Connect to edge_lists.duckdb (read-only)
+# 3. Load unit index → n_s, n_u, a_s, a_u, source_ids, inst_ids, dense index maps
+# 4. Load baseline ranking from rankings.duckdb for diagnostics
+#    (verify first replicate is close to baseline)
+# 5. Build _tmp_el, pre-load deduplicated SI and IS edge arrays (SQL → numpy),
+#    drop _tmp_el
+# 6. Bootstrap loop: sample → COO → CSR → bipartite → store v_s, v_u
+# 7. Write checkpoint every 50 replicates
+# 8. Final save: v_s_boot.npy, v_u_boot.npy, meta.json
 ```
-
-### Output files
-
-```
-$WORKING/bootstrap/          # resolved from config.yaml at runtime
-    v_s_boot.npy             # shape (B, n_s), float32
-    v_u_boot.npy             # shape (B, n_u), float32
-    meta.json                # provenance: n, seed, tol, n_s, n_u, source_ids, inst_ids
-```
-
-The `source_ids` and `inst_ids` in meta.json map dense indices 0…n_s-1 to
-original unit_idx values for joining with the baseline ranking table in fig_5.
 
 ---
 
-## 6. Figure 5: Bootstrap Scatter vs. Baseline
+## 6. Figure 7: Bootstrap Scatter vs. Baseline
 
-**File**: `spectral_results_analysis/fig_5.py`
-**Output**: `plots/fig_5.pdf`, `plots/fig_5_latex.pdf`
+**File**: `spectral_results_analysis/fig_7.py`
+**Output**: `plots/fig_7.pdf`, `plots/fig_7_latex.pdf`
 
 ### Design
 
-Two-facet figure mirroring Fig 2's layout (top = sources, bottom = institutions):
+Two-panel figure mirroring fig_2/fig_3 layout (top = sources, bottom = institutions):
 
-- **X-axis**: baseline v (from `rk_t5_A_tauU20_tauS20_rho0_m0110_chi50_alpha100`),
-  log scale, ordered by baseline rank (highest v at left, same orientation as Fig 2)
-- **Y-axis**: bootstrap v values, log scale
-- **Scatter**: for each unit, plot all B bootstrap v values as small points
-  (low alpha, e.g. 0.05–0.1) — B points per unit, clustered around baseline x
-- **Colour**: E (red), B (blue), other (grey) — matching Fig 2 palette
-- **Baseline reference**: diagonal y=x line (black, thin) — points on this line
-  match the baseline exactly
-- **Percentile bands** (optional, decide after seeing the scatter):
-  5th–95th percentile band per unit as a thin shaded ribbon
-
-### X-axis layout
-
-Unlike Fig 2 (rank on x-axis), Fig 5 uses **v_baseline on x-axis** so each
-unit's bootstrap scatter appears as a vertical cloud above its baseline value.
-This is more informative than rank-order x since it shows whether high-v units
-are more or less stable than low-v units.
-
-If the scatter is too dense at low v, consider:
-- Using rank on x-axis (same as Fig 2) with v on y — scatter appears as vertical
-  smearing around the baseline curve
-- Showing only quantiles (p5, p50, p95) rather than raw scatter
+- **X-axis**: baseline rank (rank 1 = highest v, same orientation as fig_2)
+- **Y-axis**: prestige per work v, log scale
+- **Baseline**: black line (same as fig_2 baseline curve)
+- **Bootstrap scatter**: for each unit, plot all B bootstrap v values as small
+  points (low alpha, e.g. 0.05–0.1) — B points per unit, clustered vertically
+  around baseline
+- **Colour**: field_eb 'E' (red), 'B' (blue), 'A' (orange), NULL (grey) for
+  sources; grey for institutions
+- **Reference band** (optional): 5th–95th percentile ribbon per unit
 
 ### Data flow
 
 ```python
 # 1. Load bootstrap arrays (WORKING path from config.yaml)
-v_s_boot = np.load(WORKING / 'bootstrap/v_s_boot.npy')   # (B, n_s)
-v_u_boot = np.load(WORKING / 'bootstrap/v_u_boot.npy')   # (B, n_u)
-meta = json.load(...)
+v_s_boot = np.load(paths.working / 'bootstrap/v_s_boot.npy')   # (B, n_s)
+v_u_boot = np.load(paths.working / 'bootstrap/v_u_boot.npy')   # (B, n_u)
+meta = json.load(open(paths.working / 'bootstrap/meta.json'))
 
 # 2. Load baseline v from rankings.duckdb
-#    Join on source_ids / inst_ids to align dense indices
+#    Join on source_ids / inst_ids (from meta.json) to align dense indices
 
-# 3. Load field labels from data/source_master.csv (source_idx → E/B/'')
+# 3. Load field labels from data/source_master.csv
+#    usecols=['source_idx', 'field_eb']
 
-# 4. For sources panel:
-#    x = np.tile(v_s_baseline, (B, 1))   # (B, n_s)
-#    y = v_s_boot                          # (B, n_s)
-#    Plot as scatter (flatten both to 1D, colour by field)
-
-# 5. Same for institutions panel (no field labels → all grey or by type)
+# 4. For each panel: repeat baseline_rank B times (np.tile) and flatten
+#    alongside the bootstrap v values; scatter plot coloured by field_eb
 ```
 
-### Style notes (matching project conventions)
+### Style notes
 
-- Seaborn OO interface; seaborn-whitegrid style
-- Figure size: ~8 × 10 inches (two stacked panels with equal height)
-- Marker: `'.'`, size=1, alpha=0.05 (raw scatter) or size=2, alpha=0.3 (fewer replicates)
-- Axis labels: "Baseline $v$ (m=0110)" (x), "Bootstrap $v$" (y)
-- Panel labels: "(a) Sources" / "(b) Institutions"
-- Two versions: `fig_5.pdf` (with suptitle "Bootstrap distribution of v, B=1000"),
-  `fig_5_latex.pdf` (no title)
+- `sns.set_theme(style='whitegrid', font_scale=0.95)`, `figsize=(9, 8)`, `hspace=0.44`
+- Marker `'.'`, size=1, alpha=0.05 for B=1000; adjust for smaller B
+- Two versions: `fig_7.pdf` (with suptitle), `fig_7_latex.pdf` (no title)
 
 ---
 
@@ -324,7 +329,7 @@ In rough order of impact:
 3. **Tighten tol to 1e-7**: saves ~5 iterations per replicate.
 
 4. **alpha=1 regime**: the baseline uses α=1 (pure Perron), which means
-   `power_iteration` skips the prior-injection arithmetic.  No change needed.
+   power iteration skips prior-injection arithmetic.
 
 5. **Parallelisation** (if needed): the bootstrap loop is embarrassingly parallel.
    Use `concurrent.futures.ProcessPoolExecutor` with `chunksize=50`.  Each worker
@@ -343,19 +348,18 @@ In rough order of impact:
 
 ## 8. Implementation Sequence
 
-1. **`bootstrap_baseline.py`** — write and test with `--n 5`
+1. **`spectral_ranking_bootstrap/bootstrap_baseline.py`** — write and test with `--n 5`
    - Verify: first replicate converges; v_s output shape = (n_s,)
    - Verify: mean of B=100 bootstrap v_s is close to baseline v_s (within ~5%)
    - Time 20 replicates; extrapolate to 1000
 
-2. **`fig_5.py`** — write against B=20 test output first
+2. **`fig_7.py`** — write against B=20 test output first
    - Confirm scatter is readable; adjust alpha/marker size
-   - Add field colour coding for sources
+   - Add field_eb colour coding for sources
 
 3. **Scale to B=1000** — run overnight if needed; use `--resume` if interrupted
 
-4. **Register in PLOTS.md** under Figure 5 (replacing the skipped sensitivity
-   heatmap placeholder)
+4. **Register in PLOTS.md** under Figure 7
 
 ---
 
@@ -367,9 +371,9 @@ In rough order of impact:
 
 - **Poisson approximation** (fallback if N_SI is too large for in-memory COO):
   For each non-zero CSR entry C_SI[i,j] = w, draw a bootstrap weight
-  w* ~ Poisson(0.8 × w) (or Binomial(round(w), 0.8) if w is integer-interpretable).
-  This approximates bootstrap without storing individual rows but loses within-
-  paper correlation.  Use only if memory is a genuine constraint.
+  w* ~ Poisson(0.8 × w).  This approximates bootstrap without storing individual
+  rows but loses within-paper correlation.  Use only if memory is a genuine
+  constraint.
 
 - **Dangling rows**: if a bootstrap sample drops all references from a source
   (rare but possible with 80% sampling), that source becomes dangling in H_SI.
@@ -377,5 +381,4 @@ In rough order of impact:
   as zero rows), so this does not require special treatment.
 
 - **v outliers**: very small-a_p units will have high-variance v_bootstrap.
-  Fig 5 should either truncate the y-axis or use log scale on y (consistent
-  with Fig 2's log y).
+  fig_7 should use log scale on y (consistent with fig_2's log y).

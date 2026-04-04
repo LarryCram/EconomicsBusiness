@@ -27,9 +27,9 @@ EconomicsBusiness/
 `prepare_data/journal_assembler_era_harzing_wos.py`
 → `comprehensive_journal_list.parquet`
 
-### Stage 2 — OA matching and topic filtering
+### Stage 2 — OA matching and field labelling
 `prepare_data/journal_filter_match_oa.py`
-→ `source_master.parquet` (final OAS: 1,659 sources)
+→ `source_master.parquet` (final OAS; columns include `field_eb`, `era_field`, `harzing_field`, `wos_categories`)
 
 ### Stage 3 — Corpus extraction
 `prepare_data/load_corpus_entities.py`

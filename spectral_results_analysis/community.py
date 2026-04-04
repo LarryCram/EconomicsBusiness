@@ -216,10 +216,10 @@ def load_source_meta(parquet_path):
     """
     with duckdb.connect() as db:
         df = db.sql(
-            f"SELECT source_idx, source_name, field_subset FROM '{parquet_path}'"
+            f"SELECT source_idx, source_name, field_eb FROM '{parquet_path}'"
         ).df()
     idx = df['source_idx'].astype(int)
-    field_labels = dict(zip(idx, df['field_subset']))
+    field_labels = dict(zip(idx, df['field_eb']))
     source_names = dict(zip(idx, df['source_name']))
     return field_labels, source_names
 

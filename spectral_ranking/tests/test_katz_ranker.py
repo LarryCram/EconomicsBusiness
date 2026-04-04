@@ -40,7 +40,7 @@ import scipy.sparse as sp
 sys.path.insert(0, str(Path(__file__).parent.parent))
 from katz_ranker import (
     katz, bipartite_resolvent, _row_normalise, rank,
-    check_primitive, power_iteration, bipartite,
+    check_primitive, power_iteration, bipartite, NotPrimitiveError,
 )
 
 # Minimal CSRData stand-in for rank() tests
@@ -525,20 +525,18 @@ class TestCheckPrimitive:
         k = check_primitive(M)
         assert k == 2
 
-    def test_two_cycle_raises(self):
-        """Pure 2-cycle 0→1→0: periodic, never all-nonzero → SystemExit."""
+    def test_two_cycle_returns_minus_one(self):
+        """Pure 2-cycle 0→1→0: periodic, not primitive within k=32 → returns -1."""
         M = sp.csr_matrix(np.array([[0., 1.], [1., 0.]]))
-        with pytest.raises(SystemExit):
-            check_primitive(M)
+        assert check_primitive(M) == -1
 
-    def test_six_cycle_raises(self):
-        """6-node directed cycle: primitivity index = 6 > 5 → SystemExit."""
+    def test_six_cycle_returns_minus_one(self):
+        """6-node directed cycle: primitivity index=6 > 5, not confirmed within k=32 → -1."""
         N = 6
         rows = list(range(N))
         cols = [(i + 1) % N for i in range(N)]
         M = sp.coo_matrix(([1.0] * N, (rows, cols)), shape=(N, N)).tocsr()
-        with pytest.raises(SystemExit):
-            check_primitive(M)
+        assert check_primitive(M) == -1
 
     def test_primitivity_index_three(self):
         """
@@ -572,11 +570,13 @@ class TestPowerIteration:
         np.testing.assert_allclose(pi, [1/3, 1/3, 1/3], atol=ATOL)
         assert abs(pi.sum() - 1.0) < ATOL
 
-    def test_alpha_one_non_primitive_raises(self):
-        """alpha=1 on a non-primitive matrix raises SystemExit via check_primitive."""
+    def test_alpha_one_non_primitive_continues(self):
+        """alpha=1 on a non-primitive matrix: check_primitive warns but iteration proceeds."""
         H = sp.csr_matrix(np.array([[0., 1.], [1., 0.]]))
-        with pytest.raises(SystemExit):
-            power_iteration(H, alpha=1.0)
+        # 2-cycle is periodic; check_primitive returns -1 and prints a warning.
+        # power_iteration continues and may not converge — just verify no exception.
+        pi, iters, norm = power_iteration(H, alpha=1.0, max_iter=10)
+        assert pi.shape == (2,)
 
     def test_alpha_one_with_mu_raises(self):
         """alpha=1 with mu given is not a valid regime → ValueError."""
@@ -698,23 +698,18 @@ class TestBipartite:
         np.testing.assert_allclose(pi_s_one, pi_s_near1_norm, atol=1e-3,
             err_msg="bipartite() at alpha=1 should match resolvent limit at alpha→1")
 
-    def test_non_primitive_m_s_raises(self):
+    def test_non_primitive_m_s_continues(self):
         """
-        If M_S = H_SI @ H_IS is not primitive and alpha=1, SystemExit is raised
-        via check_primitive() inside power_iteration().
+        If M_S = H_SI @ H_IS is not primitive and alpha=1, check_primitive warns
+        and returns -1; power_iteration continues.
 
-        Network: 2 sources, 2 institutions in a pure bipartite cycle.
-        M_S = [[0.5,0.5],[0.5,0.5]] is all-nonzero → primitivity index=1; this
-        passes.  Use a degenerate case instead: each source maps to a distinct
-        institution and vice versa (block diagonal M_S).
+        M_S = I (block diagonal): not primitive within k=32 → warning, no exception.
         """
-        # Source 0 → inst 0 only; source 1 → inst 1 only
-        # Institution 0 → source 0 only; institution 1 → source 1 only
-        # M_S = [[1,0],[0,1]] = I, which has zero off-diagonal → not primitive
         H_SI = sp.csr_matrix(np.array([[1., 0.], [0., 1.]]))
         H_IS = sp.csr_matrix(np.array([[1., 0.], [0., 1.]]))
-        with pytest.raises(SystemExit):
-            bipartite(H_SI, H_IS, alpha=1.0)
+        pi_s, pi_u, iters, norm = bipartite(H_SI, H_IS, alpha=1.0)
+        assert pi_s.shape == (2,)
+        assert pi_u.shape == (2,)
 
 
 # ─── rank() tests ─────────────────────────────────────────────────────────────

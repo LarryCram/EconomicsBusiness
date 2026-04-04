@@ -8,7 +8,7 @@ proportion of total corpus works those institutions account for.
 Rows:    21 (t_x, F_x) pairs
 Columns: τ_U ∈ {0, 5, 10, 15, 20} × (inst_count, pct_works)
 
-Requires source_master.parquet to have the field_subset column ('E'/'B'/NULL),
+Requires source_master.parquet to have the field_eb column ('E'/'B'/NULL),
 produced by journal_filter_match_oa.py.
 
 Outputs:
@@ -51,10 +51,10 @@ for _r in _runs:
 
 TAU_U_VALUES = [0, 1, 2, 3, 4, 5, 10, 15, 20]
 
-# Additional WHERE clause on source_master.field_subset for each F_x
+# Additional WHERE clause on source_master.field_eb for each F_x
 FIELD_COND = {
-    'E': "AND sm.field_subset = 'E'",
-    'B': "AND sm.field_subset = 'B'",
+    'E': "AND sm.field_eb = 'E'",
+    'B': "AND sm.field_eb = 'B'",
     'A': "",
 }
 

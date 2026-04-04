@@ -42,12 +42,12 @@ def load_runs(runs_path: Path = _RUNS_PATH) -> list[dict]:
     Read params.csv and return one dict per non-skipped run.
 
     Type conversions:
-        skip, tau_u, tau_s, rho, stage  → int
-        chi, alpha                       → float
-        m                                → str  (e.g. '0110')
-        all others                       → str
+        skip, tau_u, tau_s, rho  → int
+        chi, alpha               → float
+        m                        → str  (e.g. '0110')
+        all others               → str
     """
-    int_cols   = {'skip', 'tc0', 'tc1', 'tt0', 'tt1', 'tau_u', 'tau_s', 'rho', 'stage'}
+    int_cols   = {'skip', 'tc0', 'tc1', 'tt0', 'tt1', 'tau_u', 'tau_s', 'rho'}
     float_cols = {'chi', 'alpha'}
 
     runs = []

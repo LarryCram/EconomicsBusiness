@@ -6,14 +6,13 @@ Writes: WORKING/rankings.duckdb  (ranking tables + _catalog)
 
 Usage
 -----
-  python spectral_ranking/run_rankings.py              # all stage-1 runs
-  python spectral_ranking/run_rankings.py --stage 2    # time-series sweep
+  python spectral_ranking/run_rankings.py              # all non-skipped rows
   python spectral_ranking/run_rankings.py --baseline-only
 
 Run schedule
 ------------
 Driven by params.csv (project root).  Each non-skipped row is one run.
---stage filters on the 'stage' column; --baseline-only selects label='baseline'.
+--baseline-only selects label='baseline' for a fast sanity check.
 
 Output table naming
 -------------------
@@ -71,11 +70,9 @@ def table_name(p: RunParams) -> str:
 
 # ─── Load run schedule from CSV ───────────────────────────────────────────────
 
-def runs_from_csv(stage: int = None) -> list:
-    """Return list of RunParams from params.csv, optionally filtered by stage."""
+def runs_from_csv() -> list:
+    """Return list of RunParams from all non-skipped rows in params.csv."""
     rows = load_runs()
-    if stage is not None:
-        rows = [r for r in rows if r['stage'] == stage]
     result = []
     for r in rows:
         m = tuple(int(c) for c in r['m'])   # '0110' → (0,1,1,0)
@@ -280,8 +277,6 @@ def clean_stale(rk_db, schedule: list) -> None:
 
 def main():
     parser = argparse.ArgumentParser(description='Spectral ranking pipeline')
-    parser.add_argument('--stage', type=int, choices=[1, 2], default=1,
-                        help='Parameter schedule: 1=one-at-a-time, 2=time-series')
     parser.add_argument('--baseline-only', action='store_true',
                         help='Run baseline only (fast sanity check)')
     args = parser.parse_args()
@@ -306,9 +301,9 @@ def main():
 
         t0 = _time.perf_counter()
         if args.baseline_only:
-            schedule = [p for p in runs_from_csv(stage=1) if p.label == 'baseline']
+            schedule = [p for p in runs_from_csv() if p.label == 'baseline']
         else:
-            schedule = runs_from_csv(stage=args.stage)
+            schedule = runs_from_csv()
         _T['schedule'] = _time.perf_counter() - t0
 
         t0 = _time.perf_counter()

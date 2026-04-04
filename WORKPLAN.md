@@ -102,7 +102,7 @@ In `main()`, after opening `el_db` and before building the schedule, compute
 ```python
 units_row = el_db.execute(
     "SELECT unit_type, COUNT(*) AS n "
-    "FROM _units_t5_A_tau20 GROUP BY unit_type"
+    "FROM _units_20242024_A_tauU20_tauS20 GROUP BY unit_type"
 ).fetchdf()
 n_s_base = int(units_row.loc[units_row.unit_type == 'S', 'n'].iloc[0])
 n_u_base = int(units_row.loc[units_row.unit_type == 'U', 'n'].iloc[0])
@@ -110,12 +110,12 @@ chi_star  = n_u_base / (n_s_base + n_u_base)
 print(f"  χ* = {chi_star:.4f}  (N_s={n_s_base}, N_u={n_u_base})")
 ```
 
-Add to STAGE1 list (after the existing full-joint entry):
+Add to params.csv (or resolve at runtime via chi=-1 sentinel):
 
 ```python
-RunParams(tx=5, fx='A', tau_u=20, tau_s=20, rho=0,
-          m=(1, 1, 1, 1), chi=chi_star, alpha=0.85,
-          label='full-joint-chi-star'),
+RunParams(run_code='20242024', fx='A', tau_u=20, tau_s=20, rho=0,
+          m=(1, 1, 1, 1), chi=-1,  # chi=-1 → chi_star resolved at runtime
+          alpha=1.0, label='full-joint-chi-star'),
 ```
 
 χ* will appear in the table name as `chi{round(chi_star*100)}` via the existing

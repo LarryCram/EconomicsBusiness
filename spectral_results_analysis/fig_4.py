@@ -60,9 +60,9 @@ def load_baseline_v(db) -> tuple:
 
 def load_field_labels(paths) -> tuple:
     sm = pd.read_csv(paths.data / 'source_master.csv',
-                     usecols=['source_idx', 'field_subset', 'source_name'])
-    sm = sm.dropna(subset=['field_subset'])
-    field_labels = dict(zip(sm['source_idx'].astype(int), sm['field_subset']))
+                     usecols=['source_idx', 'field_eb', 'source_name'])
+    sm = sm.dropna(subset=['field_eb'])
+    field_labels = dict(zip(sm['source_idx'].astype(int), sm['field_eb']))
     source_names = dict(zip(sm['source_idx'].astype(int), sm['source_name']))
     return field_labels, source_names
 

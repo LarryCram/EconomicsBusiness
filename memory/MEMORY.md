@@ -64,3 +64,46 @@ Two panels, 7 columns (label + D1/D9 × 3 year columns: 2000, 2024, 2000-24):
 
 ## config.yaml keys
 PROJECT_ROOT, DATA (relative), WORKING (SSD path), OPENALEX (SSD path to OA parquet snapshot)
+
+## field_eb column (replaces field_subset)
+
+`source_master.parquet` and all related outputs (`oas_star.parquet`, `dropped_sources.parquet`,
+`unmatched_journals.parquet`, `source_master.csv`) now have `field_eb` instead of `field_subset`.
+Computed from multi-registry scoring: `era_field`, `harzing_field`, `wos_categories`, `field_name`.
+- 'E': econ_score≥2 AND bus_score<1
+- 'B': bus_score≥2 AND econ_score<1
+- 'A': both signals present (econ_score≥2 AND bus_score≥1, or vice versa)
+- NULL: neither signal strong
+F=EB corpus filter is `field_eb IN ('E','B','A')` (previously was `IN ('E','B')`; 'A' is now included).
+
+`era_field`, `harzing_field`, `wos_categories` are also present as columns in all those outputs.
+
+## Run schedule — params.csv (no stage column)
+
+The run schedule for `run_rankings.py` is driven by `params.csv` (project root).
+Columns: `skip, run_code, tc0, tc1, tt0, tt1, fx, tau_u, tau_s, rho, m, chi, alpha, mu_type, label`.
+There is NO `stage` column. There is NO `--stage` CLI argument.
+`run_code` is an 8-char string: last-2-digits of tc0,tc1,tt0,tt1 (e.g. '20242024', '00040004').
+`chi=-1` signals χ* (resolved at runtime).
+`runs_from_csv()` returns all non-skipped rows; `load_runs()` applies int/float type conversions.
+
+Time-series runs (t1–t4) are identified by label, not by a stage parameter:
+- t1: run_code=00040004 (2000–04)
+- t2: run_code=05090509 (2005–09)
+- t3: run_code=10141014 (2010–14)
+- t4: run_code=15191519 (2015–19)
+Baseline: run_code=20242024 (2020–24).
+
+## Figure inventory (current)
+
+| Figure | Script | Status | Description |
+|---|---|---|---|
+| fig_2 | fig_2.py | Created | F field comparison; legend on both panels |
+| fig_3 | fig_3.py | In development | Mode comparison (SS/II/bipartite) |
+| fig_4 | community.py | Complete | Second eigenpair φ₂ community analysis |
+| fig_5 | fig_5.py | In development | Phase 2 sensitivity (τ, ρ) |
+| fig_6 | fig_6.py | Created | Time-series comparison t1–t4 vs baseline 2020–24 |
+| fig_7 | fig_7.py (planned) | Planned | Bootstrap uncertainty (spec in BOOTSTRAP.md) |
+
+fig_6 layout: two panels (sources top, institutions bottom), x-axis = baseline rank,
+colours purple/blue/green/red (t1–t4) + black baseline, log-space rolling mean curves.

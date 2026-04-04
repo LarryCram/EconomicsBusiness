@@ -58,9 +58,9 @@ I_LABELS = ['m=0110', 'm=0001', 'm=1111']
 def load_field_labels(paths) -> dict:
     """Return {source_idx (int): 'E' | 'B'} from source_master.csv in data/."""
     sm = pd.read_csv(paths.data / 'source_master.csv',
-                     usecols=['source_idx', 'field_subset'])
-    sm = sm.dropna(subset=['field_subset'])
-    return dict(zip(sm['source_idx'].astype(int), sm['field_subset']))
+                     usecols=['source_idx', 'field_eb'])
+    sm = sm.dropna(subset=['field_eb'])
+    return dict(zip(sm['source_idx'].astype(int), sm['field_eb']))
 
 
 def load_inst_field_labels(el_db, tau_u: int, tau_s: int) -> dict:
@@ -319,7 +319,7 @@ def _draw_panel(ax, series: dict, unit_key: str, panel_labels: list,
     )
     ax.set_xlim(1, n_baseline)
     ax.set_xlabel('Baseline rank  (m=0110)', labelpad=4)
-    ax.set_ylabel('Prestige per work $v$', labelpad=4)
+    ax.set_ylabel('Influence per work $v$', labelpad=4)
     ax.set_title(panel_title, fontsize=10, pad=6)
     ax.legend(fontsize=8, framealpha=0.85, loc='upper right')
 
@@ -341,7 +341,7 @@ def plot3(src_rank_map: dict, inst_rank_map: dict, series: dict,
                 inst_field_labels=inst_field_labels)
 
     sup = fig.suptitle(
-        'Prestige per work — sensitivity to network mode $m$  '
+        'Influence per work — sensitivity to network mode $m$  '
         '(x-axis locked to bipartite baseline)',
         fontsize=9, y=1.01,
     )

@@ -4,7 +4,7 @@ fig_6.py — Time-series comparison: baseline (2020–24) vs t1–t4.
 Baseline: run_code=20242024, F=A, τ_U=τ_S=20, ρ=0, m=0110, α=1, χ=0.5.
 x-axis locked to baseline rank (same convention as fig_2/fig_3).
 
-Four overlays (stage-2 runs):
+Four overlays (time-series runs):
   t1  2000–04   lightest blue
   t2  2005–09
   t3  2010–14
@@ -32,10 +32,10 @@ from util import load_config, load_runs
 
 _runs     = load_runs()
 _baseline = next(r for r in _runs if r['label'] == 'baseline')
-_overlays = [r for r in _runs if r['stage'] == 2]  # t1, t2, t3, t4 in CSV order
+_TIME_SERIES_LABELS = {'t1', 't2', 't3', 't4'}
+_overlays = [r for r in _runs if r['label'] in _TIME_SERIES_LABELS]
 
-# Sequential blues: lightest (t1=oldest) → darkest (t4=most recent)
-_BLUES = ['#bdd7e7', '#6baed6', '#2171b5', '#084594']
+_COLOURS = ['#9467bd', '#1f77b4', '#2ca02c', '#d62728']  # purple, blue, green, red
 
 BASELINE_COLOUR = 'black'
 
@@ -98,7 +98,7 @@ def fetch_data(db) -> tuple:
     series = []
 
     # ── Overlays: t1 → t4 (chronological, lightest → darkest blue) ───────────
-    for run, colour in zip(_overlays, _BLUES):
+    for run, colour in zip(_overlays, _COLOURS):
         tname = _table_name(run)
         period = _period_label(run)
         if tname not in tables:
@@ -150,9 +150,21 @@ def _draw_panel(ax, series: list, unit_idx: int,
                 marker='x',
                 s=35,
                 linewidths=0.8,
-                alpha=0.65,
+                alpha=0.35,
                 zorder=2,
                 label=f'{period}  ({n_overlap:,}/{n_baseline:,})',
+            )
+            # Running mean in log space (window = 1% of series length, min 30)
+            log_v = np.log10(df['v'].values)
+            w = max(30, len(log_v) // 100)
+            rm = np.asarray(pd.Series(log_v).rolling(window=w, center=True, min_periods=1).mean(), dtype=float)
+            ax.plot(
+                df['baseline_rank'].values,
+                np.power(10.0, rm),
+                color=colour,
+                linewidth=1.4,
+                alpha=0.9,
+                zorder=3,
             )
 
     ax.set_yscale('log')
@@ -163,7 +175,7 @@ def _draw_panel(ax, series: list, unit_idx: int,
     )
     ax.set_xlim(1, n_baseline)
     ax.set_xlabel('Baseline rank', labelpad=4)
-    ax.set_ylabel('Prestige per work $v$', labelpad=4)
+    ax.set_ylabel('Influence per work $v$', labelpad=4)
     ax.set_title(panel_title, fontsize=10, pad=6)
     ax.legend(fontsize=7.5, framealpha=0.85, loc='upper right')
 

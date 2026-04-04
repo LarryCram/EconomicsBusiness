@@ -68,32 +68,27 @@ def test_dense_rank_desc_single():
 
 # ─── runs_from_csv ────────────────────────────────────────────────────────────
 
-def test_runs_from_csv_stage1_count():
-    runs = runs_from_csv(stage=1)
-    assert len(runs) == 11
+def test_runs_from_csv_total_count():
+    runs = runs_from_csv()
+    assert len(runs) == 15
 
 
-def test_runs_from_csv_stage2_count():
-    runs = runs_from_csv(stage=2)
-    assert len(runs) == 4
-
-
-def test_runs_from_csv_stage2_labels():
-    runs = runs_from_csv(stage=2)
+def test_runs_from_csv_time_series_labels():
+    runs = runs_from_csv()
     labels = [p.label for p in runs]
-    assert set(labels) == {'t1', 't2', 't3', 't4'}
-    assert 'baseline' not in labels
+    assert set(labels) >= {'t1', 't2', 't3', 't4'}
+    assert 'baseline' in labels
 
 
 def test_runs_from_csv_m_is_tuple():
-    runs = runs_from_csv(stage=1)
+    runs = runs_from_csv()
     assert all(isinstance(p.m, tuple) for p in runs)
     baseline = next(p for p in runs if p.label == 'baseline')
     assert baseline.m == (0, 1, 1, 0)
 
 
 def test_runs_from_csv_chi_star():
-    runs = runs_from_csv(stage=1)
+    runs = runs_from_csv()
     chi_star = [p for p in runs if p.chi == -1.0]
     assert len(chi_star) == 1
     assert chi_star[0].label == 'full-joint-chi-star'

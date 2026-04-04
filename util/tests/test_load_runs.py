@@ -10,15 +10,15 @@ from util import load_runs
 RUNS = load_runs()
 
 
-def test_all_rows_not_skipped():
+def test_all_rows_loaded():
     assert len(RUNS) == 15
 
 
 def test_skip_filters():
     content = (
-        "skip,run_code,tc0,tc1,tt0,tt1,fx,tau_u,tau_s,rho,m,chi,alpha,mu_type,label,stage\n"
-        "0,20242024,2020,2024,2020,2024,A,20,20,0,0110,0.5,1.0,,baseline,1\n"
-        "1,20242024,2020,2024,2020,2024,E,20,20,0,0110,0.5,1.0,,F=E,1\n"
+        "skip,run_code,tc0,tc1,tt0,tt1,fx,tau_u,tau_s,rho,m,chi,alpha,mu_type,label\n"
+        "0,20242024,2020,2024,2020,2024,A,20,20,0,0110,0.5,1.0,,baseline\n"
+        "1,20242024,2020,2024,2020,2024,E,20,20,0,0110,0.5,1.0,,F=E\n"
     )
     with tempfile.NamedTemporaryFile(mode='w', suffix='.csv', delete=False) as f:
         f.write(content)
@@ -40,7 +40,6 @@ def test_types():
     assert isinstance(r['tau_u'], int),   f"tau_u should be int, got {type(r['tau_u'])}"
     assert isinstance(r['tau_s'], int),   f"tau_s should be int, got {type(r['tau_s'])}"
     assert isinstance(r['rho'],   int),   f"rho should be int, got {type(r['rho'])}"
-    assert isinstance(r['stage'], int),   f"stage should be int, got {type(r['stage'])}"
     assert isinstance(r['chi'],   float), f"chi should be float, got {type(r['chi'])}"
     assert isinstance(r['alpha'], float), f"alpha should be float, got {type(r['alpha'])}"
     assert isinstance(r['m'],     str),   f"m should be str, got {type(r['m'])}"

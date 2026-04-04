@@ -5,9 +5,9 @@
 Read pre-built edge lists from `edge_lists.duckdb`, assemble sparse block citation
 matrices C(χ, m, ρ), row-normalise to H, run katz and katz_bipartite power iteration as required by parameters, and output prestige scores π and prestige-per-work v.
 #### Parameter space exploration
--- Parameter exploration completed in two stages as planned.
--- Stage 1: baseline [t_5, ρ = R̄/R_i, F=A, τ_u = 20, τ_s = 20, α=0.85, SI/IS katz_bipartite] compared to one-at-a-time changes ρ = 1, τ_u = 10, α=0.5, F=E, F=B, C=SS/II and C=SS/SI/IS/II.
--- Stage 2: baseline compared to t_1...4 and t_6
+-- Parameter exploration completed as planned.
+-- Phase 1/2: baseline [run_code=20242024, ρ = R̄/R_i, F=A, τ_u = 20, τ_s = 20, α=1, SI/IS katz_bipartite] compared to one-at-a-time changes ρ = 1, τ_u = 40, F=E, F=B, F=EB, C=SS/II and C=SS/SI/IS/II.
+-- Phase 4: baseline compared to t1 (2000–04), t2 (2005–09), t3 (2010–14), t4 (2015–19).
 #### Diagnostic displays
 -- Analysis framework implemented in `spectral_results_analysis/` with community structure analysis and ranking comparisons.
 
@@ -132,8 +132,8 @@ Effect at baseline (t5, A, τ_U=20): dropped 108 sources (first pass) + 7 furthe
 sources (C_SS OUT/IN-component), 2 institutions. Final: N_s=1,322, N_u=1,732, χ*=0.567.
 
 ### Unit index
-`_units_t{tx}_{fx}_tau{tau_u}` in `edge_lists.duckdb` records all post-filter retained
-sources and institutions with columns `(unit_idx, unit_type, a_p)`. `build_csr.py`
+`_units_{run_code}_{fx}_tauU{tau_u}_tauS{tau_s}` in `edge_lists.duckdb` records all post-filter
+retained sources and institutions with columns `(unit_idx, unit_type, a_p)`. `build_csr.py`
 reads this table to set matrix dimensions and the `a_p` denominators for v.
 
 ---
@@ -229,8 +229,12 @@ units table only.
 Store results in `WORKING/rankings.duckdb`. One table per parameter combination:
 
 ```
-Table name: rk_t{tx}_{fx}_tau{tau_u}_rho{rho}_m{mstr}_chi{chi_int}_alpha{alpha_int}
-  e.g. rk_t5_A_tau20_rho0_m0110_chi50_alpha85   (baseline)
+Table name: rk_{run_code}_{fx}_tauU{tau_u}_tauS{tau_s}_rho{rho}_m{mstr}_chi{chi_str}_alpha{alpha_int}
+  e.g. rk_20242024_A_tauU20_tauS20_rho0_m0110_chi50_alpha100   (baseline)
+       rk_20242024_A_tauU20_tauS20_rho0_m1111_chiSTAR_alpha100 (chi_star)
+
+  run_code  8-char string: last-2-digits of tc0,tc1,tt0,tt1  e.g. '20242024'
+  chi_str   integer percentage for fixed chi, 'STAR' for chi=-1
 
 Columns:
   unit_idx       BIGINT    -- source_idx or institution_idx
@@ -253,30 +257,24 @@ iterations to convergence, final L1 norm, and timestamp.
 t_x=5, F=A, τ_U=20, ρ=R̄/R_i (fixed count), m=(0,1,1,0), α=0.85.
 χ is not a free parameter for the bipartite case (no effect after normalisation).
 
-### Stage 1 — one-at-a-time from baseline
-Each run changes one parameter; all others held at baseline:
+### Phase 1/2 — one-at-a-time from baseline (run_code=20242024)
+Each run changes one parameter; all others held at baseline. Driven by params.csv.
 
-| Variant | Change |
+| Label | Change |
 |---|---|
-| ρ=1 | full reference count |
-| τ_U=10 | relaxed institution threshold (sensitivity) |
-| α=0.5 | lower damping |
-| F=E | economics sources only |
-| F=B | business sources only |
-| m=(1,0,0,0) | source-only SS |
-| m=(0,0,0,1) | institution-only II |
-| m=(1,1,1,1), χ=0.5 | full joint |
-| m=(1,1,1,1), χ=χ* | full joint at dimensional balance |
+| `rho1` | full reference count (ρ=1) |
+| `tau40` | stricter threshold (τ_U=τ_S=40) |
+| `F=E` | economics sources only |
+| `F=B` | business sources only |
+| `F=EB` | F=EB corpus (field_eb IN E,B,A) |
+| `SS-only` | source-only mode m=1000 |
+| `II-only` | institution-only mode m=0001 |
+| `full-joint` | full joint m=1111, χ=0.5 |
+| `full-joint-chi-star` | full joint at dimensional balance χ* |
 
-Run baseline and ρ=1 first. Begin diagnostic display work as soon as these two runs
-are available.
-
-### Stage 2 — time series
-Hold all parameters at baseline values; sweep t_x ∈ {1, 2, 3, 4, 6}.
-t_x=7 (reference spectroscopy) is qualitatively different and treated separately.
-
-### Stage 3 — sensitivity grid (later)
-χ ∈ {0.25, 0.75, 1.00} for m=(1,1,1,1); α ∈ {0.75, 0.95}; t_x=7.
+### Phase 4 — time series
+Hold all parameters at baseline values; labels t1–t4 (run_codes 00040004–15191519).
+run_code=20242024 (2020–24) is the baseline. t5/t6/t7 integer codes are not used.
 
 ---
 

@@ -228,7 +228,7 @@ def _draw_panel(ax, series: dict, unit_key: str,
     )
     ax.set_xlim(1, n_baseline)
     ax.set_xlabel('Baseline rank', labelpad=4)
-    ax.set_ylabel('Prestige per work $v$', labelpad=4)
+    ax.set_ylabel('Influence per work $v$', labelpad=4)
     ax.set_title(panel_title, fontsize=10, pad=6)
     ax.legend(fontsize=7.5, framealpha=0.85, loc='upper right')
 
