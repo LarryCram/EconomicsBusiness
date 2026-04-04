@@ -1,0 +1,31 @@
+# params.yaml — Model parameters, version-controlled and shared across machines.
+# Machine-specific paths live in config.yaml (gitignored).
+
+# Corpus construction time windows (Table 3 in paper)
+# census: publication years of citing works
+# target: publication years of cited works
+time_windows:
+  1: {census: [2000, 2004], target: [2000, 2004], label: "Symmetric 5-year"}
+  2: {census: [2005, 2009], target: [2005, 2009], label: "Symmetric 5-year"}
+  3: {census: [2010, 2014], target: [2010, 2014], label: "Symmetric 5-year"}
+  4: {census: [2015, 2019], target: [2015, 2019], label: "Symmetric 5-year"}
+  5: {census: [2020, 2024], target: [2020, 2024], label: "Symmetric 5-year (baseline)"}
+  6: {census: [2024, 2024], target: [2000, 2024], label: "JIF analogue"}
+  7: {census: [2020, 2024], target: [2020, 2020], label: "Reference spectroscopy"}
+
+# Minimum mean annual works per institution (τ_U) by field subset
+# E/B subsets are smaller so a lower floor is appropriate
+tau_u_floor:
+  E: 20    # inherits institution set from A corpus
+  B: 20    # inherits institution set from A corpus
+  EB: 20   # inherits institution set from A corpus
+  NEB: 20  # inherits institution set from A corpus
+  A: 20
+
+# Minimum mean annual works per source (τ_S) by field subset
+tau_s_floor:
+  E: 20
+  B: 20
+  EB: 20
+  NEB: 20
+  A: 20
