@@ -243,7 +243,7 @@ def plot5(src_rank_map: dict, inst_rank_map: dict, series: dict) -> None:
     _draw_panel(axes[1], series, 'I', len(inst_rank_map), 'Institutions')
 
     sup = fig.suptitle(
-        'Parameter sensitivity — prestige per work  '
+        'Parameter sensitivity — influence per work  '
         '(x-axis locked to bipartite baseline)',
         fontsize=9, y=1.01,
     )

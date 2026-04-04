@@ -7,7 +7,7 @@ Two-panel figure:
   Top:    sources (journals)
   Bottom: institutions
   x-axis: LOCKED to baseline rank order (rank 1 = highest v in baseline)
-  y-axis: prestige per work v  (log scale; v=1 is corpus-average)
+  y-axis: influence per work v  (log scale; v=1 is corpus-average)
 
 The baseline curve is drawn in black.  Every other available run in
 rankings.duckdb is overplotted at the same x-positions (each unit sits at
@@ -211,7 +211,7 @@ def plot2(src_rank_map: dict, inst_rank_map: dict, runs: list) -> None:
         )
 
     sup = fig.suptitle(
-        'Parameter sensitivity — prestige per work  '
+        'Parameter sensitivity — influence per work  '
         f'(x-axis locked to {BASELINE_LABEL})',
         fontsize=9, y=1.01,
     )

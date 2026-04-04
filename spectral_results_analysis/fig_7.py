@@ -211,7 +211,7 @@ def plot7(paths, v_s_boot, v_u_boot, meta, df_base, field_labels: dict) -> None:
 
     skipped = meta.get('skipped', 0)
     sup = fig.suptitle(
-        f'Bootstrap uncertainty — prestige per work  '
+        f'Bootstrap uncertainty — influence per work  '
         f'(B={B}, 80% resample'
         + (f', {skipped} skipped' if skipped else '') + ')',
         fontsize=9, y=1.01,

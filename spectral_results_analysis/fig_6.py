@@ -190,7 +190,7 @@ def plot6(src_rank_map: dict, inst_rank_map: dict, series: list) -> None:
     _draw_panel(axes[1], series, 3, len(inst_rank_map), 'Institutions')
 
     sup = fig.suptitle(
-        'Time-series comparison — prestige per work  '
+        'Time-series comparison — influence per work  '
         '(x-axis locked to 2020–24 baseline)',
         fontsize=9, y=1.01,
     )

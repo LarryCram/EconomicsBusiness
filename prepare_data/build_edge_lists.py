@@ -66,10 +66,6 @@ FIELD_COND = {
     'A':   "",
 }
 
-# Field subsets that inherit their institution set from the A corpus.
-# A must be built first for each (run_code, tau_u, tau_s) before these.
-FIELD_SUBSETS = ['E', 'B', 'EB', 'NEB']
-
 
 def table_name(run_code: str, fx: str, tau_u: int, tau_s: int) -> str:
     return f'el_{run_code}_{fx}_tauU{tau_u}_tauS{tau_s}'

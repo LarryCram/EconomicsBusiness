@@ -1,5 +1,5 @@
 """
-fig_4.py — Community structure (φ₂/√v) vs prestige (v).
+fig_4.py — Community structure (φ₂/√v) vs influence (v).
 
 Four panels arranged 2×2:
   Row 0 — Sources:      SS (m=1000)  |  Bipartite (m=0110)
@@ -283,7 +283,7 @@ def plot4(lam2_ss, lam2_ii, lam2_bi,
         ax.tick_params(labelleft=False)
 
     sup = fig.suptitle(
-        'Community identity $\\phi_2/\\sqrt{v}$ vs prestige $v$',
+        'Community identity $\\phi_2/\\sqrt{v}$ vs influence $v$',
         fontsize=10, y=1.01,
     )
 
