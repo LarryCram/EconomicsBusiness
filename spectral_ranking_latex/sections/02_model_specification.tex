@@ -3,7 +3,6 @@
 \label{sec:networks}
 % ---------------------------------------------------------------
 
-%\paragraph{Corpus construction.}
 We begin by selecting $N_s$ sources $\mathfrak{S}$ in a field, discipline or category.
 Then we select $N_w$ works $\mathfrak{W}$ published in $\mathfrak{S}$ within the census
 window years $t_c = [t^c_0 \ldots t^c_1]$ or target years $t_t = [t^t_0 \ldots t^t_1]$.
@@ -27,12 +26,15 @@ Each retained work $w_i$ has an \textit{institution weight} under author-fractio
 where $\ell$ indexes the retained authors of work $w_i$, $a_i$ is their count, and $u_{i\ell}$ the number of
 retained institutions of author $\ell$, so that $\sum_u\omega_{iu}=1$. Re-weighting fractional counts as a consequence of pruning the number of institutions is a trade-off between boosting a work's remaining institutions and diminishing the work's total contribution. 
 
-Each reference $(i,j)\in\mathfrak{R}$ is a transaction between units:
-the referencing unit gives, and the referenced unit receives.
-We attach the construct \textit{attention} to these transactions.
-Initially the amount transacted is simply the citation edge weight ---
-the $\rho_i$-weighted fractional authorship accumulated in $\mathbf{C}$,
-as defined below.
+Each reference $(i,j)\in\mathfrak{R}$ is a transaction between works:
+the referencing work gives, and the referenced work receives. Correspondingly, the
+units (source and institutions) of the referencing work transact with the units
+of the referenced work, according to weights defined in the citation matrix $\mathbf{C}$
+defined below.
+
+We attach the construct \textit{attention} to these unit-to-unit transactions.
+Initially the amount transacted is the fractionated share given by sources and the 
+the $\rho_i$-weighted fractional authorship accumulated in 
 We then assert that the attention a unit gives should itself be amplified
 or diminished by the attention that unit has received: a reference from a
 highly-attended unit carries more weight than one from a lightly-attended
