@@ -1,14 +1,5 @@
 # ERRORS.md — LaTeX audit against current software state
 
-
-
-## 01_introduction.tex (Line 15)
-- **Issue**: Corruption in text: "institutionszz summed" should be "institutions, they summed" or similar.
-  **Suggestion**: Repair sentence around line 15: "To obtain influence weights for institutions[CORRUPTED] summed the publications..."
-  
-- **Issue**: Additional corruption: "butz also" should be "but z also" or "but was also".
-  **Suggestion**: Repair around line 15: "...survey-based rankings, but[z] also with..."
-
 ## 02_model_specification.tex (Section 2)
 - **Issue**: Convention statement about C_{ij} is present (correctly states "attention from i (citing, row) to j (cited, column)"), but section title is "Journal--institution citation networks" which is dated nomenclature—now "reference networks" is preferred.
   **Suggestion**: Update section 2 title to clarify "reference networks" or keep citation/reference distinction explicit in opening paragraph.
