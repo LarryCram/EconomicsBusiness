@@ -1,8 +1,6 @@
 # ERRORS.md — LaTeX audit against current software state
 
-## main.tex (Abstract)
-- **Issue**: Abstract uses "prestige scores" but current convention is "influence per work" (denoted $v$).
-  **Suggestion**: Align terminology: change "prestige scores" to "influence scores" or "influence per work".
+
 
 ## 01_introduction.tex (Line 15)
 - **Issue**: Corruption in text: "institutionszz summed" should be "institutions, they summed" or similar.

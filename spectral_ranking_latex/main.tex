@@ -18,14 +18,12 @@
 \maketitle
 
 \begin{abstract}
-We develop a dual spectral ranking of journals and institutions that
-jointly determines prestige scores via a Katz resolvent applied to a
-block attention matrix constructed from intra-field citation flows.
-A continuous parameter $\chi$ apportions each reference between source
-and institution channels; a binary block-mask selects among four
-bibliometrically distinct flow structures, nesting conventional
-single-mode rankings as special cases.
-Applied to the economics and commerce literature using OpenAlex data,
+We develop a dual spectral ranking of journal and institution units that
+determines influence-per-work scores via the block citation matrix.
+A binary block-mask selects among four bibliometrically distinct flow structures,
+nesting single-unit rankings (such as the eigenvector journal ranking) alongside 
+two forms of journal-institution coupling.
+Applied to the economics and commerce journal literature using OpenAlex data,
 the method produces stable, interpretable joint rankings whose
 sensitivity to model parameters is examined systematically.
 
