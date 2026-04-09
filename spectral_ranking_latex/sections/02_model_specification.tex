@@ -9,21 +9,21 @@ window years $t_c = [t^c_0 \ldots t^c_1]$ or target years $t_t = [t^t_0 \ldots t
 From the reference lists of the set of census works $\mathfrak{W}^c$ we identify the set
 of target works $\mathfrak{W}^t$ and form the filtered reference set 
 $\mathfrak{R}=\{r(i,j):w_i\in\mathfrak{W}^c,\,w_j\in\mathfrak{W}^t\}$.
-Author affiliations in $\mathfrak{W}$ establish a set of authors $\mathfrak{A}'$ and 
-institutions $\mathfrak{U}'$. In practice many institutions (and sources) publishing only 
+Author affiliations in $\mathfrak{W}$ establish a set of institutions $\mathfrak{U}'$ and 
+authors $\mathfrak{A}'$. In practice many institutions (and sources) publishing only 
 a few works per year can be dropped from the corpus. Let $\bar{w}_u$ be the mean annual 
-census-window work count for institution $u$ and $\bar{w}_s$ the corresponding count for source $s$. We determine lower limits $\tau_U$ and $\tau_S$ by examining the respective frequency distributions and define
+census-window work count for institution $u$ and $\bar{w}_s$ the corresponding work count for source $s$. We determine lower limits $\tau_U$ and $\tau_S$ by examining the respective frequency distributions and define
 $\mathfrak{U}\subseteq\mathfrak{U}'$ as the institutions with $\bar{w}_u\geq\tau_U$,
 and $\mathfrak{S}\subseteq\mathfrak{S}'$ as the sources with $\bar{w}_s\geq\tau_S$,
 with corresponding author set $\mathfrak{A}\subseteq\mathfrak{A}'$.
-Works that lose all their authorships under the institution filter, or whose source is 
+Works that lose all their authorships under the institution filter, or whose source is
 dropped by the source filter, are removed from the corpus.
 
-Consider now how a single work $w_i$ in $\mathfrak{W}^c$ 
+We say that a work $w_i$ in $\mathfrak{W}^c$ 
 transfers (or pays) \textit{attention} to its references $r_{ij}$. Let $R_i=|\{j:(i,j)\in\mathfrak{R}\}|$ be the reference count of work
 $w_i$ and $\bar{R}=|\mathfrak{R}|/N_w$ the mean reference count over
 $\mathfrak{W}$. Since reference lists have different lengths,
-we consider two cases for the attention per reference,
+we consider two cases for the transferred attention per reference,
 
 \begin{equation}
 	\rho_i \;=\;
@@ -33,11 +33,11 @@ we consider two cases for the attention per reference,
 	\end{cases}
 	\label{eq:rho}
 \end{equation}
-Under full reference counting a work with twice as many references pays twice
-as much attention; under fractional refernce counting every work pays the
+Under full reference counting a work with twice as many references transfers twice
+as much attention; under fractional refernce counting every work transfers the
 same total attention $\bar{R}$ \citep{zittModifyingJournalImpact2008}. 
 
-A work's attention can be conferred on (allocated to) its retained source and institutions. Introduce the corpus parameter $\chi$ to set the division of conferred attention between sources and institutions. While at first sight the choice $\chi=0.5$ appears sound,
+A work's attention can be conferred on (allocated to) its (retained) source and institutions. The corpus parameter $\chi$ sets the division of conferred attention between the source and institutions. While at first sight the choice $\chi=0.5$ appears sound,
 we see below that $\chi=N_S/(N_S+N_I)$ arises naturally once all works have been accumulated. 
 We consider two cases for the conferal of a work's attention on its institutions (i.e. the \textit{institution weight})
 
@@ -50,29 +50,13 @@ We consider two cases for the conferal of a work's attention on its institutions
   \end{cases}
   \label{eq:omega}
 \end{equation}
-where $n_i = |\bigcup_\ell \mathcal{u}_{i\ell}|$ is the number of institutions of work $w_i$, and $\ell$ indexes the authors of work $w_i$, $a_i$ is their count, and $u_{i\ell}$ the number of institutions of author $\ell$, so that $\sum_u\omega_{iu}=1$ under author-fractional counting \citep{waltmanFieldnormalizedCitationImpact2015}.
-Re-weighting fractional counts as a consequence of pruning the number of institutions is a trade-off between boosting a work's remaining institutions and diminishing the work's total contribution. 
-
-For reference $(i,j)\in\mathfrak{R}$, a fractionated share of $w_i$'s attention is paid by the sources and institutions of $w_i$ to the sources and institutions of $w_j$.
-Overall, $w_i$'s attention is itself amplified
-or diminished by the attention that $w_i$ has received from the sources and institutions of
-the works that reference it. This leads to an eigenvector equation in which the attention
-of each unit is defined recursively as the weighted sum of the attention
-of the units that reference it, with its value established by the
-convergence of that recursion.
-The process of finding the fixed point is \textit{spectral ranking}
-(a verb); the resulting vector is the \textit{spectral ranking} (a noun).
-The vector can be read from either side of the transaction --- from the
-referencing side as attention, or from the cited side as influence --- just
-as $\mathbf{C}$ can be called a reference matrix or a citation matrix
-depending on which side one stands.
+where $n_i = |\bigcup_\ell \mathcal{u}_{i\ell}|$ is the number of institutions of work $w_i$, and $\ell$ indexes the authors of work $w_i$, $a_i$ is their count, and $u_{i\ell}$ the number of institutions of author $\ell$, so that $\sum_u\omega_{iu}=1$ under author-fractional counting \citep{waltmanFieldnormalizedCitationImpact2015}. The decision to re-weight fractional counts after any institution pruning is a trade-off between boosting a work's remaining institutions and diminishing the work's total contribution. 
 
 We construct the set of \emph{units} [sources or institutions;
 \cite{pinskiCitationInfluenceJournal1976}]
 $\mathfrak{P}=\mathfrak{S}\ \cup\ \mathfrak{U}$ with $N=N_s+N_u$ elements,
 ordered so that sources occupy indices $1,\dots,N_s$ and institutions
-indices $N_s+1,\dots,N$.
-Each reference $(i,j) \in \mathfrak{R}$ carries attention from the
+indices $N_s+1,\dots,N$. Each reference $(i,j) \in \mathfrak{R}$ carries attention from the
 units associated with $w_i$ to the units associated with $w_j$,
 across four unit-type pairs: source--source ($SS$), source--institution
 ($SI$), institution--source ($IS$), and institution--institution ($II$).
@@ -81,8 +65,7 @@ For each work $w_i$ we define the source membership one-hot vector
 $\mathbf{b}^S_i\in\mathbb{R}^{N_s}$ with $[\mathbf{b}^S_i]_s=\mathbf{1}[w_i\in s]$,
 and the institution weight distribution vector
 $\mathbf{b}^U_i\in\mathbb{R}^{N_u}$ with $[\mathbf{b}^U_i]_u=\omega_{iu}$
-from \eqref{eq:omega}.
-The attention carried by each reference is distributed across unit-type
+from \eqref{eq:omega}. The attention carried by each reference is distributed across unit
 pairs and accumulated as four block matrices over $\mathfrak{R}$ via
 rank-1 outer products,
 \begin{equation}
@@ -123,6 +106,21 @@ attention to target works, (b) non-census works giving attention to
 target works, and (c) authorships that include an omitted institution.
 
 \paragraph{Ordinal spectral ranking.}
+
+Overall, $w_i$'s attention is itself amplified
+or diminished by the attention that $w_i$ has received from the sources and institutions of
+the works that reference it. This leads to an eigenvector equation in which the attention
+of each unit is defined recursively as the weighted sum of the attention
+of the units that reference it, with its value established by the
+convergence of that recursion.
+The process of finding the fixed point is \textit{spectral ranking}
+(a verb); the resulting vector is the \textit{spectral ranking} (a noun).
+The vector can be read from either side of the transaction --- from the
+referencing side as attention, or from the cited side as influence --- just
+as $\mathbf{C}$ can be called a reference matrix or a citation matrix
+depending on which side one stands.
+
+
 Let $r_p=\sum_q C_{pq}$ be the total weighted attention given by unit $p$
 across all its references, and $\mathbf{D}_r=\mathrm{diag}(r_p)$ the
 corresponding diagonal matrix.
