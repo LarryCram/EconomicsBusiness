@@ -1,14 +1,14 @@
 # Fdb version 4
-["bibtex main"] 1775719623.02124 "main.aux" "main.bbl" "main" 1775719697.02192 0
-  "./MyLibrary.bib" 1775714818 6560650 c7fdf708b46f9da9af55d39cb305cbbc ""
+["bibtex main"] 1775807849.04441 "main.aux" "main.bbl" "main" 1775808142.71219 0
+  "./MyLibrary.bib" 1775779425 6560650 c7fdf708b46f9da9af55d39cb305cbbc ""
   "./sciomtcs.bib" 1758004733 38814 e32becf37c07e9c5a5ecec51c1c262af ""
   "./spbasic.bst" 1757517455 33250 b27924137faccbc3d13ebae5a7538c63 ""
-  "main.aux" 1775719695 12778 67c5ee124cd62aeef9825e3362d53098 "pdflatex"
+  "main.aux" 1775808141 12843 41f60043314e0d666ce3bce3a48ead51 "pdflatex"
   (generated)
   "main.bbl"
   "main.blg"
   (rewritten before read)
-["pdflatex"] 1775719694.45395 "c:/Users/LC.RSPE-056310/Dropbox/ZZ_STAGING/EconomicsBusiness/spectral_ranking_latex/main.tex" "main.pdf" "main" 1775719697.02322 0
+["pdflatex"] 1775808140.31533 "c:/Users/LC.RSPE-056310/Dropbox/ZZ_STAGING/EconomicsBusiness/spectral_ranking_latex/main.tex" "main.pdf" "main" 1775808142.71396 0
   "../plots/fig_1_latex.pdf" 1774861992 19533 5832775f0e79b94c72702f46314217dc ""
   "../plots/fig_2_latex.pdf" 1774955244 71621 a82bc9964a1e1c09f476406d7efa2cc6 ""
   "../plots/fig_3_latex.pdf" 1774955253 73205 836e280569c2cdf4ff32846230a7ed59 ""
@@ -208,12 +208,12 @@
   "C:/Users/LC.RSPE-056310/AppData/Local/Programs/MiKTeX/tex/latex/url/url.sty" 1388490452 12796 8edb7d69a20b857904dd0ea757c14ec9 ""
   "C:/Users/LC.RSPE-056310/AppData/Local/Programs/MiKTeX/tex/latex/xcolor/xcolor.sty" 1700127522 55487 80a65caedd3722f4c20a14a69e785d8f ""
   "c:/Users/LC.RSPE-056310/Dropbox/ZZ_STAGING/EconomicsBusiness/spectral_ranking_latex/main.tex" 1775548562 1605 89cd084fcb9bc02de4900268d74afe7d ""
-  "main.aux" 1775719695 12778 67c5ee124cd62aeef9825e3362d53098 "pdflatex"
-  "main.bbl" 1775719623 8019 6b31d83fe42c689e17592d2062564cfd "bibtex main"
-  "main.out" 1775719695 803 e0c8295340d7d49c163c6b61ae9ee64d "pdflatex"
+  "main.aux" 1775808141 12843 41f60043314e0d666ce3bce3a48ead51 "pdflatex"
+  "main.bbl" 1775807850 8268 55001e3cd3eccd7fb04487cb08b202dc "bibtex main"
+  "main.out" 1775808141 803 e0c8295340d7d49c163c6b61ae9ee64d "pdflatex"
   "main.tex" 1775548562 1605 89cd084fcb9bc02de4900268d74afe7d ""
   "sections/01_introduction.tex" 1775529157 6571 c4554b36e5158c40e998d056be9b808a ""
-  "sections/02_model_specification.tex" 1775719693 16324 6ac215348077c9d18378bc33b79ce862 ""
+  "sections/02_model_specification.tex" 1775808139 16873 3fe6497352588f5b17f4ed462cbf8996 ""
   "sections/03_processing.tex" 1775346459 3798 7873c8143ad93da1658ae98c990f521c ""
   "sections/04_results.tex" 1775545825 11232 a039b7efac2544b6e4398724af1126f0 ""
   "sections/05_discussion.tex" 1775346459 409 753ef4e6e9875bf5a51fb9052b90440e ""
