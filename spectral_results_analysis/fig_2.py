@@ -122,6 +122,7 @@ def plot2(src_rank_map: dict, inst_rank_map: dict, runs: list) -> None:
         'F=E':  '#e41a1c',   # red
         'F=B':  '#377eb8',   # blue
         'F=EB': '#ff7f00',   # orange
+        'F=X':  '#984ea3',   # purple
     }
     run_colours = {}
     for label, _, _ in runs:
@@ -174,7 +175,7 @@ def plot2(src_rank_map: dict, inst_rank_map: dict, runs: list) -> None:
                     label=f'{label}  ({n_overlap:,}/{n_baseline:,})',
                 )
             else:
-                MARKERS = {'F=B': 'x', 'F=E': '+'}
+                MARKERS = {'F=B': 'x', 'F=E': '+', 'F=X': 's'}
                 marker = MARKERS.get(label, 'o')
                 is_line_marker = marker in ('x', '+')
                 ax.scatter(

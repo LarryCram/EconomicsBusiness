@@ -84,15 +84,19 @@ def load_inst_field_labels(el_db, tau_u: int, tau_s: int) -> dict:
 
     e_set = inst_set('E')
     b_set = inst_set('B')
+    x_set = inst_set('X')
 
     inst_field: dict = {}
-    for idx in e_set | b_set:
-        if idx in e_set and idx in b_set:
+    for idx in e_set | b_set | x_set:
+        memberships = (idx in e_set, idx in b_set, idx in x_set)
+        if sum(memberships) > 1:
             inst_field[idx] = 'other'
-        elif idx in e_set:
+        elif memberships[0]:
             inst_field[idx] = 'E'
-        else:
+        elif memberships[1]:
             inst_field[idx] = 'B'
+        else:
+            inst_field[idx] = 'X'
     return inst_field
 
 
@@ -270,7 +274,8 @@ def _draw_panel(ax, series: dict, unit_key: str, panel_labels: list,
             df_ss = df_ss.copy()
             df_ss['F'] = df_ss['unit_idx'].map(field_labels)
             for f_val, marker, legend_label in [('E', 'o', 'E (SS)'),
-                                                ('B', 's', 'B (SS)')]:
+                                                ('B', 's', 'B (SS)'),
+                                                ('X', '^', 'X (SS)')]:
                 sub = df_ss[df_ss['F'] == f_val]
                 if sub.empty:
                     continue
@@ -293,7 +298,8 @@ def _draw_panel(ax, series: dict, unit_key: str, panel_labels: list,
             df_ii = df_ii.copy()
             df_ii['F'] = df_ii['unit_idx'].map(inst_field_labels)
             for f_val, marker, legend_label in [('E', 'o', 'E (II)'),
-                                                ('B', 's', 'B (II)')]:
+                                                ('B', 's', 'B (II)'),
+                                                ('X', '^', 'X (II)')]:
                 sub = df_ii[df_ii['F'] == f_val]
                 if sub.empty:
                     continue
@@ -310,6 +316,7 @@ def _draw_panel(ax, series: dict, unit_key: str, panel_labels: list,
                 )
 
     ax.set_yscale('log')
+    ax.set_ylim(0.002, 20)
     ax.axhline(1.0, color='#999999', linewidth=0.8, linestyle='--', zorder=0)
     ax.text(
         n_baseline * 0.98, 1.0,
@@ -377,7 +384,8 @@ def main():
     paths = load_config()
     field_labels = load_field_labels(paths)
     print(f'Field labels loaded: {sum(v=="E" for v in field_labels.values())} E, '
-          f'{sum(v=="B" for v in field_labels.values())} B')
+          f'{sum(v=="B" for v in field_labels.values())} B, '
+          f'{sum(v=="X" for v in field_labels.values())} X')
 
     inst_field_labels: dict | None = None
     if el_path.exists():
@@ -385,8 +393,9 @@ def main():
             inst_field_labels = load_inst_field_labels(el_db, _tau_u, _tau_s)
         e_only = sum(v == 'E'     for v in inst_field_labels.values())
         b_only = sum(v == 'B'     for v in inst_field_labels.values())
+        x_only = sum(v == 'X'     for v in inst_field_labels.values())
         other  = sum(v == 'other' for v in inst_field_labels.values())
-        print(f'Institution field labels: E={e_only}  B={b_only}  other={other}')
+        print(f'Institution field labels: E={e_only}  B={b_only}  X={x_only}  other={other}')
     else:
         print(f'WARNING: {el_path} not found — institution E/B markers skipped')
 

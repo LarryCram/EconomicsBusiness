@@ -40,9 +40,9 @@ _tau_s         = _baseline['tau_s']
 
 BASELINE_TABLE = f'rk_{_run_code}_A_tauU{_tau_u}_tauS{_tau_s}_rho0_m0110_chi50_alpha100'
 
-COLOR  = {'E': '#1f77b4', 'B': '#d62728', 'other': '#999999'}
-MARKER = {'E': 'o',       'B': 's',       'other': 'x'}
-LABEL  = {'E': 'Economics (E)', 'B': 'Business (B)', 'other': 'Other'}
+COLOR  = {'E': '#1f77b4', 'B': '#d62728', 'X': '#ff7f0e', 'other': '#999999'}
+MARKER = {'E': 'o',       'B': 's',       'X': '^',       'other': 'x'}
+LABEL  = {'E': 'Economics (E)', 'B': 'Business (B)', 'X': 'Cross-field (X)', 'other': 'Other'}
 
 
 # ─── Data loaders ─────────────────────────────────────────────────────────────
@@ -90,15 +90,19 @@ def load_inst_field_labels(el_db, tau_u, tau_s) -> dict:
 
     e_set = inst_set('E')
     b_set = inst_set('B')
+    x_set = inst_set('X')
 
     inst_field = {}
-    for idx in e_set | b_set:
-        if idx in e_set and idx in b_set:
-            inst_field[idx] = 'other'   # present in both; not exclusively E or B
-        elif idx in e_set:
+    for idx in e_set | b_set | x_set:
+        memberships = (idx in e_set, idx in b_set, idx in x_set)
+        if sum(memberships) > 1:
+            inst_field[idx] = 'other'   # present in multiple; not exclusively one field
+        elif memberships[0]:
             inst_field[idx] = 'E'
-        else:
+        elif memberships[1]:
             inst_field[idx] = 'B'
+        else:
+            inst_field[idx] = 'X'
     return inst_field
 
 
@@ -187,10 +191,11 @@ def _draw_panel(ax, df, v_col, phi2_col, id_col, group_map, panel_title):
 
     _GRP_STYLE = {
         'other': dict(alpha=0.80, zorder=2, linewidths=2.0),
-        'E':     dict(alpha=1.0,  zorder=4, linewidths=0.4),
-        'B':     dict(alpha=1.0,  zorder=3, linewidths=0.4),
+        'X':     dict(alpha=0.90, zorder=3, linewidths=0.4),
+        'B':     dict(alpha=1.0,  zorder=4, linewidths=0.4),
+        'E':     dict(alpha=1.0,  zorder=5, linewidths=0.4),
     }
-    for grp in ['other', 'B', 'E']:   # Other first so E/B paint over it
+    for grp in ['other', 'X', 'B', 'E']:   # Other first so E/B/X paint over it
         sub = df[df['grp'] == grp]
         if sub.empty:
             continue

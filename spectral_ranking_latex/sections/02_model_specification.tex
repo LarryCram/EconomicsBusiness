@@ -39,7 +39,7 @@ same total attention $\bar{R}$ \citep{zittModifyingJournalImpact2008}.
 
 A work's attention can be conferred on or allocated to its retained source and institutions. The corpus parameter $\chi$ sets the division of conferred attention between the source $(\chi)$ and institutions $(1-\chi)$. While at first sight the choice $\chi=0.5$ appears sound,
 we see below that $\chi=N_S/(N_S+N_I)$ arises naturally once all works have been accumulated. 
-We consider two models for conferal of a work's attention on its institutions (i.e. the \textit{institution weight})
+We consider two models for conferral of a work's attention on its institutions (i.e. the \textit{institution weight})
 
 \begin{equation}
   \omega_{i u} \;=\;
@@ -124,8 +124,8 @@ and $\mathbf{D}_r=\mathrm{diag}(r_p)$ the corresponding diagonal matrix.
 Row-normalising $\mathbf{C}$ to obtain $\mathbf{H}=\mathbf{D}_r^{-1}\mathbf{C}$
 ensures that each unit's fractionated references are equally valued regardless of how
 many references it makes: a unit with many references exerts no more
-attention per reference than one with few (this considertion obtains when $\rho_i = 1$).
-Reference intensity variaitons are removed at this stage and reintroduced
+attention per reference than one with few (this consideration obtains when $\rho_i = 1$).
+Reference intensity variations are removed at this stage and reintroduced
 only at the end via the influence per work scaling \eqref{eq:vstar}.
 If $r_p=0$ (a dangling unit with no outgoing references) the corresponding
 row of $\mathbf{H}$ is defined to be zero.
@@ -194,7 +194,7 @@ substantive interpretations---attention attenuation and exogenous prior
 respectively---they have the additional effect of ensuring a unique
 solution to~\eqref{eq:spectral} even when $\mathbf{H}$ is not primitive:
 $\alpha<1$ makes $(\mathbf{I}-\alpha\mathbf{H}^\top)$ invertible, and a
-nonzero $\boldsymbol{\mu}$ lifts the equation off the homogeneous system. If $\mathbf{C}$ were a binary matrix, this would be the pagerank spectral ranking \citep{page}
+nonzero $\boldsymbol{\mu}$ lifts the equation off the homogeneous system. If $\mathbf{C}$ were a binary matrix, this would be the PageRank spectral ranking \citep{page}
 
 The spectral ranking $\boldsymbol{\pi}$ reflects the total attention or influence of each unit and depends on unit size.
 The \emph{influence per work} \citep{palacios-huertaMeasurementIntellectualInfluence2004},
@@ -277,9 +277,9 @@ $\boldsymbol{\pi}=\mathbf{\tilde{H}}^{\top}\boldsymbol{\pi}$
 is equivalent to equation~\eqref{eq:spectral}. This is the general form of 
 our numerical problem, although most of the results reported below use $\alpha = 1$ and $\mu = 0$ so $\mathbf{\tilde{H}} = \mathbf{H}$. 
 
-As explained below, we construct many realisations of $\mathbf{\tilde{H}}$ while testing different models for unit pairings, sub-fields and other parameters, and to run our bootstrap investigations. These realisations correspond to a unit-unit citation network with one giant strongly connected component (SCC) and some very small, usually singleton, components that are sources or institutions disjoint with the particular network under investigation. In these cases we retain only the SCC. For some units in the SCC, there may be no outgoing references, and for others, no incoming references. We exclude these units too, ensuring that the residual $\mathbf{\tilde{H}}$ is highly likely to be row-stochastic and primitive, with a single dominate eigenvector.
+As explained below, we construct many realisations of $\mathbf{\tilde{H}}$ while testing different models for unit pairings, subfields and other parameters, and to run our bootstrap investigations. These realisations correspond to a unit-unit citation network with one giant strongly connected component (SCC) and some very small, usually singleton, components that are sources or institutions disjoint with the particular network under investigation. In these cases we retain only the SCC. For some units in the SCC, there may be no outgoing references, and for others, no incoming references. We exclude these units too, ensuring that the residual $\mathbf{\tilde{H}}$ is highly likely to be row-stochastic and primitive, with a single dominate eigenvector.
 
-$\mathbf{\tilde{H}}$ is a sparse matrix constructed from the respective filtered and weighted edge list $\mathcal{E}$ accumulated over $\mathfrak{R}$ and stored in compressed sparse row (CSR) format. We have explored two approaches to applying the resolvent. In one the Python scipy function \textit{scipy.sparse.linalg.eigs} efficiently provides all eigenpairs, allowing us to review the primitivity condition. In the other, the power iteration 
+$\mathbf{\tilde{H}}$ is a sparse matrix constructed from the respective filtered and weighted edge list $\mathcal{E}$ accumulated over $\mathfrak{R}$ and stored in compressed sparse row (CSR) format. We have explored two approaches to applying the resolvent. The Python scipy function \textit{scipy.sparse.linalg.eigs} efficiently provides all eigenpairs, allowing us to review the primitivity condition. The power iteration 
 \begin{equation}
 	\boldsymbol{\pi}^{(k+1)}
 	\;=\;
@@ -287,6 +287,5 @@ $\mathbf{\tilde{H}}$ is a sparse matrix constructed from the respective filtered
 	\label{eq:power}
 \end{equation}
 converges to $\boldsymbol{\pi}$ from any strictly positive starting
-vector $\boldsymbol{\pi}^{(0)}$. The per-work scaling $A\,\mathbf{A}^{-1}$ to
-obtain $\mathbf{v}$ is applied after $\boldsymbol{\pi}$ has been computed.
+vector $\boldsymbol{\pi}^{(0)}$. In either approach, the per-work scaling equation~\eqref{eq:vstar} is applied after $\boldsymbol{\pi}$ has been computed.
 

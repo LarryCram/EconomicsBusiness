@@ -109,6 +109,10 @@ def build_csr(db, run_code: str, fx: str, tau_u: int, tau_s: int, rho: int, m: t
             f"SELECT AVG(rval) FROM "
             f"(SELECT DISTINCT citer_work_idx, CAST(R_i AS DOUBLE) AS rval FROM {tname})"
         ).fetchone()[0]
+        if r_bar is None:
+            raise RuntimeError(
+                f"Edge list table '{tname}' is empty — cannot compute R̄ for ρ=0 weighting."
+            )
         rho_col = f"{r_bar} / CAST(R_i AS DOUBLE)"
     else:
         rho_col = "1.0"

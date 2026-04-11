@@ -3,7 +3,7 @@
 \label{sec:sources}
 
 OpenAlex \citep{priemOpenAlexFullyopenIndex2022} provides our bibliometric data. Corpus selection starts with a list of eligible sources having four features: an OpenAlex source identifier for corpus extraction, evidence from one of our journal registries that the source 
-publishes economics or business research, a sufficient number of published works per year, and relatively high OpenAlex source topic density to exclude cross-disciplinary journals.
+publishes economics or business research, a sufficient number of published works per year, and relatively high OpenAlex source topic density excluding cross-disciplinary journals.
 
 The journal registries are as follows. Harzing's \textit{71st Edition of the Journal Quality List}~\cite[][JQL]{harzinga.-w.JournalQualityList2024} assembles
 peer assessments of journal quality across business and economics
@@ -22,7 +22,7 @@ Every journal in JQL, SJL, and JCR has at least one ISSN, and may have several. 
 
 \input{../tables/table2_source_matching}
 
-The long list OAS\textsuperscript{*} includes sources publishing many works in disciplines beyond economics and business, and we use OpenAlex source-topic assignments to exclude them as follows. A source has work-topic counts for up to five topics, each within a single sub-field, field, and domain. We accumulate the work-topic counts for OpenAlex Field~14 (Economics, Econometrics and Finance) and Field~20 (Business and Management) and drop sources if this count is below 50\% of the total count. 
+The long list OAS\textsuperscript{*} includes sources publishing many works in disciplines beyond economics and business, and we use OpenAlex source-topic assignments to exclude them as follows. A source has work-topic counts for up to five topics, each within a single subfield, field, and domain. We accumulate the work-topic counts for OpenAlex Field~14 (Economics, Econometrics and Finance) and Field~20 (Business and Management) and drop sources if this count is below 50\% of the total count. 
 
 For the surviving OAS\textsuperscript{*} sources we extract work and authorship data revealing units that can be excluded because they publish very few works. To find a suitable threshold for excluding these units, we examine source and institution retention curves (Fig.~\ref{fig:retention}), selecting thresholds of $\tau_U = 20$ works/institution/year and $\tau_S = 20$ works/source/year. We designate the residual set of sources OAS.
 

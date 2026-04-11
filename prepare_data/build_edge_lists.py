@@ -36,7 +36,7 @@ At matrix build time supply:
 Institution retention
 ---------------------
 For fx='A' the retained institution set is computed from the A corpus itself.
-For all field subsets (E, B, EB, NEB) the institution set is inherited from
+For all field subsets (E, B, EB, NEB, X) the institution set is inherited from
 the corresponding A corpus (_units_{run_code}_A_tauU{tau_u}_tauS{tau_s}).
 A must therefore be built before its field subsets within each
 (run_code, tau_u, tau_s) group.
@@ -63,6 +63,7 @@ FIELD_COND = {
     'B':   "AND sm.field_eb = 'B'",
     'EB':  "AND sm.field_eb IN ('E', 'B', 'A')",
     'NEB': "AND sm.field_eb IS NULL",
+    'X':   "AND sm.field_eb = 'X'",
     'A':   "",
 }
 

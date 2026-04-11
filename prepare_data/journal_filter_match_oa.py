@@ -88,7 +88,7 @@ def filter_and_match(db):
         -- 3. Source topic densities (all OAS*, saved for reporting/diagnostics)
         -- ====================================================================
         -- Density = SUM(econ/bus topic counts) / SUM(all topic counts)
-        -- NULL density means no topic assignments; those sources are kept.
+        -- NULL density means no topic assignments.
         CREATE OR REPLACE TEMP TABLE source_densities AS
             SELECT source_idx,
                 COALESCE(SUM(topic_count) FILTER (WHERE field_name IN (
@@ -100,35 +100,13 @@ def filter_and_match(db):
 
         COPY (SELECT * FROM source_densities) TO '{PARQUET}/source_densities.parquet' (FORMAT PARQUET);
 
-        CREATE OR REPLACE TEMP TABLE approved_sources AS
-            SELECT source_idx, econ_bus_density
-            FROM source_densities
-            WHERE econ_bus_density >= 0.4 OR econ_bus_density IS NULL;
-
-        -- 3c. Dropped sources: top topic for sources excluded by density filter
-        COPY (
-            WITH ranked AS (
-                SELECT st.source_idx, st.source_name, st.works_count,
-                       st.era_journal_name, st.era_field,
-                       st.harzing_journal_name, st.harzing_field,
-                       st.wos_journal_name, st.wos_categories,
-                       sd.econ_bus_density,
-                       st.field_name, st.subfield_name, st.topic_count,
-                       ROW_NUMBER() OVER (PARTITION BY st.source_idx ORDER BY st.topic_count DESC, st.subfield_name ASC) AS rn
-                FROM source_topics st
-                JOIN source_densities sd ON st.source_idx = sd.source_idx
-                WHERE sd.econ_bus_density < 0.4
-            )
-            SELECT * EXCLUDE rn FROM ranked WHERE rn = 1
-        ) TO '{PARQUET}/dropped_sources.parquet' (FORMAT PARQUET);
-
-        -- 4. Final: top topic per approved source, with density and E/B/A/NULL field label
+        -- 4. Final: top topic per source, with density and E/B/A/X field label
         -- =============================================================================
         -- field_eb scoring uses registry fields + OA field_name (each column scores 0/1):
         --   'E'  econ_score >= 2 AND bus_score < 1
         --   'B'  bus_score  >= 2 AND econ_score < 1
         --   'A'  both signals present (econ_score >= 2 AND bus_score >= 1, or vice versa)
-        --   NULL neither signal strong (both scores <= 1)
+        --   'X'  neither signal strong (both scores <= 1)
         CREATE OR REPLACE TEMP TABLE source_master AS
         WITH ranked_topics AS (
             SELECT
@@ -138,10 +116,10 @@ def filter_and_match(db):
                 st.works_count, st.cited_by_count,
                 st.wos_journal_name, st.wos_categories,
                 st.topic_count, st.subfield_name, st.field_name,
-                ap.econ_bus_density,
+                sd.econ_bus_density,
                 ROW_NUMBER() OVER (PARTITION BY st.source_idx ORDER BY st.topic_count DESC, st.subfield_name ASC) as rn
             FROM source_topics st
-            JOIN approved_sources ap ON st.source_idx = ap.source_idx
+            LEFT JOIN source_densities sd ON st.source_idx = sd.source_idx
         ),
         top_topic AS (SELECT * EXCLUDE rn FROM ranked_topics WHERE rn = 1),
         scored AS (
@@ -162,7 +140,7 @@ def filter_and_match(db):
             CASE
                 WHEN econ_score >= 2 AND bus_score  < 1 THEN 'E'
                 WHEN bus_score  >= 2 AND econ_score < 1 THEN 'B'
-                WHEN bus_score  <= 1 AND econ_score <= 1 THEN NULL
+                WHEN bus_score  <= 1 AND econ_score <= 1 THEN 'X'
                 ELSE 'A'
             END AS field_eb
         FROM scored;
