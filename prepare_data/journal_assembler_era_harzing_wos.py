@@ -91,7 +91,11 @@ def load_journals(db):
         CREATE TEMP TABLE era AS
         SELECT list_distinct(list_filter(flatten(list(["ISSN 1", "ISSN 2", "ISSN 3"])), x -> x IS NOT NULL AND x != 'N/A')) AS era_ISSN,
                 Title AS era_name,
-                "FoR 1 Name" AS FoR_name,
+                list_filter([
+                    CASE WHEN "FoR 1" IS NOT NULL AND "FoR 1" != '' THEN "FoR 1" END,
+                    CASE WHEN "FoR 2" IS NOT NULL AND "FoR 2" != '' THEN "FoR 2" END,
+                    CASE WHEN "FoR 3" IS NOT NULL AND "FoR 3" != '' THEN "FoR 3" END
+                ], x -> x IS NOT NULL) AS era_for_codes,
         FROM read_xlsx('{DATA}/source_masters/ecobus_journal_harzing_era.xlsx',
                         sheet='ERA2023 Submission Journal List',
                         range='A:P',
@@ -100,7 +104,7 @@ def load_journals(db):
         WHERE LEFT("FoR 1", 2) IN ('35', '38')
           AND ("FoR 2" IS NULL OR "FoR 2" = '' OR LEFT("FoR 2", 2) IN ('35', '38'))
           AND ("FoR 3" IS NULL OR "FoR 3" = '' OR LEFT("FoR 3", 2) IN ('35', '38'))
-        GROUP BY "ERA Journal Id", Title, "FoR 1 Name"
+        GROUP BY "ERA Journal Id", Title, "FoR 1", "FoR 2", "FoR 3"
     """)
     print("=== ERA BASE LIST ===")
     db.sql("SELECT COUNT(*) as era_count FROM era").show()
@@ -129,7 +133,7 @@ def load_journals(db):
         SELECT DISTINCT
             list_distinct(list_filter(COALESCE(e.era_ISSN, []) || COALESCE(h.harzing_issn, []), x -> x IS NOT NULL AND x != 'N/A')) as combined_issn_list,
             e.era_name as era_journal_name,
-            e.FoR_name as era_field,
+            e.era_for_codes as era_for_codes,
             h.journal_name as harzing_journal_name,
             h.field as harzing_field
         FROM era e
@@ -170,7 +174,7 @@ def load_journals(db):
         SELECT DISTINCT
             list_distinct(list_filter(COALESCE(eh.combined_issn_list, []) || COALESCE(w.wos_issn, []), x -> x IS NOT NULL AND x != 'N/A')) as unique_issn_list,
             eh.era_journal_name,
-            eh.era_field,
+            eh.era_for_codes,
             eh.harzing_journal_name,
             eh.harzing_field,
             w.jcr_name as wos_journal_name,
@@ -216,8 +220,8 @@ def load_journals(db):
     print("\n=== EXAMPLES OF EACH TYPE ===")
     print("ERA only:")
     db.sql("""
-        SELECT unique_issn_list, era_journal_name, era_field
-        FROM comprehensive_journals 
+        SELECT unique_issn_list, era_journal_name, era_for_codes
+        FROM comprehensive_journals
         WHERE era_journal_name IS NOT NULL AND harzing_journal_name IS NULL AND wos_journal_name IS NULL
         LIMIT 3
     """).show()

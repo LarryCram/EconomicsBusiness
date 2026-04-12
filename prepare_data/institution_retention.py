@@ -8,7 +8,7 @@ proportion of total corpus works those institutions account for.
 Rows:    21 (t_x, F_x) pairs
 Columns: τ_U ∈ {0, 5, 10, 15, 20} × (inst_count, pct_works)
 
-Requires source_master.parquet to have the field_eb column ('E'/'B'/NULL),
+Requires source_master.parquet to have the field_eb column ('E'/'B'/'A'/'X'),
 produced by journal_filter_match_oa.py.
 
 Outputs:

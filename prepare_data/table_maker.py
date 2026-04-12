@@ -1,6 +1,15 @@
 """
 table_maker.py — Generate publishable tables for the paper.
 
+Table 1: Registry overview with field classification.
+    Inputs:
+        comprehensive_journal_list.parquet  -- pre-OA registry union
+        oas_star.parquet                    -- OA-matched long-list (OAS*)
+        source_master.parquet               -- OAS* with field_eb
+    Outputs (written to tables/ and data/):
+        table1_registry_overview.tex
+        table1_registry_overview.csv
+
 Table 2: Source registry matching statistics.
     Inputs:
         comprehensive_journal_list.parquet  -- pre-OA registry union
@@ -49,6 +58,134 @@ CORPUS_YEARS = 25  # 2000-2024 inclusive
 # ---------------------------------------------------------------------------
 # Data assembly
 # ---------------------------------------------------------------------------
+
+def build_table1_data(db):
+    """
+    Return data for Table 1: registry overview with field classification.
+
+    Rows: JQL (Harzing), MJL (WOS), SJL (ERA), OAS* (union).
+    Columns per row: Sources, OA Match, Match %, E, B, A, X.
+
+    Source counts include duplicates: a source in both JQL and MJL is
+    counted once in each row.  E/B/A/X are taken from source_master (the
+    combined four-signal scoring) for OA-matched sources from that registry.
+    """
+    # Registry sizes — COUNT(*) so cross-registry duplicates count per registry
+    sizes = db.sql(f"""
+        SELECT
+            COUNT(*) FILTER (WHERE harzing_journal_name IS NOT NULL) AS jql_total,
+            COUNT(*) FILTER (WHERE wos_journal_name     IS NOT NULL) AS mql_total,
+            COUNT(*) FILTER (WHERE era_journal_name     IS NOT NULL) AS sjl_total
+        FROM '{PARQUET}/comprehensive_journal_list.parquet'
+    """).fetchone()
+    jql_total, mql_total, sjl_total = sizes
+
+    # OA matches per registry (OAS*)
+    matched = db.sql(f"""
+        SELECT
+            COUNT(*) FILTER (WHERE harzing_journal_name IS NOT NULL) AS jql_matched,
+            COUNT(*) FILTER (WHERE wos_journal_name     IS NOT NULL) AS mql_matched,
+            COUNT(*) FILTER (WHERE era_journal_name     IS NOT NULL) AS sjl_matched
+        FROM '{PARQUET}/oas_star.parquet'
+    """).fetchone()
+    jql_matched, mql_matched, sjl_matched = matched
+
+    # E/B/A/X per registry from source_master
+    eb_df = db.sql(f"""
+        SELECT
+            field_eb,
+            COUNT(*) FILTER (WHERE harzing_journal_name IS NOT NULL) AS jql_n,
+            COUNT(*) FILTER (WHERE wos_journal_name     IS NOT NULL) AS mql_n,
+            COUNT(*) FILTER (WHERE era_journal_name     IS NOT NULL) AS sjl_n,
+            COUNT(*)                                                  AS oas_n
+        FROM '{PARQUET}/source_master.parquet'
+        GROUP BY field_eb
+    """).df()
+
+    eb = {row['field_eb']: row for _, row in eb_df.iterrows()}
+
+    def _eb(col, label):
+        return int(eb.get(label, {}).get(col, 0))
+
+    oas_total = int(eb_df['oas_n'].sum())
+
+    data = {
+        'JQL': {'total': jql_total, 'matched': jql_matched,
+                'E': _eb('jql_n', 'E'), 'B': _eb('jql_n', 'B'),
+                'A': _eb('jql_n', 'A'), 'X': _eb('jql_n', 'X')},
+        'MJL': {'total': mql_total, 'matched': mql_matched,
+                'E': _eb('mql_n', 'E'), 'B': _eb('mql_n', 'B'),
+                'A': _eb('mql_n', 'A'), 'X': _eb('mql_n', 'X')},
+        'SJL': {'total': sjl_total, 'matched': sjl_matched,
+                'E': _eb('sjl_n', 'E'), 'B': _eb('sjl_n', 'B'),
+                'A': _eb('sjl_n', 'A'), 'X': _eb('sjl_n', 'X')},
+        'OAS*': {'total': oas_total, 'matched': None,
+                 'E': _eb('oas_n', 'E'), 'B': _eb('oas_n', 'B'),
+                 'A': _eb('oas_n', 'A'), 'X': _eb('oas_n', 'X')},
+    }
+
+    print("\n=== TABLE 1: REGISTRY OVERVIEW ===")
+    print(f"{'Register':<8} {'Sources':>9} {'OA Match':>9} {'Match %':>8} {'E':>6} {'B':>6} {'A':>6} {'X':>6}")
+    for reg, d in data.items():
+        pct = f"{d['matched']/d['total']*100:.1f}%" if d['matched'] is not None else "—"
+        matched_str = _i(d['matched']) if d['matched'] is not None else "—"
+        print(f"{reg:<8} {_i(d['total']):>9} {matched_str:>9} {pct:>8} "
+              f"{_i(d['E']):>6} {_i(d['B']):>6} {_i(d['A']):>6} {_i(d['X']):>6}")
+    return data
+
+
+def write_latex_table1(data, out_path):
+    REGS = ['JQL', 'MJL', 'SJL']
+
+    L = []
+    L.append(r"\begin{table}[htbp]")
+    L.append(r"\centering")
+    L.append(
+        r"\caption{Registry sources and their OpenAlex matches, classified by field."
+        r" JQL = Harzing Journal Quality List; MJL = Web of Science Master Journal List;"
+        r" SJL = ERA Subject Journal List (FoR codes 35 and 38)."
+        r" A source appearing in multiple registries is counted in each."
+        r" E/B/A/X are assigned by the combined four-signal scoring;"
+        r" OAS$^*$ is the union across all three registries matched to OpenAlex.}"
+    )
+    L.append(r"\label{tab:registry_overview}")
+    L.append(r"\begin{tabular}{lrrrrrrrr}")
+    L.append(r"\toprule")
+    L.append(r"Register & Sources & OA Match & Match\% & E & B & A & X \\")
+    L.append(r"\midrule")
+    for reg in REGS:
+        d = data[reg]
+        L.append(
+            f"{reg} & {_i(d['total'])} & {_i(d['matched'])} & {_pct(d['matched'], d['total'])}"
+            f" & {_i(d['E'])} & {_i(d['B'])} & {_i(d['A'])} & {_i(d['X'])} \\\\"
+        )
+    L.append(r"\midrule")
+    d = data['OAS*']
+    L.append(
+        f"OAS$^*$ & {_i(d['total'])} & --- & ---"
+        f" & {_i(d['E'])} & {_i(d['B'])} & {_i(d['A'])} & {_i(d['X'])} \\\\"
+    )
+    L.append(r"\bottomrule")
+    L.append(r"\end{tabular}")
+    L.append(r"\end{table}")
+
+    out_path.write_text("\n".join(L) + "\n")
+    print(f"LaTeX written to {out_path}")
+
+
+def write_csv_table1(data, out_path):
+    rows = []
+    for reg, d in data.items():
+        rows.append({
+            'Register': reg,
+            'Sources': d['total'],
+            'OA_Match': d['matched'] if d['matched'] is not None else '',
+            'Match_pct': f"{d['matched']/d['total']*100:.1f}" if d['matched'] is not None else '',
+            'E': d['E'], 'B': d['B'], 'A': d['A'], 'X': d['X'],
+        })
+    pd.DataFrame(rows).to_csv(out_path, index=False)
+    print(f"CSV written to {out_path}")
+
 
 def build_table2_data(db):
     """Return (rows, overlaps) where:
@@ -101,7 +238,6 @@ def build_table2_data(db):
                                                                 AND harzing_journal_name IS NOT NULL) AS all_three_oas,
             COUNT(*) AS total_oas
         FROM '{PARQUET}/source_master.parquet'
-        WHERE has_corpus_refs = true
     """).fetchone()
     jql_oas, mql_oas, sjl_oas, mql_sjl_oas, mql_jql_oas, sjl_jql_oas, all_three_oas, total_oas = oas
 
@@ -116,7 +252,7 @@ def build_table2_data(db):
 
     # Console summary
     print("\n=== TABLE 2: SOURCE REGISTRY MATCHING ===")
-    print(f"{'Register':<8} {'Journals':>9} {'Matched':>9} {'Rate':>7} {'Unmatched':>10}")
+    print(f"{'Register':<8} {'Sources':>9} {'Matched':>9} {'Rate':>7} {'Unmatched':>10}")
     for reg, total, matched, unmatched in rows:
         print(f"{reg:<8} {total:>9,} {matched:>9,} {matched/total*100:>6.1f}% {unmatched:>10,}")
     print(f"\nPairwise overlaps of matched OAS* (long-list, pre-topic filter):")
@@ -205,7 +341,7 @@ def write_latex_table2(rows, overlaps, out_path):
     L.append(r"\label{tab:source_matching}")
     L.append(r"\begin{tabular}{lrrrr}")
     L.append(r"\toprule")
-    L.append(r"Register & Journals & Matched & Match rate & Unmatched \\")
+    L.append(r"Register & Sources & Matched & Match rate & Unmatched \\")
     L.append(r"\midrule")
     for reg, total, matched, unmatched in rows:
         L.append(f"{reg} & {_i(total)} & {_i(matched)} & {_pct(matched, total)} & {_i(unmatched)} \\\\")
@@ -237,8 +373,8 @@ def write_latex_table2(rows, overlaps, out_path):
 def write_csv_table2(rows, overlaps, out_path):
     mql_sjl, mql_jql, sjl_jql, all_three, total_oas_star = overlaps
 
-    top = pd.DataFrame(rows, columns=['Register', 'Journals', 'Matched', 'Unmatched'])
-    top.insert(3, 'Match_rate', top['Matched'] / top['Journals'])
+    top = pd.DataFrame(rows, columns=['Register', 'Sources', 'Matched', 'Unmatched'])
+    top.insert(3, 'Match_rate', top['Matched'] / top['Sources'])
 
     bottom = pd.DataFrame([
         ['MJL \u2229 SJL',         mql_sjl],
@@ -285,7 +421,7 @@ def _categorise_by_name(name):
         return 'Tax / legal specialist'
     if any(w in n for w in ['educat', 'teaching', 'learning', 'pedagog', 'higher ed']):
         return 'Education / pedagogical'
-    return 'Small / specialist journal'
+    return 'Small / specialist source'
 
 
 def export_title_match_candidates(db):
@@ -341,7 +477,7 @@ def build_table_exclusions(db):
     L = []
     L.append(r"\begin{table}[htbp]")
     L.append(r"\centering")
-    L.append(r"\caption{Reasons for exclusion from OAS. Stage~1: registry journals with no"
+    L.append(r"\caption{Reasons for exclusion from OAS. Stage~1: registry sources with no"
              r" OpenAlex ISSN match. Stage~2: matched sources excluded by topic density filter.}")
     L.append(r"\label{tab:oas_exclusions}")
     L.append(r"\begin{tabular}{lr}")
@@ -782,6 +918,7 @@ def write_csv_table3(counts, dists, out_path):
 
 def main():
     with duckdb.connect() as db:
+        t1_data = build_table1_data(db)
         rows, overlaps, overlaps_oas, oas_provenance = build_table2_data(db)
         export_title_match_candidates(db)
         build_table_exclusions(db)
@@ -789,6 +926,9 @@ def main():
         sjl_dropped_by_topic_filter(db)
         t3_counts = build_table3_data(db)
         t3_dists  = build_table3_distributions(db)
+    write_latex_table1(t1_data, TABLES / 'table1_registry_overview.tex')
+    write_csv_table1(t1_data,   DATA   / 'table1_registry_overview.csv')
+    compile_pdf(TABLES / 'table1_registry_overview.tex')
     write_latex_table2(rows, overlaps, TABLES / 'table2_source_matching.tex')
     write_csv_table2(rows, overlaps, DATA   / 'table2_source_matching.csv')
     compile_pdf(TABLES / 'table2_source_matching.tex')

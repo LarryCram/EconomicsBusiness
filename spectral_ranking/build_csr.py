@@ -146,8 +146,9 @@ def build_csr(db, run_code: str, fx: str, tau_u: int, tau_s: int, rho: int, m: t
         """).fetchdf()
         rows = src_idx.get_indexer(df['citer_source_idx'].to_numpy())
         cols = src_idx.get_indexer(df['cited_source_idx'].to_numpy())
+        mask = (rows >= 0) & (cols >= 0)
         return sp.coo_matrix(
-            (df['weight'].to_numpy(dtype=np.float64), (rows, cols)),
+            (df['weight'].to_numpy(dtype=np.float64)[mask], (rows[mask], cols[mask])),
             shape=(n_s, n_s)
         ).tocsr()
 
@@ -169,8 +170,9 @@ def build_csr(db, run_code: str, fx: str, tau_u: int, tau_s: int, rho: int, m: t
         """).fetchdf()
         rows = src_idx.get_indexer(df['citer_source_idx'].to_numpy())
         cols = inst_idx.get_indexer(df['cited_inst_idx'].to_numpy())
+        mask = (rows >= 0) & (cols >= 0)
         return sp.coo_matrix(
-            (df['weight'].to_numpy(dtype=np.float64), (rows, cols)),
+            (df['weight'].to_numpy(dtype=np.float64)[mask], (rows[mask], cols[mask])),
             shape=(n_s, n_u)
         ).tocsr()
 
@@ -192,8 +194,9 @@ def build_csr(db, run_code: str, fx: str, tau_u: int, tau_s: int, rho: int, m: t
         """).fetchdf()
         rows = inst_idx.get_indexer(df['citer_inst_idx'].to_numpy())
         cols = src_idx.get_indexer(df['cited_source_idx'].to_numpy())
+        mask = (rows >= 0) & (cols >= 0)
         return sp.coo_matrix(
-            (df['weight'].to_numpy(dtype=np.float64), (rows, cols)),
+            (df['weight'].to_numpy(dtype=np.float64)[mask], (rows[mask], cols[mask])),
             shape=(n_u, n_s)
         ).tocsr()
 
@@ -210,8 +213,9 @@ def build_csr(db, run_code: str, fx: str, tau_u: int, tau_s: int, rho: int, m: t
         """).fetchdf()
         rows = inst_idx.get_indexer(df['citer_inst_idx'].to_numpy())
         cols = inst_idx.get_indexer(df['cited_inst_idx'].to_numpy())
+        mask = (rows >= 0) & (cols >= 0)
         return sp.coo_matrix(
-            (df['weight'].to_numpy(dtype=np.float64), (rows, cols)),
+            (df['weight'].to_numpy(dtype=np.float64)[mask], (rows[mask], cols[mask])),
             shape=(n_u, n_u)
         ).tocsr()
 

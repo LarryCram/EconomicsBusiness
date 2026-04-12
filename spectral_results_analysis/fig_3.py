@@ -13,7 +13,7 @@ x-axis: LOCKED to baseline (m=0110) rank order.
   Each unit sits at its baseline rank; units absent from an alternative run
   (e.g. institutions in m=1000) are simply omitted from that series.
 
-All runs: F=A, t_x=5, τ_U=tau_u_floor['A'], ρ=fixed, α=1 (baseline, SS-only, II-only); α=0.85 (sensitivity variants).
+All runs: F=A, τ_U=τ_S=20, ρ=0, α=1.
 
 Outputs:
   plots/fig_3.pdf        — with title (exploration)
@@ -51,53 +51,6 @@ STYLE = {
 
 S_LABELS = ['m=0110', 'm=1000', 'm=1111']
 I_LABELS = ['m=0110', 'm=0001', 'm=1111']
-
-
-# ─── Field labels ─────────────────────────────────────────────────────────────
-
-def load_field_labels(paths) -> dict:
-    """Return {source_idx (int): 'E' | 'B'} from source_master.csv in data/."""
-    sm = pd.read_csv(paths.data / 'source_master.csv',
-                     usecols=['source_idx', 'field_eb'])
-    sm = sm.dropna(subset=['field_eb'])
-    return dict(zip(sm['source_idx'].astype(int), sm['field_eb']))
-
-
-def load_inst_field_labels(el_db, tau_u: int, tau_s: int) -> dict:
-    """
-    Return {inst_idx (int): 'E' | 'B' | 'other'} by checking which
-    field-subset unit tables the institution appears in.
-
-    'E'    → present in F=E network only
-    'B'    → present in F=B network only
-    'other'→ present in both or neither (appears in F=A but not exclusively E or B)
-    """
-    def inst_set(fx: str) -> set:
-        tname = f'_units_{_run_code}_{fx}_tauU{tau_u}_tauS{tau_s}'
-        tables = {r[0] for r in el_db.execute('SHOW TABLES').fetchall()}
-        if tname not in tables:
-            return set()
-        rows = el_db.execute(
-            f"SELECT unit_idx FROM {tname} WHERE unit_type='U'"
-        ).fetchall()
-        return {int(r[0]) for r in rows}
-
-    e_set = inst_set('E')
-    b_set = inst_set('B')
-    x_set = inst_set('X')
-
-    inst_field: dict = {}
-    for idx in e_set | b_set | x_set:
-        memberships = (idx in e_set, idx in b_set, idx in x_set)
-        if sum(memberships) > 1:
-            inst_field[idx] = 'other'
-        elif memberships[0]:
-            inst_field[idx] = 'E'
-        elif memberships[1]:
-            inst_field[idx] = 'B'
-        else:
-            inst_field[idx] = 'X'
-    return inst_field
 
 
 # ─── Data ─────────────────────────────────────────────────────────────────────
@@ -230,9 +183,7 @@ def fetch_data(db) -> tuple:
 # ─── Plot ─────────────────────────────────────────────────────────────────────
 
 def _draw_panel(ax, series: dict, unit_key: str, panel_labels: list,
-                n_baseline: int, panel_title: str,
-                field_labels: dict | None = None,
-                inst_field_labels: dict | None = None) -> None:
+                n_baseline: int, panel_title: str) -> None:
     for label in panel_labels:
         if label not in series:
             continue
@@ -267,54 +218,6 @@ def _draw_panel(ax, series: dict, unit_key: str, panel_labels: list,
                 label=f'{label}  ({n_overlap:,}/{n_baseline:,})',
             )
 
-    # ── E/B overlay on S panel (black circles = E, black squares = B) ─────────
-    if unit_key == 'S' and field_labels and 'm=1000' in series:
-        df_ss = series['m=1000']['S']
-        if not df_ss.empty:
-            df_ss = df_ss.copy()
-            df_ss['F'] = df_ss['unit_idx'].map(field_labels)
-            for f_val, marker, legend_label in [('E', 'o', 'E (SS)'),
-                                                ('B', 's', 'B (SS)'),
-                                                ('X', '^', 'X (SS)')]:
-                sub = df_ss[df_ss['F'] == f_val]
-                if sub.empty:
-                    continue
-                ax.scatter(
-                    sub['baseline_rank'].values,
-                    sub['v'].values,
-                    color='black',
-                    marker=marker,
-                    s=18,
-                    linewidths=0.5,
-                    facecolors='none',
-                    zorder=4,
-                    label=f'{legend_label}  ({len(sub):,})',
-                )
-
-    # ── E/B overlay on I panel (black circles = E, black squares = B) ─────────
-    if unit_key == 'I' and inst_field_labels and 'm=0001' in series:
-        df_ii = series['m=0001']['I']
-        if not df_ii.empty:
-            df_ii = df_ii.copy()
-            df_ii['F'] = df_ii['unit_idx'].map(inst_field_labels)
-            for f_val, marker, legend_label in [('E', 'o', 'E (II)'),
-                                                ('B', 's', 'B (II)'),
-                                                ('X', '^', 'X (II)')]:
-                sub = df_ii[df_ii['F'] == f_val]
-                if sub.empty:
-                    continue
-                ax.scatter(
-                    sub['baseline_rank'].values,
-                    sub['v'].values,
-                    color='black',
-                    marker=marker,
-                    s=18,
-                    linewidths=0.5,
-                    facecolors='none',
-                    zorder=4,
-                    label=f'{legend_label}  ({len(sub):,})',
-                )
-
     ax.set_yscale('log')
     ax.set_ylim(0.002, 20)
     ax.axhline(1.0, color='#999999', linewidth=0.8, linestyle='--', zorder=0)
@@ -331,9 +234,7 @@ def _draw_panel(ax, series: dict, unit_key: str, panel_labels: list,
     ax.legend(fontsize=8, framealpha=0.85, loc='upper right')
 
 
-def plot3(src_rank_map: dict, inst_rank_map: dict, series: dict,
-          field_labels: dict,
-          inst_field_labels: dict | None = None) -> None:
+def plot3(src_rank_map: dict, inst_rank_map: dict, series: dict) -> None:
     paths = load_config()
 
     sns.set_theme(style='whitegrid', font_scale=0.95)
@@ -341,11 +242,9 @@ def plot3(src_rank_map: dict, inst_rank_map: dict, series: dict,
     fig.subplots_adjust(hspace=0.44)
 
     _draw_panel(axes[0], series, 'S', S_LABELS,
-                n_baseline=len(src_rank_map),  panel_title='Sources',
-                field_labels=field_labels)
+                n_baseline=len(src_rank_map),  panel_title='Sources')
     _draw_panel(axes[1], series, 'I', I_LABELS,
-                n_baseline=len(inst_rank_map), panel_title='Institutions',
-                inst_field_labels=inst_field_labels)
+                n_baseline=len(inst_rank_map), panel_title='Institutions')
 
     sup = fig.suptitle(
         'Influence per work — sensitivity to network mode $m$  '
@@ -367,9 +266,8 @@ def plot3(src_rank_map: dict, inst_rank_map: dict, series: dict,
 # ─── Main ─────────────────────────────────────────────────────────────────────
 
 def main():
-    paths = load_config()
+    paths   = load_config()
     rk_path = paths.working / 'rankings.duckdb'
-    el_path = paths.working / 'edge_lists.duckdb'
 
     if not rk_path.exists():
         raise FileNotFoundError(
@@ -381,25 +279,7 @@ def main():
         print('Loading runs:')
         src_rank_map, inst_rank_map, series = fetch_data(db)
 
-    paths = load_config()
-    field_labels = load_field_labels(paths)
-    print(f'Field labels loaded: {sum(v=="E" for v in field_labels.values())} E, '
-          f'{sum(v=="B" for v in field_labels.values())} B, '
-          f'{sum(v=="X" for v in field_labels.values())} X')
-
-    inst_field_labels: dict | None = None
-    if el_path.exists():
-        with duckdb.connect(str(el_path), read_only=True) as el_db:
-            inst_field_labels = load_inst_field_labels(el_db, _tau_u, _tau_s)
-        e_only = sum(v == 'E'     for v in inst_field_labels.values())
-        b_only = sum(v == 'B'     for v in inst_field_labels.values())
-        x_only = sum(v == 'X'     for v in inst_field_labels.values())
-        other  = sum(v == 'other' for v in inst_field_labels.values())
-        print(f'Institution field labels: E={e_only}  B={b_only}  X={x_only}  other={other}')
-    else:
-        print(f'WARNING: {el_path} not found — institution E/B markers skipped')
-
-    plot3(src_rank_map, inst_rank_map, series, field_labels, inst_field_labels)
+    plot3(src_rank_map, inst_rank_map, series)
 
 
 if __name__ == '__main__':

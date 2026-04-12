@@ -25,7 +25,7 @@ def filter_and_match(db):
                                 s.display_name AS source_name,
                                 works_count, cited_by_count,
                                 s.issn_l AS issn,
-                                j.era_journal_name, j.era_field,
+                                j.era_journal_name, j.era_for_codes,
                                 j.harzing_journal_name, j.harzing_field,
                                 j.wos_journal_name, j.wos_categories
             FROM '{PARQUET}/comprehensive_journal_list.parquet' j
@@ -39,7 +39,7 @@ def filter_and_match(db):
             WITH unmatched AS (
                 SELECT DISTINCT
                     COALESCE(cjl.era_journal_name, cjl.wos_journal_name, cjl.harzing_journal_name) AS ref_name,
-                    cjl.era_journal_name, cjl.era_field,
+                    cjl.era_journal_name, cjl.era_for_codes,
                     cjl.harzing_journal_name, cjl.harzing_field,
                     cjl.wos_journal_name, cjl.wos_categories
                 FROM '{PARQUET}/comprehensive_journal_list.parquet' cjl
@@ -55,7 +55,7 @@ def filter_and_match(db):
                 CAST(regexp_replace(s.id, 'https://openalex.org/S', '') AS BIGINT) AS source_idx,
                 s.display_name AS source_name,
                 s.works_count, s.cited_by_count, s.issn_l AS issn,
-                u.era_journal_name, u.era_field,
+                u.era_journal_name, u.era_for_codes,
                 u.harzing_journal_name, u.harzing_field,
                 u.wos_journal_name, u.wos_categories
             FROM unmatched u
@@ -75,7 +75,7 @@ def filter_and_match(db):
         CREATE OR REPLACE TEMP TABLE source_topics AS
             SELECT s.source_idx, s.source_name, oa.works_count, oa.cited_by_count,
                     s.issn,
-                    s.era_journal_name, s.era_field,
+                    s.era_journal_name, s.era_for_codes,
                     s.harzing_journal_name, s.harzing_field,
                     s.wos_journal_name, s.wos_categories,
                 unnest(oa.topics).count AS topic_count,
@@ -102,16 +102,19 @@ def filter_and_match(db):
 
         -- 4. Final: top topic per source, with density and E/B/A/X field label
         -- =============================================================================
-        -- field_eb scoring uses registry fields + OA field_name (each column scores 0/1):
-        --   'E'  econ_score >= 2 AND bus_score < 1
-        --   'B'  bus_score  >= 2 AND econ_score < 1
-        --   'A'  both signals present (econ_score >= 2 AND bus_score >= 1, or vice versa)
-        --   'X'  neither signal strong (both scores <= 1)
+        -- field_eb scoring: ERA uses count of FoR codes (35xx=econ, 38xx=bus);
+        --   harzing_field uses token lookup (split on ', '; E={'Economics','F&A'}, B=all others except extraneous);
+        --   wos_categories and field_name each contribute 0/1 by keyword.
+        --   'E'  econ_score >= 2 AND bus_score < 1   (pure economics)
+        --   'B'  bus_score  >= 2 AND econ_score < 1  (pure business)
+        --   'A'  mixed/ambiguous: at least one signal present but not pure E or B
+        --   'X'  residual: neither signal strong (econ_score <= 1 AND bus_score <= 1)
+        --  'X'  neither signal strong (both scores <= 1)
         CREATE OR REPLACE TEMP TABLE source_master AS
         WITH ranked_topics AS (
             SELECT
                 st.source_idx, st.source_name, st.issn,
-                st.era_journal_name, st.era_field,
+                st.era_journal_name, st.era_for_codes,
                 st.harzing_journal_name, st.harzing_field,
                 st.works_count, st.cited_by_count,
                 st.wos_journal_name, st.wos_categories,
@@ -124,13 +127,16 @@ def filter_and_match(db):
         top_topic AS (SELECT * EXCLUDE rn FROM ranked_topics WHERE rn = 1),
         scored AS (
             SELECT *,
-                (CASE WHEN regexp_matches(LOWER(era_field),                             'econom|financ|banking') THEN 1 ELSE 0 END
-                   +  CASE WHEN regexp_matches(LOWER(harzing_field),                    'econom|financ|banking') THEN 1 ELSE 0 END
+                (COALESCE(len(list_filter(era_for_codes, x -> LEFT(x, 2) = '35')), 0)
+                   +  CASE WHEN len(list_filter(string_split(COALESCE(harzing_field, ''), ', '),
+                                x -> x IN ('Economics', 'F&A'))) > 0 THEN 1 ELSE 0 END
                    +  CASE WHEN regexp_matches(LOWER(array_to_string(wos_categories, ' ')), 'econom|financ|banking') THEN 1 ELSE 0 END
                    +  CASE WHEN regexp_matches(LOWER(field_name),                       'econom|financ|banking') THEN 1 ELSE 0 END
                 ) AS econ_score,
-                (CASE WHEN regexp_matches(LOWER(era_field),                             'business|commerc|management|tourism|transport') THEN 1 ELSE 0 END
-                   +  CASE WHEN regexp_matches(LOWER(harzing_field),                    'business|commerc|management|tourism|transport') THEN 1 ELSE 0 END
+                (COALESCE(len(list_filter(era_for_codes, x -> LEFT(x, 2) = '38')), 0)
+                   +  CASE WHEN len(list_filter(string_split(COALESCE(harzing_field, ''), ', '),
+                                x -> x IN ('Bus Hist','Comm','Entrep','Gen & Strat','IB','Innovation',
+                                           'Marketing','MIS,KM','OS/OB,HRM/IR','OR,MS,POM','PSM','Tourism'))) > 0 THEN 1 ELSE 0 END
                    +  CASE WHEN regexp_matches(LOWER(array_to_string(wos_categories, ' ')), 'business|commerc|management|tourism|transport') THEN 1 ELSE 0 END
                    +  CASE WHEN regexp_matches(LOWER(field_name),                       'business|commerc|management|tourism|transport') THEN 1 ELSE 0 END
                 ) AS bus_score
@@ -140,8 +146,8 @@ def filter_and_match(db):
             CASE
                 WHEN econ_score >= 2 AND bus_score  < 1 THEN 'E'
                 WHEN bus_score  >= 2 AND econ_score < 1 THEN 'B'
-                WHEN bus_score  <= 1 AND econ_score <= 1 THEN 'X'
-                ELSE 'A'
+                WHEN bus_score  > 1  OR  econ_score > 1  THEN 'A'
+                ELSE 'X'
             END AS field_eb
         FROM scored;
 
@@ -162,7 +168,7 @@ def filter_and_match(db):
         CREATE OR REPLACE TEMP TABLE unmatched AS
         SELECT
             COALESCE(cjl.era_journal_name, cjl.wos_journal_name, cjl.harzing_journal_name) AS ref_name,
-            cjl.era_journal_name, cjl.era_field,
+            cjl.era_journal_name, cjl.era_for_codes,
             cjl.harzing_journal_name, cjl.harzing_field,
             cjl.wos_journal_name, cjl.wos_categories
         FROM '{PARQUET}/comprehensive_journal_list.parquet' cjl
@@ -179,7 +185,7 @@ def filter_and_match(db):
         COPY (
             WITH candidates AS (
                 SELECT u.ref_name,
-                       u.era_journal_name, u.era_field,
+                       u.era_journal_name, u.era_for_codes,
                        u.harzing_journal_name, u.harzing_field,
                        u.wos_journal_name, u.wos_categories,
                        CAST(regexp_replace(oa.id, 'https://openalex.org/S', '') AS BIGINT) AS candidate_source_idx,
@@ -195,7 +201,7 @@ def filter_and_match(db):
                 FROM candidates
             )
             SELECT ref_name,
-                   era_journal_name, era_field,
+                   era_journal_name, era_for_codes,
                    harzing_journal_name, harzing_field,
                    wos_journal_name, wos_categories,
                    candidate_source_idx, candidate_name, ROUND(similarity, 3) AS similarity,

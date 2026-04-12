@@ -1,19 +1,25 @@
 """
-fig_2.py — Prestige-per-work distribution with parameter sensitivity overlay.
+fig_2.py — Prestige-per-work rank curves across field scope (F), m=0110.
 
-Baseline parameters: t_x=5, F=A, τ_U=20, ρ=fixed, m=(0,1,1,0), α=0.85.
+Baseline: F=A (all sources), m=0110, τ_U=τ_S=20, ρ=0, α=1.
+x-axis locked to baseline rank order.
 
-Two-panel figure:
-  Top:    sources (journals)
-  Bottom: institutions
-  x-axis: LOCKED to baseline rank order (rank 1 = highest v in baseline)
-  y-axis: influence per work v  (log scale; v=1 is corpus-average)
+Source panel — four overlays (all m=0110), plotted bottom-to-top:
+  F=X   — residual (neither E nor B)          (purple)
+  F=M   — mixed sources (field_eb='A')        (orange)
+  F=B   — business sources only               (blue)
+  F=E   — economics sources only              (red)
 
-The baseline curve is drawn in black.  Every other available run in
-rankings.duckdb is overplotted at the same x-positions (each unit sits at
-its baseline rank regardless of how its rank changes under the alternative
-parameters).  Units absent from an alternative corpus (e.g. non-economics
-sources when F=E) are simply omitted from that line.
+Institution panel — baseline v, colour-coded by institution field label:
+  Institution field label derived from E_signal / B_signal computed from
+  citer works in the F=A edge list joined to source_master.parquet.
+  E_signal = n_E_works + Σ econ_score/(econ_score+bus_score) over M-source works
+  B_signal = n_B_works + Σ bus_score/(econ_score+bus_score) over M-source works
+  Classification (k = INST_K):
+    E: E_signal >= k AND B_signal < k
+    B: B_signal >= k AND E_signal < k
+    A: E_signal >= k AND B_signal >= k
+    X: E_signal < k  AND B_signal < k
 
 Outputs:
   plots/fig_2.pdf        — with title (exploration)
@@ -36,41 +42,111 @@ _baseline      = next(r for r in load_runs() if r['label'] == 'baseline')
 _run_code      = _baseline['run_code']
 _tau_u         = _baseline['tau_u']
 _tau_s         = _baseline['tau_s']
+
 BASELINE_TABLE = f'rk_{_run_code}_A_tauU{_tau_u}_tauS{_tau_s}_rho0_m0110_chi50_alpha100'
-BASELINE_LABEL = 'baseline'
+EL_TABLE       = f'el_{_run_code}_A_tauU{_tau_u}_tauS{_tau_s}'
+
+INST_K = 0.5   # threshold for institution field classification
+
+# Display label → (catalog label, colour, marker)
+# Order: plotted bottom-to-top (last = top layer)
+OVERLAYS = [
+    ('F=X', 'F=X', '#984ea3', 's'),   # purple  — bottom layer
+    ('F=M', 'F=M', '#ff7f00', 'o'),   # orange  (mixed: field_eb='A')
+    ('F=B', 'F=B', '#377eb8', 'x'),   # blue
+    ('F=E', 'F=E', '#e41a1c', '+'),   # red     — top layer
+]
+
+# Institution field categories: plotted bottom-to-top, colours match source overlays
+INST_FIELD_STYLE = {
+    'X': ('#984ea3', 's'),
+    'A': ('#ff7f00', 'o'),
+    'B': ('#377eb8', 'x'),
+    'E': ('#e41a1c', '+'),
+}
+INST_FIELD_ORDER = ['X', 'A', 'B', 'E']   # bottom layer first
 
 
-# ─── Data ─────────────────────────────────────────────────────────────────────
+# ─── Institution field labels ─────────────────────────────────────────────────
 
-def load_run(db, table_name: str) -> pd.DataFrame:
-    return db.execute(
-        f"SELECT unit_idx, unit_type, v FROM {table_name}"
-    ).df()
+def fetch_inst_field_labels(el_path: Path, parquet_path: Path, k: float) -> dict:
+    """
+    Classify each institution in the F=A edge list as E / B / A / X.
+
+    E_signal = n works in E-sources + Σ econ_score/(econ+bus) for M-source works
+    B_signal = n works in B-sources + Σ bus_score/(econ+bus)  for M-source works
+
+    Returns dict: inst_idx -> 'E'|'B'|'A'|'X'
+    """
+    sm = str(parquet_path / 'source_master.parquet')
+
+    with duckdb.connect(str(el_path), read_only=True) as db:
+        df = db.execute(f"""
+            SELECT
+                e.citer_inst_idx AS inst_idx,
+                SUM(CASE
+                    WHEN sm.field_eb = 'E' THEN 1.0
+                    WHEN sm.field_eb = 'A' AND (sm.econ_score + sm.bus_score) > 0
+                        THEN sm.econ_score::DOUBLE / (sm.econ_score + sm.bus_score)
+                    ELSE 0.0
+                END) AS e_signal,
+                SUM(CASE
+                    WHEN sm.field_eb = 'B' THEN 1.0
+                    WHEN sm.field_eb = 'A' AND (sm.econ_score + sm.bus_score) > 0
+                        THEN sm.bus_score::DOUBLE / (sm.econ_score + sm.bus_score)
+                    ELSE 0.0
+                END) AS b_signal
+            FROM (
+                SELECT DISTINCT citer_work_idx, citer_inst_idx, citer_source_idx
+                FROM {EL_TABLE}
+            ) e
+            JOIN '{sm}' sm ON e.citer_source_idx = sm.source_idx
+            GROUP BY e.citer_inst_idx
+        """).df()
+
+    def _classify(e, b):
+        if e >= k and b >= k:
+            return 'A'
+        elif e >= k:
+            return 'E'
+        elif b >= k:
+            return 'B'
+        else:
+            return 'X'
+
+    df['field_eb_inst'] = df.apply(lambda r: _classify(r['e_signal'], r['b_signal']), axis=1)
+
+    counts = df['field_eb_inst'].value_counts().to_dict()
+    print(f'  Institution field labels (k={k}): '
+          + '  '.join(f'{c}={counts.get(c, 0):,}' for c in INST_FIELD_ORDER))
+
+    return df.set_index('inst_idx')['field_eb_inst'].to_dict()
 
 
-def fetch_all(db) -> tuple:
+# ─── Ranking data ─────────────────────────────────────────────────────────────
+
+def fetch_data(db) -> tuple:
     """
     Returns
     -------
     src_rank_map  : dict  unit_idx -> baseline_rank  (sources)
-    inst_rank_map : dict  unit_idx -> baseline_rank  (institutions)
-    runs          : list of (label, df_s_projected, df_i_projected)
-                    sorted so baseline comes first
-    catalog       : DataFrame with one row per available run
+    df_i_base     : DataFrame  baseline institutions with baseline_rank and v
+    series        : list of (display_label, colour, marker, df_s, df_i)
+                    baseline first, then overlays in OVERLAYS order
+                    (df_i entries are unused in the new institution panel)
     """
-    catalog = db.execute(
-        """SELECT table_name, label
-           FROM (
-               SELECT table_name, label, created_at,
-                      ROW_NUMBER() OVER (PARTITION BY label ORDER BY created_at DESC) AS rn
-               FROM _catalog
-           )
-           WHERE rn = 1
-           ORDER BY label"""
-    ).df()
+    tables = {row[0] for row in db.execute('SHOW TABLES').fetchall()}
 
-    # ── Baseline: establish the x-axis lock ──────────────────────────────
-    df_base = load_run(db, BASELINE_TABLE)
+    if BASELINE_TABLE not in tables:
+        raise RuntimeError(
+            f'Baseline table {BASELINE_TABLE} not found in rankings.duckdb. '
+            'Run run_rankings.py first.'
+        )
+
+    # ── Baseline: establish x-axis lock ──────────────────────────────────────
+    df_base = db.execute(
+        f"SELECT unit_idx, unit_type, v FROM {BASELINE_TABLE}"
+    ).df()
 
     df_s_base = (df_base[df_base['unit_type'] == 'S']
                  .sort_values('v', ascending=False)
@@ -84,136 +160,137 @@ def fetch_all(db) -> tuple:
     df_i_base['baseline_rank'] = np.arange(1, len(df_i_base) + 1)
     inst_rank_map = df_i_base.set_index('unit_idx')['baseline_rank'].to_dict()
 
-    # ── Load every run and project onto baseline ranks ────────────────────
-    runs = []
-    for _, row in catalog.iterrows():
-        tname = row['table_name']
-        label = row['label']
-        df = load_run(db, tname)
+    def project(df, rank_map):
+        out = df.copy()
+        out['baseline_rank'] = out['unit_idx'].map(rank_map)
+        return out.dropna(subset=['baseline_rank']).sort_values('baseline_rank')
 
-        df_s = df[df['unit_type'] == 'S'].copy()
-        df_s['baseline_rank'] = df_s['unit_idx'].map(src_rank_map)
-        df_s = (df_s.dropna(subset=['baseline_rank'])
-                .sort_values('baseline_rank'))
+    series = [('baseline', 'black', None, df_s_base, df_i_base)]
 
-        df_i = df[df['unit_type'] == 'U'].copy()
-        df_i['baseline_rank'] = df_i['unit_idx'].map(inst_rank_map)
-        df_i = (df_i.dropna(subset=['baseline_rank'])
-                .sort_values('baseline_rank'))
+    # ── Resolve catalog label → table name ───────────────────────────────────
+    cat = db.execute(
+        "SELECT label, table_name FROM ("
+        "  SELECT label, table_name,"
+        "         ROW_NUMBER() OVER (PARTITION BY label ORDER BY created_at DESC) AS rn"
+        "  FROM _catalog"
+        "  WHERE m_SI=1 AND m_IS=1 AND m_SS=0 AND m_II=0"
+        f"   AND run_code='{_run_code}' AND tau_u={_tau_u} AND tau_s={_tau_s} AND rho=0"
+        "    AND round(alpha*100)=100"
+        ") WHERE rn=1"
+    ).df()
+    label_to_table = dict(zip(cat['label'], cat['table_name']))
 
-        runs.append((label, df_s, df_i))
+    for disp_label, cat_label, colour, marker in OVERLAYS:
+        tname = label_to_table.get(cat_label)
+        if tname is None or tname not in tables:
+            print(f'  WARNING: {cat_label} not found in catalog — skipping {disp_label}')
+            continue
+        df = db.execute(f"SELECT unit_idx, unit_type, v FROM {tname}").df()
+        df_s = project(df[df['unit_type'] == 'S'], src_rank_map)
+        df_i = project(df[df['unit_type'] == 'U'], inst_rank_map)
+        series.append((disp_label, colour, marker, df_s, df_i))
 
-    # Baseline first, rest alphabetical
-    runs.sort(key=lambda x: (x[0] != BASELINE_LABEL, x[0]))
-    return src_rank_map, inst_rank_map, runs
+    return src_rank_map, df_i_base, series
 
 
 # ─── Plot ─────────────────────────────────────────────────────────────────────
 
-def plot2(src_rank_map: dict, inst_rank_map: dict, runs: list) -> None:
-    paths = load_config()
+def _draw_src_panel(ax, series: list, n_baseline: int) -> None:
+    """Source panel: baseline line + restricted-corpus overlays."""
+    for label, colour, marker, df_s, _ in series:
+        if df_s.empty:
+            continue
+        is_baseline = marker is None
+        n_overlap = len(df_s)
 
-    n_s = len(src_rank_map)
-    n_i = len(inst_rank_map)
-    n_runs = len(runs)
-
-    # Explicit colour map; any label not listed is skipped.
-    OVERLAY_COLOURS = {
-        'F=E':  '#e41a1c',   # red
-        'F=B':  '#377eb8',   # blue
-        'F=EB': '#ff7f00',   # orange
-        'F=X':  '#984ea3',   # purple
-    }
-    run_colours = {}
-    for label, _, _ in runs:
-        if label == BASELINE_LABEL:
-            run_colours[label] = 'black'
+        if is_baseline:
+            ax.plot(
+                df_s['baseline_rank'].values,
+                df_s['v'].values,
+                color=colour,
+                linewidth=1.4,
+                alpha=1.0,
+                zorder=3,
+                label='baseline (all)',
+            )
         else:
-            run_colours[label] = OVERLAY_COLOURS.get(label)  # None = skip
+            is_line_marker = marker in ('x', '+')
+            ax.scatter(
+                df_s['baseline_rank'].values,
+                df_s['v'].values,
+                color=colour,
+                marker=marker,
+                s=45 if is_line_marker else 30,
+                alpha=1.0,
+                zorder=2,
+                edgecolors=colour if is_line_marker else 'white',
+                linewidths=0.8 if is_line_marker else 0.4,
+                label=f'{label}  ({n_overlap:,}/{n_baseline:,})',
+            )
 
+    ax.set_yscale('log')
+    ax.axhline(1.0, color='#999999', linewidth=0.8, linestyle='--', zorder=0)
+    ax.text(n_baseline * 0.98, 1.0, '$v=1$',
+            ha='right', va='bottom', fontsize=7.5, color='#999999')
+    ax.set_xlim(1, n_baseline)
+    ax.set_xlabel('Baseline rank  (F=A)', labelpad=4)
+    ax.set_ylabel('Influence per work $v$', labelpad=4)
+    ax.set_title('Sources', fontsize=10, pad=6)
+    ax.legend(fontsize=7.5, framealpha=0.85, loc='upper right')
+
+
+def _draw_inst_panel(ax, df_i_base: pd.DataFrame,
+                     inst_field_map: dict, n_baseline: int) -> None:
+    """
+    Institution panel: baseline v coloured by institution field label (E/B/A/X).
+    Institutions not in inst_field_map default to X.
+    """
+    df = df_i_base.copy()
+    df['field_eb_inst'] = df['unit_idx'].map(inst_field_map).fillna('X')
+
+    for cat in INST_FIELD_ORDER:   # X first (bottom), E last (top)
+        colour, marker = INST_FIELD_STYLE[cat]
+        sub = df[df['field_eb_inst'] == cat]
+        if sub.empty:
+            continue
+        is_line_marker = marker in ('x', '+')
+        ax.scatter(
+            sub['baseline_rank'].values,
+            sub['v'].values,
+            color=colour,
+            marker=marker,
+            s=45 if is_line_marker else 30,
+            alpha=1.0,
+            zorder=INST_FIELD_ORDER.index(cat) + 2,
+            edgecolors=colour if is_line_marker else 'white',
+            linewidths=0.8 if is_line_marker else 0.4,
+            label=f'{cat}  ({len(sub):,}/{n_baseline:,})',
+        )
+
+    ax.set_yscale('log')
+    ax.axhline(1.0, color='#999999', linewidth=0.8, linestyle='--', zorder=0)
+    ax.text(n_baseline * 0.98, 1.0, '$v=1$',
+            ha='right', va='bottom', fontsize=7.5, color='#999999')
+    ax.set_xlim(1, n_baseline)
+    ax.set_xlabel('Baseline rank  (F=A)', labelpad=4)
+    ax.set_ylabel('Influence per work $v$', labelpad=4)
+    ax.set_title('Institutions', fontsize=10, pad=6)
+    ax.legend(fontsize=7.5, framealpha=0.85, loc='upper right')
+
+
+def plot2(src_rank_map: dict, df_i_base: pd.DataFrame,
+          series: list, inst_field_map: dict) -> None:
+    paths = load_config()
     sns.set_theme(style='whitegrid', font_scale=0.95)
     fig, axes = plt.subplots(2, 1, figsize=(9, 8))
     fig.subplots_adjust(hspace=0.44)
 
-    panel_specs = [
-        (axes[0], 'df_s', n_s,  'Sources'),
-        (axes[1], 'df_i', n_i, 'Institutions'),
-    ]
-
-    for ax, df_key, n_baseline, panel_label in panel_specs:
-        for label, df_s, df_i in runs:
-            df = df_s if df_key == 'df_s' else df_i
-            if df.empty:
-                continue
-
-            colour = run_colours.get(label)
-            if colour is None:
-                continue
-            is_baseline = (label == BASELINE_LABEL)
-            # Coverage annotation: how many baseline units appear in this run
-            n_overlap = len(df)
-
-            if is_baseline:
-                ax.plot(
-                    df['baseline_rank'].values,
-                    df['v'].values,
-                    color=colour,
-                    linewidth=1.4,
-                    alpha=1.0,
-                    zorder=3,
-                    label=label,
-                )
-            elif label == 'F=~EB':
-                ax.scatter(
-                    df['baseline_rank'].values,
-                    df['v'].values,
-                    s=30,
-                    facecolors='none',
-                    edgecolors=colour,
-                    linewidths=0.8,
-                    zorder=1,
-                    label=f'{label}  ({n_overlap:,}/{n_baseline:,})',
-                )
-            else:
-                MARKERS = {'F=B': 'x', 'F=E': '+', 'F=X': 's'}
-                marker = MARKERS.get(label, 'o')
-                is_line_marker = marker in ('x', '+')
-                ax.scatter(
-                    df['baseline_rank'].values,
-                    df['v'].values,
-                    color=colour,
-                    s=45 if is_line_marker else 30,
-                    alpha=0.2 if label == 'F=EB' else 1.0,
-                    zorder=2,
-                    marker=marker,
-                    edgecolors=colour if is_line_marker else 'white',
-                    linewidths=0.8 if is_line_marker else 0.4,
-                    label=f'{label}  ({n_overlap:,}/{n_baseline:,})',
-                )
-
-        ax.set_yscale('log')
-        ax.axhline(1.0, color='#999999', linewidth=0.8, linestyle='--', zorder=0)
-        ax.text(
-            n_baseline * 0.98, 1.0,
-            '$v=1$',
-            ha='right', va='bottom',
-            fontsize=7.5, color='#999999',
-        )
-        ax.set_xlim(1, n_baseline)
-        ax.set_xlabel('Baseline rank', labelpad=4)
-        ax.set_ylabel('Influence per work $v$', labelpad=4)
-        ax.set_title(panel_label, fontsize=10, pad=6)
-
-        ax.legend(
-            fontsize=7,
-            framealpha=0.85,
-            loc='upper right',
-            ncol=1,
-        )
+    _draw_src_panel(axes[0], series, n_baseline=len(src_rank_map))
+    _draw_inst_panel(axes[1], df_i_base, inst_field_map, n_baseline=len(df_i_base))
 
     sup = fig.suptitle(
-        'Parameter sensitivity — influence per work  '
-        f'(x-axis locked to {BASELINE_LABEL})',
+        'Field scope sensitivity — influence per work  '
+        '(m=0110, x-axis locked to all-sources baseline)',
         fontsize=9, y=1.01,
     )
 
@@ -227,36 +304,41 @@ def plot2(src_rank_map: dict, inst_rank_map: dict, runs: list) -> None:
     print(f'Saved {latex_out}')
     sup.set_visible(True)
 
+    plt.close(fig)
+
     # Console summary
-    print(f'\n{"Label":<18}  {"n_S":>6}  {"n_I":>6}')
-    print('-' * 34)
-    for label, df_s, df_i in runs:
-        print(f'{label:<18}  {len(df_s):>6,}  {len(df_i):>6,}')
+    print(f'\n{"Label":<12}  {"n_S":>7}')
+    print('-' * 22)
+    for label, _, _, df_s, _ in series:
+        print(f'{label:<12}  {len(df_s):>7,}')
 
 
 # ─── Main ─────────────────────────────────────────────────────────────────────
 
 def main():
-    paths = load_config()
+    paths   = load_config()
     rk_path = paths.working / 'rankings.duckdb'
+    el_path = paths.working / 'edge_lists.duckdb'
 
     if not rk_path.exists():
         raise FileNotFoundError(
             f'rankings.duckdb not found at {rk_path}. '
             'Run spectral_ranking/run_rankings.py first.'
         )
+    if not el_path.exists():
+        raise FileNotFoundError(
+            f'edge_lists.duckdb not found at {el_path}. '
+            'Run prepare_data/build_edge_lists.py first.'
+        )
+
+    print('Computing institution field labels...')
+    inst_field_map = fetch_inst_field_labels(el_path, paths.parquet, k=INST_K)
 
     with duckdb.connect(str(rk_path), read_only=True) as db:
-        tables = {row[0] for row in db.execute('SHOW TABLES').fetchall()}
-        if BASELINE_TABLE not in tables:
-            raise RuntimeError(
-                f'Table {BASELINE_TABLE} not found in rankings.duckdb. '
-                'Run run_rankings.py --baseline-only first.'
-            )
-        src_rank_map, inst_rank_map, runs = fetch_all(db)
+        src_rank_map, df_i_base, series = fetch_data(db)
 
-    print(f'Loaded {len(runs)} run(s) from rankings.duckdb')
-    plot2(src_rank_map, inst_rank_map, runs)
+    print(f'Loaded {len(series)} series (baseline + {len(series)-1} overlays)')
+    plot2(src_rank_map, df_i_base, series, inst_field_map)
 
 
 if __name__ == '__main__':

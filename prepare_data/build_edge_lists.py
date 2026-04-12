@@ -36,7 +36,7 @@ At matrix build time supply:
 Institution retention
 ---------------------
 For fx='A' the retained institution set is computed from the A corpus itself.
-For all field subsets (E, B, EB, NEB, X) the institution set is inherited from
+For all field subsets (E, B, M, EB, X) the institution set is inherited from
 the corresponding A corpus (_units_{run_code}_A_tauU{tau_u}_tauS{tau_s}).
 A must therefore be built before its field subsets within each
 (run_code, tau_u, tau_s) group.
@@ -61,8 +61,8 @@ DB_PATH = paths.working / 'edge_lists.duckdb'
 FIELD_COND = {
     'E':   "AND sm.field_eb = 'E'",
     'B':   "AND sm.field_eb = 'B'",
+    'M':   "AND sm.field_eb = 'A'",   # mixed (E+B overlap)
     'EB':  "AND sm.field_eb IN ('E', 'B', 'A')",
-    'NEB': "AND sm.field_eb IS NULL",
     'X':   "AND sm.field_eb = 'X'",
     'A':   "",
 }
@@ -130,7 +130,6 @@ def build_one(db, run_code: str, tc0: int, tc1: int, tt0: int, tt1: int,
         FROM '{PARQUET}/corpus_works.parquet' w
         JOIN '{PARQUET}/source_master.parquet' sm ON w.source_idx = sm.source_idx
         WHERE w.publication_year BETWEEN {min_year} AND {max_year}
-          AND sm.has_corpus_refs = true
         {fc}
     """)
 

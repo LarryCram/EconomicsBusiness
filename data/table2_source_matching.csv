@@ -1,8 +1,8 @@
 # Registry matching
-Register,Journals,Matched,Match_rate,Unmatched
+Register,Sources,Matched,Match_rate,Unmatched
 JQL,842,836,0.9928741092636579,6
-MJL,1413,1393,0.9858457183297947,20
-SJL,1602,1369,0.8545568039950062,233
+MJL,1413,1392,0.9851380042462845,21
+SJL,1602,1370,0.8551810237203495,232
 
 # Pairwise overlaps
 Overlap,Sources

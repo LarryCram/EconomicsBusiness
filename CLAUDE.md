@@ -52,12 +52,12 @@ where `chi_str='STAR'` when chi==-1.0, otherwise `str(round(chi*100))` (e.g. 0.5
 ## Field classification: field_eb
 Sources in `source_master.parquet/csv` carry a `field_eb` column (replaces old `field_subset`):
 
-- **'E'**: econ_score ≥ 2 AND bus_score < 1
-- **'B'**: bus_score ≥ 2 AND econ_score < 1
-- **'A'**: both signals present (mixed economics + business)
-- **NULL**: neither signal strong
+- **'E'**: econ_score ≥ 2 AND bus_score < 1  (pure economics)
+- **'B'**: bus_score ≥ 2 AND econ_score < 1  (pure business)
+- **'A'**: mixed/ambiguous — at least one signal present but not pure E or B
+- **'X'**: residual — neither signal strong (econ_score ≤ 1 AND bus_score ≤ 1)
 
-Scores count how many of {era_field, harzing_field, wos_categories, field_name} contain econ/business keywords. F=EB corpus filter is `field_eb IN ('E','B','A')`. F=NEB is `field_eb IS NULL`.
+`field_eb` is never NULL. Scores count how many of {era_field, harzing_field, wos_categories, field_name} contain econ/business keywords. F=EB corpus filter is `field_eb IN ('E','B','A')`. F=A is the full corpus (no filter). F=X is the neither-signal residual.
 
 ## Paper
 Multi-file LaTeX in `spectral_ranking_latex/`. Master file is `main.tex`; sections are in `sections/`. Bibliography fed by Zotero (`MyLibrary.bib`). Committed to GitHub for backup.
