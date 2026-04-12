@@ -18,17 +18,32 @@ bipartite_resolvent(H_SI, H_IS, N_s, N_u, alpha)
 rank(csr_data, m, chi, alpha)
     -> RankResult
     Top-level entry point: row-normalises raw C blocks, assembles H per m,
-    routes to katz() or bipartite_resolvent(), returns prestige scores and v.
+    routes to the appropriate algorithm, returns prestige scores and v.
 
 _row_normalise(C)
     -> (H, dangling_mask)
     Internal helper; exposed so tests and build_csr.py can use it.
+
+_eigs_rank(M, tol=0)
+    -> (phi1, lam1, lam2)
+    ARPACK-based Perron eigenvector + first two eigenvalues for M^T.
+    Used when alpha=1 (pure Perron iteration). Replaces check_primitive +
+    power iteration: lam2 is the spectral gap diagnostic.
+
+power_iteration(M, alpha, mu=None, tol=1e-9, max_iter=500)
+    -> (pi, lam1, lam2, iters, final_norm)
+    alpha=1  : calls _eigs_rank; returns (phi1, lam1, lam2, 0, 0.0).
+    alpha<1  : Katz–Hubbell power iteration; returns (pi, 0.0, 0.0, iters, norm).
+
+bipartite(H_SI, H_IS, alpha=1.0, mu=None, tol=1e-9, max_iter=500)
+    -> (pi_s, pi_u, lam1, lam2, iters, final_norm)
+    Bipartite Perron/Katz ranking on M_S = H_SI @ H_IS.
+    alpha=1  : _eigs_rank on M_S; (lam1, lam2) from ARPACK, iters=0, norm=0.
+    alpha<1  : power iteration on M_S; lam1=lam2=0.
 """
 
-import sys
-
 import numpy as np
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import Optional
 
 from scipy.sparse import csr_matrix, bmat, diags, eye
@@ -43,8 +58,10 @@ class RankResult:
     pi_u: Optional[np.ndarray]   # prestige scores for institutions (None for SS-only)
     v_s:  Optional[np.ndarray]   # prestige per work for sources  (None for II-only)
     v_u:  Optional[np.ndarray]   # prestige per work for institutions (None for SS-only)
-    iters: int                   # iterations to convergence (0 for bipartite_resolvent)
-    final_norm: float            # L1 residual at convergence (0.0 for bipartite_resolvent)
+    lam1: float                  # dominant eigenvalue  (0.0 for alpha<1 runs)
+    lam2: float                  # second eigenvalue    (0.0 for alpha<1 runs)
+    iters: int                   # power-iteration count (0 for alpha=1 eigs path)
+    final_norm: float            # L1 residual at convergence (0.0 for alpha=1 eigs path)
 
 
 # ─── Internal helper ──────────────────────────────────────────────────────────
@@ -66,6 +83,86 @@ def _row_normalise(C: csr_matrix) -> tuple:
     safe_sums = np.where(dangling_mask, 1.0, row_sums)
     H = diags(1.0 / safe_sums) @ C
     return H.tocsr(), dangling_mask
+
+
+# ─── ARPACK eigensolver ───────────────────────────────────────────────────────
+
+def _eigs_rank(M: csr_matrix, tol: float = 0) -> tuple:
+    """
+    Compute (phi1, lam1, lam2) for M^T via ARPACK eigs.
+
+    Parameters
+    ----------
+    M   : row-stochastic CSR matrix (dangling rows as zero rows).
+    tol : ARPACK relative tolerance. Default 0 = machine precision.
+
+    Returns
+    -------
+    phi1 : Perron vector, L1-normalised, non-negative, shape (N,).
+    lam1 : dominant eigenvalue (real part), should be ≈ 1.0.
+    lam2 : second eigenvalue (real part). |lam2| < 1 confirms primitivity.
+
+    Notes
+    -----
+    Logs a WARNING if |lam2| > 0.999 (near-imprimitive or reducible).
+    Falls back to numpy.linalg.eig for N < 3 (ARPACK needs N > k=2).
+    Falls back to single eigenvector if ARPACK does not converge on k=2.
+    """
+    from scipy.sparse.linalg import eigs as sp_eigs, ArpackNoConvergence
+
+    N = M.shape[0]
+
+    if N < 4:
+        # Dense fallback: ARPACK eigs requires k < N-1, so N >= 4 for k=2
+        A = M.T.toarray()
+        vals, vecs = np.linalg.eig(A)
+        order = np.argsort(-vals.real)
+        lam1  = float(vals[order[0]].real)
+        phi1  = vecs[:, order[0]].real
+        lam2  = float(vals[order[1]].real) if N >= 2 else 0.0
+    else:
+        try:
+            vals, vecs = sp_eigs(M.T, k=2, which='LM', tol=tol)
+            order = np.argsort(-vals.real)
+            lam1  = float(vals[order[0]].real)
+            phi1  = vecs[:, order[0]].real
+            lam2  = float(vals[order[1]].real)
+        except ArpackNoConvergence as exc:
+            # Use whatever converged eigenpairs are available
+            cv = exc.eigenvalues
+            cv_vecs = exc.eigenvectors
+            if len(cv) >= 1:
+                order = np.argsort(-cv.real)
+                lam1  = float(cv[order[0]].real)
+                phi1  = cv_vecs[:, order[0]].real
+                lam2  = float(cv[order[1]].real) if len(cv) >= 2 else 0.0
+                print(f'  WARNING: ARPACK did not fully converge (N={N}); '
+                      f'using {len(cv)} converged eigenpairs.', flush=True)
+            else:
+                # Total failure: fall back to dense
+                print(f'  WARNING: ARPACK failed entirely (N={N}); '
+                      f'falling back to dense eigensolver.', flush=True)
+                A = M.T.toarray()
+                vals_d, vecs_d = np.linalg.eig(A)
+                order = np.argsort(-vals_d.real)
+                lam1  = float(vals_d[order[0]].real)
+                phi1  = vecs_d[:, order[0]].real
+                lam2  = float(vals_d[order[1]].real) if N >= 2 else 0.0
+
+    # Sign convention: component of largest absolute value is positive
+    peak = np.argmax(np.abs(phi1))
+    if phi1[peak] < 0:
+        phi1 = -phi1
+    phi1 = np.maximum(phi1, 0.0)
+    s = phi1.sum()
+    if s > 0:
+        phi1 /= s
+
+    if abs(lam2) > 0.999:
+        print(f'  WARNING: |λ₂| = {abs(lam2):.6f}  '
+              f'spectral_gap = {1.0 - abs(lam2):.2e}  N={N}', flush=True)
+
+    return phi1, lam1, lam2
 
 
 # ─── Core algorithms ──────────────────────────────────────────────────────────
@@ -119,94 +216,40 @@ def katz(
     return pi, max_iter, final_norm
 
 
-# ─── New spectral utilities ──────────────────────────────────────────────────
-
-class NotPrimitiveError(RuntimeError):
-    """Raised when M is not primitive within the search depth k=5."""
-
-
-def check_primitive(M: csr_matrix) -> int:
-    """
-    Test primitivity of M via boolean power iteration on the sparsity pattern,
-    restricted to the non-dangling subgraph.
-
-    Dangling nodes (zero rows) converge to π=0 under renormalised power
-    iteration — the renormalisation at each step redistributes their absorbed
-    mass back into the non-dangling subgraph, which is the standard PageRank
-    treatment.  Only the non-dangling subgraph needs to be primitive.
-
-    Returns the primitivity index k of the non-dangling subgraph.
-    Raises NotPrimitiveError if k > 5.
-
-    Parameters
-    ----------
-    M : csr_matrix, shape (N, N)
-
-    Returns
-    -------
-    k : int, primitivity index in {1, ..., 5}
-    """
-    non_dangling = np.asarray(M.getnnz(axis=1) > 0).ravel()
-    if not non_dangling.any():
-        print("  check_primitive: M has no non-dangling nodes — skipping check.",
-              flush=True)
-        return -1
-
-    M_sub = M[non_dangling][:, non_dangling]
-    N = M_sub.shape[0]
-
-    B = M_sub.astype(bool)
-    Bk = B.copy()
-    for k in range(1, 33):
-        if Bk.nnz == N * N:
-            return k
-        if k < 32:
-            Bk = (Bk @ B).astype(bool)
-    print(
-        f"  check_primitive: non-dangling subgraph (N={N}) not confirmed "
-        f"primitive within k=32 (nnz={Bk.nnz}/{N * N}). "
-        f"Continuing — convergence will be verified via final_norm.",
-        flush=True,
-    )
-    return -1
-
-
 def power_iteration(
     M: csr_matrix,
     alpha: float,
     mu: Optional[np.ndarray] = None,
     tol: float = 1e-9,
     max_iter: int = 500,
-    skip_primitive_check: bool = False,
 ) -> tuple:
     """
-    Power iteration for the spectral ranking fixed point π = M̃^T π.
+    Power iteration / Perron eigenvector computation.
 
     Three valid regimes
     -------------------
-    (alpha=1, mu=None)   Pure Perron iteration.  Requires M to be primitive;
-                         check_primitive() is called unless skip_primitive_check=True.
-    (alpha<1, mu=None)   Original Katz damping.  π_new ← alpha·M^T·π, renormalised.
-                         Convergence to the dominant eigenvector of M; no prior.
-    (alpha<1, mu>0)      Katz–Hubbell.  π_new ← alpha·M^T·π + (1−alpha)·mu,
-                         renormalised.
+    (alpha=1, mu=None)   Pure Perron iteration via _eigs_rank (ARPACK).
+                         Returns (phi1, lam1, lam2, 0, 0.0).
+    (alpha<1, mu=None)   Original Katz damping.  No prior injection.
+                         Returns (pi, 0.0, 0.0, iters, final_norm).
+    (alpha<1, mu>0)      Katz–Hubbell.  Prior injection at each step.
+                         Returns (pi, 0.0, 0.0, iters, final_norm).
 
     Parameters
     ----------
     M : csr_matrix, shape (N, N).  Row-stochastic; dangling rows as zero rows.
     alpha : float in [0, 1].  Damping factor.
-    mu : prior, shape (N,), or None.  Must be None when alpha=1.
-    tol : L1 convergence tolerance (default 1e-9).
-    max_iter : maximum iterations (default 500).
-    skip_primitive_check : bool.  If True, bypass check_primitive() when alpha=1.
-        Use for bootstrap replicates where the full matrix is known primitive
-        but sub-samples may not confirm within k=32.
+    mu : prior, shape (N,), or None.
+    tol : convergence tolerance (default 1e-9).
+    max_iter : maximum iterations for alpha<1 path (default 500).
 
     Returns
     -------
-    pi : np.ndarray, shape (N,), L1-normalised, non-negative
-    iters : int, iterations taken
-    final_norm : float, L1 residual on exit
+    pi         : np.ndarray, shape (N,), L1-normalised, non-negative
+    lam1       : float — dominant eigenvalue from ARPACK (0.0 for alpha<1)
+    lam2       : float — second eigenvalue from ARPACK  (0.0 for alpha<1)
+    iters      : int   — power-iteration count (0 for alpha=1 eigs path)
+    final_norm : float — L1 residual (0.0 for alpha=1 eigs path)
     """
     N = M.shape[0]
 
@@ -216,19 +259,8 @@ def power_iteration(
                 "mu must be None when alpha=1 (pure Perron iteration). "
                 "Use alpha<1 for Katz–Hubbell."
             )
-        if not skip_primitive_check:
-            check_primitive(M)
-        pi = np.full(N, 1.0 / N)
-        final_norm = 0.0
-        for i in range(1, max_iter + 1):
-            pi_new = M.T.dot(pi)
-            pi_new = np.maximum(pi_new, 0.0)
-            pi_new /= pi_new.sum()
-            final_norm = float(np.abs(pi_new - pi).sum())
-            pi = pi_new
-            if final_norm < tol:
-                return pi, i, final_norm
-        return pi, max_iter, final_norm
+        phi1, lam1, lam2 = _eigs_rank(M, tol=tol)
+        return phi1, lam1, lam2, 0, 0.0
 
     # alpha < 1
     if mu is None:
@@ -244,8 +276,8 @@ def power_iteration(
             final_norm = float(np.abs(pi_new - pi).sum())
             pi = pi_new
             if final_norm < tol:
-                return pi, i, final_norm
-        return pi, max_iter, final_norm
+                return pi, 0.0, 0.0, i, final_norm
+        return pi, 0.0, 0.0, max_iter, final_norm
 
     else:
         # Katz–Hubbell: prior injection at each step
@@ -258,8 +290,8 @@ def power_iteration(
             final_norm = float(np.abs(pi_new - pi).sum())
             pi = pi_new
             if final_norm < tol:
-                return pi, i, final_norm
-        return pi, max_iter, final_norm
+                return pi, 0.0, 0.0, i, final_norm
+        return pi, 0.0, 0.0, max_iter, final_norm
 
 
 def bipartite(
@@ -269,52 +301,42 @@ def bipartite(
     mu: Optional[np.ndarray] = None,
     tol: float = 1e-9,
     max_iter: int = 500,
-    skip_primitive_check: bool = False,
 ) -> tuple:
     """
-    Bipartite spectral ranking via one-mode projection and power iteration.
+    Bipartite spectral ranking via one-mode projection.
 
     Builds M_S = H_SI @ H_IS (N_s × N_s) and solves for the source prestige
-    vector π_S via power_iteration(), then recovers π_I.
-
-    Mode summary
-    ------------
-    alpha has the same per-hop meaning as in SS (1000) and II (0001) modes:
-    each traversal of one edge is attenuated by alpha.  A round trip S→I→S
-    therefore attenuates by alpha², and power_iteration is called on M_S with
-    alpha² as its damping argument.  This ensures v_S is directly comparable
-    across modes at the same alpha.
+    vector π_S, then recovers π_I.
 
     alpha=1, mu=None:
-        π_S = Perron eigenvector of M_S (requires M_S to be primitive).
+        π_S via _eigs_rank on M_S (ARPACK). Returns lam1, lam2 of M_S.
         π_I = H_SI^T @ π_S, individually normalised.
 
     alpha<1, mu=None:
-        Original Katz on M_S; no prior injection.
+        Original Katz on M_S with round-trip damping alpha².
         π_I = alpha · H_SI^T @ π_S, individually normalised.
 
     alpha<1, mu given (joint prior, length N_s + N_u):
-        mu_eff = normalise(mu_S + alpha · H_IS^T @ mu_I)
-        π_S from Katz–Hubbell power iteration on M_S with mu_eff.
+        Effective prior mu_eff on sources; Katz–Hubbell power iteration.
         π_I = alpha · H_SI^T @ π_S + (1−alpha) · mu_I.
-        Both individually normalised.
 
     Parameters
     ----------
-    H_SI : csr_matrix, shape (N_s, N_u).  Row-stochastic; dangling rows as zeros.
-    H_IS : csr_matrix, shape (N_u, N_s).  Row-stochastic; dangling rows as zeros.
-    alpha : float in (0, 1].  Per-hop damping, same convention as SS/II modes.
-    mu : joint prior, shape (N_s + N_u,), or None.  Default: None (α=1 regime).
-    tol : L1 convergence tolerance (default 1e-9).
-    max_iter : maximum iterations (default 500).
+    H_SI : csr_matrix, shape (N_s, N_u). Row-stochastic; dangling rows as zeros.
+    H_IS : csr_matrix, shape (N_u, N_s). Row-stochastic; dangling rows as zeros.
+    alpha : float in (0, 1]. Per-hop damping (round-trip is alpha²).
+    mu : joint prior, shape (N_s + N_u,), or None.
+    tol : convergence tolerance (default 1e-9).
+    max_iter : maximum iterations for alpha<1 path (default 500).
 
     Returns
     -------
-    pi_s : np.ndarray, shape (N_s,), individually L1-normalised.
-    pi_u : np.ndarray, shape (N_u,), individually L1-normalised.
-    iters : int
-    final_norm : float, L1 residual on exit
-    Note: joint renormalisation (divide each by 2) is left to the caller.
+    pi_s       : np.ndarray, shape (N_s,), individually L1-normalised.
+    pi_u       : np.ndarray, shape (N_u,), individually L1-normalised.
+    lam1       : float — dominant eigenvalue of M_S (0.0 for alpha<1)
+    lam2       : float — second eigenvalue of M_S  (0.0 for alpha<1)
+    iters      : int   — power-iteration count (0 for alpha=1 eigs path)
+    final_norm : float — L1 residual (0.0 for alpha=1 eigs path)
     """
     N_s = H_SI.shape[0]
     N_u = H_SI.shape[1]
@@ -328,7 +350,7 @@ def bipartite(
     # Construct effective prior for power_iteration on M_S
     if mu is None:
         mu_eff = None
-        mu_u = None
+        mu_u   = None
     else:
         mu_s = mu[:N_s]
         mu_u = mu[N_s:]
@@ -337,10 +359,9 @@ def bipartite(
         if s > 0:
             mu_eff = mu_eff / s
 
-    # Solve for pi_S via power iteration (round-trip damping alpha²)
-    pi_s, iters, final_norm = power_iteration(
+    # Solve for pi_S
+    pi_s, lam1, lam2, iters, final_norm = power_iteration(
         M_S, alpha_rt, mu=mu_eff, tol=tol, max_iter=max_iter,
-        skip_primitive_check=skip_primitive_check,
     )
 
     # Recover π_I (one hop from pi_S, attenuated by alpha)
@@ -358,7 +379,7 @@ def bipartite(
     if s_u > 0:
         pi_u /= s_u
 
-    return pi_s, pi_u, iters, final_norm
+    return pi_s, pi_u, lam1, lam2, iters, final_norm
 
 
 def bipartite_resolvent(
@@ -441,35 +462,35 @@ def rank(csr_data, m: tuple, chi: float, alpha: float) -> RankResult:
     m : (m_SS, m_SI, m_IS, m_II) block mask ∈ {0,1}^4
     chi : source–institution mixing weight ∈ [0,1]
         Only material for m=(1,1,1,1); absorbed by normalisation otherwise.
-    alpha : damping factor ∈ (0,1)
+    alpha : damping factor ∈ (0,1]
 
     Returns
     -------
-    RankResult with pi_s, pi_u, v_s, v_u, iters, final_norm.
+    RankResult with pi_s, pi_u, v_s, v_u, lam1, lam2, iters, final_norm.
     """
     if m == (1, 0, 0, 0):
         # Source-only: power iteration on (N_s × N_s) H_SS
         H, _ = _row_normalise(csr_data.C_SS)
-        pi, iters, norm = power_iteration(H, alpha)
+        pi, lam1, lam2, iters, norm = power_iteration(H, alpha)
         A = csr_data.a_s.sum()
         v_s = A * pi / csr_data.a_s
         return RankResult(pi_s=pi, pi_u=None, v_s=v_s, v_u=None,
-                          iters=iters, final_norm=norm)
+                          lam1=lam1, lam2=lam2, iters=iters, final_norm=norm)
 
     elif m == (0, 0, 0, 1):
         # Institution-only: power iteration on (N_u × N_u) H_II
         H, _ = _row_normalise(csr_data.C_II)
-        pi, iters, norm = power_iteration(H, alpha)
+        pi, lam1, lam2, iters, norm = power_iteration(H, alpha)
         A = csr_data.a_u.sum()
         v_u = A * pi / csr_data.a_u
         return RankResult(pi_s=None, pi_u=pi, v_s=None, v_u=v_u,
-                          iters=iters, final_norm=norm)
+                          lam1=lam1, lam2=lam2, iters=iters, final_norm=norm)
 
     elif m == (0, 1, 1, 0):
         # Bipartite SI/IS: power iteration on M_S = H_SI @ H_IS
         H_SI, _ = _row_normalise(csr_data.C_SI)
         H_IS, _ = _row_normalise(csr_data.C_IS)
-        pi_s_ind, pi_u_ind, iters, norm = bipartite(H_SI, H_IS, alpha)
+        pi_s_ind, pi_u_ind, lam1, lam2, iters, norm = bipartite(H_SI, H_IS, alpha)
         # Joint-normalise (each individually sums to 1; divide by 2 to sum jointly to 1)
         pi_s = pi_s_ind / 2.0
         pi_u = pi_u_ind / 2.0
@@ -478,7 +499,7 @@ def rank(csr_data, m: tuple, chi: float, alpha: float) -> RankResult:
         v_s = A * pi_s / csr_data.a_s
         v_u = A * pi_u / csr_data.a_u
         return RankResult(pi_s=pi_s, pi_u=pi_u, v_s=v_s, v_u=v_u,
-                          iters=iters, final_norm=norm)
+                          lam1=lam1, lam2=lam2, iters=iters, final_norm=norm)
 
     elif m == (1, 1, 1, 1):
         # Full joint: assemble χ-scaled N×N matrix, then power iteration
@@ -488,14 +509,14 @@ def rank(csr_data, m: tuple, chi: float, alpha: float) -> RankResult:
             format='csr',
         )
         H, _ = _row_normalise(C)
-        pi, iters, norm = power_iteration(H, alpha)
+        pi, lam1, lam2, iters, norm = power_iteration(H, alpha)
         pi_s = pi[:csr_data.n_s]
         pi_u = pi[csr_data.n_s:]
         A = csr_data.a_s.sum() + csr_data.a_u.sum()
         v_s = A * pi_s / csr_data.a_s
         v_u = A * pi_u / csr_data.a_u
         return RankResult(pi_s=pi_s, pi_u=pi_u, v_s=v_s, v_u=v_u,
-                          iters=iters, final_norm=norm)
+                          lam1=lam1, lam2=lam2, iters=iters, final_norm=norm)
 
     else:
         raise ValueError(f"Unsupported block mask m={m}. "

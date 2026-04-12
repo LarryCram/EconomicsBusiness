@@ -468,9 +468,12 @@ def clean_stale(db) -> None:
         expected.add(table_name(c['run_code'], c['fx'], c['tau_u'], c['tau_s']))
         expected.add(f"_units_{c['run_code']}_{c['fx']}_tauU{c['tau_u']}_tauS{c['tau_s']}")
 
+    import re
+    _mode_suffix = re.compile(r'_m[01]{4}$')
     all_tables = {row[0] for row in db.execute('SHOW TABLES').fetchall()}
     stale = [t for t in all_tables
              if (t.startswith('el_') or t.startswith('_units_'))
+             and not _mode_suffix.search(t)   # leave mode-specific tables to filter_mode_units.py
              and t not in expected]
 
     for t in sorted(stale):

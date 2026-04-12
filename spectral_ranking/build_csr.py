@@ -68,8 +68,9 @@ def build_csr(db, run_code: str, fx: str, tau_u: int, tau_s: int, rho: int, m: t
     import time
     _t = {}   # timing dict — remove when no longer needed
 
+    mstr   = ''.join(str(x) for x in m)
     tname  = f'el_{run_code}_{fx}_tauU{tau_u}_tauS{tau_s}'
-    uname  = f'_units_{run_code}_{fx}_tauU{tau_u}_tauS{tau_s}'
+    uname  = f'_units_{run_code}_{fx}_tauU{tau_u}_tauS{tau_s}_m{mstr}'
 
     # ── Load unit index ────────────────────────────────────────────────────
     t0 = time.perf_counter()
@@ -79,8 +80,8 @@ def build_csr(db, run_code: str, fx: str, tau_u: int, tau_s: int, rho: int, m: t
         ).fetchdf()
     except Exception as e:
         raise RuntimeError(
-            f"Unit index table '{uname}' not found in edge_lists.duckdb. "
-            f"Run prepare_data/build_edge_lists.py first."
+            f"Mode-specific unit table '{uname}' not found in edge_lists.duckdb. "
+            f"Run prepare_data/filter_mode_units.py first."
         ) from e
 
     src_df  = units_df[units_df['unit_type'] == 'S'].reset_index(drop=True)

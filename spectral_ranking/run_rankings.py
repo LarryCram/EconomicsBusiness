@@ -109,19 +109,27 @@ def ensure_catalog(db) -> None:
             alpha       DOUBLE,
             n_s         INTEGER,
             n_u         INTEGER,
+            lam1        DOUBLE,
+            lam2        DOUBLE,
             iters       INTEGER,
             final_norm  DOUBLE,
             label       VARCHAR,
             created_at  VARCHAR
         )
     """)
-    # Migrate pre-run_code schema
+    # Migrate older schemas
     cols = {row[0] for row in db.execute("DESCRIBE _catalog").fetchall()}
     if 'run_code' not in cols:
         db.execute("ALTER TABLE _catalog ADD COLUMN run_code VARCHAR")
     if 'tau_s' not in cols:
         db.execute("ALTER TABLE _catalog ADD COLUMN tau_s INTEGER")
         db.execute("UPDATE _catalog SET tau_s = 0")
+    if 'lam1' not in cols:
+        db.execute("ALTER TABLE _catalog ADD COLUMN lam1 DOUBLE")
+        db.execute("UPDATE _catalog SET lam1 = 0.0")
+    if 'lam2' not in cols:
+        db.execute("ALTER TABLE _catalog ADD COLUMN lam2 DOUBLE")
+        db.execute("UPDATE _catalog SET lam2 = 0.0")
 
 
 def write_result(db, tname: str, p: RunParams, result, csr_data) -> None:
@@ -165,12 +173,13 @@ def write_result(db, tname: str, p: RunParams, result, csr_data) -> None:
         """INSERT OR REPLACE INTO _catalog
            (table_name, run_code, fx, tau_u, tau_s, rho,
             m_SS, m_SI, m_IS, m_II, chi, alpha,
-            n_s, n_u, iters, final_norm, label, created_at)
-           VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)""",
+            n_s, n_u, lam1, lam2, iters, final_norm, label, created_at)
+           VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)""",
         [tname, p.run_code, p.fx, p.tau_u, p.tau_s, p.rho,
          p.m[0], p.m[1], p.m[2], p.m[3],
          p.chi, p.alpha,
          n_s, n_u,
+         result.lam1, result.lam2,
          result.iters, result.final_norm,
          p.label,
          datetime.now().isoformat(timespec='seconds')]
@@ -193,8 +202,9 @@ def _dense_rank_desc(values: np.ndarray) -> np.ndarray:
 # ─── Main driver ──────────────────────────────────────────────────────────────
 
 def compute_chi_star(el_db, p: RunParams) -> float:
-    """Compute χ* = N_u / (N_s + N_u) from the units table for RunParams p."""
-    uname = f'_units_{p.run_code}_{p.fx}_tauU{p.tau_u}_tauS{p.tau_s}'
+    """Compute χ* = N_u / (N_s + N_u) from the mode-specific units table."""
+    mstr  = ''.join(str(x) for x in p.m)
+    uname = f'_units_{p.run_code}_{p.fx}_tauU{p.tau_u}_tauS{p.tau_s}_m{mstr}'
     rows = el_db.execute(
         f"SELECT unit_type, COUNT(*) AS n FROM {uname} GROUP BY unit_type"
     ).fetchall()
@@ -209,8 +219,9 @@ def run_one(el_db, rk_db, p: RunParams, verbose: bool = True) -> bool:
     Run one parameter combination.  Returns True on success, False if the
     required edge list table is absent (soft skip).
     """
+    mstr        = ''.join(str(x) for x in p.m)
     el_tname    = f'el_{p.run_code}_{p.fx}_tauU{p.tau_u}_tauS{p.tau_s}'
-    units_tname = f'_units_{p.run_code}_{p.fx}_tauU{p.tau_u}_tauS{p.tau_s}'
+    units_tname = f'_units_{p.run_code}_{p.fx}_tauU{p.tau_u}_tauS{p.tau_s}_m{mstr}'
     tname       = table_name(p)
 
     existing = {row[0] for row in el_db.execute("SHOW TABLES").fetchall()}
@@ -243,9 +254,12 @@ def run_one(el_db, rk_db, p: RunParams, verbose: bool = True) -> bool:
     t_write = (datetime.now() - t2).total_seconds()
 
     if verbose:
-        iters_str = f"{result.iters} iters" if result.iters else "direct"
-        print(f"n_s={data.n_s}, n_u={data.n_u}, {iters_str}, "
-              f"norm={result.final_norm:.2e}, "
+        if result.lam1 != 0.0:
+            algo_str = (f"lam1={result.lam1:.6f}  lam2={result.lam2:.6f}  "
+                        f"gap={1.0 - abs(result.lam2):.2e}")
+        else:
+            algo_str = f"{result.iters} iters  norm={result.final_norm:.2e}"
+        print(f"n_s={data.n_s}, n_u={data.n_u},  {algo_str},  "
               f"csr={t_csr:.1f}s  rank={t_rank:.1f}s  write={t_write:.1f}s  "
               f"total={t_csr+t_rank+t_write:.1f}s")
     return True
@@ -330,7 +344,7 @@ def main():
     t0 = _time.perf_counter()
     with duckdb.connect(str(rk_path), read_only=True) as db:
         print("\n=== Catalog ===")
-        db.sql("SELECT table_name, n_s, n_u, iters, final_norm, label, created_at "
+        db.sql("SELECT table_name, n_s, n_u, lam1, lam2, iters, final_norm, label, created_at "
                "FROM _catalog ORDER BY created_at").show()
     print(f"catalog_query={_time.perf_counter()-t0:.2f}s")
 

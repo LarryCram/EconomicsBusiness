@@ -73,9 +73,9 @@ def load_sources(db, tname: str) -> pd.DataFrame:
 
 def load_field_labels_and_names(data_dir: Path) -> pd.DataFrame:
     sm = pd.read_csv(data_dir / 'source_master.csv',
-                     usecols=['source_idx', 'source_name', 'field_eb'])
+                     usecols=['source_idx', 'source_name', 'field_subset'])
     sm['source_idx'] = sm['source_idx'].astype(int)
-    sm = sm.rename(columns={'field_eb': 'F'})
+    sm = sm.rename(columns={'field_subset': 'F'})
     return sm
 
 

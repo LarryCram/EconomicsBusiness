@@ -23,7 +23,7 @@ import scipy.sparse as sp
 # ── Path setup ────────────────────────────────────────────────────────────────
 sys.path.insert(0, str(Path(__file__).parent.parent))
 from util import load_config, load_runs
-from spectral_ranking.katz_ranker import bipartite, _row_normalise, NotPrimitiveError
+from spectral_ranking.katz_ranker import bipartite, _row_normalise
 
 # ── Constants ─────────────────────────────────────────────────────────────────
 CHECKPOINT_INTERVAL = 50
@@ -190,8 +190,9 @@ def bootstrap_step(b: int, seed: int, edges: dict, tol: float) -> tuple:
 
     H_SI, _ = _row_normalise(C_SI)
     H_IS, _ = _row_normalise(C_IS)
-    pi_s, pi_u, iters, final_norm = bipartite(H_SI, H_IS, alpha=1.0, tol=tol,
-                                              skip_primitive_check=True)
+    pi_s, pi_u, _lam1, _lam2, iters, final_norm = bipartite(
+        H_SI, H_IS, alpha=1.0, tol=tol
+    )
 
     return pi_s, pi_u, iters, final_norm
 
@@ -264,7 +265,7 @@ def main():
     tau_s     = _baseline['tau_s']       # 20
     fx        = _baseline['fx']          # 'A'
     el_table  = f'el_{run_code}_{fx}_tauU{tau_u}_tauS{tau_s}'
-    units_table = f'_units_{run_code}_{fx}_tauU{tau_u}_tauS{tau_s}'
+    units_table = f'_units_{run_code}_{fx}_tauU{tau_u}_tauS{tau_s}_m0110'
     rk_table  = f'rk_{run_code}_{fx}_tauU{tau_u}_tauS{tau_s}_rho0_m0110_chi50_alpha100'
 
     # ── Output directory ───────────────────────────────────────────────────
@@ -338,15 +339,9 @@ def main():
 
     # ── Bootstrap loop ─────────────────────────────────────────────────────
     rep_times = []
-    skipped   = 0
     for b in range(start_b, B):
         t0 = time.perf_counter()
-        try:
-            pi_s, pi_u, iters, final_norm = bootstrap_step(b, seed, edges, tol)
-        except NotPrimitiveError as e:
-            skipped += 1
-            print(f'  replicate {b+1:4d}/{B}  SKIPPED (non-primitive): {e}', flush=True)
-            continue
+        pi_s, pi_u, iters, final_norm = bootstrap_step(b, seed, edges, tol)
         v_s_b, v_u_b = compute_v(pi_s, pi_u, a_s, a_u)
         v_s_boot[b] = v_s_b
         v_u_boot[b] = v_u_b
@@ -357,10 +352,8 @@ def main():
             avg = np.mean(rep_times[-10:])
             remaining = (B - b - 1) * avg
             print(
-                f'  replicate {b+1:4d}/{B}  iters={iters:3d}  '
-                f'norm={final_norm:.2e}  {elapsed:.2f}s/rep  '
-                f'ETA {remaining/60:.1f}min'
-                + (f'  skipped={skipped}' if skipped else ''),
+                f'  replicate {b+1:4d}/{B}  {elapsed:.2f}s/rep  '
+                f'ETA {remaining/60:.1f}min',
                 flush=True,
             )
 

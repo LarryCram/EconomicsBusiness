@@ -99,7 +99,7 @@ def _compute_bipartite_v(
     if the required edge-list or units table is absent.
     """
     tname = f'el_{run_code}_{fx}_tauU{tau_u}_tauS{tau_s}'
-    uname = f'_units_{run_code}_{fx}_tauU{tau_u}_tauS{tau_s}'
+    uname = f'_units_{run_code}_{fx}_tauU{tau_u}_tauS{tau_s}_m0110'
     tables = {r[0] for r in el_db.execute('SHOW TABLES').fetchall()}
     missing = [t for t in (tname, uname) if t not in tables]
     if missing:
@@ -110,7 +110,7 @@ def _compute_bipartite_v(
     H_SI, _ = _row_normalise(csr.C_SI)
     H_IS, _ = _row_normalise(csr.C_IS)
 
-    pi_s_ind, pi_u_ind, iters, norm = bipartite(H_SI, H_IS, alpha=alpha, mu=mu)
+    pi_s_ind, pi_u_ind, _lam1, _lam2, iters, norm = bipartite(H_SI, H_IS, alpha=alpha, mu=mu)
 
     # Joint-normalise matching rank() convention
     pi_s = pi_s_ind / 2.0
