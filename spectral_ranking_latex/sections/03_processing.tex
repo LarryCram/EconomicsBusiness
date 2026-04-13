@@ -19,12 +19,8 @@ After filtering, 1,602~journals remain.
 journal a Web of Science category. We retain those in Economics, Management, Business, Transportation or Business, Finance. After filtering, 1,413~journals remain.
 
 Every journal in JQL, SJL, and JCR has at least one ISSN, and may have several. These registry ISSNs are joined independently to the February 2026 OpenAlex sources snapshot using its list of ISSNs as the matching key and selecting only the `journal' source-type. Journal titles are examined to identify around 30 additional matches where the OpenAlex source does not have an ISSN. The list of OpenAlex sources that are matched is designated OAS\textsuperscript{*}. 
-
 \input{../tables/table2_source_matching}
-
-The long list OAS\textsuperscript{*} includes sources publishing many works in disciplines beyond economics and business, and we use OpenAlex source-topic assignments to exclude them as follows. A source has work-topic counts for up to five topics, each within a single subfield, field, and domain. We accumulate the work-topic counts for OpenAlex Field~14 (Economics, Econometrics and Finance) and Field~20 (Business and Management) and drop sources if this count is below 50\% of the total count. 
-
-For the surviving OAS\textsuperscript{*} sources we extract work and authorship data revealing units that can be excluded because they publish very few works. To find a suitable threshold for excluding these units, we examine source and institution retention curves (Fig.~\ref{fig:retention}), selecting thresholds of $\tau_U = 20$ works/institution/year and $\tau_S = 20$ works/source/year. We designate the residual set of sources OAS.
+For OAS\textsuperscript{*} sources we extract work and authorship data revealing some units that can be excluded because they publish very few works. To find a suitable threshold for excluding these units, we examine source and institution retention curves (Fig.~\ref{fig:retention}), selecting thresholds of $\tau_U = 20$ works/institution/year and $\tau_S = 20$ works/source/year. We designate the residual set of sources OAS.
 
 \begin{figure}[htbp]
 	\centering
@@ -37,8 +33,7 @@ Using units that satisfy these thresholds, we extract a full corpus of works, au
 
 \input{../tables/table3_corpus_features}
 
-
-
+Our sources cover the economics and business subfields, and it is of interest to compare spectral rankings for both. The three registries include one or more subfield indicators for each source, and OpenAlex sources have topic scores that indicate the relative intensity of business and economics subfields. We classify sources as `E' or `B' when the number of subfield indicators summed across the registries and OA exceeds a specified threshold, `A' when both subfields are present above the threshold, and `X' for sources that don't reach the threshold in either E or B. While sources are readily related to subfields, institutions generally publish substantial numbers of works in both subfields. Therefore, rather than use categorical classification, we classify institutions based on the ratio of works in sources across the EBAX categories.
 
 
 

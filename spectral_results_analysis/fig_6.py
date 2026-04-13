@@ -35,19 +35,23 @@ _baseline = next(r for r in _runs if r['label'] == 'baseline')
 _TIME_SERIES_LABELS = {'t1', 't2', 't3', 't4'}
 _overlays = [r for r in _runs if r['label'] in _TIME_SERIES_LABELS]
 
-_COLOURS = ['#9467bd', '#1f77b4', '#2ca02c', '#d62728']  # purple, blue, green, red
+_COLOURS = ['#7b00d4', '#0057ff', '#00aa00', '#ff1500']   # purple, blue, green, red (saturated)
 
 BASELINE_COLOUR = 'black'
+
+
+_MU_SUFFIX = {'': '', 'uniform': '_muUniform', 'unit_scaled': '_muUnitScaled'}
 
 
 def _table_name(r: dict) -> str:
     chi     = r['chi']
     chi_str = 'STAR' if chi == -1.0 else str(round(chi * 100))
     alpha_int = round(r['alpha'] * 100)
+    mu_sfx    = _MU_SUFFIX.get(r.get('mu_type', ''), f"_mu{r.get('mu_type', '')}")
     return (f"rk_{r['run_code']}_{r['fx']}"
             f"_tauU{r['tau_u']}_tauS{r['tau_s']}"
             f"_rho{r['rho']}_m{r['m']}"
-            f"_chi{chi_str}_alpha{alpha_int}")
+            f"_chi{chi_str}_alpha{alpha_int}{mu_sfx}")
 
 
 def _period_label(r: dict) -> str:
@@ -156,7 +160,7 @@ def _draw_panel(ax, series: list, unit_idx: int,
             )
             # Running mean in log space (window = 1% of series length, min 30)
             log_v = np.log10(df['v'].values)
-            w = max(30, len(log_v) // 100)
+            w = max(50, len(log_v) // 10)
             rm = np.asarray(pd.Series(log_v).rolling(window=w, center=True, min_periods=1).mean(), dtype=float)
             ax.plot(
                 df['baseline_rank'].values,
@@ -168,6 +172,7 @@ def _draw_panel(ax, series: list, unit_idx: int,
             )
 
     ax.set_yscale('log')
+    ax.set_ylim(0.02, 20)
     ax.axhline(1.0, color='#999999', linewidth=0.8, linestyle='--', zorder=0)
     ax.text(
         n_baseline * 0.98, 1.0, '$v=1$',

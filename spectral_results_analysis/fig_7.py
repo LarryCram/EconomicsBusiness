@@ -36,29 +36,45 @@ _run_code      = _baseline['run_code']
 _tau_u         = _baseline['tau_u']
 _tau_s         = _baseline['tau_s']
 BASELINE_TABLE = f'rk_{_run_code}_A_tauU{_tau_u}_tauS{_tau_s}_rho0_m0110_chi50_alpha100'
+EL_TABLE       = f'el_{_run_code}_A_tauU{_tau_u}_tauS{_tau_s}'
 
 FIELD_COLOURS = {
-    'E':   '#d62728',   # red
-    'B':   '#1f77b4',   # blue
+    'E':   '#e41a1c',   # red
+    'B':   '#377eb8',   # blue
     'A':   '#ff7f0e',   # orange
     None:  '#aaaaaa',   # grey
 }
+
+INST_FIELD_COLOURS = {
+    'E': '#e41a1c',   # red
+    'B': '#377eb8',   # blue
+    'A': '#ff7f0e',   # orange — matches source A (mixed/middle)
+    'X': '#aaaaaa',   # grey
+}
+
+INST_N_E   = 750
+INST_N_B   = 750
+INST_K_MIN = 1.0
 
 
 # ─── Data ─────────────────────────────────────────────────────────────────────
 
 def load_bootstrap(paths) -> tuple:
-    """Load v_s_boot, v_u_boot arrays and meta from $WORKING/bootstrap/."""
+    """Load v_s_boot, v_u_boot, lam_ratio_boot arrays and meta from $WORKING/bootstrap/."""
     boot_dir = paths.working / 'bootstrap'
     v_s_boot = np.load(boot_dir / 'v_s_boot.npy')   # (B, n_s)
     v_u_boot = np.load(boot_dir / 'v_u_boot.npy')   # (B, n_u)
+    lam_path = boot_dir / 'lam_ratio_boot.npy'
+    lam_ratio_boot = np.load(lam_path) if lam_path.exists() else None
     with open(boot_dir / 'meta.json') as f:
         meta = json.load(f)
     completed = meta.get('completed', v_s_boot.shape[0])
     # Only use completed replicates (rows with non-zero v_s)
     v_s_boot = v_s_boot[:completed]
     v_u_boot = v_u_boot[:completed]
-    return v_s_boot, v_u_boot, meta
+    if lam_ratio_boot is not None:
+        lam_ratio_boot = lam_ratio_boot[:completed]
+    return v_s_boot, v_u_boot, lam_ratio_boot, meta
 
 
 def load_baseline(rk_path: Path) -> pd.DataFrame:
@@ -70,11 +86,63 @@ def load_baseline(rk_path: Path) -> pd.DataFrame:
     return df
 
 
-def load_field_labels(paths) -> dict:
-    """Return {source_idx (int): field_eb string or None}."""
+def load_field_labels(paths) -> tuple:
+    """Return ({source_idx: field_eb}, {source_idx: source_name})."""
     sm = pd.read_csv(paths.data / 'source_master.csv',
-                     usecols=['source_idx', 'field_eb'])
-    return dict(zip(sm['source_idx'].astype(int), sm['field_eb']))
+                     usecols=['source_idx', 'field_eb', 'source_name'])
+    idx = sm['source_idx'].astype(int)
+    return (dict(zip(idx, sm['field_eb'])),
+            dict(zip(idx, sm['source_name'])))
+
+
+def fetch_inst_field_labels(el_path: Path, parquet_path: Path) -> dict:
+    """
+    Classify each institution in the F=A edge list as E / B / A / X.
+    Matches the logic in fig_2.py exactly.
+    Returns dict: inst_idx -> 'E'|'B'|'A'|'X'
+    """
+    sm = str(parquet_path / 'source_master.parquet')
+    with duckdb.connect(str(el_path), read_only=True) as db:
+        df = db.execute(f"""
+            SELECT
+                e.citer_inst_idx AS inst_idx,
+                SUM(CASE
+                    WHEN sm.field_eb = 'E' THEN 1.0
+                    WHEN sm.field_eb = 'A' AND (sm.econ_score + sm.bus_score) > 0
+                        THEN sm.econ_score::DOUBLE / (sm.econ_score + sm.bus_score)
+                    ELSE 0.0
+                END) AS e_signal,
+                SUM(CASE
+                    WHEN sm.field_eb = 'B' THEN 1.0
+                    WHEN sm.field_eb = 'A' AND (sm.econ_score + sm.bus_score) > 0
+                        THEN sm.bus_score::DOUBLE / (sm.econ_score + sm.bus_score)
+                    ELSE 0.0
+                END) AS b_signal
+            FROM (
+                SELECT DISTINCT citer_work_idx, citer_inst_idx, citer_source_idx
+                FROM {EL_TABLE}
+            ) e
+            JOIN '{sm}' sm ON e.citer_source_idx = sm.source_idx
+            GROUP BY e.citer_inst_idx
+        """).df()
+
+    active = df[(df['e_signal'] + df['b_signal']) >= INST_K_MIN].copy()
+    active['eb_ratio'] = active.apply(
+        lambda r: (r['e_signal'] / r['b_signal']) if r['b_signal'] > 0 else float('inf'),
+        axis=1,
+    )
+    active = active.sort_values('eb_ratio', ascending=False).reset_index(drop=True)
+    n   = len(active)
+    n_e = min(INST_N_E, n)
+    n_b = min(INST_N_B, n - n_e)
+    labels = ['A'] * n
+    for i in range(n_e):          labels[i] = 'E'
+    for i in range(n - n_b, n):  labels[i] = 'B'
+    active['field_eb_inst'] = labels
+
+    label_map = active.set_index('inst_idx')['field_eb_inst'].to_dict()
+    df['field_eb_inst'] = df['inst_idx'].map(label_map).fillna('X')
+    return df.set_index('inst_idx')['field_eb_inst'].to_dict()
 
 
 def build_panel_data(v_boot: np.ndarray,
@@ -153,6 +221,7 @@ def _draw_panel(ax, ranks, v_base, boot_flat, rank_flat,
             label='baseline')
 
     ax.set_yscale('log')
+    ax.set_ylim(0.02, 20)
     ax.axhline(1.0, color='#999999', linewidth=0.8, linestyle='--', zorder=0)
     ax.text(n_aligned * 0.98, 1.0, '$v=1$',
             ha='right', va='bottom', fontsize=7.5, color='#999999')
@@ -162,7 +231,54 @@ def _draw_panel(ax, ranks, v_base, boot_flat, rank_flat,
     ax.set_title(panel_title, fontsize=10, pad=6)
 
 
-def plot7(paths, v_s_boot, v_u_boot, meta, df_base, field_labels: dict) -> None:
+Y_LO, Y_HI = 0.02, 20.0
+
+
+def report_outliers(v_boot: np.ndarray, unit_ids: list, label: str,
+                    name_map: dict = None) -> None:
+    """
+    Print units that have any bootstrap replicate outside [Y_LO, Y_HI].
+    v_boot : (B, N) array aligned to unit_ids.
+    name_map : optional {unit_idx: name} for display.
+    """
+    lo_mask = (v_boot < Y_LO).any(axis=0)
+    hi_mask = (v_boot > Y_HI).any(axis=0)
+    outlier_mask = lo_mask | hi_mask
+    n_out = outlier_mask.sum()
+    if n_out == 0:
+        print(f'  {label}: no outliers outside [{Y_LO}, {Y_HI}]')
+        return
+    print(f'  {label}: {n_out} unit(s) with replicates outside [{Y_LO}, {Y_HI}]')
+    print(f'    {"unit_idx":>12}  {"name":<35}  {"v_min":>8}  {"v_max":>8}  {"n_lo":>5}  {"n_hi":>5}')
+    for i in np.where(outlier_mask)[0]:
+        uid  = unit_ids[i]
+        col  = v_boot[:, i]
+        name = (name_map or {}).get(uid, '')
+        print(f'    {uid:>12}  {name:<35}  {col.min():>8.4f}  {col.max():>8.4f}'
+              f'  {int((col < Y_LO).sum()):>5}  {int((col > Y_HI).sum()):>5}')
+
+
+def report_eigenvalues(lam_ratio_boot: np.ndarray) -> None:
+    """
+    Print summary of λ₂/λ₁ ratios across all replicates.
+    Near-primitivity (λ₂/λ₁ close to 1) indicates near-reducibility.
+    """
+    valid = lam_ratio_boot[~np.isnan(lam_ratio_boot)]
+    if len(valid) == 0:
+        print('  No λ₂/λ₁ data available.')
+        return
+    print(f'\nλ₂/λ₁ ratio across {len(valid)} replicates:')
+    print(f'  mean={valid.mean():.6f}  median={np.median(valid):.6f}')
+    print(f'  min={valid.min():.6f}  max={valid.max():.6f}')
+    print(f'  p5={np.percentile(valid,5):.6f}  p95={np.percentile(valid,95):.6f}')
+    # Distribution by threshold
+    for thresh in [0.90, 0.95, 0.98, 0.99, 0.999]:
+        n = (valid >= thresh).sum()
+        print(f'  λ₂/λ₁ ≥ {thresh}: {n} replicates ({100*n/len(valid):.1f}%)')
+
+
+def plot7(paths, v_s_boot, v_u_boot, lam_ratio_boot, meta, df_base,
+          field_labels: tuple, inst_field_map=None) -> None:
     B = v_s_boot.shape[0]
 
     # ── Sources ──────────────────────────────────────────────────────────────
@@ -173,9 +289,15 @@ def plot7(paths, v_s_boot, v_u_boot, meta, df_base, field_labels: dict) -> None:
     ranks_s, v_base_s, boot_flat_s, rank_flat_s, n_s, dense_s, order_s = \
         build_panel_data(v_s_boot, src_v, src_ids, meta['source_ids'])
 
+    # Outlier report — aligned boot array is (B, n_s) in rank order
+    src_ids_ranked = [meta['source_ids'][dense_s[i]] for i in range(n_s)]
+    boot_s_ranked  = v_s_boot[:, [dense_s[i] for i in range(n_s)]]
+    print('\nBootstrap outliers (replicates outside [0.02, 20]):')
+    report_outliers(boot_s_ranked, src_ids_ranked, 'Sources', name_map=field_labels[1])
+
     # Per-point colour by field_eb (repeated B times)
     field_per_unit = np.array([
-        field_labels.get(meta['source_ids'][dense_s[i]], None)
+        field_labels[0].get(meta['source_ids'][dense_s[i]], None)
         for i in range(n_s)
     ])
     colours_per_unit = np.array([
@@ -188,8 +310,29 @@ def plot7(paths, v_s_boot, v_u_boot, meta, df_base, field_labels: dict) -> None:
     inst_ids = df_i['unit_idx'].to_numpy(dtype=np.int64)
     inst_v   = df_i['v'].to_numpy(dtype=np.float64)
 
-    ranks_i, v_base_i, boot_flat_i, rank_flat_i, n_i, _, _ = \
+    ranks_i, v_base_i, boot_flat_i, rank_flat_i, n_i, dense_i, _ = \
         build_panel_data(v_u_boot, inst_v, inst_ids, meta['inst_ids'])
+
+    inst_ids_ranked = [meta['inst_ids'][dense_i[i]] for i in range(n_i)]
+    boot_i_ranked   = v_u_boot[:, [dense_i[i] for i in range(n_i)]]
+    report_outliers(boot_i_ranked, inst_ids_ranked, 'Institutions')
+
+    if lam_ratio_boot is not None:
+        report_eigenvalues(lam_ratio_boot)
+
+    # Per-point colour by institution field (repeated B times)
+    if inst_field_map is not None:
+        inst_field_per_unit = np.array([
+            inst_field_map.get(meta['inst_ids'][dense_i[i]], 'X')
+            for i in range(n_i)
+        ])
+        colours_per_inst = np.array([
+            INST_FIELD_COLOURS.get(f, INST_FIELD_COLOURS['X'])
+            for f in inst_field_per_unit
+        ])
+        colours_flat_i = np.tile(colours_per_inst, B)
+    else:
+        colours_flat_i = None
 
     # ── Plot ─────────────────────────────────────────────────────────────────
     sns.set_theme(style='whitegrid', font_scale=0.95)
@@ -199,15 +342,24 @@ def plot7(paths, v_s_boot, v_u_boot, meta, df_base, field_labels: dict) -> None:
     _draw_panel(axes[0], ranks_s, v_base_s, boot_flat_s, rank_flat_s,
                 n_s, B, 'Sources', colours=colours_flat_s)
     _draw_panel(axes[1], ranks_i, v_base_i, boot_flat_i, rank_flat_i,
-                n_i, B, 'Institutions')
+                n_i, B, 'Institutions', colours=colours_flat_i)
 
     # Legend for source colours
     for label, colour in [('E', FIELD_COLOURS['E']),
                            ('B', FIELD_COLOURS['B']),
                            ('A', FIELD_COLOURS['A']),
-                           ('unlabelled', FIELD_COLOURS[None])]:
+                           ('X', FIELD_COLOURS[None])]:
         axes[0].scatter([], [], c=colour, s=20, label=label)
     axes[0].legend(fontsize=7, framealpha=0.85, loc='upper right')
+
+    # Legend for institution colours
+    if inst_field_map is not None:
+        for label, colour in [('E', INST_FIELD_COLOURS['E']),
+                               ('B', INST_FIELD_COLOURS['B']),
+                               ('A', INST_FIELD_COLOURS['A']),
+                               ('X', INST_FIELD_COLOURS['X'])]:
+            axes[1].scatter([], [], c=colour, s=20, label=label)
+        axes[1].legend(fontsize=7, framealpha=0.85, loc='upper right')
 
     skipped = meta.get('skipped', 0)
     sup = fig.suptitle(
@@ -249,7 +401,7 @@ def main():
         )
 
     print('Loading bootstrap arrays ...', flush=True)
-    v_s_boot, v_u_boot, meta = load_bootstrap(paths)
+    v_s_boot, v_u_boot, lam_ratio_boot, meta = load_bootstrap(paths)
     B = v_s_boot.shape[0]
     print(f'  B={B}  n_s={meta["n_s"]}  n_u={meta["n_u"]}  '
           f'skipped={meta.get("skipped", 0)}')
@@ -258,10 +410,16 @@ def main():
     df_base = load_baseline(rk_path)
 
     print('Loading field labels ...', flush=True)
-    field_labels = load_field_labels(paths)
+    field_labels = load_field_labels(paths)   # (field_eb_dict, name_dict)
+
+    print('Loading institution field labels ...', flush=True)
+    el_path = paths.working / 'edge_lists.duckdb'
+    inst_field_map = fetch_inst_field_labels(el_path, paths.parquet)
+    print(f'  {len(inst_field_map)} institutions classified')
 
     print('Plotting ...', flush=True)
-    plot7(paths, v_s_boot, v_u_boot, meta, df_base, field_labels)
+    plot7(paths, v_s_boot, v_u_boot, lam_ratio_boot, meta, df_base,
+          field_labels, inst_field_map)
 
 
 if __name__ == '__main__':

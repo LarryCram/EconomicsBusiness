@@ -57,15 +57,48 @@ class RunParams:
     m:        tuple  # (m_SS, m_SI, m_IS, m_II)
     chi:      float  # -1.0 = chi_star (resolved at runtime)
     alpha:    float
-    label:    str = ''
+    mu_type:  str  = ''   # '' = Perron (alpha=1); 'uniform' or 'unit_scaled' for alpha<1
+    label:    str  = ''
+
+
+_MU_SUFFIX = {
+    '':           '',
+    'uniform':    '_muUniform',
+    'unit_scaled': '_muUnitScaled',
+}
 
 
 def table_name(p: RunParams) -> str:
     mstr      = ''.join(str(x) for x in p.m)
     chi_str   = 'STAR' if p.chi == -1.0 else str(round(p.chi * 100))
     alpha_int = round(p.alpha * 100)
+    mu_sfx    = _MU_SUFFIX.get(p.mu_type, f'_mu{p.mu_type}')
     return (f'rk_{p.run_code}_{p.fx}_tauU{p.tau_u}_tauS{p.tau_s}'
-            f'_rho{p.rho}_m{mstr}_chi{chi_str}_alpha{alpha_int}')
+            f'_rho{p.rho}_m{mstr}_chi{chi_str}_alpha{alpha_int}{mu_sfx}')
+
+
+def _make_mu(mu_type: str, n_s: int, n_u: int) -> 'np.ndarray | None':
+    """
+    Construct prior vector for Katz–Hubbell iteration.
+
+    'uniform'     — μ_p = 1/(N_S+N_U) for all units  (Katz uniform prior)
+    'unit_scaled' — μ_p = 1/N_S for sources, 1/N_U for institutions
+    ''            — None (Perron / alpha=1 path)
+    """
+    if not mu_type:
+        return None
+    N = n_s + n_u
+    if mu_type == 'uniform':
+        return np.full(N, 1.0 / N, dtype=np.float64)
+    elif mu_type == 'unit_scaled':
+        return np.concatenate([
+            np.full(n_s, 1.0 / n_s, dtype=np.float64),
+            np.full(n_u, 1.0 / n_u, dtype=np.float64),
+        ])
+    else:
+        raise ValueError(
+            f"Unknown mu_type {mu_type!r}. Expected 'uniform', 'unit_scaled', or ''."
+        )
 
 
 # ─── Load run schedule from CSV ───────────────────────────────────────────────
@@ -85,6 +118,7 @@ def runs_from_csv() -> list:
             m=m,
             chi=r['chi'],
             alpha=r['alpha'],
+            mu_type=r.get('mu_type', ''),
             label=r['label'],
         ))
     return result
@@ -107,6 +141,7 @@ def ensure_catalog(db) -> None:
             m_II        INTEGER,
             chi         DOUBLE,
             alpha       DOUBLE,
+            mu_type     VARCHAR,
             n_s         INTEGER,
             n_u         INTEGER,
             lam1        DOUBLE,
@@ -130,6 +165,9 @@ def ensure_catalog(db) -> None:
     if 'lam2' not in cols:
         db.execute("ALTER TABLE _catalog ADD COLUMN lam2 DOUBLE")
         db.execute("UPDATE _catalog SET lam2 = 0.0")
+    if 'mu_type' not in cols:
+        db.execute("ALTER TABLE _catalog ADD COLUMN mu_type VARCHAR")
+        db.execute("UPDATE _catalog SET mu_type = ''")
 
 
 def write_result(db, tname: str, p: RunParams, result, csr_data) -> None:
@@ -172,12 +210,12 @@ def write_result(db, tname: str, p: RunParams, result, csr_data) -> None:
     db.execute(
         """INSERT OR REPLACE INTO _catalog
            (table_name, run_code, fx, tau_u, tau_s, rho,
-            m_SS, m_SI, m_IS, m_II, chi, alpha,
+            m_SS, m_SI, m_IS, m_II, chi, alpha, mu_type,
             n_s, n_u, lam1, lam2, iters, final_norm, label, created_at)
-           VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)""",
+           VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)""",
         [tname, p.run_code, p.fx, p.tau_u, p.tau_s, p.rho,
          p.m[0], p.m[1], p.m[2], p.m[3],
-         p.chi, p.alpha,
+         p.chi, p.alpha, p.mu_type,
          n_s, n_u,
          result.lam1, result.lam2,
          result.iters, result.final_norm,
@@ -245,8 +283,10 @@ def run_one(el_db, rk_db, p: RunParams, verbose: bool = True) -> bool:
     data = build_csr(el_db, p.run_code, p.fx, p.tau_u, p.tau_s, p.rho, p.m)
     t_csr = (datetime.now() - t0).total_seconds()
 
+    mu = _make_mu(p.mu_type, data.n_s, data.n_u)
+
     t1 = datetime.now()
-    result = rank(data, p.m, chi_resolved, p.alpha)
+    result = rank(data, p.m, chi_resolved, p.alpha, mu=mu)
     t_rank = (datetime.now() - t1).total_seconds()
 
     t2 = datetime.now()

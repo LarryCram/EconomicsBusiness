@@ -3,16 +3,22 @@ fig_4.py — Community structure (φ₂/√v) vs influence (v).
 
 Four panels arranged 2×2:
   Row 0 — Sources:      SS (m=1000)  |  Bipartite (m=0110)
-  Row 1 — Institutions: SS (m=0110, φ₂_I recovered from H_SI^T φ₂_S)
-                        |  Bipartite (same run, same φ₂_I)
+  Row 1 — Institutions: II (m=0001)  |  Bipartite (m=0110, φ₂_I from H_SI^T φ₂_S)
 
 y-axis: φ₂/√v.  Dividing by √v approximately removes the eigenvector
 normalisation artefact that shrinks |φ₂| for low-prestige units, giving
 a per-unit community identity measure that is stable across the prestige range.
 
 x-axis: v from the bipartite baseline (m=0110, α=1, F=A).
-Coloured by field subset F ∈ {E, B} for sources; institutions have no
-field label so the I panels use a single colour.
+Coloured by field label E/B/A/X for both sources and institutions.
+
+Source field labels: field_eb from source_master.csv.
+Institution field labels: derived from E_signal/B_signal computed from
+citer works in the F=A edge list (same method as fig_2.py).
+  INST_N_E top institutions by E/B ratio → E
+  INST_N_B bottom institutions by E/B ratio → B
+  A: everything else above INST_K_MIN total signal
+  X: total signal < INST_K_MIN
 
 Outputs:
   plots/fig_4.pdf        — with title (exploration)
@@ -39,10 +45,17 @@ _tau_u         = _baseline['tau_u']
 _tau_s         = _baseline['tau_s']
 
 BASELINE_TABLE = f'rk_{_run_code}_A_tauU{_tau_u}_tauS{_tau_s}_rho0_m0110_chi50_alpha100'
+EL_TABLE       = f'el_{_run_code}_A_tauU{_tau_u}_tauS{_tau_s}'
 
-COLOR  = {'E': '#1f77b4', 'B': '#d62728', 'X': '#ff7f0e', 'other': '#999999'}
-MARKER = {'E': 'o',       'B': 's',       'X': '^',       'other': 'x'}
-LABEL  = {'E': 'Economics (E)', 'B': 'Business (B)', 'X': 'Cross-field (X)', 'other': 'Other'}
+# Institution field classification parameters (consistent with fig_2.py)
+INST_N_E   = 750
+INST_N_B   = 750
+INST_K_MIN = 1.0
+
+COLOR  = {'E': '#e41a1c', 'B': '#377eb8', 'A': '#ff7f00', 'X': '#984ea3'}
+MARKER = {'E': '+',       'B': 'x',       'A': 'o',       'X': 's'}
+LABEL  = {'E': 'E', 'B': 'B', 'A': 'A', 'X': 'X'}
+FIELD_ORDER = ['X', 'A', 'B', 'E']   # plotted bottom-to-top
 
 
 # ─── Data loaders ─────────────────────────────────────────────────────────────
@@ -66,43 +79,64 @@ def load_field_labels(paths) -> tuple:
     return field_labels, source_names
 
 
-def load_inst_field_labels(el_db, tau_u, tau_s) -> dict:
+def load_inst_field_labels(el_path: Path, parquet_path: Path) -> dict:
     """
-    Return {inst_idx (int): 'E' | 'B' | 'EB'} by checking which field-subset
-    unit tables the institution appears in.
+    Classify each institution as E/B/A/X using E_signal and B_signal derived
+    from citer works in the F=A edge list joined to source_master.parquet.
 
-    F=E and F=B run on distinct networks; an institution can be in both.
-    'EB'   → present in both E and B networks
-    'E'    → present in E network only
-    'B'    → present in B network only
-    'other'→ present in A network only (not in E or B sub-networks)
+    E_signal = n works in E-sources + Σ econ_score/(econ+bus) for M-source works
+    B_signal = n works in B-sources + Σ bus_score/(econ+bus)  for M-source works
+
+    Top INST_N_E by E/B ratio → E; bottom INST_N_B → B; rest above INST_K_MIN → A; else X.
     """
-    def inst_set(fx):
-        tname = f'_units_{_run_code}_{fx}_tauU{tau_u}_tauS{tau_s}'
-        tables = {r[0] for r in el_db.execute('SHOW TABLES').fetchall()}
-        if tname not in tables:
-            return set()
-        rows = el_db.execute(
-            f"SELECT unit_idx FROM {tname} WHERE unit_type='U'"
-        ).fetchall()
-        return {int(r[0]) for r in rows}
+    sm = str(parquet_path / 'source_master.parquet')
+    with duckdb.connect(str(el_path), read_only=True) as db:
+        df = db.execute(f"""
+            SELECT
+                e.citer_inst_idx AS inst_idx,
+                SUM(CASE
+                    WHEN sm.field_eb = 'E' THEN 1.0
+                    WHEN sm.field_eb = 'A' AND (sm.econ_score + sm.bus_score) > 0
+                        THEN sm.econ_score::DOUBLE / (sm.econ_score + sm.bus_score)
+                    ELSE 0.0
+                END) AS e_signal,
+                SUM(CASE
+                    WHEN sm.field_eb = 'B' THEN 1.0
+                    WHEN sm.field_eb = 'A' AND (sm.econ_score + sm.bus_score) > 0
+                        THEN sm.bus_score::DOUBLE / (sm.econ_score + sm.bus_score)
+                    ELSE 0.0
+                END) AS b_signal
+            FROM (
+                SELECT DISTINCT citer_work_idx, citer_inst_idx, citer_source_idx
+                FROM {EL_TABLE}
+            ) e
+            JOIN '{sm}' sm ON e.citer_source_idx = sm.source_idx
+            GROUP BY e.citer_inst_idx
+        """).df()
 
-    e_set = inst_set('E')
-    b_set = inst_set('B')
-    x_set = inst_set('X')
+    active = df[(df['e_signal'] + df['b_signal']) >= INST_K_MIN].copy()
+    active['eb_ratio'] = active.apply(
+        lambda r: (r['e_signal'] / r['b_signal']) if r['b_signal'] > 0 else float('inf'),
+        axis=1,
+    )
+    active = active.sort_values('eb_ratio', ascending=False).reset_index(drop=True)
+    n = len(active)
+    n_e = min(INST_N_E, n)
+    n_b = min(INST_N_B, n - n_e)
+    labels = ['A'] * n
+    for i in range(n_e):
+        labels[i] = 'E'
+    for i in range(n - n_b, n):
+        labels[i] = 'B'
+    active['field_eb_inst'] = labels
 
-    inst_field = {}
-    for idx in e_set | b_set | x_set:
-        memberships = (idx in e_set, idx in b_set, idx in x_set)
-        if sum(memberships) > 1:
-            inst_field[idx] = 'other'   # present in multiple; not exclusively one field
-        elif memberships[0]:
-            inst_field[idx] = 'E'
-        elif memberships[1]:
-            inst_field[idx] = 'B'
-        else:
-            inst_field[idx] = 'X'
-    return inst_field
+    label_map = active.set_index('inst_idx')['field_eb_inst'].to_dict()
+    df['field_eb_inst'] = df['inst_idx'].map(label_map).fillna('X')
+
+    counts = df['field_eb_inst'].value_counts().to_dict()
+    print('  Institution field labels: '
+          + '  '.join(f'{c}={counts.get(c, 0):,}' for c in FIELD_ORDER))
+    return df.set_index('inst_idx')['field_eb_inst'].to_dict()
 
 
 # ─── Eigenpair computation ────────────────────────────────────────────────────
@@ -181,20 +215,15 @@ def compute_eigenpairs(db, run_code, fx, tau_u, tau_s, rho, alpha):
 # ─── Plot ─────────────────────────────────────────────────────────────────────
 
 def _draw_panel(ax, df, v_col, phi2_col, id_col, group_map, panel_title):
-    """Scatter φ₂/√v vs v (log x-axis), coloured by group."""
+    """Scatter φ₂/√v vs v (log x-axis), coloured by E/B/A/X."""
     df = df.copy()
     df['v'] = df[v_col]
     df['phi2'] = df[phi2_col]
     df['score'] = df['phi2'] / np.sqrt(df['v'].clip(lower=1e-12))
-    df['grp'] = df[id_col].map(group_map).fillna('other')
+    df['grp'] = df[id_col].map(group_map).fillna('X')
 
-    _GRP_STYLE = {
-        'other': dict(alpha=0.80, zorder=2, linewidths=2.0),
-        'X':     dict(alpha=0.90, zorder=3, linewidths=0.4),
-        'B':     dict(alpha=1.0,  zorder=4, linewidths=0.4),
-        'E':     dict(alpha=1.0,  zorder=5, linewidths=0.4),
-    }
-    for grp in ['other', 'X', 'B', 'E']:   # Other first so E/B/X paint over it
+    _ALPHA = {'X': 0.5, 'A': 0.7, 'B': 1.0, 'E': 1.0}
+    for grp in FIELD_ORDER:   # X first (bottom), E last (top)
         sub = df[df['grp'] == grp]
         if sub.empty:
             continue
@@ -204,8 +233,9 @@ def _draw_panel(ax, df, v_col, phi2_col, id_col, group_map, panel_title):
             c=COLOR[grp],
             marker=MARKER[grp],
             s=18,
+            alpha=_ALPHA[grp],
+            zorder=FIELD_ORDER.index(grp) + 2,
             label=f"{LABEL[grp]}  (n={len(sub):,})",
-            **_GRP_STYLE[grp],
         )
 
     ax.axhline(0, color='#aaaaaa', linewidth=0.6, zorder=1)
@@ -328,13 +358,10 @@ def main():
         print("Computing eigenpairs ...")
         lam2_ss, lam2_ii, lam2_bi, df_ss_s, df_ii_i, df_bi_s, df_bi_i = \
             compute_eigenpairs(db, run_code, fx, tau_u, tau_s, rho, alpha)
-        print("Loading institution field-network membership ...")
-        inst_field_labels = load_inst_field_labels(db, tau_u, tau_s)
     print(f"  λ₂(SS)={lam2_ss:.4f}  λ₂(II)={lam2_ii:.4f}  λ₂(bipartite)={lam2_bi:.4f}")
-    e_only = sum(v == 'E'     for v in inst_field_labels.values())
-    b_only = sum(v == 'B'     for v in inst_field_labels.values())
-    other  = sum(v == 'other' for v in inst_field_labels.values())
-    print(f"  Institutions: E={e_only}  B={b_only}  both/other={other}")
+
+    print("Computing institution field labels ...")
+    inst_field_labels = load_inst_field_labels(el_path, paths.parquet)
 
     plot4(lam2_ss, lam2_ii, lam2_bi,
           df_ss_s, df_ii_i, df_bi_s, df_bi_i,

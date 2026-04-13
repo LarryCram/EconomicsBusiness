@@ -341,6 +341,13 @@ def bipartite(
     N_s = H_SI.shape[0]
     N_u = H_SI.shape[1]
 
+    if alpha < 1.0 and mu is None:
+        raise ValueError(
+            "bipartite(): mu must be provided when alpha < 1. "
+            "Use mu_type='uniform' (μ = 1/N for all N_s+N_u units) or "
+            "'unit_scaled' (μ = 1/N_S for sources, 1/N_U for institutions)."
+        )
+
     # One-mode projection: M_S = H_SI @ H_IS  (N_s × N_s)
     M_S = H_SI.dot(H_IS)
 
@@ -450,7 +457,8 @@ def bipartite_resolvent(
 
 # ─── Top-level entry point ────────────────────────────────────────────────────
 
-def rank(csr_data, m: tuple, chi: float, alpha: float) -> RankResult:
+def rank(csr_data, m: tuple, chi: float, alpha: float,
+         mu: Optional[np.ndarray] = None) -> RankResult:
     """
     Row-normalise raw C blocks, assemble H per m and χ, route to algorithm.
 
@@ -463,6 +471,12 @@ def rank(csr_data, m: tuple, chi: float, alpha: float) -> RankResult:
     chi : source–institution mixing weight ∈ [0,1]
         Only material for m=(1,1,1,1); absorbed by normalisation otherwise.
     alpha : damping factor ∈ (0,1]
+    mu : prior vector, or None.
+        For m=(0,1,1,0): joint vector of length n_s + n_u.  Required when
+        alpha < 1.  Ignored (must be None) when alpha = 1.
+        Two standard choices (constructed by run_rankings._make_mu):
+          'uniform'     — μ_p = 1/(N_S+N_U)  for all units  (Katz)
+          'unit_scaled' — μ_p = 1/N_S for sources, 1/N_U for institutions
 
     Returns
     -------
@@ -490,7 +504,7 @@ def rank(csr_data, m: tuple, chi: float, alpha: float) -> RankResult:
         # Bipartite SI/IS: power iteration on M_S = H_SI @ H_IS
         H_SI, _ = _row_normalise(csr_data.C_SI)
         H_IS, _ = _row_normalise(csr_data.C_IS)
-        pi_s_ind, pi_u_ind, lam1, lam2, iters, norm = bipartite(H_SI, H_IS, alpha)
+        pi_s_ind, pi_u_ind, lam1, lam2, iters, norm = bipartite(H_SI, H_IS, alpha, mu=mu)
         # Joint-normalise (each individually sums to 1; divide by 2 to sum jointly to 1)
         pi_s = pi_s_ind / 2.0
         pi_u = pi_u_ind / 2.0

@@ -46,7 +46,10 @@ _tau_s         = _baseline['tau_s']
 BASELINE_TABLE = f'rk_{_run_code}_A_tauU{_tau_u}_tauS{_tau_s}_rho0_m0110_chi50_alpha100'
 EL_TABLE       = f'el_{_run_code}_A_tauU{_tau_u}_tauS{_tau_s}'
 
-INST_K = 0.5   # threshold for institution field classification
+INST_N_E    = 750   # top-N by E/B ratio → E
+INST_N_B    = 750   # bottom-N by E/B ratio → B
+INST_K_MIN  = 1.0   # minimum total (E_signal + B_signal) to be non-X
+INST_D      = 0.1   # vertical offset: E → v*(1+D), B → v*(1-D), A → v, X dropped
 
 # Display label → (catalog label, colour, marker)
 # Order: plotted bottom-to-top (last = top layer)
@@ -58,18 +61,18 @@ OVERLAYS = [
 ]
 
 # Institution field categories: plotted bottom-to-top, colours match source overlays
+# X is dropped from the institution panel
 INST_FIELD_STYLE = {
-    'X': ('#984ea3', 's'),
-    'A': ('#ff7f00', 'o'),
-    'B': ('#377eb8', 'x'),
-    'E': ('#e41a1c', '+'),
+    'A': ('#2ca02c', 'o', 1.0),    # green, no offset
+    'B': ('#377eb8', 'o', 1.0),    # blue,  shifted down
+    'E': ('#e41a1c', 'o', 1.0),    # red,   shifted up
 }
-INST_FIELD_ORDER = ['X', 'A', 'B', 'E']   # bottom layer first
+INST_FIELD_ORDER = ['B', 'E']        # A and X omitted
 
 
 # ─── Institution field labels ─────────────────────────────────────────────────
 
-def fetch_inst_field_labels(el_path: Path, parquet_path: Path, k: float) -> dict:
+def fetch_inst_field_labels(el_path: Path, parquet_path: Path) -> dict:
     """
     Classify each institution in the F=A edge list as E / B / A / X.
 
@@ -104,20 +107,32 @@ def fetch_inst_field_labels(el_path: Path, parquet_path: Path, k: float) -> dict
             GROUP BY e.citer_inst_idx
         """).df()
 
-    def _classify(e, b):
-        if e >= k and b >= k:
-            return 'A'
-        elif e >= k:
-            return 'E'
-        elif b >= k:
-            return 'B'
-        else:
-            return 'X'
+    # X: insufficient total signal
+    active = df[(df['e_signal'] + df['b_signal']) >= INST_K_MIN].copy()
 
-    df['field_eb_inst'] = df.apply(lambda r: _classify(r['e_signal'], r['b_signal']), axis=1)
+    # Sort by E/B ratio descending; B=0 → inf (pure E), E=0 → 0 (pure B)
+    active['eb_ratio'] = active.apply(
+        lambda r: (r['e_signal'] / r['b_signal']) if r['b_signal'] > 0 else float('inf'),
+        axis=1,
+    )
+    active = active.sort_values('eb_ratio', ascending=False).reset_index(drop=True)
+
+    n = len(active)
+    n_e = min(INST_N_E, n)
+    n_b = min(INST_N_B, n - n_e)   # can't overlap with E slice
+
+    labels = ['A'] * n
+    for i in range(n_e):
+        labels[i] = 'E'
+    for i in range(n - n_b, n):
+        labels[i] = 'B'
+    active['field_eb_inst'] = labels
+
+    label_map = active.set_index('inst_idx')['field_eb_inst'].to_dict()
+    df['field_eb_inst'] = df['inst_idx'].map(label_map).fillna('X')
 
     counts = df['field_eb_inst'].value_counts().to_dict()
-    print(f'  Institution field labels (k={k}): '
+    print(f'  Institution field labels (N_E={INST_N_E}, N_B={INST_N_B}, min_total={INST_K_MIN}): '
           + '  '.join(f'{c}={counts.get(c, 0):,}' for c in INST_FIELD_ORDER))
 
     return df.set_index('inst_idx')['field_eb_inst'].to_dict()
@@ -242,24 +257,28 @@ def _draw_src_panel(ax, series: list, n_baseline: int) -> None:
 def _draw_inst_panel(ax, df_i_base: pd.DataFrame,
                      inst_field_map: dict, n_baseline: int) -> None:
     """
-    Institution panel: baseline v coloured by institution field label (E/B/A/X).
-    Institutions not in inst_field_map default to X.
+    Institution panel: baseline v coloured by institution field label (E/B/A).
+    X institutions are omitted.
+    Vertical offsets separate groups: E → v*(1+D), B → v*(1-D), A → v.
     """
+    OFFSET = {'E': 1.0 + INST_D, 'B': 1.0 - INST_D, 'A': 1.0}
+
     df = df_i_base.copy()
     df['field_eb_inst'] = df['unit_idx'].map(inst_field_map).fillna('X')
 
-    for cat in INST_FIELD_ORDER:   # X first (bottom), E last (top)
-        colour, marker = INST_FIELD_STYLE[cat]
+    for cat in INST_FIELD_ORDER:   # A first (bottom), E last (top)
+        colour, marker, _ = INST_FIELD_STYLE[cat]
         sub = df[df['field_eb_inst'] == cat]
         if sub.empty:
             continue
         is_line_marker = marker in ('x', '+')
+        v_plot = sub['v'].values * OFFSET[cat]
         ax.scatter(
             sub['baseline_rank'].values,
-            sub['v'].values,
+            v_plot,
             color=colour,
             marker=marker,
-            s=45 if is_line_marker else 30,
+            s=45 if is_line_marker else 15,
             alpha=1.0,
             zorder=INST_FIELD_ORDER.index(cat) + 2,
             edgecolors=colour if is_line_marker else 'white',
@@ -332,7 +351,7 @@ def main():
         )
 
     print('Computing institution field labels...')
-    inst_field_map = fetch_inst_field_labels(el_path, paths.parquet, k=INST_K)
+    inst_field_map = fetch_inst_field_labels(el_path, paths.parquet)
 
     with duckdb.connect(str(rk_path), read_only=True) as db:
         src_rank_map, df_i_base, series = fetch_data(db)

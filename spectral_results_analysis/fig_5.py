@@ -1,23 +1,25 @@
 """
 fig_5.py — Phase 2 parameter sensitivity: τ, ρ, and (α, μ).
 
-Baseline: t_x=5, F=A, τ_U=τ_S=20, ρ=0, m=0110, α=1, μ=0.
+Baseline: F=A, τ_U=τ_S=20, ρ=0, m=0110, α=1.
 x-axis locked to baseline rank (same convention as fig_2/fig_3).
 
-Three overlays:
-  τ=40   : raise both τ_U and τ_S to 40; α=1, ρ=0.
-            Computed from el_t5_A_tauU40_tauS40 in edge_lists.duckdb.
-            Units dropped by the higher threshold are absent from the series.
+Four overlays:
+  τ=40              : raise both τ_U and τ_S to 40; α=1, ρ=0.
+                      Units dropped by the higher threshold are absent.
 
-  ρ=1    : full reference count (equal attention per reference);
-            τ=20, α=1.  Computed from el_t5_A_tauU20_tauS20 with rho=1.
+  ρ=1               : full reference count (equal attention per reference);
+                      τ=20, α=1.
 
-  α=0.5  : Katz–Hubbell with type-balanced prior
-            μ_p = 1/(2 N_S) for sources, μ_p = 1/(2 N_U) for institutions;
-            τ=20, ρ=0.  Computed on-the-fly with the bipartite() solver.
+  α=0.85, μ=1/N     : Katz–Hubbell, uniform prior — μ_p = 1/(N_S+N_U) for
+                      all units; τ=20, ρ=0.
+
+  α=0.85, μ=1/N_p   : Katz–Hubbell, unit-scaled prior — μ_p = 1/N_S for
+                      sources, 1/N_U for institutions; τ=20, ρ=0.
 
 All computations use the bipartite m=0110 mode.
 χ is not material for the bipartite mode and is not varied here.
+α=0.85 cases are computed on-the-fly via bipartite(); not stored in rankings.duckdb.
 
 Outputs:
   plots/fig_5.pdf        — with title (exploration)
@@ -47,10 +49,11 @@ BASELINE_TABLE = f'rk_{_run_code}_A_tauU{_tau_u}_tauS{_tau_s}_rho0_m0110_chi50_a
 
 # Visual style per overlay label (ordered: baseline drawn first)
 STYLE = {
-    'baseline': dict(color='black',   marker=None,  lw=1.4, alpha_vis=1.0,  zorder=3),
-    'τ=40':     dict(color='#9467bd', marker='x',   lw=0.8, alpha_vis=0.65, zorder=4, s=40),
-    'ρ=1':      dict(color='#ff7f0e', marker='x',   lw=0.8, alpha_vis=0.65, zorder=2, s=40),
-    'α=0.5':    dict(color='#d62728', marker='x',   lw=0.8, alpha_vis=0.65, zorder=2, s=40),
+    'baseline':        dict(color='black',   marker=None, lw=1.4, alpha_vis=1.0,  zorder=5),
+    'τ=40':            dict(color='#9467bd', marker='x',  lw=0.8, alpha_vis=0.65, zorder=4, s=40),
+    'ρ=1':             dict(color='#ff7f0e', marker='x',  lw=0.8, alpha_vis=0.65, zorder=3, s=40),
+    'α=0.85, μ=1/N':   dict(color='#d62728', marker='x', lw=0.8, alpha_vis=0.65, zorder=2, s=40),
+    'α=0.85, μ=1/N_p': dict(color='#2ca02c', marker='x', lw=0.8, alpha_vis=0.65, zorder=2, s=40),
 }
 
 
@@ -161,21 +164,34 @@ def fetch_data(rk_db, el_db) -> tuple:
             'I': project(df_u, inst_rank_map),
         }
 
-    # ── α=0.5, type-balanced prior ────────────────────────────────────────────
-    # μ_p = 1/N_S for sources, 1/N_U for institutions.
-    # Uses N_S and N_U from the baseline corpus (same τ, so identical corpus).
-    print('  α=0.5, μ_block ...')
+    # ── α=0.85: build both mu vectors from the baseline corpus ───────────────
     N_s = len(df_s_base)
     N_u = len(df_u_base)
-    mu_block = np.concatenate([
+    N   = N_s + N_u
+
+    # μ=1/N  — uniform (Katz)
+    print('  α=0.85, μ=1/N (uniform) ...')
+    mu_uniform = np.full(N, 1.0 / N)
+    df_s, df_u = _compute_bipartite_v(
+        el_db, _run_code, 'A', _tau_u, _tau_s, 0, 0.85, mu=mu_uniform
+    )
+    if df_s is not None:
+        series['α=0.85, μ=1/N'] = {
+            'S': project(df_s, src_rank_map),
+            'I': project(df_u, inst_rank_map),
+        }
+
+    # μ=1/N_p — unit-scaled (1/N_S for sources, 1/N_U for institutions)
+    print('  α=0.85, μ=1/N_p (unit_scaled) ...')
+    mu_unit = np.concatenate([
         np.full(N_s, 1.0 / N_s),
         np.full(N_u, 1.0 / N_u),
     ])
     df_s, df_u = _compute_bipartite_v(
-        el_db, _run_code, 'A', _tau_u, _tau_s, 0, 0.5, mu=mu_block
+        el_db, _run_code, 'A', _tau_u, _tau_s, 0, 0.85, mu=mu_unit
     )
     if df_s is not None:
-        series['α=0.5'] = {
+        series['α=0.85, μ=1/N_p'] = {
             'S': project(df_s, src_rank_map),
             'I': project(df_u, inst_rank_map),
         }
@@ -230,7 +246,7 @@ def _draw_panel(ax, series: dict, unit_key: str,
     ax.set_xlabel('Baseline rank', labelpad=4)
     ax.set_ylabel('Influence per work $v$', labelpad=4)
     ax.set_title(panel_title, fontsize=10, pad=6)
-    ax.legend(fontsize=7.5, framealpha=0.85, loc='upper right')
+    ax.legend(fontsize=7.5, framealpha=0.85, loc='lower left')
 
 
 def plot5(src_rank_map: dict, inst_rank_map: dict, series: dict) -> None:
