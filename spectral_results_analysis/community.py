@@ -31,7 +31,7 @@ from scipy.sparse import bmat
 from scipy.sparse.linalg import eigs
 
 sys.path.insert(0, str(Path(__file__).parent.parent))
-from util import load_config, load_params
+from util import load_config, load_runs
 from spectral_ranking.build_csr import build_csr
 from spectral_ranking.katz_ranker import _row_normalise
 
@@ -257,34 +257,32 @@ def print_phi2_top(label, phi2, unit_ids, field_labels, source_names, n=15):
 
 # ─── Main driver ──────────────────────────────────────────────────────────────
 
-def run(paths, params):
-    tau_u = params['tau_u_floor']['A']
-    tau_s = params['tau_s_floor']['A']
-    alpha = 1.0
-    tx, fx, rho = 5, 'A', 0
-
+def run(paths, run_code: str = '20242024', fx: str = 'A',
+        tau_u: int = 20, tau_s: int = 20, rho: int = 0, alpha: float = 1.0):
     el_path = paths.working / 'edge_lists.duckdb'
     sm_path = paths.parquet / 'source_master.parquet'
 
     field_labels, source_names = load_source_meta(sm_path)
     print(f"Source meta loaded: {len(field_labels)} sources")
+    print(f"run_code={run_code}  fx={fx}  tau_u={tau_u}  tau_s={tau_s}  "
+          f"rho={rho}  alpha={alpha}")
 
     summary = []
 
     with duckdb.connect(str(el_path), read_only=True) as db:
 
         # ── χ* ────────────────────────────────────────────────────────────────
-        uname = f'_units_t{tx}_{fx}_tauU{tau_u}_tauS{tau_s}'
+        uname = f'_units_{run_code}_{fx}_tauU{tau_u}_tauS{tau_s}_m0110'
         counts = {r[0]: r[1] for r in db.execute(
             f"SELECT unit_type, COUNT(*) FROM {uname} GROUP BY unit_type"
         ).fetchall()}
-        n_s, n_u = counts['S'], counts['U']
-        chi_star = n_u / (n_s + n_u)
+        n_s, n_u = counts.get('S', 0), counts.get('U', 0)
+        chi_star = n_u / (n_s + n_u) if (n_s + n_u) > 0 else 0.5
         print(f"N_s={n_s}, N_u={n_u}, χ*={chi_star:.4f}")
 
         # ── SS ────────────────────────────────────────────────────────────────
         print("\n=== SS mode ===")
-        csr = build_csr(db, tx, fx, tau_u, tau_s, rho, (1,0,0,0))
+        csr = build_csr(db, run_code, fx, tau_u, tau_s, rho, (1, 0, 0, 0))
         scc_report(csr.C_SS, csr.source_ids, 'C_SS', field_labels, source_names)
         lam2, phi2, gap, ampl = second_eigenpair_unipartite(csr.C_SS, alpha, 'SS')
         summary.append(('SS', lam2, gap, ampl))
@@ -292,30 +290,29 @@ def run(paths, params):
 
         # ── II ────────────────────────────────────────────────────────────────
         print("\n=== II mode ===")
-        csr = build_csr(db, tx, fx, tau_u, tau_s, rho, (0,0,0,1))
+        csr = build_csr(db, run_code, fx, tau_u, tau_s, rho, (0, 0, 0, 1))
         scc_report(csr.C_II, csr.inst_ids, 'C_II', None, None)
         lam2, phi2, gap, ampl = second_eigenpair_unipartite(csr.C_II, alpha, 'II')
         summary.append(('II', lam2, gap, ampl))
 
         # ── Bipartite ─────────────────────────────────────────────────────────
         print("\n=== Bipartite SI/IS ===")
-        csr = build_csr(db, tx, fx, tau_u, tau_s, rho, (0,1,1,0))
+        csr = build_csr(db, run_code, fx, tau_u, tau_s, rho, (0, 1, 1, 0))
         lam2, phi2_S, phi2_I, gap, ampl = second_eigenpair_bipartite(
             csr.C_SI, csr.C_IS, alpha, 'bipartite')
         summary.append(('bipartite M_S', lam2, gap, ampl))
-        print_phi2_top('bipartite M_S (sources)', phi2_S, csr.source_ids, field_labels, source_names)
+        print_phi2_top('bipartite M_S (sources)', phi2_S, csr.source_ids,
+                       field_labels, source_names)
 
         # ── Full joint χ=0.5 ──────────────────────────────────────────────────
         print("\n=== Full joint χ=0.5 ===")
-        csr = build_csr(db, tx, fx, tau_u, tau_s, rho, (1,1,1,1))
-        # SCC on the assembled block matrix (sources first, then institutions)
+        csr = build_csr(db, run_code, fx, tau_u, tau_s, rho, (1, 1, 1, 1))
         from scipy.sparse import bmat as sp_bmat
         C_full = sp_bmat(
             [[csr.C_SS, csr.C_SI],
              [csr.C_IS, csr.C_II]], format='csr'
         )
         full_ids = np.concatenate([csr.source_ids, csr.inst_ids])
-        # source_names only covers sources; institutions get idx=... fallback
         scc_report(C_full, full_ids, 'C_full (joint)', field_labels, source_names)
         lam2, phi2, gap, ampl = second_eigenpair_full(
             csr.C_SS, csr.C_SI, csr.C_IS, csr.C_II, 0.5, alpha, 'full-0.5')
@@ -331,9 +328,16 @@ def run(paths, params):
 
 
 def main():
-    paths  = load_config()
-    params = load_params()
-    run(paths, params)
+    paths = load_config()
+    # Derive baseline parameters from params.csv
+    baseline = next(r for r in load_runs() if r['label'] == 'baseline')
+    run(paths,
+        run_code=baseline['run_code'],
+        fx=baseline['fx'],
+        tau_u=baseline['tau_u'],
+        tau_s=baseline['tau_s'],
+        rho=baseline['rho'],
+        alpha=float(baseline['alpha']))
 
 
 if __name__ == '__main__':
