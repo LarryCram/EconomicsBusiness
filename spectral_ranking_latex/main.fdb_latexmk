@@ -1,18 +1,21 @@
 # Fdb version 4
-["bibtex main"] 1776078352.59857 "main.aux" "main.bbl" "main" 1776078698.25235 0
+["bibtex main"] 1776148993.74663 "main.aux" "main.bbl" "main" 1776149012.24348 0
   "./MyLibrary.bib" 1775992336.58272 6403286 0b75866be383d6f3c4f27312bbcd5b4c ""
   "./sciomtcs.bib" 1775033720.93194 38814 e32becf37c07e9c5a5ecec51c1c262af ""
   "./spbasic.bst" 1775033720.93255 33250 b27924137faccbc3d13ebae5a7538c63 ""
-  "main.aux" 1776078698.03944 12845 fc0adc005b932b5615b29c7769d4e855 "pdflatex"
+  "main.aux" 1776149012.03977 15841 1dfb42e337df28a73ee337775fd84ab1 "pdflatex"
   (generated)
   "main.bbl"
   "main.blg"
   (rewritten before read)
-["pdflatex"] 1776078697.66242 "/home/lc/Projects/EconomicsBusiness/spectral_ranking_latex/main.tex" "main.pdf" "main" 1776078698.25247 0
+["pdflatex"] 1776149011.68305 "/home/lc/Projects/EconomicsBusiness/spectral_ranking_latex/main.tex" "main.pdf" "main" 1776149012.2436 0
   "../plots/fig_1_latex.pdf" 1775085863.78766 19535 add0266efb29534cf34dc9847eb7a76e ""
   "../plots/fig_2_latex.pdf" 1776041785.96204 52211 7a3786cae2c6a02988a580f38ad703c9 ""
   "../plots/fig_3_latex.pdf" 1775992594.20301 93471 c4693fe894a58309d1c356e85d6e5c90 ""
   "../plots/fig_4_latex.pdf" 1776041790.4553 157476 e3c0f8e71b31e3851c94350219a7d183 ""
+  "../plots/fig_6_latex.pdf" 1776046210.26948 158201 6cbf055ba2093c0ef2d0e6b2dbaf1740 ""
+  "../plots/fig_8a_latex.pdf" 1776126264.47756 76712 faace29af7de2e7607749a68ba45aecf ""
+  "../plots/fig_stability_scatter_latex.pdf" 1776147343.48684 47086 942552faad95e6b5ffe3f31565acd7b3 ""
   "../tables/table2_source_matching.tex" 1776068910.09688 1045 374c05fac3db52943ea44e2913bd9836 ""
   "../tables/table3_corpus_features.tex" 1776068910.27497 1466 28e941e1cfbfddf4a5eb30705fc57148 ""
   "/etc/texmf/web2c/texmf.cnf" 1758930642.66815 475 c0e671620eb5563b2130f56340a5fde8 ""
@@ -70,6 +73,7 @@
   "/usr/share/texlive/texmf-dist/fonts/type1/public/amsfonts/cm/cmmib10.pfb" 1248133631 36912 b448ef9ad9d7228ec3c6e71005136d55 ""
   "/usr/share/texlive/texmf-dist/fonts/type1/public/amsfonts/cm/cmr10.pfb" 1248133631 35752 024fb6c41858982481f6968b5fc26508 ""
   "/usr/share/texlive/texmf-dist/fonts/type1/public/amsfonts/cm/cmr12.pfb" 1248133631 32722 d7379af29a190c3f453aba36302ff5a9 ""
+  "/usr/share/texlive/texmf-dist/fonts/type1/public/amsfonts/cm/cmr5.pfb" 1248133631 31809 8670ca339bf94e56da1fc21c80635e2a ""
   "/usr/share/texlive/texmf-dist/fonts/type1/public/amsfonts/cm/cmr7.pfb" 1248133631 32762 224316ccc9ad3ca0423a14971cfa7fc1 ""
   "/usr/share/texlive/texmf-dist/fonts/type1/public/amsfonts/cm/cmr9.pfb" 1248133631 33993 9b89b85fd2d9df0482bd47194d1d3bf3 ""
   "/usr/share/texlive/texmf-dist/fonts/type1/public/amsfonts/cm/cmsy10.pfb" 1248133631 32569 5e5ddc8df908dea60932f3c484a54c0d ""
@@ -211,14 +215,14 @@
   "/usr/share/texmf/web2c/texmf.cnf" 1707919699 40399 f2c302f7d2af602abb742093540a5834 ""
   "/var/lib/texmf/fonts/map/pdftex/updmap/pdftex.map" 1758930663.93464 5472669 54eaf61a88b6b7896ebd0dac973cb29c ""
   "/var/lib/texmf/web2c/pdftex/pdflatex.fmt" 1758930695 8214160 ef3c407b721d45435b6686ffb1511d5a ""
-  "main.aux" 1776078698.03944 12845 fc0adc005b932b5615b29c7769d4e855 "pdflatex"
-  "main.bbl" 1776078352.70015 7804 964f65dec2760e8bb6f03f49fcc497ff "bibtex main"
-  "main.out" 1776078698.03944 803 e0c8295340d7d49c163c6b61ae9ee64d "pdflatex"
+  "main.aux" 1776149012.03977 15841 1dfb42e337df28a73ee337775fd84ab1 "pdflatex"
+  "main.bbl" 1776148993.85175 7804 964f65dec2760e8bb6f03f49fcc497ff "bibtex main"
+  "main.out" 1776149012.03977 803 e0c8295340d7d49c163c6b61ae9ee64d "pdflatex"
   "main.tex" 1775874217.662 1559 89cd084fcb9bc02de4900268d74afe7d ""
   "sections/01_introduction.tex" 1775874217.6621 6550 c4554b36e5158c40e998d056be9b808a ""
   "sections/02_model_specification.tex" 1775875394.86052 16563 4194708d9c2b2c0f707dee88390cd132 ""
   "sections/03_processing.tex" 1776078697.50592 4083 74a94efa7bf8427f0b2f7f3b8519e603 ""
-  "sections/04_results.tex" 1775874217.66233 11017 a039b7efac2544b6e4398724af1126f0 ""
+  "sections/04_results.tex" 1776149011.53277 19722 de2fb4d02cd2388cab1010ed66d6a840 ""
   "sections/05_discussion.tex" 1775033720.93204 392 753ef4e6e9875bf5a51fb9052b90440e ""
   "sections/06_prospects.tex" 1775033720.93204 190 4eccb76168b576fb53f3c3cec6a10a7a ""
   "sections/07_addenda.tex" 1775033720.93204 169 ab267bb7851bed7154eca9aec31f8233 ""

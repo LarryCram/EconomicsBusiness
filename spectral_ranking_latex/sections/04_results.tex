@@ -92,6 +92,195 @@ $\mu$          & Prior weight           & \textit{0}             & \textit{0} (p
 \end{tabular}
 \end{table}
 
+Figure~\ref{fig:fig3} compares prestige-per-work distributions across the
+four network modes, with the $x$-axis locked to the bipartite baseline.
+For sources, modes 1000 (red $\times$) and 1111 at $\chi^*$ (green $\times$)
+are overlaid on the bipartite baseline; open circles and squares on the
+1000 series mark Economics and Business sources respectively.
+For institutions, mode 0001 and 1111 replace the source alternatives.
+
+\begin{figure}[htbp]
+  \centering
+  \includegraphics[width=\textwidth]{../plots/fig_3_latex.pdf}
+  \caption{Prestige per work $v$ against bipartite baseline rank.
+    Top: sources.  Bottom: institutions.
+    Black line: bipartite baseline $\mathbf{m}=0110$.
+    Red $\times$: $\mathbf{m}=1000$ (top) / $\mathbf{m}=0001$ (bottom).
+    Green $\times$: $\mathbf{m}=1111$, $\chi^*=[FILL]$.
+    Open circles ($\circ$) and squares ($\square$) overlaid on the 1000 series
+    (top) and 0001 series (bottom) mark Economics and Business units
+    respectively, classified by field-network membership.
+    Parameters: $t_x=5$, $F=A$, $\tau_U=\tau_S=20$, $\rho=0$, $\alpha=1$.}
+  \label{fig:fig3}
+\end{figure}
+
+The most striking feature of Figure~\ref{fig:fig3} is the contrast between
+the source and institution panels.
+For institutions, modes $0001$ and $1111$ track the bipartite baseline
+closely: prestige per work is largely insensitive to whether the
+institution-to-institution path is direct ($\mathbf{m}=0001$) or mediated
+through sources ($\mathbf{m}=0110$).
+For sources the picture is different: mode $1000$ produces pronounced
+scatter both above and below the bipartite baseline, with a systematic
+downward shift for the majority and a distinct subset elevated well above it.
+The spectral gap $g=1-\lambda_2$ measures how quickly the random walk
+mixes across the network and thereby how strongly positional ranking depends
+on local neighbourhood rather than global structure.
+For the source-only mode $g^{SS}=0.038$---the walk on $\mathbf{H}_{SS}$
+mixes very slowly, so a source's rank reflects its position within its
+local citation cluster rather than its standing in the full network.
+Routing prestige through the $SI$--$IS$ blocks dissolves this locality:
+the bipartite mode achieves $g^{0110}=0.660$, nearly seventeen times larger,
+because institutions draw citations from and distribute prestige to sources
+across the citation network.
+The institution-only mode sits at $g^{II}=0.464$, already far above
+$g^{SS}$, reflecting the fact that institutions co-locate researchers who
+publish across many sources and therefore bridge the gaps that confine the
+source random walk.
+Mode $1111$ combines both paths and achieves $g^{1111}=0.347$.
+
+The scatter in the $\mathbf{m}=1000$ source panel is therefore a
+consequence of removing the $SI$--$IS$ mediation that integrates the
+source network.
+Without institutional bridging, sources that happen to be the dominant
+nodes in their local citation neighbourhood are amplified in $v$
+relative to the bipartite baseline, while sources whose prestige in
+the bipartite ranking derives substantially from prestige flowing in
+via institutional co-authorship links are deflated.
+The institution panel of Figure~\ref{fig:fig3} is smoother because the
+institution random walk never relies on a narrow local structure to the
+same extent: the one-mode projection
+$\mathbf{M}_I=\mathbf{H}_{IS}\mathbf{H}_{SI}$ connects any two
+institutions that share sources cited by their authors, which creates
+a dense, well-connected graph even before the $IS$--$SI$ paths are
+included.
+This asymmetry between sources and institutions is a structural property
+of the bipartite network and not a feature of the particular corpus or
+time window.
+
+The bipartite baseline is validated against external journal quality
+indicators in Figure~\ref{fig:fig8a}, which plots the four JCR~2024
+measures against $v$ in log--log space for the $1{,}151$ sources
+matched between the baseline ranking and the Web of Science
+Journal Citation Reports.
+All four indicators scale approximately as power laws in $v$:
+$\mathrm{JIF}_{2024}\propto v^{0.55}$ ($R^2=0.52$),
+$\mathrm{JIF}_{5\mathrm{yr}}\propto v^{0.62}$ ($R^2=0.61$),
+$\mathrm{JCI}_{2024}\propto v^{0.59}$ ($R^2=0.58$),
+and the Article Influence Score $\mathrm{AIS}\propto v^{0.91}$
+($R^2=0.82$).
+AIS, which is itself an eigenvector-based measure constructed from the
+same citation flows, aligns most closely with $v$ both in slope and
+goodness of fit.
+The sub-unity exponents mean that $v$ is more compressed than any of
+the JCR indicators at the top of the distribution: the bipartite
+prestige-flow measure redistributes influence more evenly among
+high-ranking journals than raw citation counts do, consistent with
+the interpretation that a reference from a prestige-surplus source
+carries more weight than a reference from a low-$v$ source regardless
+of volume.
+The correlation with AIS also confirms that the $SI$--$IS$ routing
+through institutions does not distort the basic signal; it refines it
+by incorporating the institutional dimension of research output.
+
+\begin{figure}[htbp]
+  \centering
+  \includegraphics[width=\textwidth]{../plots/fig_8a_latex.pdf}
+  \caption{JCR~2024 indicators against prestige per work $v$ (log--log).
+    Scatter: individual sources matched to the Journal Citation Reports
+    ($n=1{,}151$).
+    Lines: power-law OLS trend fitted in log--log space;
+    legend reports exponent and $R^2$.
+    Dashed line: $v=1$ (corpus average).
+    Parameters: $t_x=5$, $F=A$, $\tau_U=\tau_S=20$, $\rho=0$,
+    $\mathbf{m}=0110$, $\alpha=1$.}
+  \label{fig:fig8a}
+\end{figure}
+
+Figure~\ref{fig:fig6} plots $v$ for all sources and institutions across
+the five time windows $t_x=1,\ldots,5$ (2000--2024), with the $x$-axis
+locked to the baseline rank.
+The prestige hierarchy is visibly persistent: the dispersion around the
+baseline curve narrows as the window approaches the present, and even the
+most distant window ($t_x=1$, 2000--04) reproduces the broad shape of
+the distribution.
+The Spearman correlation between $v$ in 2000--04 and $v$ in 2020--24 is
+$\rho_S=0.663$ for sources and $\rho_S=0.660$ for institutions on the
+common sets;
+for consecutive windows it rises to $\rho_S=0.905$ (sources) and
+$\rho_S=0.864$ (institutions), so the bulk of the apparent instability
+in Figure~\ref{fig:fig6} is long-run drift rather than short-run
+volatility.
+Institutions are no less stable in rank than sources despite having
+more volatile absolute $v$ values across windows, which reflects the
+growing size of the institution corpus as additional universities
+cross the $\tau_U$ threshold over the 25-year period.
+The greater smoothness of the institution panel in Figure~\ref{fig:fig3}
+and the comparable long-run rank stability in Figure~\ref{fig:fig6}
+point to the same mechanism: the $SI$--$IS$ coupling acts as a
+stabiliser, averaging out the local fluctuations in citation practice
+that would otherwise produce volatile source rankings.
+
+\begin{figure}[htbp]
+  \centering
+  \includegraphics[width=\textwidth]{../plots/fig_6_latex.pdf}
+  \caption{Prestige per work $v$ against baseline rank across five
+    time windows.
+    Top: sources.  Bottom: institutions.
+    Black line: baseline $t_x=5$ (2020--24).
+    Coloured series: $t_x=1$ (2000--04) through $t_x=4$ (2015--19).
+    $x$-axis locked to baseline rank; units absent from a given window
+    are omitted from that series.
+    Parameters: $F=A$, $\tau_U=\tau_S=20$, $\rho=0$,
+    $\mathbf{m}=0110$, $\alpha=1$.}
+  \label{fig:fig6}
+\end{figure}
+
+Figure~\ref{fig:figstability} quantifies the persistence of
+\emph{prestige-surplus} status---defined as $v>1$, meaning the unit
+absorbs more prestige per work than the corpus average---across the full
+25-year span.
+Approximately one quarter of sources and one quarter of institutions are
+prestige-surplus in each window, and this fraction is stable across time,
+confirming that $v=1$ is a structurally consistent threshold rather than
+a feature of any particular window.
+Restricting to the 835~sources and 606~institutions present in both the
+2000--04 and 2020--24 windows, $83\%$ of sources and $94\%$ of
+institutions that were prestige-surplus in 2000--04 retain that status
+in 2020--24.
+The scatter plots confirm this asymmetry visually: the upper-right
+quadrant (surplus in both windows) dominates, while the lower-right
+quadrant (surplus lost) is nearly empty.
+Classifying each unit's trajectory as a binary sequence (H if $v>1$,
+L otherwise) across the five windows shows that monotone paths dominate
+among institutions (101~monotone rises vs 29~oscillating), while for
+sources the counts are closer (74~monotone vs 80~oscillating).
+Once an institution crosses $v=1$ it almost invariably stays above it;
+sources are somewhat noisier, but the direction is sustained.
+The institutions that crossed the threshold between 2000--04 and 2020--24
+are predominantly universities in Western countries that expanded their
+economics and business research output substantially over the period,
+consistent with the growth of internationally oriented business schools
+and the associated increase in faculty size.
+
+\begin{figure}[htbp]
+  \centering
+  \includegraphics[width=\textwidth]{../plots/fig_stability_scatter_latex.pdf}
+  \caption{Prestige per work $v$ in 2000--04 against $v$ in 2020--24
+    for units present in both windows (log--log).
+    Left: sources ($n=835$).  Right: institutions ($n=606$).
+    Colour indicates threshold-crossing status:
+    blue = prestige-surplus ($v>1$) in both windows;
+    light blue = below threshold in both;
+    green = crossed $v=1$ upward;
+    red = crossed $v=1$ downward.
+    Dotted diagonal: $v_{t_1}=v_{t_5}$.
+    Dashed lines: $v=1$ on each axis.
+    Parameters: $F=A$, $\tau_U=\tau_S=20$, $\rho=0$,
+    $\mathbf{m}=0110$, $\alpha=1$.}
+  \label{fig:figstability}
+\end{figure}
+
 
 % ---------------------------------------------------------------
 \paragraph{Phase~1: Sources, institutions and fields.}
@@ -192,24 +381,5 @@ consistent with institutions co-locating faculty from both fields;
 the field-network colouring confirms that E-only institutions
 [FILL: concentrate on one side / are scattered].
 
-Figure~\ref{fig:fig3} compares prestige-per-work distributions across the
-four network modes, with the $x$-axis locked to the bipartite baseline.
-For sources, modes 1000 (red $\times$) and 1111 at $\chi^*$ (green $\times$)
-are overlaid on the bipartite baseline; open circles and squares on the
-1000 series mark Economics and Business sources respectively.
-For institutions, mode 0001 and 1111 replace the source alternatives.
 
-\begin{figure}[htbp]
-  \centering
-  \includegraphics[width=\textwidth]{../plots/fig_3_latex.pdf}
-  \caption{Prestige per work $v$ against bipartite baseline rank.
-    Top: sources.  Bottom: institutions.
-    Black line: bipartite baseline $\mathbf{m}=0110$.
-    Red $\times$: $\mathbf{m}=1000$ (top) / $\mathbf{m}=0001$ (bottom).
-    Green $\times$: $\mathbf{m}=1111$, $\chi^*=[FILL]$.
-    Open circles ($\circ$) and squares ($\square$) overlaid on the 1000 series
-    (top) and 0001 series (bottom) mark Economics and Business units
-    respectively, classified by field-network membership.
-    Parameters: $t_x=5$, $F=A$, $\tau_U=\tau_S=20$, $\rho=0$, $\alpha=1$.}
-  \label{fig:fig3}
-\end{figure}
+
