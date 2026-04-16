@@ -12,18 +12,19 @@ $\mathfrak{R}=\{r(i,j):w_i\in\mathfrak{W}^c,\,w_j\in\mathfrak{W}^t\}$.
 Author affiliations in $\mathfrak{W}$ establish a set of institutions $\mathfrak{U}'$ and 
 authors $\mathfrak{A}'$. In practice many institutions (and sources) publishing only 
 a few works per year can be dropped from the corpus. Let $\bar{w}_u$ be the mean annual 
-census-window work count for institution $u$ and $\bar{w}_s$ the corresponding work count for source $s$. We determine lower limits $\tau_U$ and $\tau_S$ by examining the respective frequency distributions and define
+census-window work count for institution $u$ and $\bar{w}_s$ the corresponding work count for source $s$. 
+We determine lower limits $\tau_U$ and $\tau_S$ by examining the respective frequency distributions and define
 $\mathfrak{U}\subseteq\mathfrak{U}'$ as the institutions with $\bar{w}_u\geq\tau_U$,
 and $\mathfrak{S}\subseteq\mathfrak{S}'$ as the sources with $\bar{w}_s\geq\tau_S$,
 with corresponding author set $\mathfrak{A}\subseteq\mathfrak{A}'$.
 Works that lose all their authorships under the institution filter, or whose source is
-dropped by the source filter, are removed from the corpus.
+dropped by the source filter, are removed from the corpus. The choice to apply $\tau_{S,I} once across 
+the corpus or within each time window is examined below. 
 
-We say that a work $w_i$ in $\mathfrak{W}^c$ 
-transfers (or pays) \textit{attention} to its references $r_{ij}$. Let $R_i=|\{j:(i,j)\in\mathfrak{R}\}|$ be the reference count of work
+Let $R_i=|\{j:(i, j)\in\mathfrak{R}\}|$ be the reference count of work
 $w_i$ and $\bar{R}=|\mathfrak{R}|/N_w$ the mean reference count over
 $\mathfrak{W}$. Since reference lists have different lengths,
-we consider two cases for the transferred attention per reference,
+we consider two cases for weighting references,
 
 \begin{equation}
 	\rho_i \;=\;
@@ -33,9 +34,9 @@ we consider two cases for the transferred attention per reference,
 	\end{cases}
 	\label{eq:rho}
 \end{equation}
-Under full reference counting a work with twice as many references transfers twice
-as much attention; under fractional reference counting every work transfers the
-same total attention $\bar{R}$ \citep{zittModifyingJournalImpact2008}. 
+Under full reference counting a work with twice as many references has twice
+the prominence; under fractional reference counting every work's references count 
+equally \citep{zittModifyingJournalImpact2008}. 
 
 A work's attention can be conferred on or allocated to its retained source and institutions. The corpus parameter $\chi$ sets the division of conferred attention between the source $(\chi)$ and institutions $(1-\chi)$. While at first sight the choice $\chi=0.5$ appears sound,
 we see below that $\chi=N_S/(N_S+N_I)$ arises naturally once all works have been accumulated. 

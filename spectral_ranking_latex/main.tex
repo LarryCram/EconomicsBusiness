@@ -18,14 +18,18 @@
 \maketitle
 
 \begin{abstract}
-We develop a dual spectral ranking of journal and institution units that
-determines influence-per-work scores via the block citation matrix.
-A binary block-mask selects among four bibliometrically distinct referencing structures,
-nesting single-unit rankings (such as the journal eigenvector ranking) alongside 
-two forms of journal-institution coupling.
+We develop a dual ordinal spectral ranking of journal and institution units that
+determines influence-per-work ranking scores via block citation matrices. There are 
+four bibliometrically distinct structures connecting journals (J) and institutions (I): 
+J to J (similar to the Clarivate Eigenvector score), 
+I to I (the institutional counterpart), J+I to J+I (full 2-unit citation matrix), 
+and JI to IJ (recirculating).  
 Applied to the economics and commerce journal literature using OpenAlex data,
 the method produces stable, interpretable joint rankings whose
-sensitivity to model parameters is examined systematically.
+sensitivity to model parameters is examined systematically. Journal rankings are stablised
+by the inclusion of institutions, and both unit's rankings remain remarkably 
+similar (Spearman score > 0.99) over the period 2000-2024.
+
 
 \medskip\noindent
 \textbf{Keywords}: spectral ranking, dual journal--institution prestige, 
