@@ -4,12 +4,16 @@ fig_5.py — Phase 2 parameter sensitivity: τ, ρ, and (α, μ).
 Baseline: F=A, τ_U=τ_S=20, ρ=0, m=0110, α=1.
 x-axis locked to baseline rank (same convention as fig_2/fig_3).
 
-Four overlays:
+Five overlays:
   τ=40              : raise both τ_U and τ_S to 40; α=1, ρ=0.
                       Units dropped by the higher threshold are absent.
 
   ρ=1               : full reference count (equal attention per reference);
                       τ=20, α=1.
+
+  census=1yr        : census window 2024 only (tc0=tc1=2024), target 2020–24.
+                      τ is applied to a single year; closer to AIS formula
+                      and reduces overcounting of near-year references.
 
   α=0.85, μ=1/N     : Katz–Hubbell, uniform prior — μ_p = 1/(N_S+N_U) for
                       all units; τ=20, ρ=0.
@@ -45,13 +49,14 @@ _run_code      = _baseline['run_code']
 _tau_u         = _baseline['tau_u']
 _tau_s         = _baseline['tau_s']
 
-BASELINE_TABLE = f'rk_{_run_code}_A_tauU{_tau_u}_tauS{_tau_s}_rho0_m0110_chi50_alpha100'
+BASELINE_TABLE = f'rk_{_run_code}_A_tauU{_tau_u}_tauS{_tau_s}_vartau_rho0_m0110_chi50_alpha100'
 
 # Visual style per overlay label (ordered: baseline drawn first)
 STYLE = {
     'baseline':        dict(color='black',   marker=None, lw=1.4, alpha_vis=1.0,  zorder=5),
     'τ=40':            dict(color='#9467bd', marker='x',  lw=0.8, alpha_vis=0.65, zorder=4, s=40),
     'ρ=1':             dict(color='#ff7f0e', marker='x',  lw=0.8, alpha_vis=0.65, zorder=3, s=40),
+    'census=1yr':      dict(color='#1f77b4', marker='x',  lw=0.8, alpha_vis=0.65, zorder=4, s=40),
     'α=0.85, μ=1/N':   dict(color='#d62728', marker='x', lw=0.8, alpha_vis=0.65, zorder=2, s=40),
     'α=0.85, μ=1/N_p': dict(color='#2ca02c', marker='x', lw=0.8, alpha_vis=0.65, zorder=2, s=40),
 }
@@ -101,8 +106,8 @@ def _compute_bipartite_v(
     Returns (df_s, df_u) with columns [unit_idx, v], or (None, None)
     if the required edge-list or units table is absent.
     """
-    tname = f'el_{run_code}_{fx}_tauU{tau_u}_tauS{tau_s}'
-    uname = f'_units_{run_code}_{fx}_tauU{tau_u}_tauS{tau_s}_m0110'
+    tname = f'el_{run_code}_{fx}_tauU{tau_u}_tauS{tau_s}_vartau'
+    uname = f'_units_{run_code}_{fx}_tauU{tau_u}_tauS{tau_s}_vartau_m0110'
     tables = {r[0] for r in el_db.execute('SHOW TABLES').fetchall()}
     missing = [t for t in (tname, uname) if t not in tables]
     if missing:
@@ -160,6 +165,15 @@ def fetch_data(rk_db, el_db) -> tuple:
     df_s, df_u = _compute_bipartite_v(el_db, _run_code, 'A', _tau_u, _tau_s, 1, 1.0)
     if df_s is not None:
         series['ρ=1'] = {
+            'S': project(df_s, src_rank_map),
+            'I': project(df_u, inst_rank_map),
+        }
+
+    # ── census=1yr (tc0=tc1=2024, tt0=2020, tt1=2024) ───────────────────────
+    print('  census=1yr ...')
+    df_s, df_u = _compute_bipartite_v(el_db, '24242024', 'A', _tau_u, _tau_s, 0, 1.0)
+    if df_s is not None:
+        series['census=1yr'] = {
             'S': project(df_s, src_rank_map),
             'I': project(df_u, inst_rank_map),
         }

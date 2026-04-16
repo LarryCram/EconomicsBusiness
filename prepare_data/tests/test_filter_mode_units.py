@@ -73,8 +73,8 @@ def _make_db(extra_ss_edges=False, extra_ii_edges=False, include_s4=False) -> du
     II (optional): u1→u2, u2→u1           (2-cycle)
     s4 (optional): isolated — no edges of any kind
     """
-    el   = f'el_{RUN_CODE}_{FX}_tauU{TAU_U}_tauS{TAU_S}'
-    un   = f'_units_{RUN_CODE}_{FX}_tauU{TAU_U}_tauS{TAU_S}'
+    el   = f'el_{RUN_CODE}_{FX}_tauU{TAU_U}_tauS{TAU_S}_vartau'
+    un   = f'_units_{RUN_CODE}_{FX}_tauU{TAU_U}_tauS{TAU_S}_vartau'
     db   = duckdb.connect(':memory:')
 
     db.execute(f"""
@@ -169,8 +169,8 @@ def _make_db(extra_ss_edges=False, extra_ii_edges=False, include_s4=False) -> du
 
 def _make_db_ii(extra_ii_edges=True) -> duckdb.DuckDBPyConnection:
     """DB with IS edges only (for testing II mode SCC)."""
-    el  = f'el_{RUN_CODE}_{FX}_tauU{TAU_U}_tauS{TAU_S}'
-    un  = f'_units_{RUN_CODE}_{FX}_tauU{TAU_U}_tauS{TAU_S}'
+    el  = f'el_{RUN_CODE}_{FX}_tauU{TAU_U}_tauS{TAU_S}_vartau'
+    un  = f'_units_{RUN_CODE}_{FX}_tauU{TAU_U}_tauS{TAU_S}_vartau'
     db  = duckdb.connect(':memory:')
     db.execute(f"""
         CREATE TABLE {el} (
@@ -209,13 +209,23 @@ class TestNaming:
         assert mode_str((1, 0, 0, 0)) == '1000'
         assert mode_str((1, 1, 1, 1)) == '1111'
 
-    def test_mode_units_table_name(self):
+    def test_mode_units_table_name_vartau(self):
         name = mode_units_table(RUN_CODE, FX, TAU_U, TAU_S, (0, 1, 1, 0))
-        assert name == f'_units_{RUN_CODE}_{FX}_tauU{TAU_U}_tauS{TAU_S}_m0110'
+        assert name == f'_units_{RUN_CODE}_{FX}_tauU{TAU_U}_tauS{TAU_S}_vartau_m0110'
 
-    def test_raw_units_table_name(self):
+    def test_mode_units_table_name_fixtau(self):
+        name = mode_units_table(RUN_CODE, FX, TAU_U, TAU_S, (0, 1, 1, 0),
+                                ref_units='20242024_A_tauU20_tauS20')
+        assert name == f'_units_{RUN_CODE}_{FX}_tauU{TAU_U}_tauS{TAU_S}_fixtau_m0110'
+
+    def test_raw_units_table_name_vartau(self):
         name = raw_units_table(RUN_CODE, FX, TAU_U, TAU_S)
-        assert name == f'_units_{RUN_CODE}_{FX}_tauU{TAU_U}_tauS{TAU_S}'
+        assert name == f'_units_{RUN_CODE}_{FX}_tauU{TAU_U}_tauS{TAU_S}_vartau'
+
+    def test_raw_units_table_name_fixtau(self):
+        name = raw_units_table(RUN_CODE, FX, TAU_U, TAU_S,
+                               ref_units='20242024_A_tauU20_tauS20')
+        assert name == f'_units_{RUN_CODE}_{FX}_tauU{TAU_U}_tauS{TAU_S}_fixtau'
 
 
 # ─── Test: compute_mode_scc ───────────────────────────────��───────────────────

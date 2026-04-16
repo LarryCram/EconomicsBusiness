@@ -347,8 +347,7 @@ def plot_fig1(df_inst: pd.DataFrame, df_src: pd.DataFrame) -> None:
     ax3.set_xlabel('Sources retained', labelpad=8)
 
     sup = fig.suptitle(
-        f'Institution and source retention curves  (baseline t_x={_BASELINE_TX}, '
-        f'{_YEAR_MIN}–{_YEAR_MAX})',
+        f'Institution and source retention curves  (baseline {_YEAR_MIN}–{_YEAR_MAX})',
         y=1.02,
     )
     fig.tight_layout()
@@ -363,7 +362,7 @@ def plot_fig1(df_inst: pd.DataFrame, df_src: pd.DataFrame) -> None:
     print(f'Saved {latex_out}')
     sup.set_visible(True)
 
-    print(f'\nRetention at reference levels (baseline t_x={_BASELINE_TX}):')
+    print(f'\nRetention at reference levels (baseline {_YEAR_MIN}–{_YEAR_MAX}):')
     print(f'  {"τ":>4}  {"inst%":>6}  {"N_inst":>7}  {"src%":>6}  {"N_src":>6}')
     for t in [5, 10, 15, 20]:
         ri = df_inst[df_inst['works_per_year'] >= t]

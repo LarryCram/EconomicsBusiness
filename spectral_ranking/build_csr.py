@@ -47,7 +47,8 @@ class CSRData:
     n_u: int
 
 
-def build_csr(db, run_code: str, fx: str, tau_u: int, tau_s: int, rho: int, m: tuple) -> CSRData:
+def build_csr(db, run_code: str, fx: str, tau_u: int, tau_s: int, rho: int, m: tuple,
+              ref_units: str = '') -> CSRData:
     """
     Build raw CSR blocks for corpus (run_code, fx, tau_u, tau_s) with ρ weighting.
 
@@ -60,6 +61,7 @@ def build_csr(db, run_code: str, fx: str, tau_u: int, tau_s: int, rho: int, m: t
     tau_s : source retention threshold (mean annual census works).
     rho : 0 → fixed count (ρ_i = R̄/R_i); 1 → full count (ρ_i = 1).
     m : (m_SS, m_SI, m_IS, m_II) ∈ {0,1}^4 — which blocks to build.
+    ref_units : non-empty string for fixtau corpora.
 
     Returns
     -------
@@ -68,9 +70,10 @@ def build_csr(db, run_code: str, fx: str, tau_u: int, tau_s: int, rho: int, m: t
     import time
     _t = {}   # timing dict — remove when no longer needed
 
+    tau_sfx = '_fixtau' if ref_units else '_vartau'
     mstr   = ''.join(str(x) for x in m)
-    tname  = f'el_{run_code}_{fx}_tauU{tau_u}_tauS{tau_s}'
-    uname  = f'_units_{run_code}_{fx}_tauU{tau_u}_tauS{tau_s}_m{mstr}'
+    tname  = f'el_{run_code}_{fx}_tauU{tau_u}_tauS{tau_s}{tau_sfx}'
+    uname  = f'_units_{run_code}_{fx}_tauU{tau_u}_tauS{tau_s}{tau_sfx}_m{mstr}'
 
     # ── Load unit index ────────────────────────────────────────────────────
     t0 = time.perf_counter()

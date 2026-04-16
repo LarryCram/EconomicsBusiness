@@ -527,8 +527,8 @@ def main():
     tau_u       = _baseline['tau_u']
     tau_s       = _baseline['tau_s']
     fx          = _baseline['fx']
-    el_table    = f'el_{run_code}_{fx}_tauU{tau_u}_tauS{tau_s}'
-    units_table = f'_units_{run_code}_{fx}_tauU{tau_u}_tauS{tau_s}_m0110'
+    el_table    = f'el_{run_code}_{fx}_tauU{tau_u}_tauS{tau_s}_vartau'
+    units_table = f'_units_{run_code}_{fx}_tauU{tau_u}_tauS{tau_s}_vartau_m0110'
 
     # ── Output directory ───────────────────────────────────────────────────────
     paths   = load_config()

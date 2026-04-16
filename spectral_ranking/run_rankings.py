@@ -49,16 +49,17 @@ from katz_ranker import rank
 
 @dataclass
 class RunParams:
-    run_code: str    # 8-char time window key, e.g. '20242024'
-    fx:       str
-    tau_u:    int
-    tau_s:    int
-    rho:      int    # 0 = fixed count (R̄/R_i); 1 = full count
-    m:        tuple  # (m_SS, m_SI, m_IS, m_II)
-    chi:      float  # -1.0 = chi_star (resolved at runtime)
-    alpha:    float
-    mu_type:  str  = ''   # '' = Perron (alpha=1); 'uniform' or 'unit_scaled' for alpha<1
-    label:    str  = ''
+    run_code:  str    # 8-char time window key, e.g. '20242024'
+    fx:        str
+    tau_u:     int
+    tau_s:     int
+    rho:       int    # 0 = fixed count (R̄/R_i); 1 = full count
+    m:         tuple  # (m_SS, m_SI, m_IS, m_II)
+    chi:       float  # -1.0 = chi_star (resolved at runtime)
+    alpha:     float
+    mu_type:   str  = ''   # '' = Perron (alpha=1); 'uniform' or 'unit_scaled' for alpha<1
+    label:     str  = ''
+    ref_units: str  = ''   # non-empty → fixtau corpus
 
 
 _MU_SUFFIX = {
@@ -69,11 +70,12 @@ _MU_SUFFIX = {
 
 
 def table_name(p: RunParams) -> str:
+    tau_sfx   = '_fixtau' if p.ref_units else '_vartau'
     mstr      = ''.join(str(x) for x in p.m)
     chi_str   = 'STAR' if p.chi == -1.0 else str(round(p.chi * 100))
     alpha_int = round(p.alpha * 100)
     mu_sfx    = _MU_SUFFIX.get(p.mu_type, f'_mu{p.mu_type}')
-    return (f'rk_{p.run_code}_{p.fx}_tauU{p.tau_u}_tauS{p.tau_s}'
+    return (f'rk_{p.run_code}_{p.fx}_tauU{p.tau_u}_tauS{p.tau_s}{tau_sfx}'
             f'_rho{p.rho}_m{mstr}_chi{chi_str}_alpha{alpha_int}{mu_sfx}')
 
 
@@ -120,6 +122,7 @@ def runs_from_csv() -> list:
             alpha=r['alpha'],
             mu_type=r.get('mu_type', ''),
             label=r['label'],
+            ref_units=r.get('ref_units', ''),
         ))
     return result
 
@@ -241,8 +244,9 @@ def _dense_rank_desc(values: np.ndarray) -> np.ndarray:
 
 def compute_chi_star(el_db, p: RunParams) -> float:
     """Compute χ* = N_u / (N_s + N_u) from the mode-specific units table."""
+    tau_sfx = '_fixtau' if p.ref_units else '_vartau'
     mstr  = ''.join(str(x) for x in p.m)
-    uname = f'_units_{p.run_code}_{p.fx}_tauU{p.tau_u}_tauS{p.tau_s}_m{mstr}'
+    uname = f'_units_{p.run_code}_{p.fx}_tauU{p.tau_u}_tauS{p.tau_s}{tau_sfx}_m{mstr}'
     rows = el_db.execute(
         f"SELECT unit_type, COUNT(*) AS n FROM {uname} GROUP BY unit_type"
     ).fetchall()
@@ -257,9 +261,10 @@ def run_one(el_db, rk_db, p: RunParams, verbose: bool = True) -> bool:
     Run one parameter combination.  Returns True on success, False if the
     required edge list table is absent (soft skip).
     """
+    tau_sfx     = '_fixtau' if p.ref_units else '_vartau'
     mstr        = ''.join(str(x) for x in p.m)
-    el_tname    = f'el_{p.run_code}_{p.fx}_tauU{p.tau_u}_tauS{p.tau_s}'
-    units_tname = f'_units_{p.run_code}_{p.fx}_tauU{p.tau_u}_tauS{p.tau_s}_m{mstr}'
+    el_tname    = f'el_{p.run_code}_{p.fx}_tauU{p.tau_u}_tauS{p.tau_s}{tau_sfx}'
+    units_tname = f'_units_{p.run_code}_{p.fx}_tauU{p.tau_u}_tauS{p.tau_s}{tau_sfx}_m{mstr}'
     tname       = table_name(p)
 
     existing = {row[0] for row in el_db.execute("SHOW TABLES").fetchall()}
@@ -280,7 +285,7 @@ def run_one(el_db, rk_db, p: RunParams, verbose: bool = True) -> bool:
         print(f"  {tname} [{p.label}] chi={chi_disp} ...", end='  ', flush=True)
 
     t0 = datetime.now()
-    data = build_csr(el_db, p.run_code, p.fx, p.tau_u, p.tau_s, p.rho, p.m)
+    data = build_csr(el_db, p.run_code, p.fx, p.tau_u, p.tau_s, p.rho, p.m, p.ref_units)
     t_csr = (datetime.now() - t0).total_seconds()
 
     mu = _make_mu(p.mu_type, data.n_s, data.n_u)

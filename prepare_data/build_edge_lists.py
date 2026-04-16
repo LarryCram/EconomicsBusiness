@@ -68,8 +68,24 @@ FIELD_COND = {
 }
 
 
-def table_name(run_code: str, fx: str, tau_u: int, tau_s: int) -> str:
-    return f'el_{run_code}_{fx}_tauU{tau_u}_tauS{tau_s}'
+def _tau_sfx(ref_units: str) -> str:
+    """'_fixtau' when the unit set is inherited from a reference window;
+    '_vartau' when derived from this window's own τ filter."""
+    return '_fixtau' if ref_units else '_vartau'
+
+
+def table_name(run_code: str, fx: str, tau_u: int, tau_s: int,
+               ref_units: str = '') -> str:
+    """Canonical edge-list table name.
+    _vartau: unit set from this window's τ filter (default).
+    _fixtau: unit set inherited from a reference window."""
+    return f'el_{run_code}_{fx}_tauU{tau_u}_tauS{tau_s}{_tau_sfx(ref_units)}'
+
+
+def _units_name(run_code: str, fx: str, tau_u: int, tau_s: int,
+                ref_units: str = '') -> str:
+    """Canonical raw (C_full SCC) units table name."""
+    return f'_units_{run_code}_{fx}_tauU{tau_u}_tauS{tau_s}{_tau_sfx(ref_units)}'
 
 
 def corpus_configs_from_csv() -> list:
@@ -82,22 +98,29 @@ def corpus_configs_from_csv() -> list:
     seen = set()
     configs = []
     for r in rows:
+        ref = r.get('ref_units', '')
+        # ref_units is part of the dedup key: vartau and fixtau runs for the
+        # same (run_code, fx, tau_u, tau_s) are distinct corpus configurations.
         key = (r['run_code'], r['tc0'], r['tc1'], r['tt0'], r['tt1'],
-               r['fx'], r['tau_u'], r['tau_s'])
+               r['fx'], r['tau_u'], r['tau_s'], ref)
         if key not in seen:
             seen.add(key)
             configs.append({
-                'run_code': r['run_code'],
+                'run_code':  r['run_code'],
                 'tc0': r['tc0'], 'tc1': r['tc1'],
                 'tt0': r['tt0'], 'tt1': r['tt1'],
-                'fx':  r['fx'],
-                'tau_u': r['tau_u'],
-                'tau_s': r['tau_s'],
+                'fx':        r['fx'],
+                'tau_u':     r['tau_u'],
+                'tau_s':     r['tau_s'],
+                'ref_units': ref,
             })
 
     def sort_key(c):
-        # A first within each (run_code, tau_u, tau_s) group
-        return (c['run_code'], c['tau_u'], c['tau_s'],
+        # fixtau configs must come after all vartau configs so the reference
+        # _units_..._vartau table is guaranteed to exist when they run.
+        # Within each (run_code, tau_u, tau_s) group, A comes before non-A.
+        has_ref = 1 if c['ref_units'] else 0
+        return (has_ref, c['run_code'], c['tau_u'], c['tau_s'],
                 0 if c['fx'] == 'A' else 1, c['fx'])
 
     return sorted(configs, key=sort_key)
@@ -105,7 +128,9 @@ def corpus_configs_from_csv() -> list:
 
 def build_one(db, run_code: str, tc0: int, tc1: int, tt0: int, tt1: int,
               fx: str, tau_u: int, tau_s: int,
-              inherited_inst_table: str = None) -> int:
+              inherited_inst_table: str = None,
+              inherited_src_table: str = None,
+              ref_units: str = '') -> int:
     """
     Build one edge list table.
 
@@ -114,7 +139,13 @@ def build_one(db, run_code: str, tc0: int, tc1: int, tt0: int, tt1: int,
     inherited_inst_table : str or None
         If provided, institution retention is read from this table
         (unit_type='U' rows) instead of being computed from the corpus.
-        Pass the _units table of the corresponding A corpus.
+        Used for field subsets (E/B/M/EB/X) which inherit the A-corpus
+        institution set of the same window.
+    inherited_src_table : str or None
+        If provided, source retention is read from this table
+        (unit_type='S' rows) instead of being computed from the corpus.
+        Used for fixtau runs which inherit both source and institution sets
+        from the reference window (ref_units non-empty).
     """
     cs, ce = tc0, tc1   # census window
     ts, te = tt0, tt1   # target window
@@ -122,7 +153,7 @@ def build_one(db, run_code: str, tc0: int, tc1: int, tt0: int, tt1: int,
     max_year     = max(ce, te)
     census_years = ce - cs + 1
     fc           = FIELD_COND[fx]
-    tname        = table_name(run_code, fx, tau_u, tau_s)
+    tname        = table_name(run_code, fx, tau_u, tau_s, ref_units)
 
     db.execute(f"""
         CREATE OR REPLACE TEMP TABLE _fw_tmp AS
@@ -156,6 +187,21 @@ def build_one(db, run_code: str, tc0: int, tc1: int, tt0: int, tt1: int,
             HAVING COUNT(DISTINCT work_idx) / {census_years}.0 >= {tau_u}
         ),"""
 
+    if inherited_src_table:
+        retained_src_sql = f"""        retained_source AS (
+            SELECT unit_idx AS source_idx
+            FROM {inherited_src_table}
+            WHERE unit_type = 'S'
+        ),"""
+    else:
+        retained_src_sql = f"""        retained_source AS (
+            SELECT source_idx
+            FROM fw
+            WHERE work_idx IN (SELECT work_idx FROM fw_census)
+            GROUP BY source_idx
+            HAVING COUNT(DISTINCT work_idx) / {census_years}.0 >= {tau_s}
+        ),"""
+
     db.execute(f"""
         CREATE OR REPLACE TABLE {tname} AS
         WITH
@@ -164,6 +210,7 @@ def build_one(db, run_code: str, tc0: int, tc1: int, tt0: int, tt1: int,
             SELECT work_idx FROM fw
             WHERE publication_year BETWEEN {cs} AND {ce}
         ),
+{retained_src_sql}
         work_author_counts AS (
             SELECT work_idx,
                    COUNT(DISTINCT author_idx)      AS n_authors,
@@ -189,13 +236,6 @@ def build_one(db, run_code: str, tc0: int, tc1: int, tt0: int, tt1: int,
             GROUP BY a.work_idx, a.institution_idx
         ),
 {retained_inst_sql}
-        retained_source AS (
-            SELECT source_idx
-            FROM fw
-            WHERE work_idx IN (SELECT work_idx FROM fw_census)
-            GROUP BY source_idx
-            HAVING COUNT(DISTINCT work_idx) / {census_years}.0 >= {tau_s}
-        ),
         iw AS (
             SELECT * FROM iw_raw
             WHERE institution_idx IN (SELECT institution_idx FROM retained_inst)
@@ -285,15 +325,13 @@ def build_one(db, run_code: str, tc0: int, tc1: int, tt0: int, tt1: int,
     return db.execute(f"SELECT COUNT(*) FROM {tname}").fetchone()[0]
 
 
-def build_units(db, run_code: str, fx: str, tau_u: int, tau_s: int) -> int:
+def build_units(db, run_code: str, fx: str, tau_u: int, tau_s: int,
+                ref_units: str = '') -> int:
     """
-    Build the unit index table _units_{run_code}_{fx}_tauU{tau_u}_tauS{tau_s}.
-
-    Derives all sources and institutions that appear in the edge list together
-    with their a_p work counts.
+    Build the unit index table for one corpus configuration.
     """
-    tname = table_name(run_code, fx, tau_u, tau_s)
-    uname = f'_units_{run_code}_{fx}_tauU{tau_u}_tauS{tau_s}'
+    tname = table_name(run_code, fx, tau_u, tau_s, ref_units)
+    uname = _units_name(run_code, fx, tau_u, tau_s, ref_units)
 
     db.execute(f"""
         CREATE OR REPLACE TABLE {uname} AS
@@ -321,15 +359,16 @@ def build_units(db, run_code: str, fx: str, tau_u: int, tau_s: int) -> int:
     return db.execute(f"SELECT COUNT(*) FROM {uname}").fetchone()[0]
 
 
-def filter_singletons(db, run_code: str, fx: str, tau_u: int, tau_s: int) -> tuple:
+def filter_singletons(db, run_code: str, fx: str, tau_u: int, tau_s: int,
+                      ref_units: str = '') -> tuple:
     """
     Remove units not in the giant SCC of their governing graph, then rebuild
     the units table.  Iterates until stable.
 
     Returns (total_sources_dropped, total_insts_dropped).
     """
-    tname = table_name(run_code, fx, tau_u, tau_s)
-    uname = f'_units_{run_code}_{fx}_tauU{tau_u}_tauS{tau_s}'
+    tname = table_name(run_code, fx, tau_u, tau_s, ref_units)
+    uname = _units_name(run_code, fx, tau_u, tau_s, ref_units)
     total_s, total_u = 0, 0
 
     for iteration in range(20):
@@ -410,7 +449,7 @@ def filter_singletons(db, run_code: str, fx: str, tau_u: int, tau_s: int) -> tup
             """)
             db.unregister('_drop_inst')
 
-        build_units(db, run_code, fx, tau_u, tau_s)
+        build_units(db, run_code, fx, tau_u, tau_s, ref_units)
 
     return total_s, total_u
 
@@ -438,8 +477,9 @@ def ensure_catalog(db):
         db.execute("UPDATE _catalog SET tau_s = 0")
 
 
-def update_catalog(db, run_code: str, fx: str, tau_u: int, tau_s: int, n_rows: int):
-    tname = table_name(run_code, fx, tau_u, tau_s)
+def update_catalog(db, run_code: str, fx: str, tau_u: int, tau_s: int, n_rows: int,
+                   ref_units: str = ''):
+    tname = table_name(run_code, fx, tau_u, tau_s, ref_units)
     n_sources = db.execute(f"""
         SELECT COUNT(*) FROM (
             SELECT DISTINCT citer_source_idx AS s FROM {tname}
@@ -464,8 +504,9 @@ def clean_stale(db) -> None:
     configs = corpus_configs_from_csv()
     expected = set()
     for c in configs:
-        expected.add(table_name(c['run_code'], c['fx'], c['tau_u'], c['tau_s']))
-        expected.add(f"_units_{c['run_code']}_{c['fx']}_tauU{c['tau_u']}_tauS{c['tau_s']}")
+        ref_units = c.get('ref_units', '')
+        expected.add(table_name(c['run_code'], c['fx'], c['tau_u'], c['tau_s'], ref_units))
+        expected.add(_units_name(c['run_code'], c['fx'], c['tau_u'], c['tau_s'], ref_units))
 
     import re
     _mode_suffix = re.compile(r'_m[01]{4}$')
@@ -499,23 +540,39 @@ def main():
         key_fn = lambda c: (c['run_code'], c['tau_u'], c['tau_s'])
         for group_key, group in groupby(configs, key=key_fn):
             run_code, tau_u, tau_s = group_key
-            a_units_table = f'_units_{run_code}_A_tauU{tau_u}_tauS{tau_s}'
+            a_units_table = f'_units_{run_code}_A_tauU{tau_u}_tauS{tau_s}_vartau'
 
             for c in group:
-                fx    = c['fx']
+                fx        = c['fx']
+                ref_units = c.get('ref_units', '')
                 tc0, tc1, tt0, tt1 = c['tc0'], c['tc1'], c['tt0'], c['tt1']
-                tname = table_name(run_code, fx, tau_u, tau_s)
-                inherited = None if fx == 'A' else a_units_table
+                tname = table_name(run_code, fx, tau_u, tau_s, ref_units)
+
+                if ref_units:
+                    # Fixed-universe run: inherit both sources and institutions
+                    # from the named reference units table (typically the baseline).
+                    inherited_units = f'_units_{ref_units}_vartau'
+                    inh_inst = inherited_units
+                    inh_src  = inherited_units
+                elif fx != 'A':
+                    # Field subset: inherit institutions from A corpus of same window
+                    inh_inst = a_units_table
+                    inh_src  = None
+                else:
+                    inh_inst = None
+                    inh_src  = None
 
                 print(f"  Building {tname} ...", end='  ', flush=True)
                 build_one(db, run_code, tc0, tc1, tt0, tt1, fx, tau_u, tau_s,
-                          inherited_inst_table=inherited)
-                build_units(db, run_code, fx, tau_u, tau_s)
-                n_s, n_u = filter_singletons(db, run_code, fx, tau_u, tau_s)
-                uname = f'_units_{run_code}_{fx}_tauU{tau_u}_tauS{tau_s}'
+                          inherited_inst_table=inh_inst,
+                          inherited_src_table=inh_src,
+                          ref_units=ref_units)
+                build_units(db, run_code, fx, tau_u, tau_s, ref_units)
+                n_s, n_u = filter_singletons(db, run_code, fx, tau_u, tau_s, ref_units)
+                uname = _units_name(run_code, fx, tau_u, tau_s, ref_units)
                 n_units_final = db.execute(f"SELECT COUNT(*) FROM {uname}").fetchone()[0]
                 n_rows_final  = db.execute(f"SELECT COUNT(*) FROM {tname}").fetchone()[0]
-                update_catalog(db, run_code, fx, tau_u, tau_s, n_rows_final)
+                update_catalog(db, run_code, fx, tau_u, tau_s, n_rows_final, ref_units)
                 print(f"{n_rows_final:,} rows  Units: {n_units_final}  "
                       f"(dropped {n_s} sources, {n_u} insts as non-giant-SCC)",
                       flush=True)
@@ -524,7 +581,7 @@ def main():
         db.sql("SELECT * FROM _catalog ORDER BY run_code, F_x, tau_u").show()
 
         # Sample baseline edge list
-        baseline_tname = table_name('20242024', 'A', 20, 20)
+        baseline_tname = table_name('20242024', 'A', 20, 20)  # ref_units='' → _vartau
         print(f"\n=== Baseline edge list sample ({baseline_tname}) ===")
         db.sql(f"SELECT * FROM {baseline_tname} LIMIT 20").show()
 

@@ -272,7 +272,7 @@ def run(paths, run_code: str = '20242024', fx: str = 'A',
     with duckdb.connect(str(el_path), read_only=True) as db:
 
         # ── χ* ────────────────────────────────────────────────────────────────
-        uname = f'_units_{run_code}_{fx}_tauU{tau_u}_tauS{tau_s}_m0110'
+        uname = f'_units_{run_code}_{fx}_tauU{tau_u}_tauS{tau_s}_vartau_m0110'
         counts = {r[0]: r[1] for r in db.execute(
             f"SELECT unit_type, COUNT(*) FROM {uname} GROUP BY unit_type"
         ).fetchall()}
