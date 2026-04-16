@@ -77,7 +77,7 @@ def test_dense_rank_desc_single():
 
 def test_runs_from_csv_total_count():
     runs = runs_from_csv()
-    assert len(runs) == 26
+    assert len(runs) == 27
 
 
 def test_runs_from_csv_time_series_labels():

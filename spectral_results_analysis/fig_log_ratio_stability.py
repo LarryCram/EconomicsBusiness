@@ -59,10 +59,11 @@ WINDOWS = [
 
 # ─── Data loading ─────────────────────────────────────────────────────────────
 
-def table_name(run_code, fx, tau_u, tau_s, rho, m, chi, alpha):
-    chi_str = 'STAR' if chi == -1.0 else str(round(chi * 100))
+def table_name(run_code, fx, tau_u, tau_s, rho, m, chi, alpha, ref_units=''):
+    chi_str   = 'STAR' if chi == -1.0 else str(round(chi * 100))
     alpha_int = round(alpha * 100)
-    return (f'rk_{run_code}_{fx}_tauU{tau_u}_tauS{tau_s}_rho{rho}'
+    tau_sfx   = '_fixtau' if ref_units else '_vartau'
+    return (f'rk_{run_code}_{fx}_tauU{tau_u}_tauS{tau_s}{tau_sfx}_rho{rho}'
             f'_m{m}_chi{chi_str}_alpha{alpha_int}')
 
 

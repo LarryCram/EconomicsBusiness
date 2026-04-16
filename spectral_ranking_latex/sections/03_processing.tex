@@ -2,10 +2,10 @@
 \section{Corpus selection}
 \label{sec:sources}
 
-OpenAlex \citep{priemOpenAlexFullyopenIndex2022} provides our bibliometric data. Corpus selection starts with a list of eligible sources having four features: an OpenAlex source identifier for corpus extraction, evidence from one of our journal registries that the source 
-publishes economics or business research, a sufficient number of published works per year, and relatively high OpenAlex source topic density excluding cross-disciplinary journals.
+OpenAlex \citep{priemOpenAlexFullyopenIndex2022} provides our bibliometric data. Corpus selection starts with a list of eligible sources having three features: evidence from one of our journal registries that the source 
+publishes economics or business research, an OpenAlex source identifier for corpus extraction, and a sufficient number of published works per year.
 
-The journal registries are as follows. Harzing's \textit{71st Edition of the Journal Quality List}~\cite[][JQL]{harzinga.-w.JournalQualityList2024} assembles
+The journal registries are as follows. Harzing's \textit{71st Edition of the Journal Quality List}~\cite[][JQL]{harzingJournalQualityList2024} assembles
 peer assessments of journal quality across business and economics
 disciplines. Its scope is confined to economics and business so no
 filtering is applied.
@@ -14,28 +14,25 @@ Field of Research (FoR) codes to each entry. From the full list
 of 26,241 journals we retain those having all FoR codes falling within 
 Division~35 (Commerce, Management, Tourism and
 Services) or Division~38 (Economics). This applies to two-digit `division' codes and all four-digit `group' codes (3501--3509, 3801--3803, 3899).
-After filtering, 1,602~journals remain.
 \textit{Clarivate Web of Science Journal Citation Reports} ~\cite[][JCR]{clarivateanalyticsJournalCitationReports2026} assign each
-journal a Web of Science category. We retain those in Economics, Management, Business, Transportation or Business, Finance. After filtering, 1,413~journals remain.
+journal a Web of Science category. We retain those in Economics, Management, Business, Transportation or Business, Finance.
 
-Every journal in JQL, SJL, and JCR has at least one ISSN, and may have several. These registry ISSNs are joined independently to the February 2026 OpenAlex sources snapshot using its list of ISSNs as the matching key and selecting only the `journal' source-type. Journal titles are examined to identify around 30 additional matches where the OpenAlex source does not have an ISSN. The list of OpenAlex sources that are matched is designated OAS\textsuperscript{*}. 
-\input{../tables/table2_source_matching}
-For OAS\textsuperscript{*} sources we extract work and authorship data revealing some units that can be excluded because they publish very few works. To find a suitable threshold for excluding these units, we examine source and institution retention curves (Fig.~\ref{fig:retention}), selecting thresholds of $\tau_U = 20$ works/institution/year and $\tau_S = 20$ works/source/year. We designate the residual set of sources OAS.
+Every journal in JQL, SJL, and JCR has at least one ISSN, and may have several. These registry ISSNs are joined independently to the February 2026 OpenAlex sources snapshot using its list of ISSNs as the matching key and selecting only the `journal' source-type. Journal titles are examined to identify around 30 additional matches where the OpenAlex source does not have an ISSN. The list of OpenAlex sources that are matched is designated OAS\textsuperscript{*}.
 
-\begin{figure}[htbp]
+For OAS\textsuperscript{*} sources we extract work and authorship data to reveal some units that can be excluded because they publish very few works. To find a suitable threshold for excluding these units, we examine source and institution retention curves (Fig.~\ref{fig:retention}), selecting thresholds of $\tau_U = 20$ works/institution/year and $\tau_S = 20$ works/source/year. We designate the residual set of sources OAS.
+
+\begin{figure}[b!]
 	\centering
 	\includegraphics[width=0.8\textwidth]{../plots/fig_1_latex}
 	\caption{Institution and source retention curves}
 	\label{fig:retention}
 \end{figure}
 
-Using units that satisfy these thresholds, we extract a full corpus of works, authorships and references retaining article and review types with publication years from 2000 to 2024, excluding works that are paratext or retracted, or without an authorship entity, and compute $\omega_{iu}$ for each work. The characteristics of the full corpus are exhibited in Table~\ref{tab:corpus_features}.
+Using units that satisfy these thresholds, we extract works, authorships and references with publication years from 2000 to 2024, retaining article and review types and excluding works that are paratext or retracted, or without an authorship entity. 
 
-\input{../tables/table3_corpus_features}
+The sources cover the economics and business subfields within $\mathfrak{F}$, and it is of interest to compare spectral rankings for both. The three registries include one or more subfield indicators for each source, and OpenAlex sources have topic scores that indicate the relative intensity of business and economics subfields. Having categorised subfields as `E', `B' or 'None' (e.g. Psychology or Education), we classify sources as `E' when the summed number of indicators exceeds one `E' mention with no `B' mentions, `B' with the complementary definition, `A' when both subfields have more than one mention, and `X' for sources don't mention E or B. While sources are readily related to subfields, institutions generally publish substantial numbers of works in both subfields. Therefore, rather than use categorical classification, we classify institutions based on the ratio of their works in sources across the EBAX categories. The characteristics of the full corpus are exhibited in Table~\ref{tab:registry_overview}.
 
-Our sources cover the economics and business subfields, and it is of interest to compare spectral rankings for both. The three registries include one or more subfield indicators for each source, and OpenAlex sources have topic scores that indicate the relative intensity of business and economics subfields. We classify sources as `E' or `B' when the number of subfield indicators summed across the registries and OA exceeds a specified threshold, `A' when both subfields are present above the threshold, and `X' for sources that don't reach the threshold in either E or B. While sources are readily related to subfields, institutions generally publish substantial numbers of works in both subfields. Therefore, rather than use categorical classification, we classify institutions based on the ratio of works in sources across the EBAX categories.
-
-
+\input{../tables/table1_registry_overview}
 
 
 

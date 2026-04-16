@@ -45,8 +45,9 @@ WINDOWS = [
 # ─── Helpers ──────────────────────────────────────────────────────────────────
 
 def tname(r: dict) -> str:
-    chi_str = 'STAR' if r['chi'] == -1.0 else str(round(r['chi'] * 100))
-    return (f"rk_{r['run_code']}_{r['fx']}_tauU{r['tau_u']}_tauS{r['tau_s']}"
+    chi_str  = 'STAR' if r['chi'] == -1.0 else str(round(r['chi'] * 100))
+    tau_sfx  = '_fixtau' if r.get('ref_units') else '_vartau'
+    return (f"rk_{r['run_code']}_{r['fx']}_tauU{r['tau_u']}_tauS{r['tau_s']}{tau_sfx}"
             f"_rho{r['rho']}_m{r['m']}_chi{chi_str}_alpha{round(r['alpha']*100)}")
 
 

@@ -19,20 +19,64 @@ def filter_and_match(db):
     sql = f"""
         -- 1. CROSS MATCH journals by ISSN
         -- ================================================================
+        -- For registry rows that match exactly one OA source: keep it.
+        -- For registry rows that match multiple OA sources (multi-match):
+        --   - keep the first name-matching OA source (case-insensitive equality
+        --     against any of era/harzing/wos name), ranked by works_count DESC.
+        --   - if no OA source matches by name: drop all (treat as unmatched).
+        -- After filtering to at most one OA source per registry row, apply
+        -- DISTINCT ON (s.id) to handle the reverse case (one OA source matching
+        -- multiple registry rows).
         CREATE OR REPLACE TEMP TABLE source_list AS
-            SELECT DISTINCT ON (s.id)
-                                CAST(regexp_replace(s.id, 'https://openalex.org/S', '') AS BIGINT) AS source_idx,
-                                s.display_name AS source_name,
-                                works_count, cited_by_count,
-                                s.issn_l AS issn,
-                                j.era_journal_name, j.era_for_codes,
-                                j.harzing_journal_name, j.harzing_field,
-                                j.wos_journal_name, j.wos_categories
+        WITH all_matches AS (
+            SELECT
+                j.unique_issn_list,
+                j.era_journal_name, j.era_for_codes,
+                j.harzing_journal_name, j.harzing_field,
+                j.wos_journal_name, j.wos_categories,
+                s.id AS oa_id,
+                s.issn_l AS issn,
+                s.display_name AS source_name,
+                s.works_count, s.cited_by_count,
+                (   (j.era_journal_name     IS NOT NULL AND LOWER(s.display_name) = LOWER(j.era_journal_name))
+                 OR (j.harzing_journal_name IS NOT NULL AND LOWER(s.display_name) = LOWER(j.harzing_journal_name))
+                 OR (j.wos_journal_name     IS NOT NULL AND LOWER(s.display_name) = LOWER(j.wos_journal_name))
+                ) AS name_match
             FROM '{PARQUET}/comprehensive_journal_list.parquet' j
-            LEFT JOIN '{OPENALEX}/sources.parquet' s
-            ON list_has_any(j.unique_issn_list, s.issn)
-            AND j.unique_issn_list IS NOT NULL AND s.issn IS NOT NULL
-            AND s.type = 'journal';
+            JOIN '{OPENALEX}/sources.parquet' s
+                ON list_has_any(j.unique_issn_list, s.issn)
+               AND j.unique_issn_list IS NOT NULL
+               AND s.issn IS NOT NULL
+               AND s.type = 'journal'
+        ),
+        per_reg AS (
+            SELECT unique_issn_list,
+                   COUNT(*)        AS n_oa,
+                   BOOL_OR(name_match) AS any_name_match
+            FROM all_matches
+            GROUP BY unique_issn_list
+        ),
+        filtered AS (
+            SELECT m.*,
+                   ROW_NUMBER() OVER (
+                       PARTITION BY m.unique_issn_list
+                       ORDER BY m.name_match DESC, m.works_count DESC
+                   ) AS rk_reg
+            FROM all_matches m
+            JOIN per_reg p USING (unique_issn_list)
+            WHERE p.n_oa = 1                                           -- single match: always keep
+               OR (p.n_oa > 1 AND p.any_name_match AND m.name_match)  -- multi: name-matched only
+            -- multi + no name match: dropped (p.any_name_match = FALSE)
+        )
+        SELECT DISTINCT ON (oa_id)
+            CAST(regexp_replace(oa_id, 'https://openalex.org/S', '') AS BIGINT) AS source_idx,
+            source_name, works_count, cited_by_count, issn,
+            era_journal_name, era_for_codes,
+            harzing_journal_name, harzing_field,
+            wos_journal_name, wos_categories
+        FROM filtered
+        WHERE rk_reg = 1
+        ORDER BY oa_id, works_count DESC;
 
         -- 1b. Exact title matches for registry journals not matched by ISSN
         CREATE OR REPLACE TEMP TABLE title_matches AS

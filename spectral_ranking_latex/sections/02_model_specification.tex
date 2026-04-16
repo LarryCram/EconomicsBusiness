@@ -18,8 +18,8 @@ $\mathfrak{U}\subseteq\mathfrak{U}'$ as the institutions with $\bar{w}_u\geq\tau
 and $\mathfrak{S}\subseteq\mathfrak{S}'$ as the sources with $\bar{w}_s\geq\tau_S$,
 with corresponding author set $\mathfrak{A}\subseteq\mathfrak{A}'$.
 Works that lose all their authorships under the institution filter, or whose source is
-dropped by the source filter, are removed from the corpus. The choice to apply $\tau_{S,I} once across 
-the corpus or within each time window is examined below. 
+dropped by the source filter, are removed from the corpus. The choice to apply $\tau_{S,I}$ once across 
+the corpus or else within each time window is examined below. 
 
 Let $R_i=|\{j:(i, j)\in\mathfrak{R}\}|$ be the reference count of work
 $w_i$ and $\bar{R}=|\mathfrak{R}|/N_w$ the mean reference count over
@@ -38,27 +38,26 @@ Under full reference counting a work with twice as many references has twice
 the prominence; under fractional reference counting every work's references count 
 equally \citep{zittModifyingJournalImpact2008}. 
 
-A work's attention can be conferred on or allocated to its retained source and institutions. The corpus parameter $\chi$ sets the division of conferred attention between the source $(\chi)$ and institutions $(1-\chi)$. While at first sight the choice $\chi=0.5$ appears sound,
-we see below that $\chi=N_S/(N_S+N_I)$ arises naturally once all works have been accumulated. 
-We consider two models for conferral of a work's attention on its institutions (i.e. the \textit{institution weight})
+A work has a retained source and one or more institutions. For journal spectral ranking, it is straightforward to link the work to its journal. In dual spectral ranking, however, we should consider (i) the fractionation between the journal and the institutions, and (ii) the fractionation across institutions. The parameter $\chi$ fractionates the source $(\chi)$ and institutions $(1-\chi)$. While at first sight the choice $\chi=0.5$ appears sound, we see below that $\chi=N_S/(N_S+N_I)$ arises naturally once all works have been accumulated. 
 
+There are two models fractionating a work's institutions (i.e. the \textit{institution weight})
 \begin{equation}
   \omega_{i u} \;=\;
   \begin{cases}
   \displaystyle\sum_{\ell:\,u\in\mathcal{u}_{i\ell}}
   \frac{1}{a_i}\,\frac{1}{u_{i\ell}}, & \text{(author-fractional)} \\[10pt]
-  \dfrac{1}{n_i}, & \text{(institution-fractional)}
+  \dfrac{1}{n_i}, & \text{(institution-fractional).}
   \end{cases}
   \label{eq:omega}
 \end{equation}
-where $n_i = |\bigcup_\ell \mathcal{u}_{i\ell}|$ is the number of institutions of work $w_i$, and $\ell$ indexes the authors of work $w_i$, $a_i$ is their count, and $u_{i\ell}$ the number of institutions of author $\ell$, so that $\sum_u\omega_{iu}=1$ under author-fractional counting \citep{waltmanFieldnormalizedCitationImpact2015}. The decision to re-weight fractional counts after any institution pruning is a trade-off between boosting a work's remaining institutions and diminishing the work's total contribution. 
+Here, $n_i = |\bigcup_\ell \mathcal{u}_{i\ell}|$ is the number of institutions of work $w_i$, $\ell$ indexes the authors of work $w_i$, $a_i$ is their count, and $u_{i\ell}$ the number of institutions of author $\ell$. Note that $\sum_u\omega_{iu}=1$ under author-fractional counting \citep{waltmanFieldnormalizedCitationImpact2015}. Institution pruning due to annual output falling below $\tau_u$ precedes fractional counting, a trade-off between boosting a work's remaining institutions and diminishing the work's total contribution. 
 
 We construct the set of \emph{units} [sources or institutions;
 \cite{pinskiCitationInfluenceJournal1976}]
 $\mathfrak{P}=\mathfrak{S}\ \cup\ \mathfrak{U}$ with $N=N_s+N_u$ elements,
 ordered so that sources occupy indices $1,\dots,N_s$ and institutions
-indices $N_s+1,\dots,N$. Each reference $r(i,j) \in \mathfrak{R}$ carries attention from the
-units associated with $w_i$ to the units associated with $w_j$,
+indices $N_s+1,\dots,N$. Each reference $r(i,j) \in \mathfrak{R}$ connects units 
+associated with $w_i$ to units associated with $w_j$,
 across four unit-type pairs: source--source ($SS$), source--institution
 ($SI$), institution--source ($IS$), and institution--institution ($II$).
 
@@ -66,21 +65,20 @@ For each work $w_i$ we define the source membership one-hot vector
 $\mathbf{b}^S_i\in\mathbb{R}^{N_s}$ with $[\mathbf{b}^S_i]_s=\mathbf{1}[w_i\in s]$,
 and the institution weight distribution vector
 $\mathbf{b}^U_i\in\mathbb{R}^{N_u}$ with $[\mathbf{b}^U_i]_u=\omega_{iu}$
-from \eqref{eq:omega}. The attention carried by each reference is distributed across unit
-pairs and accumulated as four block matrices over $\mathfrak{R}$ via
+from \eqref{eq:omega}. The vectors $\mathbf{b}$ yield the projection across unit
+pairs, accumulated as four block matrices over $\mathfrak{R}$ via
 rank-1 outer products,
 \begin{equation}
 	\mathbf{C}_{XY} \;=\; \sum_{(i,j)\,\in\,\mathfrak{R}}
 	\rho_i\;\mathbf{b}^X_i\,\bigl(\mathbf{b}^Y_j\bigr)^\top,
-	\qquad XY\in\{SS,\,SI,\,IS,\,II\},
+	\qquad XY\in\{SS,\,SI,\,IS,\,II\}.
 	\label{eq:Cblock}
 \end{equation}
-where $\mathbf{b}^X_i$ distributes attention from the citing side across
-units of type $X$, and $\mathbf{b}^Y_j$ distributes it to the cited side
-across units of type $Y$.
-Each entry $[\mathbf{C}_{XY}]_{pq}$ is therefore proportional to the
-$\rho_i$-weighted attention flowing from unit $p$ of type $X$ to unit
-$q$ of type $Y$ across all references in $\mathfrak{R}$.
+Here, $\mathbf{b}^X_i$ distributes the citing side across
+units of type $X$, and $\mathbf{b}^Y_j$ distributes the cited side
+across units of type $Y$. Each entry $[\mathbf{C}_{XY}]_{pq}$ is therefore proportional 
+to the sum over $\mathfrak{R}$ of $\rho_i$-weighted fractional references from unit $p$ of type $X$ to unit
+$q$ of type $Y$.
 
 The citation matrix assembles the four blocks:
 \begin{equation}
@@ -90,16 +88,15 @@ The citation matrix assembles the four blocks:
 		m_{SI}\,\chi(1-\chi)\,\mathbf{C}_{SI} \\[4pt]
 		m_{IS}\,\chi(1-\chi)\,\mathbf{C}_{IS} &
 		m_{II}\,\chi^2\,\mathbf{C}_{II}
-	\end{bmatrix},
+	\end{bmatrix}.
 	\label{eq:C}
 \end{equation}
-where the binary \textit{block mask} $\mathbf{m}=(m_{SS},m_{SI},m_{IS},m_{II})\in\{0,1\}^4$
-is bibliometrically meaningful for
-source-only $(1000)$, institution-only $(0001)$,
+The binary \textit{block mask} $\mathbf{m}=(m_{SS},m_{SI},m_{IS},m_{II})\in\{0,1\}^4$
+is bibliometrically meaningful for source-only $(1000)$, institution-only $(0001)$,
 bipartite $(0110)$, and full-joint $(1111)$ combined blocks.
 The mixing weight $\chi$ controls the source--institution balance
 in the bipartite and full-joint cases and is inert in the single-mode cases.
-The $\chi$ scaling preserves total attention flow across all block combinations,
+The $\chi$ scaling preserves the total weighted references across all block combinations,
 since $(1-\chi)^2+2\chi(1-\chi)+\chi^2=1$.
 
 Note that the corpus excludes (a) census work references not giving
@@ -108,56 +105,40 @@ target works, and (c) authorships that include an omitted institution.
 
 \paragraph{Ordinal spectral ranking.}
 
-The attention of a unit is amplified
-or diminished by the attention that it receives from the units connected to it via the citation matrix. This leads to an eigenvector equation in which the attention
-of each unit is defined recursively as the weighted sum of the attention
-of the units that reference it, with its value established by the
-convergence of that recursion.
-The process of finding the fixed point is \textit{spectral ranking}
-(a verb); the resulting vector is the \textit{spectral ranking} (a noun).
-The vector can be read from either side of the transaction --- from the
-referencing side as attention, or from the cited side as influence --- just
-as $\mathbf{C}$ can be called a reference matrix or a citation matrix
-depending on which side one stands.
-
 Let $r_p=\sum_q C_{pq}$ be the sum of fractionated references given by unit $p$
 and $\mathbf{D}_r=\mathrm{diag}(r_p)$ the corresponding diagonal matrix.
-Row-normalising $\mathbf{C}$ to obtain $\mathbf{H}=\mathbf{D}_r^{-1}\mathbf{C}$
-ensures that each unit's fractionated references are equally valued regardless of how
-many references it makes: a unit with many references exerts no more
-attention per reference than one with few (this consideration obtains when $\rho_i = 1$).
-Reference intensity variations are removed at this stage and reintroduced
-only at the end via the influence per work scaling \eqref{eq:vstar}.
+Row-normalising $\mathbf{C}$ to obtain the row semi-stochastic matrix 
+$\mathbf{H}=\mathbf{D}_r^{-1}\mathbf{C}$
+ensures that, when $\rho_i = 1$, reference intensity variations are 
+removed. They are reintroduced later 
+via the influence-per-work scaling \eqref{eq:vstar}.
 If $r_p=0$ (a dangling unit with no outgoing references) the corresponding
 row of $\mathbf{H}$ is defined to be zero.
 
 The three unipartite masks---source-only $(1000)$, institution-only $(0001)$,
-and full-joint $(1111)$---each yield a square $\mathbf{H}$ to which the
-following spectral ranking theory applies directly.
-The spectral ranking $\boldsymbol{\pi}^*$
-\citep[see][for an overview]{vignaSpectralRanking2016}
-is the unique positive solution to the eigenvector equation,
+and full-joint $(1111)$---each yield a square $\mathbf{H}$ with the spectral 
+ranking $\boldsymbol{\pi}^*$ \citep[see][for an overview]{vignaSpectralRanking2016}
 \begin{equation}
     (\mathbf{I} - \mathbf{H}^\top)\boldsymbol{\pi}^* = \mathbf{0},
     \qquad
     \mathbf{1}^\top\boldsymbol{\pi}^*=1,
     \quad
-    \boldsymbol{\pi}^*\ge 0,
+    \boldsymbol{\pi}^*\ge 0.
     \label{eq:eig}
 \end{equation}
-if $\mathbf{H}$ is primitive (irreducible and aperiodic), as guaranteed
-by the Perron--Frobenius theorem. Our numerical implementation tests primitivity
-for every $\mathbf{H}$ as explained below and has not encountered an imprimitive case.
+If $\mathbf{H}$ is primitive (irreducible and aperiodic) the ranking is unique due to the 
+Perron--Frobenius theorem. Our numerical implementation tests primitivity
+for every $\mathbf{H}$, pre-processed as explained below, and has not encountered an imprimitive case.
 \cite{gellerCitationInfluenceMethodology1978} showed that
 $\boldsymbol{\pi}^*$ is the stationary distribution of the
 Markov chain with transition matrix $\mathbf{H}$, and that it coincides
 with the \textit{influence weight} of \cite{pinskiCitationInfluenceJournal1976}
 scaled by the reference count proportion $r_p / \sum_q r_q$.
 
-\cite{katzNewStatusIndex1953} proposed attenuating attention along walks
-of length $k$ by a factor $\alpha^k$, $\alpha\in(0,1)$, so that distant
-attention counts for less than proximate ones.
-Summing attenuated walks of all lengths and endowing every unit with a
+\cite{katzNewStatusIndex1953} proposed attenuating walks (i.e. chains of citation matrix weights
+$c_{ab} \rightarrow c_{bc} \rightarrow c_{cd}$) of length $k$ by a factor $\alpha^k$, $\alpha\in(0,1)$, so that distant
+links count for less than proximate ones.
+Summing walks of all lengths and endowing every unit with a
 uniform initial score of $1$ yields the Katz resolvent equation
 \[
     (\mathbf{I} - \alpha\mathbf{H}^\top)\boldsymbol{\pi} = \mathbf{1}.
@@ -172,12 +153,11 @@ standing independent of citation structure,
 \[
     (\mathbf{I} - \alpha\mathbf{H}^\top)\boldsymbol{\pi} = \boldsymbol{\mu}.
 \]
-We use the uniform prior $\mu_p = 1/N_{\mathfrak{P}}$ for $p\in\mathfrak{P}$.
+We explore two priors, (i) uniform over units $\mu_p = 1/N_{\mathfrak{P}}$ for $p\in\mathfrak{P}$ or (ii) uniform $1/(N_S+N_I)$.
 Note that the intermediate case $(\mathbf{I}-\alpha\mathbf{H}^\top)\boldsymbol{\pi}=\mathbf{0}$ with $\alpha\ne 1$ admits only the trivial 
 solution $\boldsymbol{\pi}=\mathbf{0}$ and is not useful as a ranking.
 
-Combining attention attenuation and prior information yields the general
-resolvent equation
+Combining these yields the general (Katz-Hubbel) resolvent equation
 \begin{equation}
     (\mathbf{I} - \alpha\mathbf{H}^\top)\boldsymbol{\pi}
     \;=\;
@@ -191,14 +171,14 @@ resolvent equation
 which recovers $\boldsymbol{\pi}^*$ in the limit $\alpha\to 1$ when
 $\mathbf{H}$ is primitive.
 While $\alpha$ and $\boldsymbol{\mu}$ are introduced here for their
-substantive interpretations---attention attenuation and exogenous prior
+substantive interpretations---attenuation along walks and exogenous prior
 respectively---they have the additional effect of ensuring a unique
 solution to~\eqref{eq:spectral} even when $\mathbf{H}$ is not primitive:
 $\alpha<1$ makes $(\mathbf{I}-\alpha\mathbf{H}^\top)$ invertible, and a
 nonzero $\boldsymbol{\mu}$ lifts the equation off the homogeneous system. If $\mathbf{C}$ were a binary matrix, this would be the PageRank spectral ranking \citep{page}
 
-The spectral ranking $\boldsymbol{\pi}$ reflects the total attention or influence of each unit and depends on unit size.
-The \emph{influence per work} \citep{palacios-huertaMeasurementIntellectualInfluence2004},
+The spectral ranking $\boldsymbol{\pi}$ reflects the steady-state probability vector of the Markov matrix $\mathbf{H}$; we can call it the probability distribution of attention or influence.
+The \emph{influence per work} is computed as \citep{palacios-huertaMeasurementIntellectualInfluence2004},
 \begin{equation}
     \mathbf{v}
     \;=\;
@@ -206,10 +186,10 @@ The \emph{influence per work} \citep{palacios-huertaMeasurementIntellectualInflu
     \qquad
     \mathbf{A}=\mathrm{diag}(a_p),
     \qquad
-    A = \mathbf{a}^{\top}\mathbf{1} = \textstyle\sum_p a_p,
+    A = \mathbf{a}^{\top}\mathbf{1} = \textstyle\sum_p a_p.
     \label{eq:vstar}
 \end{equation}
-removes this dependence, where the unit work count $a_p = |\{i:w_i\in p\}|$ where $p$ is a specific source or institution,
+Here, the unit work count $a_p = |\{i:w_i\in p\}|$ where $p$ is a specific source or institution,
 and $\boldsymbol{\pi}$ denotes the solution to \eqref{eq:spectral}.
 The scalar $A$ normalises $\mathbf{v}$ so that its $a_p$-weighted mean equals one:
 $\mathbf{a}^{\top}\mathbf{v}/A=\mathbf{1}^{\top}\boldsymbol{\pi}=1$.
@@ -220,22 +200,20 @@ $\mathbf{v}$ is uniquely characterised by several reasonable axiomatic
 constraints \citep[but see][]{serranoMeasurementIntellectualInfluence2004}.
 
 \paragraph{Bipartite ranking.}
-With $\mathbf{m}=(0110)$, equation~\eqref{eq:C} yields block off-diagonal matrices $\mathbf{C}$ and $\mathbf{H}$,
-forming a directed bipartite network between sources~($S$) and institutions~($I$).
-This is the mask used as the baseline model in Section~\ref{sec:results}.
-Partitioning rows and columns into the $S$ and $I$ blocks, the stochastic matrix takes the form
+With $\mathbf{m}=(0110)$, equation~\eqref{eq:C} yields block off-diagonal matrices $\mathbf{C}$ and $\mathbf{H}$, forming a directed bipartite network between sources~($S$) and institutions~($I$).
+This mask is used as the baseline model in Section~\ref{sec:results}.
+Partitioning rows and columns into the $S$ and $I$ blocks, the semi-stochastic matrix takes the form
 \begin{equation}
   \mathbf{H}
   \;=\;
   \begin{pmatrix} \mathbf{0} & \mathbf{H}_{SI} \\ \mathbf{H}_{IS} & \mathbf{0} \end{pmatrix},
   \label{eq:H_bipartite}
 \end{equation}
-where $\mathbf{H}_{SI}$ distributes a source's attention across institutions and
-$\mathbf{H}_{IS}$ does the reverse.
+where $\mathbf{H}_{SI}$ connects sources to institutions and $\mathbf{H}_{IS}$ does the reverse.
 Because every path alternates $S\to I\to S\to\cdots$, this structure makes $\mathbf{H}$
 periodic with period~2.
 
-Squaring $\mathbf{H}$ collapses two-step walks to separate node types, giving one-mode relations
+Squaring $\mathbf{H}$ collapses two-step paths to separate unit types, giving one-unit relations
 \[
   \mathbf{H}^2
   \;=\;
@@ -245,7 +223,7 @@ Squaring $\mathbf{H}$ collapses two-step walks to separate node types, giving on
   \quad
   \mathbf{M}_I = \mathbf{H}_{IS}\mathbf{H}_{SI}.
 \]
-Both $\mathbf{M}_S$ and $\mathbf{M}_I$ are row-stochastic products of row-stochastic matrices.
+Both $\mathbf{M}_S$ and $\mathbf{M}_I$ are row semi-stochastic products of row semi-stochastic matrices.
 
 To make the bipartite mode comparable with the unipartite SS and II modes at the same $\alpha$, single steps $SI$ or $IS$ should be damped by $\sqrt{\alpha}$, so the round-trip incurs attenuation $\sqrt{\alpha}\cdot\sqrt{\alpha}=\alpha$. 
 Substituting $\sqrt{\alpha}$ for $\alpha$ in equation~\eqref{eq:eig},
@@ -278,9 +256,9 @@ $\boldsymbol{\pi}=\mathbf{\tilde{H}}^{\top}\boldsymbol{\pi}$
 is equivalent to equation~\eqref{eq:spectral}. This is the general form of 
 our numerical problem, although most of the results reported below use $\alpha = 1$ and $\mu = 0$ so $\mathbf{\tilde{H}} = \mathbf{H}$. 
 
-As explained below, we construct many realisations of $\mathbf{\tilde{H}}$ while testing different models for unit pairings, subfields and other parameters, and to run our bootstrap investigations. These realisations correspond to a unit-unit citation network with one giant strongly connected component (SCC) and some very small, usually singleton, components that are sources or institutions disjoint with the particular network under investigation. In these cases we retain only the SCC. For some units in the SCC, there may be no outgoing references, and for others, no incoming references. We exclude these units too, ensuring that the residual $\mathbf{\tilde{H}}$ is highly likely to be row-stochastic and primitive, with a single dominate eigenvector.
+As explained below, we construct many realisations of $\mathbf{\tilde{H}}$ while testing different models for unit pairings, subfields and other parameters, and to run our bootstrap investigations. ALl of these realisations entail a unit-unit citation network with one giant strongly connected component (SCC) and possibly some very small, usually singleton, components that are sources or institutions disjoint with the particular network under investigation. In these cases we retain only the SCC. For some units in the SCC, there may be no outgoing references, and for others, no incoming references. We exclude these units iteratively, ensuring that the residual $\mathbf{\tilde{H}}$ is stochastic and highly likely to be row-stochastic and primitive, with a single dominate eigenvector.
 
-$\mathbf{\tilde{H}}$ is a sparse matrix constructed from the respective filtered and weighted edge list $\mathcal{E}$ accumulated over $\mathfrak{R}$ and stored in compressed sparse row (CSR) format. We have explored two approaches to applying the resolvent. The Python scipy function \textit{scipy.sparse.linalg.eigs} efficiently provides all eigenpairs, allowing us to review the primitivity condition. The power iteration 
+$\mathbf{\tilde{H}}$ is a sparse matrix constructed from the respective filtered and weighted edge list $\mathcal{E}$ accumulated over $\mathfrak{R}$ and stored in compressed sparse row (CSR) format. We have explored two approaches to applying the resolvent. The Python scipy function \textit{scipy.sparse.linalg.eigs} efficiently provides the first few eigenpairs, allowing us to review the primitivity condition. The power iteration 
 \begin{equation}
 	\boldsymbol{\pi}^{(k+1)}
 	\;=\;

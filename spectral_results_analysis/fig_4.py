@@ -44,8 +44,8 @@ _run_code      = _baseline['run_code']
 _tau_u         = _baseline['tau_u']
 _tau_s         = _baseline['tau_s']
 
-BASELINE_TABLE = f'rk_{_run_code}_A_tauU{_tau_u}_tauS{_tau_s}_rho0_m0110_chi50_alpha100'
-EL_TABLE       = f'el_{_run_code}_A_tauU{_tau_u}_tauS{_tau_s}'
+BASELINE_TABLE = f'rk_{_run_code}_A_tauU{_tau_u}_tauS{_tau_s}_vartau_rho0_m0110_chi50_alpha100'
+EL_TABLE       = f'el_{_run_code}_A_tauU{_tau_u}_tauS{_tau_s}_vartau'
 
 # Institution field classification parameters (consistent with fig_2.py)
 INST_N_E   = 750

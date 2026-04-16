@@ -62,3 +62,5 @@ Scimago
 ARWU
 SCImago
 influnence
+Katz-Hubbel
+categorised

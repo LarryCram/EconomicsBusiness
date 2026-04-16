@@ -52,6 +52,10 @@ PARQUET        = paths.parquet
 OPENALEX       = paths.openalex
 
 TAU_U        = _baseline['tau_u']
+TAU_S        = _baseline['tau_s']
+TC0          = _baseline['tc0']   # census window start (baseline = 2020)
+TC1          = _baseline['tc1']   # census window end   (baseline = 2024)
+CENSUS_YEARS = TC1 - TC0 + 1     # 5 for baseline
 CORPUS_YEARS = 25  # 2000-2024 inclusive
 
 
@@ -109,6 +113,20 @@ def build_table1_data(db):
 
     oas_total = int(eb_df['oas_n'].sum())
 
+    # OAS: OAS* sources that pass the τ_S census filter (baseline window)
+    # One row per source; then aggregate counts by field_eb in Python.
+    oas_tau_df = db.sql(f"""
+        SELECT sm.source_idx, sm.field_eb
+        FROM '{PARQUET}/source_master.parquet' sm
+        JOIN '{PARQUET}/corpus_works.parquet' cw
+            ON sm.source_idx = cw.source_idx
+        WHERE cw.publication_year BETWEEN {TC0} AND {TC1}
+        GROUP BY sm.source_idx, sm.field_eb
+        HAVING COUNT(DISTINCT cw.work_idx) / {CENSUS_YEARS}.0 >= {TAU_S}
+    """).df()
+    oas_tau_eb    = oas_tau_df.groupby('field_eb').size().to_dict()
+    oas_tau_total = len(oas_tau_df)
+
     data = {
         'JQL': {'total': jql_total, 'matched': jql_matched,
                 'E': _eb('jql_n', 'E'), 'B': _eb('jql_n', 'B'),
@@ -122,6 +140,9 @@ def build_table1_data(db):
         'OAS*': {'total': oas_total, 'matched': None,
                  'E': _eb('oas_n', 'E'), 'B': _eb('oas_n', 'B'),
                  'A': _eb('oas_n', 'A'), 'X': _eb('oas_n', 'X')},
+        'OAS': {'total': oas_tau_total, 'matched': None,
+                'E': int(oas_tau_eb.get('E', 0)), 'B': int(oas_tau_eb.get('B', 0)),
+                'A': int(oas_tau_eb.get('A', 0)), 'X': int(oas_tau_eb.get('X', 0))},
     }
 
     print("\n=== TABLE 1: REGISTRY OVERVIEW ===")
@@ -145,8 +166,10 @@ def write_latex_table1(data, out_path):
         r" JQL = Harzing Journal Quality List; MJL = Web of Science Master Journal List;"
         r" SJL = ERA Subject Journal List (FoR codes 35 and 38)."
         r" A source appearing in multiple registries is counted in each."
-        r" E/B/A/X are assigned by the combined four-signal scoring;"
-        r" OAS$^*$ is the union across all three registries matched to OpenAlex.}"
+        r" E/B/A/X are assigned by the combined four-signal scoring."
+        r" OAS$^*$ is the union across all three registries matched to OpenAlex."
+        rf" OAS is OAS$^*$ restricted to sources with mean annual works $\geq\tau_S={TAU_S}$"
+        rf" in the census window {TC0}--{TC1}.}}"
     )
     L.append(r"\label{tab:registry_overview}")
     L.append(r"\begin{tabular}{lrrrrrrrr}")
@@ -163,6 +186,11 @@ def write_latex_table1(data, out_path):
     d = data['OAS*']
     L.append(
         f"OAS$^*$ & {_i(d['total'])} & --- & ---"
+        f" & {_i(d['E'])} & {_i(d['B'])} & {_i(d['A'])} & {_i(d['X'])} \\\\"
+    )
+    d = data['OAS']
+    L.append(
+        f"OAS & {_i(d['total'])} & --- & ---"
         f" & {_i(d['E'])} & {_i(d['B'])} & {_i(d['A'])} & {_i(d['X'])} \\\\"
     )
     L.append(r"\bottomrule")
