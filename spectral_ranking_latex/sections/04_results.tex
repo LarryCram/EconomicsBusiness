@@ -3,97 +3,85 @@
 \label{sec:results}
 % ---------------------------------------------------------------
 
-\paragraph{Outline.}
-Tables~\ref{tab:params}--\ref{tab:paramvalues} define and enumerate the
-parameters; all are consolidated here and not repeated elsewhere.
-The \textit{baseline} is $t_x=5$, $F=A$, $\tau_U=\tau_S=20$, $\rho=0$,
-$\mathbf{m}=0110$, $\alpha=1$, $\mu=0$ --- the pure eigenvector
-equation~\eqref{eq:eig} on the bipartite network.
-Modes $\mathbf{m}=1000$ (SS) and $0001$ (II) are the unipartite analogues
-of standard journal and institution eigenvector methods; $1111$ adds all
-paths between the two unit types; $0110$ is the bipartite focus of this paper.
-Phase~1 fixes $\alpha=1$, $\mu=0$ and varies the corpus ($F$) and
-mode ($\mathbf{m}$); Phase~2 varies $\alpha$, $\rho$, and $\tau$;
-Phase~4 varies $t_x\in\{1,2,3,4,5\}$.
+The results are organised into four themes: (i) unit-related, (ii) field-related, (iii) testing parameter effects, and (iv) bootstrap uncertainty estimates. Themes (i), (ii) and (iv) use the \textit{baseline}, [2020-24, 2020-24], $F=A$, $\tau_U=\tau_S=20$, $\rho=0$, $\mathbf{m}=0110$, $\alpha=1$, $\mu=0$ --- the eigenvector equation~\eqref{eq:eig} on the bipartite network.
 
 
-% ─── Parameter tables ─────────────────────────────────────────────────────────
+% % ─── Parameter tables ─────────────────────────────────────────────────────────
 
-\begin{table}[ht]
-	\centering
-	\caption{Model parameters $\boldsymbol{\theta}$.}
-	\label{tab:params}
-	\begin{tabularx}{\textwidth}{lllX}
-		\toprule
-		Symbol & Name & Type & Role \\
-		\midrule
-		\multicolumn{4}{@{}l@{}}{\textit{Corpus construction}} \\[2pt]
-		$F\in\{E,B,A\}$          & field subset          & category        & restrict $\mathfrak{S}$ to Economics ($E$), Business ($B$), or all OAS ($A$); see Table~\ref{tab:windows} \\
-		$t_x\in\{1,\ldots,5\}$  & time window           & integer         & census and target year ranges; see Table~\ref{tab:windows} \\
-		$\tau_U$                 & institution threshold & integer         & minimum mean annual works to retain an institution \\
-		$\tau_S$                 & source threshold      & integer         & minimum mean annual works to retain a source \\[4pt]
-		\multicolumn{4}{@{}l@{}}{\textit{Matrix construction}} \\[2pt]
-		$\rho\in\{0,1\}$         & reference normalisation & binary        & 0: a work contributes $\bar{R}$ units \newline 1: a work contributes $R_i$ units \\
-		$\mathbf{m}\in\{0,1\}^4$ & block mask            & binary 4-vector & select active unit-type pairs ($SS$, $SI$, $IS$, $II$) \\
-		$\chi\in[0,1]$           & mixing weight         & continuous      & source--institution balance within each work \\[4pt]
-		\multicolumn{4}{@{}l@{}}{\textit{Ranking}} \\[2pt]
-		$\alpha\in[0,1)$         & damping factor        & continuous      & controls propagation through citation network \\
-		$\mu$                    & prior weight          & continuous      & exogenous prestige prior; $\mu=0$ = pure spectral \\
-		\bottomrule
-	\end{tabularx}
-\end{table}
+% \begin{table}[ht]
+% 	\centering
+% 	\caption{Model parameters $\boldsymbol{\theta}$.}
+% 	\label{tab:params}
+% 	\begin{tabularx}{\textwidth}{lllX}
+% 		\toprule
+% 		Symbol & Name & Type & Role \\
+% 		\midrule
+% 		\multicolumn{4}{@{}l@{}}{\textit{Corpus construction}} \\[2pt]
+% 		$F\in\{E,B,A\}$          & field subset          & category        & restrict $\mathfrak{S}$ to Economics ($E$), Business ($B$), or all OAS ($A$); see Table~\ref{tab:windows} \\
+% 		$t_x\in\{1,\ldots,5\}$  & time window           & integer         & census and target year ranges; see Table~\ref{tab:windows} \\
+% 		$\tau_U$                 & institution threshold & integer         & minimum mean annual works to retain an institution \\
+% 		$\tau_S$                 & source threshold      & integer         & minimum mean annual works to retain a source \\[4pt]
+% 		\multicolumn{4}{@{}l@{}}{\textit{Matrix construction}} \\[2pt]
+% 		$\rho\in\{0,1\}$         & reference normalisation & binary        & 0: a work contributes $\bar{R}$ units \newline 1: a work contributes $R_i$ units \\
+% 		$\mathbf{m}\in\{0,1\}^4$ & block mask            & binary 4-vector & select active unit-type pairs ($SS$, $SI$, $IS$, $II$) \\
+% 		$\chi\in[0,1]$           & mixing weight         & continuous      & source--institution balance within each work \\[4pt]
+% 		\multicolumn{4}{@{}l@{}}{\textit{Ranking}} \\[2pt]
+% 		$\alpha\in[0,1)$         & damping factor        & continuous      & controls propagation through citation network \\
+% 		$\mu$                    & prior weight          & continuous      & exogenous prestige prior; $\mu=0$ = pure spectral \\
+% 		\bottomrule
+% 	\end{tabularx}
+% \end{table}
 
-\begin{table}[htbp]
-\centering
-\caption{Corpus construction parameters: field subsets ($F$) and time windows ($t_x$).}
-\label{tab:windows}
-\begin{tabular}{cll}
-\toprule
-\multicolumn{3}{@{}l@{}}{\textit{Panel A\,: Field subsets ($F$)}} \\[2pt]
-$F$ & \multicolumn{2}{@{}l}{Sources included in $\mathfrak{S}$} \\
-\midrule
-$E$ & \multicolumn{2}{@{}l}{Topic counts exclusively in Field~14 (Economics, Econometrics and Finance)} \\
-$B$ & \multicolumn{2}{@{}l}{Topic counts exclusively in Field~20 (Business, Management and Accounting)} \\
-$A$ & \multicolumn{2}{@{}l}{All OAS sources; topic counts in Fields~14 and/or~20 \textit{(baseline)}} \\
-\midrule
-\multicolumn{3}{@{}l@{}}{\textit{Panel B\,: Time windows ($t_x$)}} \\[2pt]
-$t_x$ & Window $[t^c_0,t^c_1] = [t^t_0,t^t_1]$ & Label \\
-\midrule
-1 & $t_{00} = [2000,2004]$ & Symmetric 5-year \\
-2 & $t_{05} = [2005,2009]$ & Symmetric 5-year \\
-3 & $t_{10} = [2010,2014]$ & Symmetric 5-year \\
-4 & $t_{15} = [2015,2019]$ & Symmetric 5-year \\
-5 & $t_{20} = [2020,2024]$ & Symmetric 5-year \textit{(baseline)} \\
-\bottomrule
-\end{tabular}
-\end{table}
+% \begin{table}[htbp]
+% \centering
+% \caption{Corpus construction parameters: field subsets ($F$) and time windows ($t_x$).}
+% \label{tab:windows}
+% \begin{tabular}{cll}
+% \toprule
+% \multicolumn{3}{@{}l@{}}{\textit{Panel A\,: Field subsets ($F$)}} \\[2pt]
+% $F$ & \multicolumn{2}{@{}l}{Sources included in $\mathfrak{S}$} \\
+% \midrule
+% $E$ & \multicolumn{2}{@{}l}{Topic counts exclusively in Field~14 (Economics, Econometrics and Finance)} \\
+% $B$ & \multicolumn{2}{@{}l}{Topic counts exclusively in Field~20 (Business, Management and Accounting)} \\
+% $A$ & \multicolumn{2}{@{}l}{All OAS sources; topic counts in Fields~14 and/or~20 \textit{(baseline)}} \\
+% \midrule
+% \multicolumn{3}{@{}l@{}}{\textit{Panel B\,: Time windows ($t_x$)}} \\[2pt]
+% $t_x$ & Window $[t^c_0,t^c_1] = [t^t_0,t^t_1]$ & Label \\
+% \midrule
+% 1 & $t_{00} = [2000,2004]$ & Symmetric 5-year \\
+% 2 & $t_{05} = [2005,2009]$ & Symmetric 5-year \\
+% 3 & $t_{10} = [2010,2014]$ & Symmetric 5-year \\
+% 4 & $t_{15} = [2015,2019]$ & Symmetric 5-year \\
+% 5 & $t_{20} = [2020,2024]$ & Symmetric 5-year \textit{(baseline)} \\
+% \bottomrule
+% \end{tabular}
+% \end{table}
 
-\begin{table}[htbp]
-\centering
-\caption{Parameters and values explored. Baseline values in italics.}
-\label{tab:paramvalues}
-\begin{tabular}{lllp{7.5cm}}
-\toprule
-Symbol & Name & Baseline & Values explored \\
-\midrule
-\multicolumn{4}{@{}l@{}}{\textit{Corpus construction}} \\[2pt]
-$t_x$          & Time window            & \textit{5}              & 1,\ 2,\ 3,\ 4,\ \textit{5} \\
-$F$            & Field subset           & \textit{$A$}            & $E$,\ $B$,\ \textit{$A$} \\
-$\tau_U$       & Institution threshold  & \textit{20}             & \textit{20},\ 40 \\
-$\tau_S$       & Source threshold       & \textit{20}             & \textit{20},\ 40 \\[4pt]
-\multicolumn{4}{@{}l@{}}{\textit{Matrix construction}} \\[2pt]
-$\rho$         & Reference normalisation & \textit{0 (fixed)}     & \textit{0} (fixed),\ 1 (full) \\
-$\mathbf{m}$   & Block mask             & \textit{0110}          & 1000,\ 0001,\ \textit{0110},\ 1111 \\
-$\chi$         & Mixing weight          & 0.50                   & 0.50,\ $\chi^*$ [full joint only] \\[4pt]
-\multicolumn{4}{@{}l@{}}{\textit{Ranking}} \\[2pt]
-$\alpha$       & Damping factor         & \textit{1.0}           & 0.1,\ 0.5,\ \textit{1.0} \\
-$\mu$          & Prior weight           & \textit{0}             & \textit{0} (pure spectral) \\
-\bottomrule
-\end{tabular}
-\end{table}
+% \begin{table}[htbp]
+% \centering
+% \caption{Parameters and values explored. Baseline values in italics.}
+% \label{tab:paramvalues}
+% \begin{tabular}{lllp{7.5cm}}
+% \toprule
+% Symbol & Name & Baseline & Values explored \\
+% \midrule
+% \multicolumn{4}{@{}l@{}}{\textit{Corpus construction}} \\[2pt]
+% $t_x$          & Time window            & \textit{5}              & 1,\ 2,\ 3,\ 4,\ \textit{5} \\
+% $F$            & Field subset           & \textit{$A$}            & $E$,\ $B$,\ \textit{$A$} \\
+% $\tau_U$       & Institution threshold  & \textit{20}             & \textit{20},\ 40 \\
+% $\tau_S$       & Source threshold       & \textit{20}             & \textit{20},\ 40 \\[4pt]
+% \multicolumn{4}{@{}l@{}}{\textit{Matrix construction}} \\[2pt]
+% $\rho$         & Reference normalisation & \textit{0 (fixed)}     & \textit{0} (fixed),\ 1 (full) \\
+% $\mathbf{m}$   & Block mask             & \textit{0110}          & 1000,\ 0001,\ \textit{0110},\ 1111 \\
+% $\chi$         & Mixing weight          & 0.50                   & 0.50,\ $\chi^*$ [full joint only] \\[4pt]
+% \multicolumn{4}{@{}l@{}}{\textit{Ranking}} \\[2pt]
+% $\alpha$       & Damping factor         & \textit{1.0}           & 0.1,\ 0.5,\ \textit{1.0} \\
+% $\mu$          & Prior weight           & \textit{0}             & \textit{0} (pure spectral) \\
+% \bottomrule
+% \end{tabular}
+% \end{table}
 
-Figure~\ref{fig:fig3} compares prestige-per-work distributions across the
-four network modes, with the $x$-axis locked to the bipartite baseline.
+Figure~\ref{fig:fig3} compares spectral ranks across network masks. The $x$-axis is the cardinal rank of sources (upper) and institutions (lower), with the solid black curve tracing the corresponding ordinal rank. The units near $v=1$ lie at the weighted average influence-per-work, around rank position 25\% for sources and 20\% for institutions. Influence rises to $> 10$ for the top few units at the extreme left, with a low-influence tail falling below 0.1 for $~ 10\%$ of sources and $< 5\%$ for institutions.
 For sources, modes 1000 (red $\times$) and 1111 at $\chi^*$ (green $\times$)
 are overlaid on the bipartite baseline; open circles and squares on the
 1000 series mark Economics and Business sources respectively.
