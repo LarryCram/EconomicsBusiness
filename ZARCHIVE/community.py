@@ -31,7 +31,7 @@ from scipy.sparse import bmat
 from scipy.sparse.linalg import eigs
 
 sys.path.insert(0, str(Path(__file__).parent.parent))
-from util import load_config, load_params
+from util import load_config, load_runs
 from spectral_ranking.build_csr import build_csr
 from spectral_ranking.katz_ranker import _row_normalise
 
@@ -206,6 +206,109 @@ def scc_report(C, unit_ids, label, field_labels, source_names, small_threshold=5
     return labels, giant_label
 
 
+# ─── Community detection ─────────────────────────────────────────────────────
+
+def community_analysis(H, unit_ids, label, field_labels=None, seed=42):
+    """
+    Leiden community detection on directed stochastic matrix H.
+
+    Steps:
+      1. Prune nodes with both in-degree=0 AND out-degree=0 (isolated).
+      2. Restrict to the giant SCC of the remaining graph.
+      3. Run Leiden (ModularityVertexPartition, directed) on the weighted
+         directed igraph built from the giant-SCC submatrix.
+      4. Report: n_communities, modularity Q, mean intra-community edge
+         density, and community composition (size, field mix if available).
+
+    Edge weights are the stochastic matrix entries (row sums ≤ 1).
+    """
+    import collections
+    import igraph as ig
+    import leidenalg
+    from scipy.sparse.csgraph import connected_components
+
+    H = H.tocsr()
+    n = H.shape[0]
+
+    # 1. Remove completely isolated nodes (in-degree=0 AND out-degree=0)
+    out_deg = np.array(H.sum(axis=1)).ravel()
+    in_deg  = np.array(H.sum(axis=0)).ravel()
+    keep    = np.where((out_deg > 0) | (in_deg > 0))[0]
+    H_sub   = H[keep][:, keep]
+    ids_sub = unit_ids[keep]
+
+    # 2. Giant SCC
+    n_comp, comp_labels = connected_components(H_sub, directed=True,
+                                               connection='strong')
+    sizes       = collections.Counter(comp_labels)
+    giant_label = sizes.most_common(1)[0][0]
+    scc_mask    = np.where(comp_labels == giant_label)[0]
+    H_scc       = H_sub[scc_mask][:, scc_mask]
+    ids_scc     = ids_sub[scc_mask]
+    n_scc       = H_scc.shape[0]
+
+    print(f"\n{label} — community analysis")
+    print(f"  matrix size: {n}  after isolate prune: {len(keep)}"
+          f"  SCCs: {n_comp}  giant SCC: {n_scc}")
+
+    # 3. Build igraph directed weighted graph
+    H_coo = H_scc.tocoo()
+    # Remove self-loops (diagonal) for community detection
+    mask_off = H_coo.row != H_coo.col
+    edges    = list(zip(H_coo.row[mask_off].tolist(),
+                        H_coo.col[mask_off].tolist()))
+    weights  = H_coo.data[mask_off].tolist()
+
+    g = ig.Graph(n=n_scc, edges=edges, directed=True)
+    g.es['weight'] = weights
+
+    # 4. Leiden with directed modularity
+    partition = leidenalg.find_partition(
+        g,
+        leidenalg.ModularityVertexPartition,
+        weights='weight',
+        seed=seed,
+    )
+    membership = np.array(partition.membership)
+    Q          = partition.modularity
+    n_comm     = len(partition)
+
+    # 5. Intra-community edge density per community
+    # density_c = total intra-community weight / (n_c * (n_c - 1))
+    H_scc_arr = H_scc.toarray()
+    densities = []
+    for c in range(n_comm):
+        idx_c = np.where(membership == c)[0]
+        n_c   = len(idx_c)
+        if n_c < 2:
+            densities.append(0.0)
+            continue
+        sub = H_scc_arr[np.ix_(idx_c, idx_c)]
+        np.fill_diagonal(sub, 0.0)
+        densities.append(sub.sum() / (n_c * (n_c - 1)))
+    mean_density = float(np.mean(densities))
+
+    print(f"  communities: {n_comm}  Q={Q:.4f}  "
+          f"mean intra-community edge density: {mean_density:.4f}")
+
+    # 6. Per-community summary (size + field mix if available)
+    comm_sizes = collections.Counter(membership)
+    print(f"  {'Comm':>5}  {'n':>6}  {'density':>8}  field mix")
+    for c in sorted(comm_sizes, key=lambda x: -comm_sizes[x]):
+        idx_c = np.where(membership == c)[0]
+        n_c   = len(idx_c)
+        field_counts: dict[str, int] = collections.Counter()
+        for i in idx_c:
+            uid = int(ids_scc[i])
+            if field_labels:
+                field_counts[field_labels.get(uid, 'X')] += 1
+        mix = '  '.join(f"{k}:{v}" for k, v in
+                        sorted(field_counts.items()) if v > 0)
+        print(f"  {c:>5}  {n_c:>6}  {densities[c]:>8.4f}  {mix}")
+
+    return membership, ids_scc, Q, n_comm, densities
+
+
 # ─── Field labels ─────────────────────────────────────────────────────────────
 
 def load_source_meta(parquet_path):
@@ -257,83 +360,111 @@ def print_phi2_top(label, phi2, unit_ids, field_labels, source_names, n=15):
 
 # ─── Main driver ──────────────────────────────────────────────────────────────
 
-def run(paths, params):
-    tau_u = params['tau_u_floor']['A']
-    tau_s = params['tau_s_floor']['A']
-    alpha = 1.0
-    tx, fx, rho = 5, 'A', 0
-
+def run(paths, run_code: str = '20242024', fx: str = 'A',
+        tau_u: int = 20, tau_s: int = 20, rho: int = 0, alpha: float = 1.0):
     el_path = paths.working / 'edge_lists.duckdb'
     sm_path = paths.parquet / 'source_master.parquet'
 
     field_labels, source_names = load_source_meta(sm_path)
     print(f"Source meta loaded: {len(field_labels)} sources")
+    print(f"run_code={run_code}  fx={fx}  tau_u={tau_u}  tau_s={tau_s}  "
+          f"rho={rho}  alpha={alpha}")
 
     summary = []
 
     with duckdb.connect(str(el_path), read_only=True) as db:
 
         # ── χ* ────────────────────────────────────────────────────────────────
-        uname = f'_units_t{tx}_{fx}_tauU{tau_u}_tauS{tau_s}'
+        uname = f'_units_{run_code}_{fx}_tauU{tau_u}_tauS{tau_s}_vartau_m0110'
         counts = {r[0]: r[1] for r in db.execute(
             f"SELECT unit_type, COUNT(*) FROM {uname} GROUP BY unit_type"
         ).fetchall()}
-        n_s, n_u = counts['S'], counts['U']
-        chi_star = n_u / (n_s + n_u)
+        n_s, n_u = counts.get('S', 0), counts.get('U', 0)
+        chi_star = n_u / (n_s + n_u) if (n_s + n_u) > 0 else 0.5
         print(f"N_s={n_s}, N_u={n_u}, χ*={chi_star:.4f}")
 
         # ── SS ────────────────────────────────────────────────────────────────
         print("\n=== SS mode ===")
-        csr = build_csr(db, tx, fx, tau_u, tau_s, rho, (1,0,0,0))
+        csr = build_csr(db, run_code, fx, tau_u, tau_s, rho, (1, 0, 0, 0))
+        assert csr.C_SS is not None
         scc_report(csr.C_SS, csr.source_ids, 'C_SS', field_labels, source_names)
         lam2, phi2, gap, ampl = second_eigenpair_unipartite(csr.C_SS, alpha, 'SS')
         summary.append(('SS', lam2, gap, ampl))
         print_phi2_top('SS', phi2, csr.source_ids, field_labels, source_names)
+        H_SS, _ = _row_normalise(csr.C_SS)
+        community_analysis(H_SS, csr.source_ids, 'H_SS', field_labels)
 
         # ── II ────────────────────────────────────────────────────────────────
         print("\n=== II mode ===")
-        csr = build_csr(db, tx, fx, tau_u, tau_s, rho, (0,0,0,1))
+        csr = build_csr(db, run_code, fx, tau_u, tau_s, rho, (0, 0, 0, 1))
+        assert csr.C_II is not None
         scc_report(csr.C_II, csr.inst_ids, 'C_II', None, None)
         lam2, phi2, gap, ampl = second_eigenpair_unipartite(csr.C_II, alpha, 'II')
         summary.append(('II', lam2, gap, ampl))
+        H_II, _ = _row_normalise(csr.C_II)
+        community_analysis(H_II, csr.inst_ids, 'H_II')
 
         # ── Bipartite ─────────────────────────────────────────────────────────
         print("\n=== Bipartite SI/IS ===")
-        csr = build_csr(db, tx, fx, tau_u, tau_s, rho, (0,1,1,0))
+        csr = build_csr(db, run_code, fx, tau_u, tau_s, rho, (0, 1, 1, 0))
+        assert csr.C_SI is not None and csr.C_IS is not None
         lam2, phi2_S, phi2_I, gap, ampl = second_eigenpair_bipartite(
             csr.C_SI, csr.C_IS, alpha, 'bipartite')
         summary.append(('bipartite M_S', lam2, gap, ampl))
-        print_phi2_top('bipartite M_S (sources)', phi2_S, csr.source_ids, field_labels, source_names)
+        print_phi2_top('bipartite M_S (sources)', phi2_S, csr.source_ids,
+                       field_labels, source_names)
+        H_SI, _ = _row_normalise(csr.C_SI)
+        H_IS, _ = _row_normalise(csr.C_IS)
+        M_S = H_SI.dot(H_IS)
+        M_I = H_IS.dot(H_SI)
+        community_analysis(M_S, csr.source_ids, 'M_S (H_SI·H_IS)', field_labels)
+        community_analysis(M_I, csr.inst_ids,   'M_I (H_IS·H_SI)')
 
-        # ── Full joint χ=0.5 ──────────────────────────────────────────────────
+        # ── Full joint χ* ─────────────────────────────────────────────────────
         print("\n=== Full joint χ=0.5 ===")
-        csr = build_csr(db, tx, fx, tau_u, tau_s, rho, (1,1,1,1))
-        # SCC on the assembled block matrix (sources first, then institutions)
+        csr = build_csr(db, run_code, fx, tau_u, tau_s, rho, (1, 1, 1, 1))
+        assert (csr.C_SS is not None and csr.C_SI is not None
+                and csr.C_IS is not None and csr.C_II is not None)
         from scipy.sparse import bmat as sp_bmat
         C_full = sp_bmat(
             [[csr.C_SS, csr.C_SI],
              [csr.C_IS, csr.C_II]], format='csr'
         )
         full_ids = np.concatenate([csr.source_ids, csr.inst_ids])
-        # source_names only covers sources; institutions get idx=... fallback
         scc_report(C_full, full_ids, 'C_full (joint)', field_labels, source_names)
         lam2, phi2, gap, ampl = second_eigenpair_full(
             csr.C_SS, csr.C_SI, csr.C_IS, csr.C_II, 0.5, alpha, 'full-0.5')
         summary.append(('full χ=0.5', lam2, gap, ampl))
 
-        # ── Full joint χ* ─────────────────────────────────────────────────────
         print(f"\n=== Full joint χ*={chi_star:.4f} ===")
         lam2, phi2, gap, ampl = second_eigenpair_full(
             csr.C_SS, csr.C_SI, csr.C_IS, csr.C_II, chi_star, alpha, 'full-chi*')
         summary.append((f'full χ*={chi_star:.3f}', lam2, gap, ampl))
+        C_full_chi = sp_bmat(
+            [[(1 - chi_star)**2 * csr.C_SS,  chi_star*(1-chi_star) * csr.C_SI],
+             [chi_star*(1-chi_star) * csr.C_IS,  chi_star**2      * csr.C_II]],
+            format='csr',
+        )
+        from scipy.sparse import csr_matrix as _csr
+        C_full_chi = _csr(C_full_chi)
+        H_ISSI, _ = _row_normalise(C_full_chi)
+        community_analysis(H_ISSI, full_ids, f'H_ISSI (full χ*={chi_star:.3f})',
+                           field_labels)
 
     print_summary(summary)
 
 
 def main():
-    paths  = load_config()
-    params = load_params()
-    run(paths, params)
+    paths = load_config()
+    # Derive baseline parameters from params.csv
+    baseline = next(r for r in load_runs() if r['label'] == 'baseline')
+    run(paths,
+        run_code=baseline['run_code'],
+        fx=baseline['fx'],
+        tau_u=baseline['tau_u'],
+        tau_s=baseline['tau_s'],
+        rho=baseline['rho'],
+        alpha=float(baseline['alpha']))
 
 
 if __name__ == '__main__':

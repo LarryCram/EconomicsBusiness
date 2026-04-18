@@ -146,14 +146,13 @@ def filter_and_match(db):
 
         -- 4. Final: top topic per source, with density and E/B/A/X field label
         -- =============================================================================
-        -- field_eb scoring: ERA uses count of FoR codes (35xx=econ, 38xx=bus);
+        -- field_eb scoring: ERA uses count of FoR codes (35xx=bus, 38xx=econ);
         --   harzing_field uses token lookup (split on ', '; E={'Economics','F&A'}, B=all others except extraneous);
         --   wos_categories and field_name each contribute 0/1 by keyword.
-        --   'E'  econ_score >= 2 AND bus_score < 1   (pure economics)
-        --   'B'  bus_score  >= 2 AND econ_score < 1  (pure business)
-        --   'A'  mixed/ambiguous: at least one signal present but not pure E or B
-        --   'X'  residual: neither signal strong (econ_score <= 1 AND bus_score <= 1)
-        --  'X'  neither signal strong (both scores <= 1)
+        --   'E'  econ_score >= 2 AND bus_score < 2   (economics-dominant)
+        --   'B'  bus_score  >= 2 AND econ_score < 2  (business-dominant)
+        --   'A'  econ_score >= 2 AND bus_score >= 2  (genuinely ambiguous: strong in both)
+        --   'X'  econ_score < 2  AND bus_score < 2   (weak signals in both)
         CREATE OR REPLACE TEMP TABLE source_master AS
         WITH ranked_topics AS (
             SELECT
@@ -171,13 +170,13 @@ def filter_and_match(db):
         top_topic AS (SELECT * EXCLUDE rn FROM ranked_topics WHERE rn = 1),
         scored AS (
             SELECT *,
-                (COALESCE(len(list_filter(era_for_codes, x -> LEFT(x, 2) = '35')), 0)
+                (COALESCE(len(list_filter(era_for_codes, x -> LEFT(x, 2) = '38')), 0)
                    +  CASE WHEN len(list_filter(string_split(COALESCE(harzing_field, ''), ', '),
                                 x -> x IN ('Economics', 'F&A'))) > 0 THEN 1 ELSE 0 END
                    +  CASE WHEN regexp_matches(LOWER(array_to_string(wos_categories, ' ')), 'econom|financ|banking') THEN 1 ELSE 0 END
                    +  CASE WHEN regexp_matches(LOWER(field_name),                       'econom|financ|banking') THEN 1 ELSE 0 END
                 ) AS econ_score,
-                (COALESCE(len(list_filter(era_for_codes, x -> LEFT(x, 2) = '38')), 0)
+                (COALESCE(len(list_filter(era_for_codes, x -> LEFT(x, 2) = '35')), 0)
                    +  CASE WHEN len(list_filter(string_split(COALESCE(harzing_field, ''), ', '),
                                 x -> x IN ('Bus Hist','Comm','Entrep','Gen & Strat','IB','Innovation',
                                            'Marketing','MIS,KM','OS/OB,HRM/IR','OR,MS,POM','PSM','Tourism'))) > 0 THEN 1 ELSE 0 END
@@ -188,9 +187,9 @@ def filter_and_match(db):
         )
         SELECT *,
             CASE
-                WHEN econ_score >= 2 AND bus_score  < 1 THEN 'E'
-                WHEN bus_score  >= 2 AND econ_score < 1 THEN 'B'
-                WHEN bus_score  > 1  OR  econ_score > 1  THEN 'A'
+                WHEN econ_score >= 2 AND bus_score  >= 2 THEN 'A'
+                WHEN econ_score >= 2                     THEN 'E'
+                WHEN bus_score  >= 2                     THEN 'B'
                 ELSE 'X'
             END AS field_eb
         FROM scored;

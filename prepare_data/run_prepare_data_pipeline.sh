@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# run_pipeline.sh — Run the three prepare_data stages in order.
+# run_pipeline.sh — Run the prepare_data pipeline stages in order.
 # Must be run from the project root: bash prepare_data/run_pipeline.sh
 
 set -euo pipefail
@@ -25,7 +25,10 @@ echo "=== Stage 4: Build edge lists ==="
 echo "=== Stage 5: Verify edge lists ==="
 "$PYTHON" prepare_data/verify_edge_lists.py
 
-echo "=== Stage 6: Build tables ==="
-"$PYTHON" prepare_data/table_maker.py
+echo "=== Stage 6: Build institution field classification ==="
+"$PYTHON" prepare_data/build_institution_field_eb.py
+
+echo "=== Stage 7: Compute mode-specific SCC unit tables ==="
+"$PYTHON" prepare_data/filter_mode_units.py
 
 echo "=== Pipeline complete ==="

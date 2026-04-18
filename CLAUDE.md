@@ -59,10 +59,10 @@ Rankings:      rk_{run_code}_{fx}_tauU{tau_u}_tauS{tau_s}_{vartau|fixtau}_rho{rh
 ## Field classification: field_eb
 Sources in `source_master.parquet/csv` carry a `field_eb` column (replaces old `field_subset`):
 
-- **'E'**: econ_score ≥ 2 AND bus_score < 1  (pure economics)
-- **'B'**: bus_score ≥ 2 AND econ_score < 1  (pure business)
-- **'A'**: mixed/ambiguous — at least one signal present but not pure E or B
-- **'X'**: residual — neither signal strong (econ_score ≤ 1 AND bus_score ≤ 1)
+- **'E'**: econ_score ≥ 2 AND bus_score < 2  (economics-dominant)
+- **'B'**: bus_score ≥ 2 AND econ_score < 2  (business-dominant)
+- **'A'**: econ_score ≥ 2 AND bus_score ≥ 2  (genuinely ambiguous — strong in both)
+- **'X'**: econ_score < 2 AND bus_score < 2   (weak signals in both)
 
 `field_eb` is never NULL. Scores count how many of {era_field, harzing_field, wos_categories, field_name} contain econ/business keywords. F=EB corpus filter is `field_eb IN ('E','B','A')`. F=A is the full corpus (no filter). F=X is the neither-signal residual.
 

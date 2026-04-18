@@ -11,15 +11,8 @@ Source panel — four overlays (all m=0110), plotted bottom-to-top:
   F=E   — economics sources only              (red)
 
 Institution panel — baseline v, colour-coded by institution field label:
-  Institution field label derived from E_signal / B_signal computed from
-  citer works in the F=A edge list joined to source_master.parquet.
-  E_signal = n_E_works + Σ econ_score/(econ_score+bus_score) over M-source works
-  B_signal = n_B_works + Σ bus_score/(econ_score+bus_score) over M-source works
-  Classification (k = INST_K):
-    E: E_signal >= k AND B_signal < k
-    B: B_signal >= k AND E_signal < k
-    A: E_signal >= k AND B_signal >= k
-    X: E_signal < k  AND B_signal < k
+  Institution field label read from institution_field_eb.parquet (C_IS
+  citation-weight fractions; X if frac_X >= 0.5, else dominant of E/B/A).
 
 Outputs:
   plots/fig_2.pdf        — with title (exploration)
@@ -46,9 +39,6 @@ _tau_s         = _baseline['tau_s']
 BASELINE_TABLE = f'rk_{_run_code}_A_tauU{_tau_u}_tauS{_tau_s}_vartau_rho0_m0110_chi50_alpha100'
 EL_TABLE       = f'el_{_run_code}_A_tauU{_tau_u}_tauS{_tau_s}_vartau'
 
-INST_N_E    = 750   # top-N by E/B ratio → E
-INST_N_B    = 750   # bottom-N by E/B ratio → B
-INST_K_MIN  = 1.0   # minimum total (E_signal + B_signal) to be non-X
 INST_D      = 0.1   # vertical offset: E → v*(1+D), B → v*(1-D), A → v, X dropped
 
 # Display label → (catalog label, colour, marker)
@@ -72,70 +62,14 @@ INST_FIELD_ORDER = ['B', 'E']        # A and X omitted
 
 # ─── Institution field labels ─────────────────────────────────────────────────
 
-def fetch_inst_field_labels(el_path: Path, parquet_path: Path) -> dict:
-    """
-    Classify each institution in the F=A edge list as E / B / A / X.
-
-    E_signal = n works in E-sources + Σ econ_score/(econ+bus) for M-source works
-    B_signal = n works in B-sources + Σ bus_score/(econ+bus)  for M-source works
-
-    Returns dict: inst_idx -> 'E'|'B'|'A'|'X'
-    """
-    sm = str(parquet_path / 'source_master.parquet')
-
-    with duckdb.connect(str(el_path), read_only=True) as db:
-        df = db.execute(f"""
-            SELECT
-                e.citer_inst_idx AS inst_idx,
-                SUM(CASE
-                    WHEN sm.field_eb = 'E' THEN 1.0
-                    WHEN sm.field_eb = 'A' AND (sm.econ_score + sm.bus_score) > 0
-                        THEN sm.econ_score::DOUBLE / (sm.econ_score + sm.bus_score)
-                    ELSE 0.0
-                END) AS e_signal,
-                SUM(CASE
-                    WHEN sm.field_eb = 'B' THEN 1.0
-                    WHEN sm.field_eb = 'A' AND (sm.econ_score + sm.bus_score) > 0
-                        THEN sm.bus_score::DOUBLE / (sm.econ_score + sm.bus_score)
-                    ELSE 0.0
-                END) AS b_signal
-            FROM (
-                SELECT DISTINCT citer_work_idx, citer_inst_idx, citer_source_idx
-                FROM {EL_TABLE}
-            ) e
-            JOIN '{sm}' sm ON e.citer_source_idx = sm.source_idx
-            GROUP BY e.citer_inst_idx
-        """).df()
-
-    # X: insufficient total signal
-    active = df[(df['e_signal'] + df['b_signal']) >= INST_K_MIN].copy()
-
-    # Sort by E/B ratio descending; B=0 → inf (pure E), E=0 → 0 (pure B)
-    active['eb_ratio'] = active.apply(
-        lambda r: (r['e_signal'] / r['b_signal']) if r['b_signal'] > 0 else float('inf'),
-        axis=1,
-    )
-    active = active.sort_values('eb_ratio', ascending=False).reset_index(drop=True)
-
-    n = len(active)
-    n_e = min(INST_N_E, n)
-    n_b = min(INST_N_B, n - n_e)   # can't overlap with E slice
-
-    labels = ['A'] * n
-    for i in range(n_e):
-        labels[i] = 'E'
-    for i in range(n - n_b, n):
-        labels[i] = 'B'
-    active['field_eb_inst'] = labels
-
-    label_map = active.set_index('inst_idx')['field_eb_inst'].to_dict()
-    df['field_eb_inst'] = df['inst_idx'].map(label_map).fillna('X')
-
-    counts = df['field_eb_inst'].value_counts().to_dict()
-    print(f'  Institution field labels (N_E={INST_N_E}, N_B={INST_N_B}, min_total={INST_K_MIN}): '
-          + '  '.join(f'{c}={counts.get(c, 0):,}' for c in INST_FIELD_ORDER))
-
-    return df.set_index('inst_idx')['field_eb_inst'].to_dict()
+def fetch_inst_field_labels(parquet_path: Path) -> dict:
+    """Read institution E/B/A/X labels from institution_field_eb.parquet."""
+    df = pd.read_parquet(str(parquet_path / 'institution_field_eb.parquet'),
+                         columns=['unit_idx', 'field_eb'])
+    counts = df['field_eb'].value_counts().to_dict()
+    print('  Institution field labels: '
+          + '  '.join(f'{c}={counts.get(c, 0):,}' for c in ['E', 'B', 'A', 'X']))
+    return dict(zip(df['unit_idx'].astype(int), df['field_eb']))
 
 
 # ─── Ranking data ─────────────────────────────────────────────────────────────
@@ -244,6 +178,9 @@ def _draw_src_panel(ax, series: list, n_baseline: int) -> None:
             )
 
     ax.set_yscale('log')
+    ax.set_ylim(0.005, 20)
+    ax.set_yticks([0.01, 0.1, 1, 10])
+    ax.yaxis.set_major_formatter(plt.matplotlib.ticker.ScalarFormatter())
     ax.axhline(1.0, color='#999999', linewidth=0.8, linestyle='--', zorder=0)
     ax.text(n_baseline * 0.98, 1.0, '$v=1$',
             ha='right', va='bottom', fontsize=7.5, color='#999999')
@@ -287,6 +224,9 @@ def _draw_inst_panel(ax, df_i_base: pd.DataFrame,
         )
 
     ax.set_yscale('log')
+    ax.set_ylim(0.005, 20)
+    ax.set_yticks([0.01, 0.1, 1, 10])
+    ax.yaxis.set_major_formatter(plt.matplotlib.ticker.ScalarFormatter())
     ax.axhline(1.0, color='#999999', linewidth=0.8, linestyle='--', zorder=0)
     ax.text(n_baseline * 0.98, 1.0, '$v=1$',
             ha='right', va='bottom', fontsize=7.5, color='#999999')
@@ -337,21 +277,15 @@ def plot2(src_rank_map: dict, df_i_base: pd.DataFrame,
 def main():
     paths   = load_config()
     rk_path = paths.working / 'rankings.duckdb'
-    el_path = paths.working / 'edge_lists.duckdb'
 
     if not rk_path.exists():
         raise FileNotFoundError(
             f'rankings.duckdb not found at {rk_path}. '
             'Run spectral_ranking/run_rankings.py first.'
         )
-    if not el_path.exists():
-        raise FileNotFoundError(
-            f'edge_lists.duckdb not found at {el_path}. '
-            'Run prepare_data/build_edge_lists.py first.'
-        )
 
-    print('Computing institution field labels...')
-    inst_field_map = fetch_inst_field_labels(el_path, paths.parquet)
+    print('Loading institution field labels...')
+    inst_field_map = fetch_inst_field_labels(paths.parquet)
 
     with duckdb.connect(str(rk_path), read_only=True) as db:
         src_rank_map, df_i_base, series = fetch_data(db)

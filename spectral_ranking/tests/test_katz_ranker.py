@@ -276,7 +276,8 @@ class TestBipartite:
         """For alpha<1, lam1 and lam2 should be 0.0."""
         H_SI, H_IS = make_bipartite([[0.5, 0.5], [0.5, 0.5]],
                                      [[0.5, 0.5], [0.5, 0.5]])
-        pi_s, pi_u, lam1, lam2, iters, norm = bipartite(H_SI, H_IS, alpha=0.85)
+        mu = np.full(4, 0.25)   # uniform over 2 sources + 2 institutions
+        pi_s, pi_u, lam1, lam2, iters, norm = bipartite(H_SI, H_IS, alpha=0.85, mu=mu)
         assert lam1 == 0.0
         assert lam2 == 0.0
         assert iters > 0
@@ -302,7 +303,8 @@ class TestBipartite:
         H_IS, _ = _row_normalise(C_IS)
         alpha = 0.85
 
-        pi_s_bip, pi_u_bip, lam1, lam2, iters, norm = bipartite(H_SI, H_IS, alpha=alpha)
+        mu = np.full(n_s + n_u, 1.0 / (n_s + n_u))
+        pi_s_bip, pi_u_bip, lam1, lam2, iters, norm = bipartite(H_SI, H_IS, alpha=alpha, mu=mu)
         pi_s_res, pi_u_res = bipartite_resolvent(H_SI, H_IS, n_s, n_u, alpha=alpha)
 
         # Resolvent is jointly normalised; bipartite is individually normalised.
@@ -425,7 +427,8 @@ class TestRank:
         assert abs(result.lam1 - 1.0) < ATOL
 
     def test_m0110_alpha_lt1_lam_zero(self):
-        result = rank(self._make_bipartite_data(), m=(0, 1, 1, 0), chi=0.5, alpha=0.85)
+        mu = np.full(4, 0.25)   # uniform over 2 sources + 2 institutions
+        result = rank(self._make_bipartite_data(), m=(0, 1, 1, 0), chi=0.5, alpha=0.85, mu=mu)
         assert result.lam1 == 0.0
         assert result.lam2 == 0.0
         assert result.iters > 0

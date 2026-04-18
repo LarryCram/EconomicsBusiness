@@ -52,9 +52,6 @@ INST_FIELD_COLOURS = {
     'X': '#aaaaaa',   # grey
 }
 
-INST_N_E   = 750
-INST_N_B   = 750
-INST_K_MIN = 1.0
 
 
 # ─── Data ─────────────────────────────────────────────────────────────────────
@@ -95,54 +92,11 @@ def load_field_labels(paths) -> tuple:
             dict(zip(idx, sm['source_name'])))
 
 
-def fetch_inst_field_labels(el_path: Path, parquet_path: Path) -> dict:
-    """
-    Classify each institution in the F=A edge list as E / B / A / X.
-    Matches the logic in fig_2.py exactly.
-    Returns dict: inst_idx -> 'E'|'B'|'A'|'X'
-    """
-    sm = str(parquet_path / 'source_master.parquet')
-    with duckdb.connect(str(el_path), read_only=True) as db:
-        df = db.execute(f"""
-            SELECT
-                e.citer_inst_idx AS inst_idx,
-                SUM(CASE
-                    WHEN sm.field_eb = 'E' THEN 1.0
-                    WHEN sm.field_eb = 'A' AND (sm.econ_score + sm.bus_score) > 0
-                        THEN sm.econ_score::DOUBLE / (sm.econ_score + sm.bus_score)
-                    ELSE 0.0
-                END) AS e_signal,
-                SUM(CASE
-                    WHEN sm.field_eb = 'B' THEN 1.0
-                    WHEN sm.field_eb = 'A' AND (sm.econ_score + sm.bus_score) > 0
-                        THEN sm.bus_score::DOUBLE / (sm.econ_score + sm.bus_score)
-                    ELSE 0.0
-                END) AS b_signal
-            FROM (
-                SELECT DISTINCT citer_work_idx, citer_inst_idx, citer_source_idx
-                FROM {EL_TABLE}
-            ) e
-            JOIN '{sm}' sm ON e.citer_source_idx = sm.source_idx
-            GROUP BY e.citer_inst_idx
-        """).df()
-
-    active = df[(df['e_signal'] + df['b_signal']) >= INST_K_MIN].copy()
-    active['eb_ratio'] = active.apply(
-        lambda r: (r['e_signal'] / r['b_signal']) if r['b_signal'] > 0 else float('inf'),
-        axis=1,
-    )
-    active = active.sort_values('eb_ratio', ascending=False).reset_index(drop=True)
-    n   = len(active)
-    n_e = min(INST_N_E, n)
-    n_b = min(INST_N_B, n - n_e)
-    labels = ['A'] * n
-    for i in range(n_e):          labels[i] = 'E'
-    for i in range(n - n_b, n):  labels[i] = 'B'
-    active['field_eb_inst'] = labels
-
-    label_map = active.set_index('inst_idx')['field_eb_inst'].to_dict()
-    df['field_eb_inst'] = df['inst_idx'].map(label_map).fillna('X')
-    return df.set_index('inst_idx')['field_eb_inst'].to_dict()
+def fetch_inst_field_labels(parquet_path: Path) -> dict:
+    """Read institution E/B/A/X labels from institution_field_eb.parquet."""
+    df = pd.read_parquet(str(parquet_path / 'institution_field_eb.parquet'),
+                         columns=['unit_idx', 'field_eb'])
+    return dict(zip(df['unit_idx'].astype(int), df['field_eb']))
 
 
 def build_panel_data(v_boot: np.ndarray,
@@ -413,8 +367,7 @@ def main():
     field_labels = load_field_labels(paths)   # (field_eb_dict, name_dict)
 
     print('Loading institution field labels ...', flush=True)
-    el_path = paths.working / 'edge_lists.duckdb'
-    inst_field_map = fetch_inst_field_labels(el_path, paths.parquet)
+    inst_field_map = fetch_inst_field_labels(paths.parquet)
     print(f'  {len(inst_field_map)} institutions classified')
 
     print('Plotting ...', flush=True)

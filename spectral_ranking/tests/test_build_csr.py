@@ -27,8 +27,8 @@ def _make_db(run_code='20242024', fx='A', tau_u=20, tau_s=20):
 
     All weights = 1.0 for simplicity; R_i = 1 for each citing work.
     """
-    tname = f'el_{run_code}_{fx}_tauU{tau_u}_tauS{tau_s}'
-    uname = f'_units_{run_code}_{fx}_tauU{tau_u}_tauS{tau_s}'
+    tname = f'el_{run_code}_{fx}_tauU{tau_u}_tauS{tau_s}_vartau'
+    uname = f'_units_{run_code}_{fx}_tauU{tau_u}_tauS{tau_s}_vartau'
 
     db = duckdb.connect(':memory:')
 
@@ -58,21 +58,25 @@ def _make_db(run_code='20242024', fx='A', tau_u=20, tau_s=20):
         (2,  1,  2,  4,  2,  1, 1.0, 1.0, 1.0,  1,  2,  2, 1.0, 1.0)
     """)
 
-    db.execute(f"""
-        CREATE TABLE {uname} (
+    units_ddl = f"""
+        CREATE TABLE {{name}} (
             unit_idx  BIGINT,
             unit_type VARCHAR,
             a_p       DOUBLE
         )
-    """)
-
-    db.execute(f"""
-        INSERT INTO {uname} VALUES
+    """
+    units_rows = f"""
+        INSERT INTO {{name}} VALUES
         (1, 'S', 2.0),
         (2, 'S', 2.0),
         (1, 'U', 1.0),
         (2, 'U', 1.0)
-    """)
+    """
+    # Base units table plus all mode-specific variants needed by build_csr
+    for suffix in ['', '_m0001', '_m0110', '_m1000', '_m1111']:
+        name = uname + suffix
+        db.execute(units_ddl.format(name=name))
+        db.execute(units_rows.format(name=name))
 
     return db
 

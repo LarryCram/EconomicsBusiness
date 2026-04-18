@@ -37,8 +37,8 @@ _run_code = _baseline['run_code']
 _tau_u    = _baseline['tau_u']
 _tau_s    = _baseline['tau_s']
 
-BASELINE_TABLE = f'rk_{_run_code}_A_tauU{_tau_u}_tauS{_tau_s}_rho0_m0110_chi50_alpha100'
-SS_TABLE       = f'rk_{_run_code}_A_tauU{_tau_u}_tauS{_tau_s}_rho0_m1000_chi50_alpha100'
+BASELINE_TABLE = f'rk_{_run_code}_A_tauU{_tau_u}_tauS{_tau_s}_vartau_rho0_m0110_chi50_alpha100'
+SS_TABLE       = f'rk_{_run_code}_A_tauU{_tau_u}_tauS{_tau_s}_vartau_rho0_m1000_chi50_alpha100'
 
 # Leiden resolution parameter (γ); increase to get finer communities
 RESOLUTION = 1.0

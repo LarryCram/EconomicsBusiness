@@ -1,0 +1,9 @@
+type,case,name,field_eb,v_bip,v_ss,mean_v_I_bip,v_ii,mean_v_S_bip
+Sources,min v_ss | v_bip≈1,Journal of Property Investment and Finance,A,0.713,0.13,1.153,,
+Sources,max v_ss | v_bip≈1,Games and Economic Behavior,A,1.274,3.487,1.963,,
+Sources,min v_bip | v_ss≈1,Econometrics,A,0.471,0.743,1.245,,
+Sources,max v_bip | v_ss≈1,Economic Geography,E,2.495,1.304,1.491,,
+Institutions,min v_ii | v_bip≈1,École Normale Supérieure de Lyon,A,0.732,,,0.513,2.127
+Institutions,max v_ii | v_bip≈1,Malaviya National Institute of Technology Jaipur,A,1.374,,,1.855,0.851
+Institutions,min v_bip | v_ii≈1,University of Lagos,A,0.464,,,0.693,0.647
+Institutions,max v_bip | v_ii≈1,Rice University,A,1.85,,,1.455,1.962

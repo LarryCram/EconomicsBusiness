@@ -13,12 +13,8 @@ x-axis: v from the bipartite baseline (m=0110, α=1, F=A).
 Coloured by field label E/B/A/X for both sources and institutions.
 
 Source field labels: field_eb from source_master.csv.
-Institution field labels: derived from E_signal/B_signal computed from
-citer works in the F=A edge list (same method as fig_2.py).
-  INST_N_E top institutions by E/B ratio → E
-  INST_N_B bottom institutions by E/B ratio → B
-  A: everything else above INST_K_MIN total signal
-  X: total signal < INST_K_MIN
+Institution field labels: read from institution_field_eb.parquet (C_IS
+citation-weight fractions; X if frac_X >= 0.5, else dominant of E/B/A).
 
 Outputs:
   plots/fig_4.pdf        — with title (exploration)
@@ -47,11 +43,6 @@ _tau_s         = _baseline['tau_s']
 BASELINE_TABLE = f'rk_{_run_code}_A_tauU{_tau_u}_tauS{_tau_s}_vartau_rho0_m0110_chi50_alpha100'
 EL_TABLE       = f'el_{_run_code}_A_tauU{_tau_u}_tauS{_tau_s}_vartau'
 
-# Institution field classification parameters (consistent with fig_2.py)
-INST_N_E   = 750
-INST_N_B   = 750
-INST_K_MIN = 1.0
-
 COLOR  = {'E': '#e41a1c', 'B': '#377eb8', 'A': '#ff7f00', 'X': '#984ea3'}
 MARKER = {'E': '+',       'B': 'x',       'A': 'o',       'X': 's'}
 LABEL  = {'E': 'E', 'B': 'B', 'A': 'A', 'X': 'X'}
@@ -79,64 +70,14 @@ def load_field_labels(paths) -> tuple:
     return field_labels, source_names
 
 
-def load_inst_field_labels(el_path: Path, parquet_path: Path) -> dict:
-    """
-    Classify each institution as E/B/A/X using E_signal and B_signal derived
-    from citer works in the F=A edge list joined to source_master.parquet.
-
-    E_signal = n works in E-sources + Σ econ_score/(econ+bus) for M-source works
-    B_signal = n works in B-sources + Σ bus_score/(econ+bus)  for M-source works
-
-    Top INST_N_E by E/B ratio → E; bottom INST_N_B → B; rest above INST_K_MIN → A; else X.
-    """
-    sm = str(parquet_path / 'source_master.parquet')
-    with duckdb.connect(str(el_path), read_only=True) as db:
-        df = db.execute(f"""
-            SELECT
-                e.citer_inst_idx AS inst_idx,
-                SUM(CASE
-                    WHEN sm.field_eb = 'E' THEN 1.0
-                    WHEN sm.field_eb = 'A' AND (sm.econ_score + sm.bus_score) > 0
-                        THEN sm.econ_score::DOUBLE / (sm.econ_score + sm.bus_score)
-                    ELSE 0.0
-                END) AS e_signal,
-                SUM(CASE
-                    WHEN sm.field_eb = 'B' THEN 1.0
-                    WHEN sm.field_eb = 'A' AND (sm.econ_score + sm.bus_score) > 0
-                        THEN sm.bus_score::DOUBLE / (sm.econ_score + sm.bus_score)
-                    ELSE 0.0
-                END) AS b_signal
-            FROM (
-                SELECT DISTINCT citer_work_idx, citer_inst_idx, citer_source_idx
-                FROM {EL_TABLE}
-            ) e
-            JOIN '{sm}' sm ON e.citer_source_idx = sm.source_idx
-            GROUP BY e.citer_inst_idx
-        """).df()
-
-    active = df[(df['e_signal'] + df['b_signal']) >= INST_K_MIN].copy()
-    active['eb_ratio'] = active.apply(
-        lambda r: (r['e_signal'] / r['b_signal']) if r['b_signal'] > 0 else float('inf'),
-        axis=1,
-    )
-    active = active.sort_values('eb_ratio', ascending=False).reset_index(drop=True)
-    n = len(active)
-    n_e = min(INST_N_E, n)
-    n_b = min(INST_N_B, n - n_e)
-    labels = ['A'] * n
-    for i in range(n_e):
-        labels[i] = 'E'
-    for i in range(n - n_b, n):
-        labels[i] = 'B'
-    active['field_eb_inst'] = labels
-
-    label_map = active.set_index('inst_idx')['field_eb_inst'].to_dict()
-    df['field_eb_inst'] = df['inst_idx'].map(label_map).fillna('X')
-
-    counts = df['field_eb_inst'].value_counts().to_dict()
+def load_inst_field_labels(parquet_path: Path) -> dict:
+    """Read institution E/B/A/X labels from institution_field_eb.parquet."""
+    df = pd.read_parquet(str(parquet_path / 'institution_field_eb.parquet'),
+                         columns=['unit_idx', 'field_eb'])
+    counts = df['field_eb'].value_counts().to_dict()
     print('  Institution field labels: '
           + '  '.join(f'{c}={counts.get(c, 0):,}' for c in FIELD_ORDER))
-    return df.set_index('inst_idx')['field_eb_inst'].to_dict()
+    return dict(zip(df['unit_idx'].astype(int), df['field_eb']))
 
 
 # ─── Eigenpair computation ────────────────────────────────────────────────────
@@ -361,7 +302,7 @@ def main():
     print(f"  λ₂(SS)={lam2_ss:.4f}  λ₂(II)={lam2_ii:.4f}  λ₂(bipartite)={lam2_bi:.4f}")
 
     print("Computing institution field labels ...")
-    inst_field_labels = load_inst_field_labels(el_path, paths.parquet)
+    inst_field_labels = load_inst_field_labels(paths.parquet)
 
     plot4(lam2_ss, lam2_ii, lam2_bi,
           df_ss_s, df_ii_i, df_bi_s, df_bi_i,

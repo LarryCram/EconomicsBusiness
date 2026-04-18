@@ -27,7 +27,12 @@ import duckdb
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
+import matplotlib.ticker as mticker
 import seaborn as sns
+from matplotlib.colors import LogNorm
+
+_V_LO, _V_HI = 0.005, 20
+_V_TICKS = [0.01, 0.1, 1, 10]
 
 sys.path.insert(0, str(Path(__file__).parent.parent))
 from util import load_config, load_runs
@@ -219,7 +224,9 @@ def _draw_panel(ax, series: dict, unit_key: str, panel_labels: list,
             )
 
     ax.set_yscale('log')
-    ax.set_ylim(0.002, 20)
+    ax.set_ylim(_V_LO, _V_HI)
+    ax.set_yticks(_V_TICKS)
+    ax.yaxis.set_major_formatter(mticker.ScalarFormatter())
     ax.axhline(1.0, color='#999999', linewidth=0.8, linestyle='--', zorder=0)
     ax.text(
         n_baseline * 0.98, 1.0,
@@ -234,17 +241,176 @@ def _draw_panel(ax, series: dict, unit_key: str, panel_labels: list,
     ax.legend(fontsize=8, framealpha=0.85, loc='upper right')
 
 
+def filter_non_x(series: dict, src_rank_map: dict,
+                 inst_rank_map: dict) -> tuple:
+    """
+    Drop field_eb='X' sources and all-X institutions from every series DataFrame
+    and the rank maps.  Returns updated (src_rank_map, inst_rank_map, series)
+    and prints counts dropped.
+    """
+    paths = load_config()
+    par   = paths.working / 'parquet'
+
+    src_eb = pd.read_parquet(str(par / 'source_master.parquet'),
+                             columns=['source_idx', 'field_eb'])
+    non_x_src  = set(src_eb.loc[src_eb['field_eb'] != 'X', 'source_idx'])
+
+    inst_eb = pd.read_parquet(str(par / 'institution_field_eb.parquet'),
+                              columns=['unit_idx', 'field_eb'])
+    non_x_inst = set(inst_eb.loc[inst_eb['field_eb'] != 'X', 'unit_idx'])
+
+    n_src_before  = len(src_rank_map)
+    n_inst_before = len(inst_rank_map)
+
+    src_rank_map  = {k: v for k, v in src_rank_map.items()  if k in non_x_src}
+    inst_rank_map = {k: v for k, v in inst_rank_map.items() if k in non_x_inst}
+
+    def filt(df, keep_set):
+        return df[df['unit_idx'].isin(keep_set)].copy() if not df.empty else df
+
+    new_series = {}
+    for mode, panels in series.items():
+        new_series[mode] = {
+            'S': filt(panels['S'], non_x_src),
+            'I': filt(panels['I'], non_x_inst),
+        }
+
+    n_src_drop  = n_src_before  - len(src_rank_map)
+    n_inst_drop = n_inst_before - len(inst_rank_map)
+    print(f'  Dropped field_eb=X: {n_src_drop} sources '
+          f'({n_src_before}→{len(src_rank_map)}), '
+          f'{n_inst_drop} institutions '
+          f'({n_inst_before}→{len(inst_rank_map)})')
+
+    return src_rank_map, inst_rank_map, new_series
+
+
+def load_cross_type_colors(series: dict) -> tuple:
+    """
+    For each source i:      weighted-avg v_I^bipartite of cited institutions.
+    For each institution k:  weighted-avg v_S^bipartite of citing sources.
+    Weights = cited_inst_weight from the baseline edge list.
+    By the bipartite fixed-point equation these equal the unit's own v_bipartite,
+    but computing via the edge list makes the cross-type interpretation explicit.
+    """
+    paths = load_config()
+    el_path = paths.working / 'edge_lists.duckdb'
+    el_table = f'el_{_run_code}_A_tauU{_tau_u}_tauS{_tau_s}_vartau'
+
+    v_s = series['m=0110']['S'][['unit_idx', 'v']].rename(columns={'v': 'v_s'})
+    v_i = series['m=0110']['I'][['unit_idx', 'v']].rename(columns={'v': 'v_i'})
+
+    with duckdb.connect(str(el_path), read_only=True) as el_db:
+        el = el_db.execute(f"""
+            SELECT citer_source_idx, cited_inst_idx, SUM(cited_inst_weight) AS w
+            FROM {el_table}
+            WHERE citer_source_idx IS NOT NULL AND cited_inst_idx IS NOT NULL
+            GROUP BY citer_source_idx, cited_inst_idx
+        """).df()
+
+    # Source → weighted avg v_I of cited institutions
+    el_s = el.merge(v_i.rename(columns={'unit_idx': 'cited_inst_idx'}),
+                    on='cited_inst_idx', how='inner')
+    el_s['wv'] = el_s['w'] * el_s['v_i']
+    agg_s = el_s.groupby('citer_source_idx')[['wv', 'w']].sum()
+    agg_s['color_v'] = agg_s['wv'] / agg_s['w']
+    src_colors = agg_s['color_v'].to_dict()
+
+    # Institution → weighted avg v_S of sources that cite it
+    el_i = el.merge(v_s.rename(columns={'unit_idx': 'citer_source_idx'}),
+                    on='citer_source_idx', how='inner')
+    el_i['wv'] = el_i['w'] * el_i['v_s']
+    agg_i = el_i.groupby('cited_inst_idx')[['wv', 'w']].sum()
+    agg_i['color_v'] = agg_i['wv'] / agg_i['w']
+    inst_colors = agg_i['color_v'].to_dict()
+
+    return src_colors, inst_colors
+
+
+def _draw_scatter_panel(ax, fig, series: dict, unit_key: str,
+                        alt_mode: str, y_label: str, title: str,
+                        cmap: str = 'RdBu_r', cbar_label: str = '$v$ bipartite',
+                        color_map: dict | None = None) -> None:
+    """
+    Scatter v_bipartite (x) vs v_alt (y).
+    colour = color_map[unit_idx] if provided, else v_bipartite (x).
+    """
+    df_bip = series['m=0110'][unit_key]
+    if alt_mode not in series or series[alt_mode][unit_key].empty:
+        ax.text(0.5, 0.5, f'{alt_mode} not available',
+                transform=ax.transAxes, ha='center', va='center', fontsize=9)
+        ax.set_title(title, fontsize=10, pad=6)
+        return
+
+    df_alt = series[alt_mode][unit_key]
+    df = (df_bip[['unit_idx', 'v']].rename(columns={'v': 'v_bip'})
+          .merge(df_alt[['unit_idx', 'v']].rename(columns={'v': 'v_alt'}),
+                 on='unit_idx', how='inner'))
+    df = df[(df['v_bip'] > 0) & (df['v_alt'] > 0)].copy()
+
+    if color_map is not None:
+        df['color_v'] = df['unit_idx'].map(color_map)
+        df = df.dropna(subset=['color_v'])
+        c = df['color_v'].values
+    else:
+        c = df['v_bip'].values
+
+    x = df['v_bip'].values
+    y = df['v_alt'].values
+
+    norm = LogNorm(vmin=c[c > 0].min(), vmax=c.max())
+    sc = ax.scatter(x, y, c=c, cmap=cmap, norm=norm,
+                    s=5, alpha=0.45, linewidths=0, zorder=2, rasterized=True)
+
+    ax.plot([_V_LO, _V_HI], [_V_LO, _V_HI], color='#888888', lw=0.8, ls='--', zorder=1)
+
+    ax.set_xscale('log')
+    ax.set_yscale('log')
+    ax.set_xlim(_V_LO, _V_HI)
+    ax.set_ylim(_V_LO, _V_HI)
+    ax.set_xticks(_V_TICKS)
+    ax.xaxis.set_major_formatter(mticker.ScalarFormatter())
+    ax.set_yticks(_V_TICKS)
+    ax.yaxis.set_major_formatter(mticker.ScalarFormatter())
+    ax.set_xlabel('$v$  bipartite  (m=0110)', labelpad=4)
+    ax.set_ylabel(y_label, labelpad=4)
+    ax.set_title(title, fontsize=10, pad=6)
+
+    cbar = fig.colorbar(sc, ax=ax, fraction=0.046, pad=0.04)
+    cbar.set_label(cbar_label, fontsize=7)
+    cbar.ax.tick_params(labelsize=6)
+
+    ax.text(0.03, 0.97, f'n={len(df):,}', transform=ax.transAxes,
+            fontsize=7, ha='left', va='top', color='#555555')
+
+
 def plot3(src_rank_map: dict, inst_rank_map: dict, series: dict) -> None:
     paths = load_config()
 
     sns.set_theme(style='whitegrid', font_scale=0.95)
-    fig, axes = plt.subplots(2, 1, figsize=(9, 8))
-    fig.subplots_adjust(hspace=0.44)
+    fig, axes = plt.subplots(2, 2, figsize=(14, 8))
+    fig.subplots_adjust(hspace=0.44, wspace=0.38)
 
-    _draw_panel(axes[0], series, 'S', S_LABELS,
+    _draw_panel(axes[0, 0], series, 'S', S_LABELS,
                 n_baseline=len(src_rank_map),  panel_title='Sources')
-    _draw_panel(axes[1], series, 'I', I_LABELS,
+    _draw_panel(axes[1, 0], series, 'I', I_LABELS,
                 n_baseline=len(inst_rank_map), panel_title='Institutions')
+
+    print('Computing cross-type partner colours ...')
+    src_colors, inst_colors = load_cross_type_colors(series)
+
+    _draw_scatter_panel(axes[0, 1], fig, series, 'S', 'm=1000',
+                        '$v$  SS only  (m=1000)',
+                        'Sources — $v_{\\rm SS}$ vs $v_{\\rm bip}$',
+                        cmap='viridis_r',
+                        cbar_label='mean $v_I$ (bipartite)',
+                        color_map=src_colors)
+    _draw_scatter_panel(axes[1, 1], fig, series, 'I', 'm=0001',
+                        '$v$  II only  (m=0001)',
+                        'Institutions — $v_{\\rm II}$ vs $v_{\\rm bip}$',
+                        cmap='plasma_r',
+                        cbar_label='mean $v_S$ (bipartite)',
+                        color_map=inst_colors)
 
     sup = fig.suptitle(
         'Influence per work — sensitivity to network mode $m$  '
@@ -261,6 +427,7 @@ def plot3(src_rank_map: dict, inst_rank_map: dict, series: dict) -> None:
     fig.savefig(latex_out, bbox_inches='tight')
     print(f'Saved {latex_out}')
     sup.set_visible(True)
+    plt.close(fig)
 
 
 # ─── Main ─────────────────────────────────────────────────────────────────────
@@ -278,6 +445,10 @@ def main():
     with duckdb.connect(str(rk_path), read_only=True) as db:
         print('Loading runs:')
         src_rank_map, inst_rank_map, series = fetch_data(db)
+
+    print('Filtering field_eb=X units:')
+    src_rank_map, inst_rank_map, series = filter_non_x(
+        series, src_rank_map, inst_rank_map)
 
     plot3(src_rank_map, inst_rank_map, series)
 
