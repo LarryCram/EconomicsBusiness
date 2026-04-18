@@ -1,23 +1,17 @@
 """
-fig_3.py — Prestige-per-work rank curves across network mode m.
-
-Shows how the v distribution changes with m, with x-axis locked to the
-bipartite baseline rank order (same convention as fig_2.py).
+fig_3.py  — Rank curves across network mode m  (left panels, paper figure).
+fig_3a.py — vSS/vII vs v_bipartite scatter     (right panels, paper figure).
 
   m=0110  bipartite SI/IS   — black line  (baseline, both panels)
-  m=1000  source-only SS    — red X       (S panel only; no institutions)
-  m=0001  institution-only  — red X       (I panel only; no sources)
+  m=1000  source-only SS    — red X       (S panel only)
+  m=0001  institution-only  — red X       (I panel only)
   m=1111  full joint χ*     — green X     (both panels; χ* resolved from _catalog)
 
-x-axis: LOCKED to baseline (m=0110) rank order.
-  Each unit sits at its baseline rank; units absent from an alternative run
-  (e.g. institutions in m=1000) are simply omitted from that series.
-
-All runs: F=A, τ_U=τ_S=20, ρ=0, α=1.
+All runs: F=A, τ_U=τ_S=20, ρ=0, α=1.  field_eb=X units excluded.
 
 Outputs:
-  plots/fig_3.pdf        — with title (exploration)
-  plots/fig_3_latex.pdf  — without title (paper)
+  plots/fig_3.pdf / fig_3_latex.pdf   — rank curves (2×1)
+  plots/fig_3a.pdf / fig_3a_latex.pdf — scatter panels (2×1)
 """
 
 import sys
@@ -48,10 +42,10 @@ II_TABLE       = f'rk_{_run_code}_A_tauU{_tau_u}_tauS{_tau_s}_vartau_rho0_m0001_
 
 # Visual spec per label
 STYLE = {
-    'm=0110': dict(color='black',   marker=None, zorder=3, lw=1.4, alpha=1.0),
-    'm=1000': dict(color='#d62728', marker='x',  zorder=2, s=40,   lw=0.8),
-    'm=0001': dict(color='#d62728', marker='x',  zorder=2, s=40,   lw=0.8),
-    'm=1111': dict(color='#2ca02c', marker='x',  zorder=2, s=40,   lw=0.8),
+    'm=0110': dict(color='black',   marker=None, zorder=3, lw=1.8, alpha=1.0),
+    'm=1000': dict(color='#d62728', marker='x',  zorder=2, s=55,   lw=1.0),
+    'm=0001': dict(color='#d62728', marker='x',  zorder=2, s=55,   lw=1.0),
+    'm=1111': dict(color='#2ca02c', marker='x',  zorder=2, s=55,   lw=1.0),
 }
 
 S_LABELS = ['m=0110', 'm=1000', 'm=1111']
@@ -227,18 +221,18 @@ def _draw_panel(ax, series: dict, unit_key: str, panel_labels: list,
     ax.set_ylim(_V_LO, _V_HI)
     ax.set_yticks(_V_TICKS)
     ax.yaxis.set_major_formatter(mticker.ScalarFormatter())
-    ax.axhline(1.0, color='#999999', linewidth=0.8, linestyle='--', zorder=0)
+    ax.axhline(1.0, color='#999999', linewidth=1.0, linestyle='--', zorder=0)
     ax.text(
         n_baseline * 0.98, 1.0,
         '$v=1$',
         ha='right', va='bottom',
-        fontsize=7.5, color='#999999',
+        fontsize=9, color='#999999',
     )
     ax.set_xlim(1, n_baseline)
     ax.set_xlabel('Baseline rank  (m=0110)', labelpad=4)
     ax.set_ylabel('Influence per work $v$', labelpad=4)
-    ax.set_title(panel_title, fontsize=10, pad=6)
-    ax.legend(fontsize=8, framealpha=0.85, loc='upper right')
+    ax.set_title(panel_title, fontsize=11, pad=6)
+    ax.legend(fontsize=9, framealpha=0.85, loc='upper right')
 
 
 def filter_non_x(series: dict, src_rank_map: dict,
@@ -360,9 +354,9 @@ def _draw_scatter_panel(ax, fig, series: dict, unit_key: str,
 
     norm = LogNorm(vmin=c[c > 0].min(), vmax=c.max())
     sc = ax.scatter(x, y, c=c, cmap=cmap, norm=norm,
-                    s=5, alpha=0.45, linewidths=0, zorder=2, rasterized=True)
+                    s=12, alpha=0.55, linewidths=0, zorder=2, rasterized=True)
 
-    ax.plot([_V_LO, _V_HI], [_V_LO, _V_HI], color='#888888', lw=0.8, ls='--', zorder=1)
+    ax.plot([_V_LO, _V_HI], [_V_LO, _V_HI], color='#888888', lw=1.0, ls='--', zorder=1)
 
     ax.set_xscale('log')
     ax.set_yscale('log')
@@ -374,38 +368,74 @@ def _draw_scatter_panel(ax, fig, series: dict, unit_key: str,
     ax.yaxis.set_major_formatter(mticker.ScalarFormatter())
     ax.set_xlabel('$v$  bipartite  (m=0110)', labelpad=4)
     ax.set_ylabel(y_label, labelpad=4)
-    ax.set_title(title, fontsize=10, pad=6)
+    ax.set_title(title, fontsize=11, pad=6)
 
     cbar = fig.colorbar(sc, ax=ax, fraction=0.046, pad=0.04)
-    cbar.set_label(cbar_label, fontsize=7)
-    cbar.ax.tick_params(labelsize=6)
+    cbar.set_label(cbar_label, fontsize=9)
+    cbar.ax.tick_params(labelsize=8)
 
     ax.text(0.03, 0.97, f'n={len(df):,}', transform=ax.transAxes,
-            fontsize=7, ha='left', va='top', color='#555555')
+            fontsize=9, ha='left', va='top', color='#555555')
+
+
+def _pub_theme():
+    sns.set_theme(style='whitegrid', font_scale=1.05)
+    plt.rcParams.update({
+        'axes.linewidth':    1.2,
+        'xtick.major.width': 1.2, 'ytick.major.width': 1.2,
+        'xtick.major.size':  5,   'ytick.major.size':  5,
+    })
+
+
+def _save(fig, sup, stem: str, paths) -> None:
+    out = paths.plots / f'{stem}.pdf'
+    fig.savefig(out, bbox_inches='tight')
+    print(f'Saved {out}')
+    sup.set_visible(False)
+    fig.savefig(paths.plots / f'{stem}_latex.pdf', bbox_inches='tight')
+    print(f'Saved {paths.plots / f"{stem}_latex.pdf"}')
+    sup.set_visible(True)
+    plt.close(fig)
 
 
 def plot3(src_rank_map: dict, inst_rank_map: dict, series: dict) -> None:
+    """Left panels: rank curves."""
     paths = load_config()
+    _pub_theme()
 
-    sns.set_theme(style='whitegrid', font_scale=0.95)
-    fig, axes = plt.subplots(2, 2, figsize=(14, 8))
-    fig.subplots_adjust(hspace=0.44, wspace=0.38)
+    fig, axes = plt.subplots(2, 1, figsize=(5, 7))
+    fig.subplots_adjust(hspace=0.44)
 
-    _draw_panel(axes[0, 0], series, 'S', S_LABELS,
+    _draw_panel(axes[0], series, 'S', S_LABELS,
                 n_baseline=len(src_rank_map),  panel_title='Sources')
-    _draw_panel(axes[1, 0], series, 'I', I_LABELS,
+    _draw_panel(axes[1], series, 'I', I_LABELS,
                 n_baseline=len(inst_rank_map), panel_title='Institutions')
+
+    sup = fig.suptitle(
+        'Influence per work — sensitivity to network mode $m$',
+        fontsize=9, y=1.01,
+    )
+    _save(fig, sup, 'fig_3', paths)
+
+
+def plot3a(src_rank_map: dict, inst_rank_map: dict, series: dict) -> None:
+    """Right panels: vSS/vII vs v_bipartite scatter with cross-type colour."""
+    paths = load_config()
+    _pub_theme()
 
     print('Computing cross-type partner colours ...')
     src_colors, inst_colors = load_cross_type_colors(series)
 
-    _draw_scatter_panel(axes[0, 1], fig, series, 'S', 'm=1000',
+    fig, axes = plt.subplots(2, 1, figsize=(5.5, 7))
+    fig.subplots_adjust(hspace=0.44)
+
+    _draw_scatter_panel(axes[0], fig, series, 'S', 'm=1000',
                         '$v$  SS only  (m=1000)',
                         'Sources — $v_{\\rm SS}$ vs $v_{\\rm bip}$',
                         cmap='viridis_r',
                         cbar_label='mean $v_I$ (bipartite)',
                         color_map=src_colors)
-    _draw_scatter_panel(axes[1, 1], fig, series, 'I', 'm=0001',
+    _draw_scatter_panel(axes[1], fig, series, 'I', 'm=0001',
                         '$v$  II only  (m=0001)',
                         'Institutions — $v_{\\rm II}$ vs $v_{\\rm bip}$',
                         cmap='plasma_r',
@@ -413,21 +443,10 @@ def plot3(src_rank_map: dict, inst_rank_map: dict, series: dict) -> None:
                         color_map=inst_colors)
 
     sup = fig.suptitle(
-        'Influence per work — sensitivity to network mode $m$  '
-        '(x-axis locked to bipartite baseline)',
+        '$v_{\\rm SS}$ vs $v_{\\rm bip}$ and $v_{\\rm II}$ vs $v_{\\rm bip}$',
         fontsize=9, y=1.01,
     )
-
-    out = paths.plots / 'fig_3.pdf'
-    fig.savefig(out, bbox_inches='tight')
-    print(f'Saved {out}')
-
-    sup.set_visible(False)
-    latex_out = paths.plots / 'fig_3_latex.pdf'
-    fig.savefig(latex_out, bbox_inches='tight')
-    print(f'Saved {latex_out}')
-    sup.set_visible(True)
-    plt.close(fig)
+    _save(fig, sup, 'fig_3a', paths)
 
 
 # ─── Main ─────────────────────────────────────────────────────────────────────
@@ -451,6 +470,7 @@ def main():
         series, src_rank_map, inst_rank_map)
 
     plot3(src_rank_map, inst_rank_map, series)
+    plot3a(src_rank_map, inst_rank_map, series)
 
 
 if __name__ == '__main__':

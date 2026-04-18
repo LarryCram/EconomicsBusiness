@@ -3,26 +3,17 @@
 \label{sec:results}
 % ---------------------------------------------------------------
 
-The model supports three structural arrangements: (1) the unit mask $m$ picks out various unit blocks, (2) the subfield set $\mathcal{F}$  firstly how structural changes in the reference network  (i) unit-related, (ii) field-related, (iii) time-related, (iv) parameter effects, and (v) bootstrap uncertainty estimates. Themes (i), (ii) and (iv) use the \textit{baseline}, [2020-24, 2020-24], $F=A$, $\tau_U=\tau_S=20$, $\rho=0$, $\mathbf{m}=0110$, $\alpha=1$, $\mu=0$ --- the eigenvector equation~\eqref{eq:eig} on the bipartite network.
+The model supports three structural arrangements: (1) the unit mask $m$ picks blocks, (2) the subfield $F$ selects from $\mathfrak{F}$ (E, B, A, X), and (3) census and target time windows $T_t$ in {[2020,2024], [2015,2019], [2010, 2014], [2005, 2009], and [2000, 2004]}. We also present a sensitivity analysis for the parameters $\rho, \chi, (\alpha, \mu), and t^c$, together with a bootstrap study of uncertainties. 
+\paragraph{Unit mask}
+Figure~\ref{fig:fig3} compares spectral ranks across unit masks. The $x$-axis is the cardinal rank of sources (upper) and institutions (lower) in the baseline unit m=0110 (i.e. bipartite $S \rightarrow I \rightarrow S, \alpha=1, F=A, \mu=0, \rho=1, T_1 = [2020-2024]$). The solid black curve traces the corresponding ordinal rank $v$. Units near $v=1$ lie at the weighted average, at rank position ~25\% for sources and ~20\% for institutions. Overlaid on the bipartite source curve are $v$ ranks for the mask 1000 (red $\times$, $S \rightarrow S$) and 1111 at $\chi^*$ (green $\times$, full $S+I \rightarrow S+I$). The $x$-axis is the same unit in every case. For institutions, masks $m=0001$ ($I \rightarrow I$) and $m=1111$ replace the source alternatives.
 
-\paragraph{Unit}Figure~\ref{fig:fig3} compares spectral ranks across network masks. The $x$-axis is the cardinal rank of sources (upper) and institutions (lower), with the solid black curve tracing the corresponding ordinal rank. The units near $v=1$ lie at the weighted average influence-per-work, around rank position 25\% for sources and 20\% for institutions. Influence rises to $> 10$ for the top few units at the extreme left, with a low-influence tail falling below 0.1 for $~ 10\%$ of sources and $< 5\%$ for institutions.
-For sources, modes 1000 (red $\times$) and 1111 at $\chi^*$ (green $\times$)
-are overlaid on the bipartite baseline; open circles and squares on the
-1000 series mark Economics and Business sources respectively.
-For institutions, mode 0001 and 1111 replace the source alternatives.
-
-\begin{figure}[htbp]
+\begin{figure}[h]
   \centering
   \includegraphics[width=\textwidth]{../plots/fig_3_latex.pdf}
-  \caption{Prestige per work $v$ against bipartite baseline rank.
-    Top: sources.  Bottom: institutions.
+  \caption{(left) Influence $v$ against baseline ordinal rank.
     Black line: bipartite baseline $\mathbf{m}=0110$.
     Red $\times$: $\mathbf{m}=1000$ (top) / $\mathbf{m}=0001$ (bottom).
-    Green $\times$: $\mathbf{m}=1111$, $\chi^*=[FILL]$.
-    Open circles ($\circ$) and squares ($\square$) overlaid on the 1000 series
-    (top) and 0001 series (bottom) mark Economics and Business units
-    respectively, classified by field-network membership.
-    Parameters: $t_x=5$, $F=A$, $\tau_U=\tau_S=20$, $\rho=0$, $\alpha=1$.}
+    Green $\times$: $\mathbf{m}=1111$. (right) Influence $v(1000)$ (upper) and $v(0001)$ (lower) versus corresponding $v$(0110). For sources, units are shaded by the baseline rank of the corresponding set of institutions, and vice versa for institutions}
   \label{fig:fig3}
 \end{figure}
 
