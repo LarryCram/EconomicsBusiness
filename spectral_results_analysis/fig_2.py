@@ -50,7 +50,9 @@ INST_D      = 0.1   # vertical offset: E → v*(1+D), B → v*(1-D), A → v, X 
 # Display label → (catalog label, colour, marker)
 # Order: plotted bottom-to-top (last = top layer)
 OVERLAYS = [
-    ('F=A', 'F=A', '#ff7f0e', '+'),   # orange  — top layer
+    ('F=A', 'F=A', '#ff7f0e', '+'),   # orange
+    ('F=B', 'F=B', '#377eb8', '+'),   # blue
+    ('F=E', 'F=E', '#e41a1c', '+'),   # red     — top layer
 ]
 
 # Institution field categories: plotted bottom-to-top, colours match source overlays
