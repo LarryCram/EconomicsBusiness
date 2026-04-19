@@ -35,10 +35,11 @@ At matrix build time supply:
 
 Institution retention
 ---------------------
-For fx='A' the retained institution set is computed from the A corpus itself.
-For all field subsets (E, B, M, EB, X) the institution set is inherited from
-the corresponding A corpus (_units_{run_code}_A_tauU{tau_u}_tauS{tau_s}).
-A must therefore be built before its field subsets within each
+For fx='ALL' the retained institution set is computed from the full corpus.
+For all field subsets (E, B, A, M, EB, X) the institution set is inherited
+from the corresponding ALL corpus
+(_units_{run_code}_ALL_tauU{tau_u}_tauS{tau_s}).
+ALL must therefore be built before its field subsets within each
 (run_code, tau_u, tau_s) group.
 """
 
@@ -61,10 +62,12 @@ DB_PATH = paths.working / 'edge_lists.duckdb'
 FIELD_COND = {
     'E':   "AND sm.field_eb = 'E'",
     'B':   "AND sm.field_eb = 'B'",
-    'M':   "AND sm.field_eb = 'A'",   # mixed (E+B overlap)
+    'A':   "AND sm.field_eb = 'A'",   # ambiguous overlap (E+B)
+    # Backward-compat alias: historical M bucket is non-X (E+B+A).
+    'M':   "AND sm.field_eb IN ('E', 'B', 'A')",
     'EB':  "AND sm.field_eb IN ('E', 'B', 'A')",
     'X':   "AND sm.field_eb = 'X'",
-    'A':   "",
+    'ALL': "",
 }
 
 
@@ -91,7 +94,7 @@ def _units_name(run_code: str, fx: str, tau_u: int, tau_s: int,
 def corpus_configs_from_csv() -> list:
     """
     Derive unique corpus configurations from params.csv.
-    Returns list of dicts ordered so that fx='A' precedes non-A within
+    Returns list of dicts ordered so that fx='ALL' precedes non-ALL within
     each (run_code, tau_u, tau_s) group.
     """
     rows = load_runs()
@@ -118,10 +121,10 @@ def corpus_configs_from_csv() -> list:
     def sort_key(c):
         # fixtau configs must come after all vartau configs so the reference
         # _units_..._vartau table is guaranteed to exist when they run.
-        # Within each (run_code, tau_u, tau_s) group, A comes before non-A.
+        # Within each (run_code, tau_u, tau_s) group, ALL comes before others.
         has_ref = 1 if c['ref_units'] else 0
         return (has_ref, c['run_code'], c['tau_u'], c['tau_s'],
-                0 if c['fx'] == 'A' else 1, c['fx'])
+            0 if c['fx'] == 'ALL' else 1, c['fx'])
 
     return sorted(configs, key=sort_key)
 
@@ -139,7 +142,7 @@ def build_one(db, run_code: str, tc0: int, tc1: int, tt0: int, tt1: int,
     inherited_inst_table : str or None
         If provided, institution retention is read from this table
         (unit_type='U' rows) instead of being computed from the corpus.
-        Used for field subsets (E/B/M/EB/X) which inherit the A-corpus
+        Used for field subsets (E/B/A/M/EB/X) which inherit the ALL-corpus
         institution set of the same window.
     inherited_src_table : str or None
         If provided, source retention is read from this table
@@ -535,12 +538,12 @@ def main():
         print('=== Cleaning stale tables ===')
         clean_stale(db)
 
-        # Group configs by (run_code, tau_u, tau_s); A is already first within each group
+        # Group configs by (run_code, tau_u, tau_s); ALL is first within each group
         from itertools import groupby
         key_fn = lambda c: (c['run_code'], c['tau_u'], c['tau_s'])
         for group_key, group in groupby(configs, key=key_fn):
             run_code, tau_u, tau_s = group_key
-            a_units_table = f'_units_{run_code}_A_tauU{tau_u}_tauS{tau_s}_vartau'
+            all_units_table = f'_units_{run_code}_ALL_tauU{tau_u}_tauS{tau_s}_vartau'
 
             for c in group:
                 fx        = c['fx']
@@ -554,9 +557,9 @@ def main():
                     inherited_units = f'_units_{ref_units}_vartau'
                     inh_inst = inherited_units
                     inh_src  = inherited_units
-                elif fx != 'A':
-                    # Field subset: inherit institutions from A corpus of same window
-                    inh_inst = a_units_table
+                elif fx != 'ALL':
+                    # Field subset: inherit institutions from ALL corpus of same window
+                    inh_inst = all_units_table
                     inh_src  = None
                 else:
                     inh_inst = None
@@ -581,7 +584,7 @@ def main():
         db.sql("SELECT * FROM _catalog ORDER BY run_code, F_x, tau_u").show()
 
         # Sample baseline edge list
-        baseline_tname = table_name('20242024', 'A', 20, 20)  # ref_units='' → _vartau
+        baseline_tname = table_name('20242024', 'ALL', 20, 20)  # ref_units='' → _vartau
         print(f"\n=== Baseline edge list sample ({baseline_tname}) ===")
         db.sql(f"SELECT * FROM {baseline_tname} LIMIT 20").show()
 

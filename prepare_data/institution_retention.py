@@ -55,7 +55,11 @@ TAU_U_VALUES = [0, 1, 2, 3, 4, 5, 10, 15, 20]
 FIELD_COND = {
     'E': "AND sm.field_eb = 'E'",
     'B': "AND sm.field_eb = 'B'",
-    'A': "",
+    'A': "AND sm.field_eb = 'A'",
+    'M': "AND sm.field_eb IN ('E', 'B', 'A')",
+    'EB': "AND sm.field_eb IN ('E', 'B', 'A')",
+    'X': "AND sm.field_eb = 'X'",
+    'ALL': "",
 }
 
 # Baseline window for elbow plot
@@ -138,8 +142,9 @@ def compute_retention(db, run_code: str, fx: str) -> pd.DataFrame:
 
 def build_table(db) -> pd.DataFrame:
     rows = []
+    fx_values = sorted({r['fx'] for r in _runs})
     for run_code in TIME_WINDOWS:
-        for fx in ['E', 'B', 'A']:
+        for fx in fx_values:
             print(f"  run_code={run_code}  F_x={fx} ...", end='  ', flush=True)
             df = compute_retention(db, run_code, fx)
             row = {'run_code': run_code, 'F_x': fx}

@@ -1,18 +1,21 @@
 """
 fig_2.py — Prestige-per-work rank curves across field scope (F), m=0110.
 
-Baseline: F=A (all sources), m=0110, τ_U=τ_S=20, ρ=0, α=1.
+Baseline: F=ALL (full corpus), m=0110, τ_U=τ_S=20, ρ=0, α=1.
 x-axis locked to baseline rank order.
 
 Source panel — four overlays (all m=0110), plotted bottom-to-top:
   F=X   — residual (neither E nor B)          (purple)
-  F=M   — mixed sources (field_eb='A')        (orange)
+    F=A   — ambiguous sources (field_eb='A')    (orange)
   F=B   — business sources only               (blue)
   F=E   — economics sources only              (red)
 
 Institution panel — baseline v, colour-coded by institution field label:
-  Institution field label read from institution_field_eb.parquet (C_IS
-  citation-weight fractions; X if frac_X >= 0.5, else dominant of E/B/A).
+    Institution field label read from institution_field_eb.parquet (C_IS
+    citation-weight fractions, quota-based assignment):
+        X = 30% of institutions by frac_X,
+        A = 10% of institutions by frac_A,
+        remaining non-X split E:B = 5:8.
 
 Outputs:
   plots/fig_2.pdf        — with title (exploration)
@@ -36,18 +39,18 @@ _run_code      = _baseline['run_code']
 _tau_u         = _baseline['tau_u']
 _tau_s         = _baseline['tau_s']
 
-BASELINE_TABLE = f'rk_{_run_code}_A_tauU{_tau_u}_tauS{_tau_s}_vartau_rho0_m0110_chi50_alpha100'
-EL_TABLE       = f'el_{_run_code}_A_tauU{_tau_u}_tauS{_tau_s}_vartau'
+BASELINE_TABLE = (
+    f"rk_{_run_code}_{_baseline['fx']}_tauU{_tau_u}_tauS{_tau_s}_vartau"
+    "_rho0_m0110_chi50_alpha100"
+)
+EL_TABLE       = f"el_{_run_code}_{_baseline['fx']}_tauU{_tau_u}_tauS{_tau_s}_vartau"
 
 INST_D      = 0.1   # vertical offset: E → v*(1+D), B → v*(1-D), A → v, X dropped
 
 # Display label → (catalog label, colour, marker)
 # Order: plotted bottom-to-top (last = top layer)
 OVERLAYS = [
-    ('F=X', 'F=X', '#984ea3', 's'),   # purple  — bottom layer
-    ('F=M', 'F=M', '#ff7f00', 'o'),   # orange  (mixed: field_eb='A')
-    ('F=B', 'F=B', '#377eb8', 'x'),   # blue
-    ('F=E', 'F=E', '#e41a1c', '+'),   # red     — top layer
+    ('F=A', 'F=A', '#ff7f0e', '+'),   # orange  — top layer
 ]
 
 # Institution field categories: plotted bottom-to-top, colours match source overlays
@@ -185,43 +188,44 @@ def _draw_src_panel(ax, series: list, n_baseline: int) -> None:
     ax.text(n_baseline * 0.98, 1.0, '$v=1$',
             ha='right', va='bottom', fontsize=7.5, color='#999999')
     ax.set_xlim(1, n_baseline)
-    ax.set_xlabel('Baseline rank  (F=A)', labelpad=4)
+    ax.set_xlabel('Baseline rank  F=A', labelpad=4)
     ax.set_ylabel('Influence per work $v$', labelpad=4)
     ax.set_title('Sources', fontsize=10, pad=6)
     ax.legend(fontsize=7.5, framealpha=0.85, loc='upper right')
 
 
-def _draw_inst_panel(ax, df_i_base: pd.DataFrame,
-                     inst_field_map: dict, n_baseline: int) -> None:
-    """
-    Institution panel: baseline v coloured by institution field label (E/B/A).
-    X institutions are omitted.
-    Vertical offsets separate groups: E → v*(1+D), B → v*(1-D), A → v.
-    """
-    OFFSET = {'E': 1.0 + INST_D, 'B': 1.0 - INST_D, 'A': 1.0}
-
-    df = df_i_base.copy()
-    df['field_eb_inst'] = df['unit_idx'].map(inst_field_map).fillna('X')
-
-    for cat in INST_FIELD_ORDER:   # A first (bottom), E last (top)
-        colour, marker, _ = INST_FIELD_STYLE[cat]
-        sub = df[df['field_eb_inst'] == cat]
-        if sub.empty:
+def _draw_inst_panel(ax, series: list, n_baseline: int) -> None:
+    """Institution panel: baseline line + restricted-corpus overlays."""
+    for label, colour, marker, _, df_i in series:
+        if df_i.empty:
             continue
-        is_line_marker = marker in ('x', '+')
-        v_plot = sub['v'].values * OFFSET[cat]
-        ax.scatter(
-            sub['baseline_rank'].values,
-            v_plot,
-            color=colour,
-            marker=marker,
-            s=45 if is_line_marker else 15,
-            alpha=1.0,
-            zorder=INST_FIELD_ORDER.index(cat) + 2,
-            edgecolors=colour if is_line_marker else 'white',
-            linewidths=0.8 if is_line_marker else 0.4,
-            label=f'{cat}  ({len(sub):,}/{n_baseline:,})',
-        )
+        is_baseline = marker is None
+        n_overlap = len(df_i)
+
+        if is_baseline:
+            ax.plot(
+                df_i['baseline_rank'].values,
+                df_i['v'].values,
+                color=colour,
+                linewidth=1.4,
+                alpha=1.0,
+                zorder=3,
+                label='baseline (all)',
+            )
+        else:
+            is_line_marker = marker in ('x', '+')
+            ax.scatter(
+                df_i['baseline_rank'].values,
+                df_i['v'].values,
+                color=colour,
+                marker=marker,
+                s=45 if is_line_marker else 30,
+                alpha=1.0,
+                zorder=2,
+                edgecolors=colour if is_line_marker else 'white',
+                linewidths=0.8 if is_line_marker else 0.4,
+                label=f'{label}  ({n_overlap:,}/{n_baseline:,})',
+            )
 
     ax.set_yscale('log')
     ax.set_ylim(0.005, 20)
@@ -231,21 +235,22 @@ def _draw_inst_panel(ax, df_i_base: pd.DataFrame,
     ax.text(n_baseline * 0.98, 1.0, '$v=1$',
             ha='right', va='bottom', fontsize=7.5, color='#999999')
     ax.set_xlim(1, n_baseline)
-    ax.set_xlabel('Baseline rank  (F=A)', labelpad=4)
+    ax.set_xlabel('Baseline rank  F=A', labelpad=4)
     ax.set_ylabel('Influence per work $v$', labelpad=4)
     ax.set_title('Institutions', fontsize=10, pad=6)
     ax.legend(fontsize=7.5, framealpha=0.85, loc='upper right')
 
 
 def plot2(src_rank_map: dict, df_i_base: pd.DataFrame,
-          series: list, inst_field_map: dict) -> None:
+        series: list, inst_field_map: dict) -> None:
     paths = load_config()
     sns.set_theme(style='whitegrid', font_scale=0.95)
-    fig, axes = plt.subplots(2, 1, figsize=(9, 8))
-    fig.subplots_adjust(hspace=0.44)
+    fig, axes = plt.subplots(1, 2, figsize=(12, 4.6), sharey=True)
+    fig.subplots_adjust(wspace=0.18)
 
     _draw_src_panel(axes[0], series, n_baseline=len(src_rank_map))
-    _draw_inst_panel(axes[1], df_i_base, inst_field_map, n_baseline=len(df_i_base))
+    _draw_inst_panel(axes[1], series, n_baseline=len(df_i_base))
+    axes[1].set_ylabel('')
 
     sup = fig.suptitle(
         'Field scope sensitivity — influence per work  '

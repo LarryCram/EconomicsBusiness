@@ -1,21 +1,17 @@
 """
-fig_6.py — Time-series comparison: baseline (2020–24) vs t1–t4.
+fig_6.py — Time-series comparison: baseline (2020–24) vs t1-fix–t4-fix.
 
-2×2 layout with shared y-axes across each row:
+1×2 layout with shared y-axis:
 
-  Left column:  τ-per-window runs (t1–t4, vartau); × markers, dashed running mean.
-  Right column: Fixed-universe runs (t1-fix–t4-fix, fixtau); + markers, solid running mean.
-  Top row:      Sources.
-  Bottom row:   Institutions.
-
-Shared y-axis links left and right within each row so scales are directly comparable.
+    Left panel:  Sources (fixed-universe runs; + markers, solid running mean)
+    Right panel: Institutions (fixed-universe runs; + markers, solid running mean)
 
 Outputs:
-  plots/fig_6.pdf        — 2×2 with title (exploration)
-  plots/fig_6_latex.pdf  — 2×2 without title (paper)
+    plots/fig_6.pdf        — 1×2 with title (exploration)
+    plots/fig_6_latex.pdf  — 1×2 without title (paper)
 
 Console:
-  Per-period table: n_tau, n_fix, n_dropped (SCC), Spearman ρ(v_fix, v_tau).
+    Per-period table: n_tau, n_fix, n_dropped (SCC), Spearman ρ(v_fix, v_tau).
 """
 
 import sys
@@ -247,24 +243,19 @@ def plot6(src_rank_map, inst_rank_map, df_s_base, df_i_base, pairs) -> None:
     n_base_s = len(src_rank_map)
     n_base_i = len(inst_rank_map)
 
-    fig, axes = plt.subplots(2, 2, figsize=(14, 8), sharey='row')
-    fig.subplots_adjust(hspace=0.44, wspace=0.10)
+    fig, axes = plt.subplots(1, 2, figsize=(14, 4.6), sharey=True)
+    fig.subplots_adjust(wspace=0.10)
 
-    _draw_scatter_panel(axes[0, 0], df_s_base, df_i_base, pairs,
-                        0, n_base_s, 'Sources — τ per window', mode='tau')
-    _draw_scatter_panel(axes[0, 1], df_s_base, df_i_base, pairs,
-                        0, n_base_s, 'Sources — fixed universe', mode='fix')
-    _draw_scatter_panel(axes[1, 0], df_s_base, df_i_base, pairs,
-                        1, n_base_i, 'Institutions — τ per window', mode='tau')
-    _draw_scatter_panel(axes[1, 1], df_s_base, df_i_base, pairs,
-                        1, n_base_i, 'Institutions — fixed universe', mode='fix')
+    _draw_scatter_panel(axes[0], df_s_base, df_i_base, pairs,
+                        0, n_base_s, 'Sources', mode='fix')
+    _draw_scatter_panel(axes[1], df_s_base, df_i_base, pairs,
+                        1, n_base_i, 'Institutions', mode='fix')
 
-    # y-label only on left panels; right panels share the axis
-    axes[0, 0].set_ylabel('Influence per work $v$', labelpad=4)
-    axes[1, 0].set_ylabel('Influence per work $v$', labelpad=4)
+    # Shared y-axis label on the left panel only
+    axes[0].set_ylabel('Influence per work $v$', labelpad=4)
+    axes[1].set_ylabel('')
 
-    sup_text = ('Time-series comparison  '
-                '(left: τ per window; right: fixed universe)')
+    sup_text = 'Time-series comparison (fixed universe)'
     sup = fig.suptitle(sup_text, fontsize=9, y=1.01)
 
     out = paths.plots / 'fig_6.pdf'

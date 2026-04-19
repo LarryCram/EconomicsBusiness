@@ -40,4 +40,7 @@ echo "=== Fig stability ==="
 echo "=== Fig log-ratio stability ==="
 "$PYTHON" spectral_results_analysis/fig_log_ratio_stability.py
 
+echo "=== Network entropy diagnostics ==="
+"$PYTHON" spectral_results_analysis/network_entropy.py
+
 echo "=== Results pipeline complete ==="

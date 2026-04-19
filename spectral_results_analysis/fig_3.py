@@ -7,7 +7,8 @@ fig_3a.py — vSS/vII vs v_bipartite scatter     (right panels, paper figure).
   m=0001  institution-only  — red X       (I panel only)
   m=1111  full joint χ*     — green X     (both panels; χ* resolved from _catalog)
 
-All runs: F=A, τ_U=τ_S=20, ρ=0, α=1.  field_eb=X units excluded.
+All runs use baseline F from params.csv, τ_U=τ_S=20, ρ=0, α=1.
+field_eb=X units excluded.
 
 Outputs:
   plots/fig_3.pdf / fig_3_latex.pdf   — rank curves (2×1)
@@ -35,17 +36,18 @@ _baseline      = next(r for r in load_runs() if r['label'] == 'baseline')
 _run_code      = _baseline['run_code']
 _tau_u         = _baseline['tau_u']
 _tau_s         = _baseline['tau_s']
+_fx            = _baseline['fx']
 
-BASELINE_TABLE = f'rk_{_run_code}_A_tauU{_tau_u}_tauS{_tau_s}_vartau_rho0_m0110_chi50_alpha100'
-SS_TABLE       = f'rk_{_run_code}_A_tauU{_tau_u}_tauS{_tau_s}_vartau_rho0_m1000_chi50_alpha100'
-II_TABLE       = f'rk_{_run_code}_A_tauU{_tau_u}_tauS{_tau_s}_vartau_rho0_m0001_chi50_alpha100'
+BASELINE_TABLE = f'rk_{_run_code}_{_fx}_tauU{_tau_u}_tauS{_tau_s}_vartau_rho0_m0110_chi50_alpha100'
+SS_TABLE       = f'rk_{_run_code}_{_fx}_tauU{_tau_u}_tauS{_tau_s}_vartau_rho0_m1000_chi50_alpha100'
+II_TABLE       = f'rk_{_run_code}_{_fx}_tauU{_tau_u}_tauS{_tau_s}_vartau_rho0_m0001_chi50_alpha100'
 
 # Visual spec per label
 STYLE = {
-    'm=0110': dict(color='black',   marker=None, zorder=3, lw=1.8, alpha=1.0),
-    'm=1000': dict(color='#d62728', marker='x',  zorder=2, s=55,   lw=1.0),
-    'm=0001': dict(color='#d62728', marker='x',  zorder=2, s=55,   lw=1.0),
-    'm=1111': dict(color='#2ca02c', marker='x',  zorder=2, s=55,   lw=1.0),
+    'm=0110': dict(color='black',   marker=None, zorder=4, lw=1.8, alpha=1.0),
+    'm=1000': dict(color='#d62728', marker='x',  zorder=3, s=55,   lw=1.0, alpha=0.5),
+    'm=0001': dict(color='#d62728', marker='x',  zorder=3, s=55,   lw=1.0, alpha=0.5),
+    'm=1111': dict(color='#2ca02c', marker='x',  zorder=2, s=55,   lw=1.0, alpha=0.5),
 }
 
 S_LABELS = ['m=0110', 'm=1000', 'm=1111']
@@ -80,7 +82,7 @@ def resolve_chi_star_table(db) -> str | None:
     rows = db.execute(
         "SELECT table_name, chi, label FROM _catalog "
         "WHERE m_SS=1 AND m_SI=1 AND m_IS=1 AND m_II=1 "
-        f"  AND run_code='{_run_code}' AND fx='A' AND tau_u={_tau_u} AND tau_s={_tau_s} AND rho=0 "
+        f"  AND run_code='{_run_code}' AND fx='{_fx}' AND tau_u={_tau_u} AND tau_s={_tau_s} AND rho=0 "
         "  AND round(alpha*100)=100 AND round(chi*100) != 50 "
         "ORDER BY created_at DESC LIMIT 1"
     ).fetchall()
@@ -213,7 +215,7 @@ def _draw_panel(ax, series: dict, unit_key: str, panel_labels: list,
                 s=style['s'],
                 linewidths=style['lw'],
                 zorder=style['zorder'],
-                alpha=0.55,
+                alpha=style.get('alpha', 0.5),
                 label=f'{label}  ({n_overlap:,}/{n_baseline:,})',
             )
 
@@ -403,8 +405,8 @@ def plot3(src_rank_map: dict, inst_rank_map: dict, series: dict) -> None:
     paths = load_config()
     _pub_theme()
 
-    fig, axes = plt.subplots(2, 1, figsize=(5, 7))
-    fig.subplots_adjust(hspace=0.44)
+    fig, axes = plt.subplots(1, 2, figsize=(10, 4.5))
+    fig.subplots_adjust(wspace=0.35)
 
     _draw_panel(axes[0], series, 'S', S_LABELS,
                 n_baseline=len(src_rank_map),  panel_title='Sources')
@@ -426,8 +428,8 @@ def plot3a(src_rank_map: dict, inst_rank_map: dict, series: dict) -> None:
     print('Computing cross-type partner colours ...')
     src_colors, inst_colors = load_cross_type_colors(series)
 
-    fig, axes = plt.subplots(2, 1, figsize=(5.5, 7))
-    fig.subplots_adjust(hspace=0.44)
+    fig, axes = plt.subplots(1, 2, figsize=(11, 4.5))
+    fig.subplots_adjust(wspace=0.45)
 
     _draw_scatter_panel(axes[0], fig, series, 'S', 'm=1000',
                         '$v$  SS only  (m=1000)',
@@ -465,9 +467,7 @@ def main():
         print('Loading runs:')
         src_rank_map, inst_rank_map, series = fetch_data(db)
 
-    print('Filtering field_eb=X units:')
-    src_rank_map, inst_rank_map, series = filter_non_x(
-        series, src_rank_map, inst_rank_map)
+    print('Including field_eb=X units in plots (no non-X filtering).')
 
     plot3(src_rank_map, inst_rank_map, series)
     plot3a(src_rank_map, inst_rank_map, series)

@@ -64,3 +64,9 @@ SCImago
 influnence
 Katz-Hubbel
 categorised
+realisation
+JPIF
+GEB
+ss
+bip
+Behav

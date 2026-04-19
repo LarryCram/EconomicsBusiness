@@ -14,7 +14,7 @@ from build_edge_lists import table_name, corpus_configs_from_csv
 # ─── table_name ───────────────────────────────────────────────────────────────
 
 def test_table_name_baseline():
-    assert table_name('20242024', 'A', 20, 20) == 'el_20242024_A_tauU20_tauS20_vartau'
+    assert table_name('20242024', 'ALL', 20, 20) == 'el_20242024_ALL_tauU20_tauS20_vartau'
 
 
 def test_table_name_field_subset():
@@ -22,16 +22,16 @@ def test_table_name_field_subset():
 
 
 def test_table_name_tau40():
-    assert table_name('20242024', 'A', 40, 40) == 'el_20242024_A_tauU40_tauS40_vartau'
+    assert table_name('20242024', 'ALL', 40, 40) == 'el_20242024_ALL_tauU40_tauS40_vartau'
 
 
 def test_table_name_time_series():
-    assert table_name('00040004', 'A', 20, 20) == 'el_00040004_A_tauU20_tauS20_vartau'
+    assert table_name('00040004', 'ALL', 20, 20) == 'el_00040004_ALL_tauU20_tauS20_vartau'
 
 
 def test_table_name_fixed_universe():
-    assert (table_name('00040004', 'A', 20, 20, ref_units='20242024_A_tauU20_tauS20')
-            == 'el_00040004_A_tauU20_tauS20_fixtau')
+    assert (table_name('00040004', 'ALL', 20, 20, ref_units='20242024_ALL_tauU20_tauS20')
+            == 'el_00040004_ALL_tauU20_tauS20_fixtau')
 
 
 # ─── corpus_configs_from_csv ──────────────────────────────────────────────────
@@ -43,17 +43,17 @@ def test_configs_are_unique():
     assert len(keys) == len(set(keys)), "Duplicate corpus configs found"
 
 
-def test_a_before_field_subsets():
-    """Within each (run_code, tau_u, tau_s) group, fx='A' must come first."""
+def test_all_before_field_subsets():
+    """Within each (run_code, tau_u, tau_s) group, fx='ALL' must come first."""
     configs = corpus_configs_from_csv()
     from itertools import groupby
     key_fn = lambda c: (c['run_code'], c['tau_u'], c['tau_s'])
     for _, group in groupby(configs, key=key_fn):
         group = list(group)
         fx_list = [c['fx'] for c in group]
-        if 'A' in fx_list:
-            assert fx_list[0] == 'A', (
-                f"fx='A' must be first in group, got order: {fx_list}"
+        if 'ALL' in fx_list:
+            assert fx_list[0] == 'ALL', (
+                f"fx='ALL' must be first in group, got order: {fx_list}"
             )
 
 
@@ -99,20 +99,20 @@ def test_expected_configs_present():
             for c in configs}
 
     # Baseline window: all field subsets at tau=20 (vartau)
-    for fx in ['A', 'E', 'B', 'EB', 'X']:
+    for fx in ['ALL', 'E', 'B', 'EB', 'X', 'A']:
         assert ('20242024', fx, 20, 20, '') in keys, f"Missing (20242024, {fx}, 20, 20, vartau)"
 
     # tau sensitivity
-    assert ('20242024', 'A', 40, 40, '') in keys, "Missing tau40 config"
+    assert ('20242024', 'ALL', 40, 40, '') in keys, "Missing tau40 config"
 
-    # Time series (A only, vartau)
+    # Time series (ALL only, vartau)
     for rc in ['00040004', '05090509', '10141014', '15191519']:
-        assert (rc, 'A', 20, 20, '') in keys, f"Missing time series vartau config {rc}"
+        assert (rc, 'ALL', 20, 20, '') in keys, f"Missing time series vartau config {rc}"
 
     # Fixed-universe time series (fixtau)
-    ref = '20242024_A_tauU20_tauS20'
+    ref = '20242024_ALL_tauU20_tauS20'
     for rc in ['00040004', '05090509', '10141014', '15191519']:
-        assert (rc, 'A', 20, 20, ref) in keys, f"Missing fixtau config {rc}"
+        assert (rc, 'ALL', 20, 20, ref) in keys, f"Missing fixtau config {rc}"
 
 
 def test_configs_have_required_keys():
@@ -134,12 +134,12 @@ def test_year_types_are_int():
 
 
 def test_no_redundant_field_subsets_for_time_series():
-    """Time-series runs (t1-t4) use A only; E/B/EB/X should not appear."""
+    """Time-series runs (t1-t4) use ALL only; subsets should not appear."""
     configs = corpus_configs_from_csv()
     time_series_rcs = {'00040004', '05090509', '10141014', '15191519'}
     for c in configs:
         if c['run_code'] in time_series_rcs:
-            assert c['fx'] == 'A', (
+            assert c['fx'] == 'ALL', (
                 f"Unexpected field subset {c['fx']} for time-series "
                 f"run_code {c['run_code']}"
             )
