@@ -1,7 +1,7 @@
 """
 fig_2.py — Prestige-per-work rank curves across field scope (F), m=0110.
 
-Baseline: F=ALL (full corpus), m=0110, τ_U=τ_S=20, ρ=0, α=1.
+Baseline: all sources, m=0110, τ_U=τ_S=20, ρ=0, α=1.
 x-axis locked to baseline rank order.
 
 Source panel — four overlays (all m=0110), plotted bottom-to-top:
@@ -29,7 +29,10 @@ import duckdb
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
+import matplotlib.ticker as ticker
+from mpl_toolkits.axes_grid1.inset_locator import inset_axes as _inset_axes
 import seaborn as sns
+from statsmodels.nonparametric.smoothers_lowess import lowess
 
 sys.path.insert(0, str(Path(__file__).parent.parent))
 from util import load_config, load_runs
@@ -63,6 +66,13 @@ INST_FIELD_STYLE = {
     'E': ('#e41a1c', 'o', 1.0),    # red,   shifted up
 }
 INST_FIELD_ORDER = ['B', 'E']        # A and X omitted
+
+# y-axis: integer log10 tick labels
+_LOG_FMT = ticker.FuncFormatter(lambda x, _: str(int(round(np.log10(x)))))
+
+INSET_XLIM  = (0, 50)
+INSET_YLIM  = (0.8, 30)
+INSET_YTICKS = [1, 10]
 
 
 # ─── Institution field labels ─────────────────────────────────────────────────
@@ -147,108 +157,214 @@ def fetch_data(db) -> tuple:
     return src_rank_map, df_i_base, series
 
 
-# ─── Plot ─────────────────────────────────────────────────────────────────────
+# ─── Axis helpers ─────────────────────────────────────────────────────────────
 
-def _draw_src_panel(ax, series: list, n_baseline: int) -> None:
+def _setup_log_yaxis(ax, ylim=(0.005, 20), yticks=(0.01, 0.1, 1, 10)):
+    ax.set_yscale('log')
+    ax.set_ylim(*ylim)
+    ax.set_yticks(list(yticks))
+    ax.yaxis.set_major_formatter(_LOG_FMT)
+    ax.set_ylabel('$\\log(v)$', rotation=90, labelpad=4)
+
+
+def _add_inset(ax, series, df_key):
+    """Bottom-left inset zoomed to INSET_XLIM ranks, INSET_YLIM v-range."""
+    axins = _inset_axes(
+        ax, width='36%', height='36%', loc='lower left',
+        bbox_to_anchor=(0.08, 0.10, 1, 1),
+        bbox_transform=ax.transAxes, borderpad=0,
+    )
+
+    for label, colour, marker, df_s, df_i in series:
+        df = df_s if df_key == 'S' else df_i
+        if df.empty:
+            continue
+        is_baseline = marker is None
+        d = df[(df['baseline_rank'] >= INSET_XLIM[0]) &
+               (df['baseline_rank'] <= INSET_XLIM[1])]
+
+        if is_baseline:
+            axins.plot(d['baseline_rank'].values, d['v'].values,
+                       color=colour, linewidth=1.4, alpha=0.5, zorder=3)
+        else:
+            if d.empty:
+                continue
+            is_lm = marker in ('x', '+')
+            axins.scatter(d['baseline_rank'].values, d['v'].values,
+                          color=colour, marker=marker,
+                          s=40 if is_lm else 25, alpha=0.6, zorder=2,
+                          edgecolors=colour if is_lm else 'white',
+                          linewidths=0.8 if is_lm else 0.4)
+            # Fit LOWESS on a wider window for a stable curve
+            wide = df[df['baseline_rank'] <= INSET_XLIM[1] * 3]
+            if len(wide) >= 5:
+                frac = max(0.5, 20 / max(len(wide), 20))
+                sm = lowess(np.log(wide['v'].values), wide['baseline_rank'].values,
+                            frac=frac, return_sorted=True)
+                mask = ((sm[:, 0] >= INSET_XLIM[0]) &
+                        (sm[:, 0] <= INSET_XLIM[1]))
+                if mask.sum() >= 2:
+                    axins.plot(sm[mask, 0], np.exp(sm[mask, 1]),
+                               color=colour, linewidth=1.8, alpha=1.0, zorder=3)
+
+    axins.set_yscale('log')
+    axins.set_ylim(*INSET_YLIM)
+    axins.set_yticks(INSET_YTICKS)
+    axins.yaxis.set_major_formatter(_LOG_FMT)
+    axins.yaxis.set_minor_formatter(ticker.NullFormatter())
+    axins.set_xlim(*INSET_XLIM)
+    axins.set_xticks([0, INSET_XLIM[1]])
+    axins.axhline(1.0, color='#999999', linewidth=0.6, linestyle='--', zorder=0)
+    axins.tick_params(labelsize=9.0, which='both')
+    axins.tick_params(which='minor', length=0)
+    for spine in axins.spines.values():
+        spine.set_linewidth(0.6)
+
+
+# ─── Panel drawing ────────────────────────────────────────────────────────────
+
+def _draw_src_panel(ax, series: list, n_baseline: int, max_rank=None) -> None:
     """Source panel: baseline line + restricted-corpus overlays."""
+    xlim = max_rank if max_rank else n_baseline
     for label, colour, marker, df_s, _ in series:
         if df_s.empty:
             continue
         is_baseline = marker is None
+        d = df_s[df_s['baseline_rank'] <= xlim] if max_rank else df_s
         n_overlap = len(df_s)
 
         if is_baseline:
             ax.plot(
-                df_s['baseline_rank'].values,
-                df_s['v'].values,
+                d['baseline_rank'].values,
+                d['v'].values,
                 color=colour,
                 linewidth=1.4,
-                alpha=1.0,
+                alpha=0.5,
                 zorder=3,
                 label='baseline (all)',
             )
         else:
+            if d.empty:
+                continue
             is_line_marker = marker in ('x', '+')
             ax.scatter(
-                df_s['baseline_rank'].values,
-                df_s['v'].values,
+                d['baseline_rank'].values,
+                d['v'].values,
                 color=colour,
                 marker=marker,
                 s=45 if is_line_marker else 30,
-                alpha=1.0,
+                alpha=0.5,
                 zorder=2,
                 edgecolors=colour if is_line_marker else 'white',
                 linewidths=0.8 if is_line_marker else 0.4,
                 label=f'{label}  ({n_overlap:,}/{n_baseline:,})',
             )
+            frac = max(0.2, 5 / max(len(d), 5))
+            sm = lowess(np.log(d['v'].values), d['baseline_rank'].values,
+                        frac=frac, return_sorted=True)
+            ax.plot(sm[:, 0], np.exp(sm[:, 1]), color=colour,
+                    linewidth=2.8, alpha=1.0, zorder=3)
 
-    ax.set_yscale('log')
-    ax.set_ylim(0.005, 20)
-    ax.set_yticks([0.01, 0.1, 1, 10])
-    ax.yaxis.set_major_formatter(plt.matplotlib.ticker.ScalarFormatter())
+    _setup_log_yaxis(ax)
     ax.axhline(1.0, color='#999999', linewidth=0.8, linestyle='--', zorder=0)
-    ax.text(n_baseline * 0.98, 1.0, '$v=1$',
+    ax.text(xlim * 0.98, 1.0, '$v=1$',
             ha='right', va='bottom', fontsize=7.5, color='#999999')
-    ax.set_xlim(1, n_baseline)
-    ax.set_xlabel('Baseline rank  F=A', labelpad=4)
-    ax.set_ylabel('Influence per work $v$', labelpad=4)
+    ax.set_xlim(0, xlim)
+    ax.set_xlabel('Baseline rank', labelpad=4)
     ax.set_title('Sources', fontsize=10, pad=6)
     ax.legend(fontsize=7.5, framealpha=0.85, loc='upper right')
+    if not max_rank:
+        _add_inset(ax, series, 'S')
 
 
-def _draw_inst_panel(ax, series: list, n_baseline: int) -> None:
+def _draw_inst_panel(ax, series: list, n_baseline: int, max_rank=None) -> None:
     """Institution panel: baseline line + restricted-corpus overlays."""
+    xlim = max_rank if max_rank else n_baseline
     for label, colour, marker, _, df_i in series:
         if df_i.empty:
             continue
         is_baseline = marker is None
+        d = df_i[df_i['baseline_rank'] <= xlim] if max_rank else df_i
         n_overlap = len(df_i)
 
         if is_baseline:
             ax.plot(
-                df_i['baseline_rank'].values,
-                df_i['v'].values,
+                d['baseline_rank'].values,
+                d['v'].values,
                 color=colour,
                 linewidth=1.4,
-                alpha=1.0,
+                alpha=0.5,
                 zorder=3,
                 label='baseline (all)',
             )
         else:
+            if d.empty:
+                continue
             is_line_marker = marker in ('x', '+')
             ax.scatter(
-                df_i['baseline_rank'].values,
-                df_i['v'].values,
+                d['baseline_rank'].values,
+                d['v'].values,
                 color=colour,
                 marker=marker,
                 s=45 if is_line_marker else 30,
-                alpha=1.0,
+                alpha=0.5,
                 zorder=2,
                 edgecolors=colour if is_line_marker else 'white',
                 linewidths=0.8 if is_line_marker else 0.4,
                 label=f'{label}  ({n_overlap:,}/{n_baseline:,})',
             )
+            frac = max(0.2, 5 / max(len(d), 5))
+            sm = lowess(np.log(d['v'].values), d['baseline_rank'].values,
+                        frac=frac, return_sorted=True)
+            ax.plot(sm[:, 0], np.exp(sm[:, 1]), color=colour,
+                    linewidth=2.8, alpha=1.0, zorder=3)
 
-    ax.set_yscale('log')
-    ax.set_ylim(0.005, 20)
-    ax.set_yticks([0.01, 0.1, 1, 10])
-    ax.yaxis.set_major_formatter(plt.matplotlib.ticker.ScalarFormatter())
+    _setup_log_yaxis(ax)
     ax.axhline(1.0, color='#999999', linewidth=0.8, linestyle='--', zorder=0)
-    ax.text(n_baseline * 0.98, 1.0, '$v=1$',
+    ax.text(xlim * 0.98, 1.0, '$v=1$',
             ha='right', va='bottom', fontsize=7.5, color='#999999')
-    ax.set_xlim(1, n_baseline)
-    ax.set_xlabel('Baseline rank  F=A', labelpad=4)
-    ax.set_ylabel('Influence per work $v$', labelpad=4)
+    ax.set_xlim(0, xlim)
+    ax.set_xlabel('Baseline rank', labelpad=4)
     ax.set_title('Institutions', fontsize=10, pad=6)
     ax.legend(fontsize=7.5, framealpha=0.85, loc='upper right')
+    if not max_rank:
+        _add_inset(ax, series, 'I')
 
 
-def plot2(src_rank_map: dict, df_i_base: pd.DataFrame,
-        series: list, inst_field_map: dict) -> None:
+def plot2a(src_rank_map: dict, df_i_base: pd.DataFrame,
+           series: list, top_n: int = 100) -> None:
     paths = load_config()
     sns.set_theme(style='whitegrid', font_scale=0.95)
     fig, axes = plt.subplots(1, 2, figsize=(12, 4.6), sharey=True)
     fig.subplots_adjust(wspace=0.18)
+
+    _draw_src_panel(axes[0], series, n_baseline=len(src_rank_map), max_rank=top_n)
+    _draw_inst_panel(axes[1], series, n_baseline=len(df_i_base), max_rank=top_n)
+    axes[1].set_ylabel('')
+
+    sup = fig.suptitle(
+        f'Field scope sensitivity — top {top_n} sources and institutions  '
+        '(m=0110, x-axis locked to all-sources baseline)',
+        fontsize=9, y=1.01,
+    )
+
+    out = paths.plots / 'fig_2a.pdf'
+    fig.savefig(out, bbox_inches='tight')
+    print(f'Saved {out}')
+
+    sup.set_visible(False)
+    fig.savefig(paths.plots / 'fig_2a_latex.pdf', bbox_inches='tight')
+    sup.set_visible(True)
+
+    plt.close(fig)
+
+
+def plot2(src_rank_map: dict, df_i_base: pd.DataFrame,
+          series: list) -> None:
+    paths = load_config()
+    sns.set_theme(style='whitegrid', font_scale=0.95)
+    fig, axes = plt.subplots(1, 2, figsize=(12, 4.6), sharey=True)
+    fig.subplots_adjust(wspace=0.05)
 
     _draw_src_panel(axes[0], series, n_baseline=len(src_rank_map))
     _draw_inst_panel(axes[1], series, n_baseline=len(df_i_base))
@@ -291,14 +407,12 @@ def main():
             'Run spectral_ranking/run_rankings.py first.'
         )
 
-    print('Loading institution field labels...')
-    inst_field_map = fetch_inst_field_labels(paths.parquet)
-
     with duckdb.connect(str(rk_path), read_only=True) as db:
         src_rank_map, df_i_base, series = fetch_data(db)
 
     print(f'Loaded {len(series)} series (baseline + {len(series)-1} overlays)')
-    plot2(src_rank_map, df_i_base, series, inst_field_map)
+    plot2(src_rank_map, df_i_base, series)
+    plot2a(src_rank_map, df_i_base, series)
 
 
 if __name__ == '__main__':

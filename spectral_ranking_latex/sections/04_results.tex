@@ -5,7 +5,8 @@
 % ---------------------------------------------------------------
 
 The model supports three structural arrangements: (1) the unit mask $m$ picks blocks, (2) the subfield $F$ selects from $\mathfrak{F}$ (E, B, A, X), and (3) the time windows $T_t$ select census and target years over {[2020,2024], [2015,2019], [2010, 2014], [2005, 2009], and [2000, 2004]}. We also present a sensitivity analysis for the parameters $\rho, \chi, (\alpha, \mu), and t^c$, together with a bootstrap study of uncertainties. 
-\paragraph{Unit mask}
+
+\paragraph{Mask structure}
 Figure~\ref{fig:fig3} compares spectral ranks across unit masks. The $x$-axis is the cardinal rank of sources (upper) and institutions (lower) in the baseline unit m=0110 (i.e. bipartite $S \rightarrow I \rightarrow S, \alpha=1, F=A, \mu=0, \rho=1, T_1 = [2020-2024]$). The solid black curve traces the corresponding ordinal rank $v$. Units near $v=1$ lie at the weighted average, at rank position ~25\% for sources and ~20\% for institutions. Overlaid on the bipartite source curve are $v$ ranks for the mask 1000 (red $\times$, $S \rightarrow S$) and 1111 at $\chi^*$ (green $\times$, full $S+I \rightarrow S+I$). The $x$-axis is the same unit in every case. For institutions, masks $m=0001$ ($I \rightarrow I$) and $m=1111$ replace the source alternatives.
 
 \begin{figure}[h]
@@ -47,7 +48,86 @@ region around $v=1$. Among the sources, note how the source J\. Prop\. Inv\. (SC
 $v_bip > v_{II}$
 
 \input{../tables/table_unit_effects}
+\paragraph{Field structure}
 
+Figure~\ref{fig:fig2} plots influence $v$ against baseline rank for
+the full corpus and for three field subsets: $F{=}E$ (economics-dominant
+sources, $N_S=384$), $F{=}B$ (business-dominant, $N_S=601$), and $F{=}A$
+(ambiguous sources strong in both fields, $N_S=133$).
+The $x$-axis is locked to the all-sources baseline rank so that each unit
+appears at its baseline position; sources absent from a subset are simply
+omitted from that series.
+LOWESS trend lines (bandwidth $f=5/n$, fitted on $\log v$) summarise each
+overlay.
+
+The source panel reveals a systematic field effect.
+Restricting to $F{=}E$ sources shifts the trend line \emph{below} the
+baseline across nearly the full rank range, while $F{=}B$ sits close to or
+slightly above the baseline.
+The $F{=}A$ (ambiguous) sources fall furthest below baseline, but this
+reflects sparseness ($N_S=133$) rather than intrinsic quality: ambiguous
+sources are drawn from both fields and lose cross-field citation flow under
+no restriction at all.
+
+The institution panel tells a more nuanced story.
+For the top 30--40 institutions by baseline rank the $F{=}B$ trend lies
+\emph{above} baseline while $F{=}E$ lies below it, but below rank~40 both
+overlays converge back toward the baseline.
+The high-$v$ institutions are E-specialists---Federal Reserve Banks, NBER,
+CEPR---that gain influence when the $F{=}E$ corpus removes the
+business sources that dilute the eigenvector signal.
+Conversely, they lose ground in $F{=}B$.
+The low-$v$ tail of $F{=}E$ institutions (roughly 70 units with $v < 0.1$
+at baseline rank $<2000$) are nearly disconnected from economics sources:
+their economics citation share is below 8\%, and their $\mathtt{field\_eb}$
+labels are predominantly $X$ or $B$.
+
+To test whether the field shift is mediated by the institution layer or
+is intrinsic to source--source citation structure, we compare v-ratios
+$v_F / v_{\rm base}$ under $\mathbf{m}{=}0110$ (bipartite, institutions in
+the loop) and $\mathbf{m}{=}1000$ (source--source only).
+Table~\ref{tab:field_modes} reports the results.
+When institutions are excluded, restricting to $F{=}E$ reduces source $v$
+by 38\% at the median (ratio 0.62, 0.8\% of sources above baseline);
+with institutions included the penalty shrinks to 9\% (ratio 0.91,
+27\% above baseline).
+The mirror holds for $F{=}B$: sources gain 51\% under $m{=}1000$ but only
+3\% under $m{=}0110$.
+A paired Wilcoxon test confirms that the bipartite ratio exceeds the
+SS-only ratio for both fields ($p < 10^{-62}$).
+
+This pattern is a direct consequence of the smoothing identified
+in Section~\ref{sec:unit_effects}: because the stationary-weighted
+effective branching $\bar{m}_\pi$ is 3.5 times larger for the institution
+stochastic matrix $H_{II}$ than for sources $H_{SS}$, each step through
+an institution fans out influence across a wide mix of sources from both
+fields.
+The institution layer therefore acts as a cross-field mixer, substantially
+attenuating the eigenvector response to corpus field restriction.
+This is consistent with \citet{waltman_vaneck}, who showed that
+influence-score rankings are sensitive to corpus field composition, but the
+institution channel diffuses that sensitivity, so the bipartite ranking
+is more robust to field-scope choice than any pure source--source method.
+
+\begin{figure}[htbp]
+  \centering
+  \includegraphics[width=\textwidth]{../plots/fig_2_latex.pdf}
+  \caption{Influence $v$ against baseline rank by field scope
+    ($\mathbf{m}{=}0110$, $\tau_U{=}\tau_S{=}20$, $\rho{=}0$, $\alpha{=}1$,
+    $t_x{=}5$, 2020--24).
+    Left: sources ($N_S^{\rm base}{=}1{,}626$).
+    Right: institutions ($N_U^{\rm base}{=}2{,}629$).
+    Black line: baseline (all sources).
+    Red $+$: $F{=}E$ ($N_S{=}384$).
+    Blue $+$: $F{=}B$ ($N_S{=}601$).
+    Orange $+$: $F{=}A$ ($N_S{=}133$).
+    Thick coloured curves: LOWESS trend on $\log v$.
+    Dashed line: $v{=}1$.
+    $x$-axis locked to baseline rank; absent units omitted.}
+  \label{fig:fig2}
+\end{figure}
+
+\paragraph{Temporal structure}
 Figure~\ref{fig:fig6} plots $v$ for all sources and institutions across
 the five time windows $t_x=1,\ldots,5$ (2000--2024), with the $x$-axis
 locked to the baseline rank.
@@ -77,151 +157,118 @@ that would otherwise produce volatile source rankings.
     Black line: baseline $t_x=5$ (2020--24).
     Coloured series: $t_x=1$ (2000--04) through $t_x=4$ (2015--19).
     $x$-axis locked to baseline rank; units absent from the window
-    are omitted from that series.
+    are omitted from that series.}
   \label{fig:fig6}
 \end{figure}
 
-% Figure~\ref{fig:figstability} quantifies the persistence of
-% \emph{prestige-surplus} status---defined as $v>1$, meaning the unit
-% absorbs more prestige per work than the corpus average---across the full
-% 25-year span.
-% Approximately one quarter of sources and one quarter of institutions are
-% prestige-surplus in each window, and this fraction is stable across time,
-% confirming that $v=1$ is a structurally consistent threshold rather than
-% a feature of any particular window.
-% Restricting to the 835~sources and 606~institutions present in both the
-% 2000--04 and 2020--24 windows, $83\%$ of sources and $94\%$ of
-% institutions that were prestige-surplus in 2000--04 retain that status
-% in 2020--24.
-% The scatter plots confirm this asymmetry visually: the upper-right
-% quadrant (surplus in both windows) dominates, while the lower-right
-% quadrant (surplus lost) is nearly empty.
-% Classifying each unit's trajectory as a binary sequence (H if $v>1$,
-% L otherwise) across the five windows shows that monotone paths dominate
-% among institutions (101~monotone rises vs 29~oscillating), while for
-% sources the counts are closer (74~monotone vs 80~oscillating).
-% Once an institution crosses $v=1$ it almost invariably stays above it;
-% sources are somewhat noisier, but the direction is sustained.
-% The institutions that crossed the threshold between 2000--04 and 2020--24
-% are predominantly universities in Western countries that expanded their
-% economics and business research output substantially over the period,
-% consistent with the growth of internationally oriented business schools
-% and the associated increase in faculty size.
+Figure~\ref{fig:figstability} quantifies the persistence of
+above-average influence---defined as $v>1$, meaning the unit
+absorbs more influence than the corpus average per work---across the full
+25-year span.
+Approximately one quarter of sources and one quarter of institutions have
+above-average influence in each window, and this fraction is stable across time,
+confirming that $v=1$ is a structurally consistent threshold rather than
+a feature of any particular window.
+Restricting to the 835~sources and 606~institutions present in both the
+2000--04 and 2020--24 windows, $83\%$ of sources and $94\%$ of
+institutions with above-average influence in 2000--04 retain that status
+in 2020--24.
+The scatter plots confirm this asymmetry visually: the upper-right
+quadrant (surplus in both windows) dominates, while the lower-right
+quadrant (surplus lost) is nearly empty.
+Classifying each unit's trajectory as a binary sequence (H if $v>1$,
+L otherwise) across the five windows shows that monotone paths dominate
+among institutions (101~monotone rises vs 29~oscillating), while for
+sources the counts are closer (74~monotone vs 80~oscillating).
+Once an institution crosses $v=1$ it almost invariably stays above it;
+sources are somewhat noisier, but the direction is sustained.
+The institutions that crossed the threshold between 2000--04 and 2020--24
+are predominantly universities in Western countries that expanded their
+economics and business research output substantially over the period,
+consistent with the growth of internationally oriented business schools
+and the associated increase in faculty size.
 
-% \begin{figure}[htbp]
-%   \centering
-%   \includegraphics[width=\textwidth]{../plots/fig_stability_scatter_latex.pdf}
-%   \caption{Prestige per work $v$ in 2000--04 against $v$ in 2020--24
-%     for units present in both windows (log--log).
-%     Left: sources ($n=835$).  Right: institutions ($n=606$).
-%     Colour indicates threshold-crossing status:
-%     blue = prestige-surplus ($v>1$) in both windows;
-%     light blue = below threshold in both;
-%     green = crossed $v=1$ upward;
-%     red = crossed $v=1$ downward.
-%     Dotted diagonal: $v_{t_1}=v_{t_5}$.
-%     Dashed lines: $v=1$ on each axis.
-%     Parameters: $F=A$, $\tau_U=\tau_S=20$, $\rho=0$,
-%     $\mathbf{m}=0110$, $\alpha=1$.}
-%   \label{fig:figstability}
-% \end{figure}
+\begin{figure}[htbp]
+  \centering
+  \includegraphics[width=\textwidth]{../plots/fig_stability_scatter_latex.pdf}
+  \caption{Influence $v$ in 2000--04 against $v$ in 2020--24
+    for units present in both windows (log--log).
+    Left: sources ($n=835$).  Right: institutions ($n=606$).
+    Colour indicates threshold-crossing status:
+    blue = above-average influence ($v>1$) in both windows;
+    light blue = below threshold in both;
+    green = crossed $v=1$ upward;
+    red = crossed $v=1$ downward.
+    Dotted diagonal: $v_{t_1}=v_{t_5}$.
+    Dashed lines: $v=1$ on each axis.
+    Parameters: $F=A$, $\tau_U=\tau_S=20$, $\rho=0$,
+    $\mathbf{m}=0110$, $\alpha=1$.}
+  \label{fig:figstability}
+\end{figure}
 
+\paragraph{Parameters}
 
-% % ---------------------------------------------------------------
-% \paragraph{Phase~1: Sources, institutions and fields.}
-% % ---------------------------------------------------------------
+Figure~\ref{fig:fig5} shows influence $v$ against baseline rank for
+five parameter variants, overlaid on the baseline ($\tau_U{=}\tau_S{=}20$,
+$\rho{=}0$, $\alpha{=}1$, $\mathbf{m}{=}0110$, all sources, 2020--24).
 
-% Figure~\ref{fig:fig2} shows the prestige-per-work distribution for the
-% baseline and for the field subsets $F=E$ and $F=B$, with the $x$-axis
-% locked to the baseline rank so that each unit sits at its baseline
-% position and absent units are omitted from that series.
-% Sources at the Economics--Business boundary lose prestige flow from one
-% side under each restriction; the institution panel reflects the same
-% effect through the authorship mapping.
+\begin{figure}[htbp]
+  \centering
+  \includegraphics[width=\textwidth]{../plots/fig_5_latex.pdf}
+  \caption{Parameter sensitivity of influence $v$ against baseline
+    rank.
+    Left: sources.  Right: institutions.
+    Black line: baseline ($\tau_U{=}\tau_S{=}20$, $\rho{=}0$, $\alpha{=}1$).
+    Purple $\times$: $\tau{=}40$ ($N_S{=}945$, $N_U{=}1{,}533$).
+    Orange $\times$: $\rho{=}1$.
+    Blue $\times$: census window 2024 only ($t^c{=}1$yr).
+    Red $\times$: $\alpha{=}0.85$, $\mu{=}1/N$ (uniform Katz prior).
+    Green $\times$: $\alpha{=}0.85$, $\mu{=}1/N_p$ (unit-scaled prior).
+    $x$-axis locked to baseline rank; units absent from a variant are omitted.}
+  \label{fig:fig5}
+\end{figure}
 
-% \begin{figure}[htbp]
-%   \centering
-%   \includegraphics[width=\textwidth]{../plots/fig_2_latex.pdf}
-%   \caption{Prestige per work $v$ against baseline rank.
-%     Top: sources.  Bottom: institutions.
-%     Black line: baseline ($F=A$).
-%     Red $+$: $F=E$ ($N_s=[FILL]$).
-%     Blue $\times$: $F=B$ ($N_s=[FILL]$).
-%     Dashed line: $v=1$ (corpus average).
-%     Parameters: $t_x=5$, $\tau_U=\tau_S=20$, $\rho=0$,
-%     $\mathbf{m}=0110$, $\alpha=1$.}
-%   \label{fig:fig2}
-% \end{figure}
+\textit{Threshold $\tau$.}
+Raising both thresholds to $\tau_U{=}\tau_S{=}40$ reduces the corpus from
+$N_S{=}1{,}626$ sources and $N_U{=}2{,}629$ institutions to $N_S{=}945$
+and $N_U{=}1{,}533$, a reduction of roughly 40\% in each set.
+Despite this large change in corpus composition, the influence scores of
+the surviving units track the baseline almost exactly:
+the lowess trend for $\tau{=}40$ overlaps the baseline across the full rank
+range.
+The ranking is therefore robust to the choice of activity threshold within
+the range studied.
 
-% The field shifts in Figure~\ref{fig:fig2} reflect community structure in
-% the citation network: sources cluster into Economics and Business
-% communities that preferentially cite within their own field, and this
-% influences rankings because prestige propagates more readily within a
-% community than across it.
+\textit{Reference weighting $\rho$.}
+Setting $\rho{=}1$ (equal attention per reference, as in a standard random
+walk) produces no visible change relative to the baseline ($\rho{=}0$,
+equal attention per work).
+The two weighting schemes yield essentially the same stationary distribution
+for this corpus, suggesting that variation in reference-list length is not
+a dominant source of influence asymmetry in economics and business publishing.
 
-% The second eigenpair $(\lambda_2,\boldsymbol{\phi}_2)$ of $\mathbf{H}^\top$
-% characterises this structure precisely.
-% For general $\alpha$ and uniform prior $\mu_p=1/N$, the solution
-% to~\eqref{eq:spectral} has the spectral expansion
-% \begin{equation}
-%   \boldsymbol{\pi}
-%   \;=\;
-%   (1-\alpha)\sum_{i\ge 1}
-%   \frac{\boldsymbol{\phi}_i^\top\boldsymbol{\mu}}{1-\alpha\lambda_i}\,u_i,
-%   \label{eq:spectral_expansion}
-% \end{equation}
-% where $(\lambda_i, u_i, \boldsymbol{\phi}_i)$ are the eigenvalues, right
-% eigenvectors, and left eigenvectors of $\mathbf{H}^\top$, ordered
-% $\lambda_1\ge\lambda_2\ge\cdots$.
-% The $i=1$ term recovers $\boldsymbol{\pi}^*$ as $\alpha\to 1$; the $i=2$
-% term is the leading community correction, amplified by $1/(1-\alpha\lambda_2)$
-% relative to all higher terms.
-% The spectral gap $g=1-\lambda_2$ therefore governs community influence:
-% small $g$ means community membership strongly shapes rankings; large $g$
-% means rankings are community-neutral.
-% For the SS mode $\boldsymbol{\phi}_2$ is expected to separate Economics from
-% Business sources; for II the partition is more diffuse because institutions
-% co-locate faculty from both fields.
-% In the bipartite mode the community operator is the one-mode projection
-% $\mathbf{M}_S=\mathbf{H}_{SI}\mathbf{H}_{IS}$; $\boldsymbol{\phi}_2^S$
-% is its second eigenvector and the institution community vector is recovered
-% as $\boldsymbol{\phi}_2^I=\mathbf{H}_{SI}^\top\boldsymbol{\phi}_2^S$
-% (unit-normalised).
-% Throughout, $\boldsymbol{\phi}_2$ is signed so that the unit with the
-% largest work count $a_p$ has $\phi_{2,p}>0$.
+\textit{Census window $t^c$.}
+Restricting the citation census to a single year ($t^c{=}2024$ only,
+$N_S{=}1{,}466$) shifts $v$ substantially for many units but symmetrically
+around the baseline in log space: sources gain or lose in roughly equal
+measure, and the trend line does not systematically deviate from baseline.
+This pattern reflects the fact that a one-year window introduces higher
+sampling variance for every unit rather than a systematic upward or downward
+bias, and is broadly consistent with the construction of the Clarivate AIS,
+which also uses a one-year citation window.
 
-% Figure~\ref{fig:fig4} illustrates these eigenvectors by plotting the
-% size-adjusted community measure $\phi_{2,p}/\sqrt{v_p}$ against $v_p$;
-% dividing by $\sqrt{v_p}$ removes the normalisation artefact that suppresses
-% $|\phi_{2,p}|$ for low-prestige units.
-
-% \begin{figure}[htbp]
-%   \centering
-%   \includegraphics[width=\textwidth]{../plots/fig_4_latex.pdf}
-%   \caption{Community measure $\phi_{2,p}/\sqrt{v_p}$ against prestige
-%     per work $v_p$.
-%     Top row: sources.  Bottom row: institutions.
-%     Left column: SS mode $\mathbf{m}=1000$.
-%     Right column: bipartite $\mathbf{m}=0110$.
-%     Sources coloured by field: blue circles = Economics ($E$);
-%     red squares = Business ($B$); grey crosses = other.
-%     Institutions coloured by field-network membership (E-only, B-only, other).
-%     $x$-axis: bipartite baseline $v$.
-%     Parameters: $t_x=5$, $F=A$, $\tau_U=\tau_S=20$, $\rho=0$, $\alpha=1$.}
-%   \label{fig:fig4}
-% \end{figure}
-
-% In the SS source panel (top left), the sign of $\phi_{2,p}/\sqrt{v_p}$
-% [FILL: cleanly separates Economics (positive) from Business (negative)
-% journals across the full prestige range, with Finance journals
-% concentrated near zero, confirming their role as citation bridges between
-% the two communities].
-% The bipartite source panel (top right) shows [FILL: a similar partition /
-% greater mixing], with spectral gaps $g^{SS}=[FILL]$ and
-% $g^{\mathrm{bip}}=[FILL]$ indicating that routing citation flow through
-% institutions [FILL: partially dissolves / preserves] the community
-% boundary.
-% The institution panels (bottom row) show a more diffuse partition,
-% consistent with institutions co-locating faculty from both fields;
-% the field-network colouring confirms that E-only institutions
-% [FILL: concentrate on one side / are scattered].
+\textit{Katz--Hubbell damping $\alpha$ and prior $\mu$.}
+Setting $\alpha{=}0.85$ with either prior produces a large change below the
+corpus-average line $v{=}1$, while units well above $v{=}1$ are largely
+unaffected.
+The mechanism is the prior $\mu$: at $\alpha < 1$ the stationary
+distribution $\pi$ receives a contribution proportional to
+$(1{-}\alpha)\mu_p$ at every unit, which establishes a floor on $\pi_p$.
+When converted to influence $v_p \propto \pi_p/a_p$, units with
+very small work counts $a_p$ are strongly lifted: the approximately 20 units
+that stand well above the $\alpha{=}0.85$ cluster in the source panel each
+have only 2--5 articles in the baseline corpus.
+The choice of prior shape (uniform $1/N$ vs.\ unit-scaled $1/N_p$) shifts
+the floor level but does not change the qualitative pattern.
+For the baseline $\alpha{=}1$ the prior plays no role, and $v$ is determined
+entirely by the network structure.

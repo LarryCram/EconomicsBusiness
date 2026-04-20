@@ -9,7 +9,7 @@ y-axis: φ₂/√v.  Dividing by √v approximately removes the eigenvector
 normalisation artefact that shrinks |φ₂| for low-prestige units, giving
 a per-unit community identity measure that is stable across the prestige range.
 
-x-axis: v from the bipartite baseline (m=0110, α=1, F=A).
+x-axis: v from the bipartite baseline (m=0110, α=1, all sources).
 Coloured by field label E/B/A/X for both sources and institutions.
 
 Source field labels: field_eb from source_master.csv.
@@ -40,8 +40,8 @@ _run_code      = _baseline['run_code']
 _tau_u         = _baseline['tau_u']
 _tau_s         = _baseline['tau_s']
 
-BASELINE_TABLE = f'rk_{_run_code}_A_tauU{_tau_u}_tauS{_tau_s}_vartau_rho0_m0110_chi50_alpha100'
-EL_TABLE       = f'el_{_run_code}_A_tauU{_tau_u}_tauS{_tau_s}_vartau'
+BASELINE_TABLE = f"rk_{_run_code}_{_baseline['fx']}_tauU{_tau_u}_tauS{_tau_s}_vartau_rho0_m0110_chi50_alpha100"
+EL_TABLE       = f"el_{_run_code}_{_baseline['fx']}_tauU{_tau_u}_tauS{_tau_s}_vartau"
 
 COLOR  = {'E': '#e41a1c', 'B': '#377eb8', 'A': '#ff7f00', 'X': '#984ea3'}
 MARKER = {'E': '+',       'B': 'x',       'A': 'o',       'X': 's'}

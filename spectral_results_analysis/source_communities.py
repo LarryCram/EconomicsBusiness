@@ -11,7 +11,7 @@ Runs Leiden community detection on each, then plots the Fig-3 scatter
 (x = 0110 baseline rank, y = v from m=1000) coloured by community membership
 to test whether the outliers cluster into a distinct community.
 
-All runs: F=A, τ_U=τ_S=20, ρ=0, baseline time window.
+All runs: all sources, τ_U=τ_S=20, ρ=0, baseline time window.
 """
 
 import sys

@@ -2,7 +2,7 @@
 fig_8.py — JCR indicators vs spectral ranking v.
 
 Plots WoS JCR 2024 indicators against influence-per-work v from the
-baseline ranking (m=0110, F=A, τ_U=τ_S=20, ρ=0, α=1).
+baseline ranking (m=0110, all sources, τ_U=τ_S=20, ρ=0, α=1).
 
 Join path:
   ranking  (unit_idx = source_idx)
@@ -172,7 +172,7 @@ def plot8(df: pd.DataFrame, paths) -> None:
     ax.text(n * 0.98, 1.0, '$v=1$',
             ha='right', va='bottom', fontsize=7.5, color='#999999')
     ax.set_xlim(1, n)
-    ax.set_xlabel('Rank by $v$  (baseline m=0110, F=A, JCR-matched sources)',
+    ax.set_xlabel('Rank by $v$  (baseline m=0110, JCR-matched sources)',
                   labelpad=4)
     ax.set_ylabel('Value (log scale)', labelpad=4)
     ax.legend(fontsize=8, framealpha=0.85, loc='upper right')
@@ -247,7 +247,7 @@ def plot8a(df: pd.DataFrame, paths) -> None:
     ax.set_yscale('log')
     ax.set_xlim(x_lo, x_hi)
     ax.set_ylim(0.001, y_hi)
-    ax.set_xlabel('Influence per work $v$  (baseline m=0110, F=A, log scale)', labelpad=4)
+    ax.set_xlabel('Influence per work $v$  (baseline m=0110, log scale)', labelpad=4)
     ax.set_ylabel('JCR indicator value (log scale)', labelpad=4)
     ax.legend(fontsize=8, framealpha=0.85, loc='upper left')
 

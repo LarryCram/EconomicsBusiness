@@ -1,7 +1,7 @@
 """
 fig_5.py — Phase 2 parameter sensitivity: τ, ρ, and (α, μ).
 
-Baseline: F=A, τ_U=τ_S=20, ρ=0, m=0110, α=1.
+Baseline: all sources, τ_U=τ_S=20, ρ=0, m=0110, α=1.
 x-axis locked to baseline rank (same convention as fig_2/fig_3).
 
 Five overlays:
@@ -49,7 +49,7 @@ _run_code      = _baseline['run_code']
 _tau_u         = _baseline['tau_u']
 _tau_s         = _baseline['tau_s']
 
-BASELINE_TABLE = f'rk_{_run_code}_A_tauU{_tau_u}_tauS{_tau_s}_vartau_rho0_m0110_chi50_alpha100'
+BASELINE_TABLE = f"rk_{_run_code}_{_baseline['fx']}_tauU{_tau_u}_tauS{_tau_s}_vartau_rho0_m0110_chi50_alpha100"
 
 # Visual style per overlay label (ordered: baseline drawn first)
 STYLE = {
@@ -153,7 +153,7 @@ def fetch_data(rk_db, el_db) -> tuple:
 
     # ── τ=40 ──────────────────────────────────────────────────────────────────
     print('  τ=40 ...')
-    df_s, df_u = _compute_bipartite_v(el_db, _run_code, 'A', 40, 40, 0, 1.0)
+    df_s, df_u = _compute_bipartite_v(el_db, _run_code, _baseline['fx'], 40, 40, 0, 1.0)
     if df_s is not None:
         series['τ=40'] = {
             'S': project(df_s, src_rank_map),
@@ -162,7 +162,7 @@ def fetch_data(rk_db, el_db) -> tuple:
 
     # ── ρ=1 ───────────────────────────────────────────────────────────────────
     print('  ρ=1 ...')
-    df_s, df_u = _compute_bipartite_v(el_db, _run_code, 'A', _tau_u, _tau_s, 1, 1.0)
+    df_s, df_u = _compute_bipartite_v(el_db, _run_code, _baseline['fx'], _tau_u, _tau_s, 1, 1.0)
     if df_s is not None:
         series['ρ=1'] = {
             'S': project(df_s, src_rank_map),
@@ -171,7 +171,7 @@ def fetch_data(rk_db, el_db) -> tuple:
 
     # ── census=1yr (tc0=tc1=2024, tt0=2020, tt1=2024) ───────────────────────
     print('  census=1yr ...')
-    df_s, df_u = _compute_bipartite_v(el_db, '24242024', 'A', _tau_u, _tau_s, 0, 1.0)
+    df_s, df_u = _compute_bipartite_v(el_db, '24242024', _baseline['fx'], _tau_u, _tau_s, 0, 1.0)
     if df_s is not None:
         series['census=1yr'] = {
             'S': project(df_s, src_rank_map),
@@ -187,7 +187,7 @@ def fetch_data(rk_db, el_db) -> tuple:
     print('  α=0.85, μ=1/N (uniform) ...')
     mu_uniform = np.full(N, 1.0 / N)
     df_s, df_u = _compute_bipartite_v(
-        el_db, _run_code, 'A', _tau_u, _tau_s, 0, 0.85, mu=mu_uniform
+        el_db, _run_code, _baseline['fx'], _tau_u, _tau_s, 0, 0.85, mu=mu_uniform
     )
     if df_s is not None:
         series['α=0.85, μ=1/N'] = {
@@ -202,7 +202,7 @@ def fetch_data(rk_db, el_db) -> tuple:
         np.full(N_u, 1.0 / N_u),
     ])
     df_s, df_u = _compute_bipartite_v(
-        el_db, _run_code, 'A', _tau_u, _tau_s, 0, 0.85, mu=mu_unit
+        el_db, _run_code, _baseline['fx'], _tau_u, _tau_s, 0, 0.85, mu=mu_unit
     )
     if df_s is not None:
         series['α=0.85, μ=1/N_p'] = {
@@ -266,11 +266,12 @@ def _draw_panel(ax, series: dict, unit_key: str,
 def plot5(src_rank_map: dict, inst_rank_map: dict, series: dict) -> None:
     paths = load_config()
     sns.set_theme(style='whitegrid', font_scale=0.95)
-    fig, axes = plt.subplots(2, 1, figsize=(9, 8))
-    fig.subplots_adjust(hspace=0.44)
+    fig, axes = plt.subplots(1, 2, figsize=(12, 5), sharey=True)
+    fig.subplots_adjust(wspace=0.05)
 
     _draw_panel(axes[0], series, 'S', len(src_rank_map),  'Sources')
     _draw_panel(axes[1], series, 'I', len(inst_rank_map), 'Institutions')
+    axes[1].set_ylabel('')
 
     sup = fig.suptitle(
         'Parameter sensitivity — influence per work  '
@@ -297,6 +298,148 @@ def plot5(src_rank_map: dict, inst_rank_map: dict, series: dict) -> None:
         print(f'{label:<14}  {len(d["S"]):>7,}  {len(d["I"]):>7,}')
 
 
+# ─── Stability report ────────────────────────────────────────────────────────
+
+def report_stability(src_rank_map: dict, inst_rank_map: dict,
+                     series: dict) -> None:
+    """
+    For each non-baseline variant and each unit type report:
+      n        — units common to baseline and variant
+      med_lr   — median log(v_var / v_base)   [= median vertical scatter in plot]
+      sd_lr    — SD of log(v_var / v_base)    [= spread of that scatter]
+      wil_p    — Wilcoxon signed-rank p (H0: median log-ratio = 0)
+      med_dr   — median |rank_var − rank_base|  (variant rank within its own corpus)
+    """
+    from scipy import stats as _stats
+
+    base_s = (series['baseline']['S']
+              .set_index('unit_idx')[['v', 'baseline_rank']]
+              .rename(columns={'v': 'v_base', 'baseline_rank': 'rank_base'}))
+    base_i = (series['baseline']['I']
+              .set_index('unit_idx')[['v', 'baseline_rank']]
+              .rename(columns={'v': 'v_base', 'baseline_rank': 'rank_base'}))
+
+    hdr = (f'{"Variant":<24}  {"Type":<5}  {"n":>6}  '
+           f'{"med log-r":>10}  {"sd log-r":>9}  {"Wil p":>10}  '
+           f'{"med|Δrank|":>11}  {"med|Δpct|":>10}')
+    print('\n' + '─' * len(hdr))
+    print('Parameter stability — log-ratio and rank displacement')
+    print('─' * len(hdr))
+    print(hdr)
+    print('─' * len(hdr))
+
+    rows = []
+    for label, d in series.items():
+        if label == 'baseline':
+            continue
+        for ukey, base_ref in [('S', base_s), ('I', base_i)]:
+            var = (d[ukey]
+                   .set_index('unit_idx')[['v', 'baseline_rank']]
+                   .rename(columns={'v': 'v_var', 'baseline_rank': 'rank_base_var'}))
+
+            mg = base_ref.join(var, how='inner')
+            n  = len(mg)
+            if n < 5:
+                continue
+
+            lr = np.log(mg['v_var'].values) - np.log(mg['v_base'].values)
+            med_lr = float(np.median(lr))
+            sd_lr  = float(np.std(lr, ddof=1))
+            _, wil_p = _stats.wilcoxon(lr, alternative='two-sided')
+
+            # variant rank within its own corpus (rank by v_var descending)
+            var_ranked = (d[ukey]
+                          .sort_values('v', ascending=False)
+                          .reset_index(drop=True))
+            var_ranked['rank_var'] = np.arange(1, len(var_ranked) + 1)
+            rank_map = var_ranked.set_index('unit_idx')['rank_var']
+            mg = mg.copy()
+            mg['rank_var'] = mg.index.map(rank_map)
+            mg = mg.dropna(subset=['rank_var'])
+            med_dr = float(np.median(np.abs(mg['rank_var'].values - mg['rank_base'].values)))
+
+            n_base = len(base_ref)
+            n_var  = len(d[ukey])
+            pct_base = mg['rank_base'].values / n_base
+            pct_var  = mg['rank_var'].values  / n_var
+            med_rel  = float(np.median(np.abs(pct_var - pct_base)))
+
+            print(f'{label:<24}  {ukey:<5}  {n:>6,}  '
+                  f'{med_lr:>+10.4f}  {sd_lr:>9.4f}  {wil_p:>10.3e}  '
+                  f'{med_dr:>11.1f}  {med_rel:>10.4f}')
+            rows.append(dict(variant=label, unit_type=ukey, n=n,
+                             med_log_ratio=med_lr, sd_log_ratio=sd_lr,
+                             wilcoxon_p=wil_p, med_abs_delta_rank=med_dr,
+                             med_rel_rank_shift=med_rel))
+
+    print('─' * len(hdr))
+    paths = load_config()
+    out = paths.plots / 'fig_5_stability.csv'
+    pd.DataFrame(rows).to_csv(out, index=False)
+    print(f'Saved {out}')
+
+
+# ─── Individual parameter plots ───────────────────────────────────────────────
+
+def _plot5_single(src_rank_map: dict, inst_rank_map: dict,
+                  series: dict, keys: list[str],
+                  stem: str, title: str) -> None:
+    """
+    Side-by-side Sources | Institutions for baseline + selected overlays.
+    Saves stem.pdf and stem_latex.pdf to plots/.
+    """
+    paths = load_config()
+    sub = {k: series[k] for k in ['baseline'] + keys if k in series}
+
+    sns.set_theme(style='whitegrid', font_scale=0.95)
+    fig, axes = plt.subplots(1, 2, figsize=(12, 5), sharey=True)
+    fig.subplots_adjust(wspace=0.05)
+
+    _draw_panel(axes[0], sub, 'S', len(src_rank_map),  'Sources')
+    _draw_panel(axes[1], sub, 'I', len(inst_rank_map), 'Institutions')
+    axes[1].set_ylabel('')
+
+    sup = fig.suptitle(title, fontsize=9, y=1.01)
+
+    out = paths.plots / f'{stem}.pdf'
+    fig.savefig(out, bbox_inches='tight')
+    print(f'Saved {out}')
+
+    sup.set_visible(False)
+    fig.savefig(paths.plots / f'{stem}_latex.pdf', bbox_inches='tight')
+    sup.set_visible(True)
+
+    plt.close(fig)
+
+
+def plot5a(src_rank_map, inst_rank_map, series):
+    _plot5_single(src_rank_map, inst_rank_map, series,
+                  keys=['τ=40'],
+                  stem='fig_5a',
+                  title='Parameter sensitivity: threshold τ=40  (x-axis locked to baseline)')
+
+
+def plot5b(src_rank_map, inst_rank_map, series):
+    _plot5_single(src_rank_map, inst_rank_map, series,
+                  keys=['ρ=1'],
+                  stem='fig_5b',
+                  title='Parameter sensitivity: reference weighting ρ=1  (x-axis locked to baseline)')
+
+
+def plot5c(src_rank_map, inst_rank_map, series):
+    _plot5_single(src_rank_map, inst_rank_map, series,
+                  keys=['census=1yr'],
+                  stem='fig_5c',
+                  title='Parameter sensitivity: census window 1 yr  (x-axis locked to baseline)')
+
+
+def plot5d(src_rank_map, inst_rank_map, series):
+    _plot5_single(src_rank_map, inst_rank_map, series,
+                  keys=['α=0.85, μ=1/N', 'α=0.85, μ=1/N_p'],
+                  stem='fig_5d',
+                  title='Parameter sensitivity: Katz–Hubbell α=0.85  (x-axis locked to baseline)')
+
+
 # ─── Main ─────────────────────────────────────────────────────────────────────
 
 def main():
@@ -321,6 +464,11 @@ def main():
         src_rank_map, inst_rank_map, series = fetch_data(rk_db, el_db)
 
     plot5(src_rank_map, inst_rank_map, series)
+    report_stability(src_rank_map, inst_rank_map, series)
+    plot5a(src_rank_map, inst_rank_map, series)
+    plot5b(src_rank_map, inst_rank_map, series)
+    plot5c(src_rank_map, inst_rank_map, series)
+    plot5d(src_rank_map, inst_rank_map, series)
 
 
 if __name__ == '__main__':

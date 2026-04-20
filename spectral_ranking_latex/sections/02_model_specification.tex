@@ -115,7 +115,7 @@ Row-normalising $\mathbf{C}$ gives the row-stochastic matrix
 $\mathbf{H}=\mathbf{D}_r^{-1}\mathbf{C}$,
 ensuring that, when $\rho_i = 1$, differences in reference intensity across units are
 removed. They are reintroduced later
-via the influence-per-work scaling \eqref{eq:vstar}.
+via the influence scaling \eqref{eq:vstar}.
 Dangling units (units with $r_p=0$) and units with no incoming references are iteratively excluded from the strongly connected component on which ranking is performed, as described in the Computation paragraph below.
 
 The three unipartite masks---source-only $(1000)$, institution-only $(0001)$,
@@ -179,8 +179,8 @@ which recovers $\boldsymbol{\pi}^*$ in the limit $\alpha\to 1$ when
 $\mathbf{H}$ is primitive.
 The prior $\boldsymbol{\mu}$ has a substantive interpretation as exogenous standing independent of reference structure. Together with $\alpha<1$ it additionally guarantees a unique nonnegative solution to \eqref{eq:spectral} even when $\mathbf{H}$ is not primitive: $\alpha<1$ makes $(\mathbf{I}-\alpha\mathbf{H}^\top)$ invertible, and a nonzero $\boldsymbol{\mu}$ lifts the equation off the homogeneous system. If $\mathbf{C}$ were a binary adjacency matrix with the flat prior, this would be the PageRank spectral ranking \citep{brinAnatomyLargeScaleHypertextual1998}.
 
-The spectral ranking $\boldsymbol{\pi}$ is the steady-state probability vector of the Markov matrix $\mathbf{H}$, which we refer to as the probability distribution of attention or influence.
-The \emph{influence per work} is computed as \citep{palacios-huertaMeasurementIntellectualInfluence2004},
+The spectral ranking $\boldsymbol{\pi}$ is the steady-state probability vector of the Markov matrix $\mathbf{H}$; we refer to $\pi_p$ as the \emph{ranking probability} of unit $p$.
+The \emph{influence} $v_p$ is computed as \citep{palacios-huertaMeasurementIntellectualInfluence2004},
 \begin{equation}
 	\mathbf{v}
 	\;=\;
@@ -196,8 +196,8 @@ Here, the unit work count $a_p = |\{i:w_i\in p\}|$ where $p$ is a specific sourc
 and $\boldsymbol{\pi}$ denotes the solution to \eqref{eq:spectral}.
 The scalar $A$ normalises $\mathbf{v}$ so that its $a_p$-weighted mean equals one:
 $\mathbf{a}^{\top}\mathbf{v}/A=\mathbf{1}^{\top}\boldsymbol{\pi}=1$.
-A unit with $v_p=1$ therefore has the corpus-average influence per work, and
-$v_p=2$ indicates twice the average influence per work.
+A unit with $v_p=1$ therefore has the corpus-average influence, and
+$v_p=2$ indicates twice the corpus-average influence.
 \cite{palacios-huertaMeasurementIntellectualInfluence2004} show that
 $\mathbf{v}$ is uniquely characterised by several reasonable axiomatic
 constraints \citep[but see][]{serranoMeasurementIntellectualInfluence2004}.
@@ -274,4 +274,4 @@ $\mathbf{\tilde{H}}$ is a sparse matrix constructed from the filtered and weight
 \end{equation}
 is used. Because $(1-\alpha)\boldsymbol{\mu}\mathbf{1}^\top$ makes $\mathbf{\tilde{H}}$ primitive, power iteration converges to $\boldsymbol{\pi}$ from any strictly positive starting vector $\boldsymbol{\pi}^{(0)}$.
 \end{itemize}
-In either approach, the per-work scaling \eqref{eq:vstar} is applied after $\boldsymbol{\pi}$ has been computed.
+In either approach, the influence scaling \eqref{eq:vstar} is applied after $\boldsymbol{\pi}$ has been computed.
