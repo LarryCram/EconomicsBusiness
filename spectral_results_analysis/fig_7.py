@@ -20,6 +20,7 @@ Outputs:
 
 import sys
 import json
+import argparse
 from pathlib import Path
 
 import numpy as np
@@ -57,9 +58,9 @@ INST_FIELD_COLOURS = {
 
 # ─── Data ─────────────────────────────────────────────────────────────────────
 
-def load_bootstrap(paths) -> tuple:
-    """Load v_s_boot, v_u_boot, lam_ratio_boot arrays and meta from $WORKING/bootstrap/."""
-    boot_dir = paths.working / 'bootstrap'
+def load_bootstrap(paths, boot_subdir: str = 'bootstrap') -> tuple:
+    """Load v_s_boot, v_u_boot, lam_ratio_boot arrays and meta from $WORKING/{boot_subdir}/."""
+    boot_dir = paths.working / boot_subdir
     v_s_boot = np.load(boot_dir / 'v_s_boot.npy')   # (B, n_s)
     v_u_boot = np.load(boot_dir / 'v_u_boot.npy')   # (B, n_u)
     lam_path = boot_dir / 'lam_ratio_boot.npy'
@@ -67,7 +68,6 @@ def load_bootstrap(paths) -> tuple:
     with open(boot_dir / 'meta.json') as f:
         meta = json.load(f)
     completed = meta.get('completed', v_s_boot.shape[0])
-    # Only use completed replicates (rows with non-zero v_s)
     v_s_boot = v_s_boot[:completed]
     v_u_boot = v_u_boot[:completed]
     if lam_ratio_boot is not None:
@@ -233,7 +233,8 @@ def report_eigenvalues(lam_ratio_boot: np.ndarray) -> None:
 
 
 def plot7(paths, v_s_boot, v_u_boot, lam_ratio_boot, meta, df_base,
-          field_labels: tuple, inst_field_map=None) -> None:
+          field_labels: tuple, inst_field_map=None,
+          out_stem: str = 'fig_7', boot_label: str = '80% resample') -> None:
     B = v_s_boot.shape[0]
 
     # ── Sources ──────────────────────────────────────────────────────────────
@@ -319,17 +320,17 @@ def plot7(paths, v_s_boot, v_u_boot, lam_ratio_boot, meta, df_base,
     skipped = meta.get('skipped', 0)
     sup = fig.suptitle(
         f'Bootstrap uncertainty — influence per work  '
-        f'(B={B}, 80% resample'
+        f'(B={B}, {boot_label}'
         + (f', {skipped} skipped' if skipped else '') + ')',
         fontsize=9, y=1.01,
     )
 
-    out = paths.plots / 'fig_7.pdf'
+    out = paths.plots / f'{out_stem}.pdf'
     fig.savefig(out, bbox_inches='tight', dpi=150)
     print(f'Saved {out}')
 
     sup.set_visible(False)
-    latex_out = paths.plots / 'fig_7_latex.pdf'
+    latex_out = paths.plots / f'{out_stem}_latex.pdf'
     fig.savefig(latex_out, bbox_inches='tight', dpi=150)
     print(f'Saved {latex_out}')
     sup.set_visible(True)
@@ -344,19 +345,40 @@ def plot7(paths, v_s_boot, v_u_boot, lam_ratio_boot, meta, df_base,
 
 # ─── Main ─────────────────────────────────────────────────────────────────────
 
+BOOT_LABELS = {
+    'bootstrap':          '80% resample',
+    'bootstrap_oa_errors': 'OA wrong-reference errors',
+}
+
+BOOT_OUT_STEMS = {
+    'bootstrap':          'fig_7',
+    'bootstrap_oa_errors': 'fig_7_oa_errors',
+}
+
+
 def main():
+    parser = argparse.ArgumentParser(
+        description='Plot bootstrap uncertainty in spectral ranking.'
+    )
+    parser.add_argument(
+        '--boot', default='bootstrap',
+        choices=list(BOOT_LABELS.keys()),
+        help='Bootstrap subdirectory under $WORKING/ (default: bootstrap)',
+    )
+    args = parser.parse_args()
+
     paths   = load_config()
     rk_path = paths.working / 'rankings.duckdb'
 
-    boot_dir = paths.working / 'bootstrap'
+    boot_dir = paths.working / args.boot
     if not (boot_dir / 'v_s_boot.npy').exists():
         raise FileNotFoundError(
             f'Bootstrap arrays not found in {boot_dir}. '
-            'Run spectral_ranking_bootstrap/bootstrap_baseline.py first.'
+            f'Run the corresponding bootstrap script first.'
         )
 
-    print('Loading bootstrap arrays ...', flush=True)
-    v_s_boot, v_u_boot, lam_ratio_boot, meta = load_bootstrap(paths)
+    print(f'Loading bootstrap arrays from {boot_dir} ...', flush=True)
+    v_s_boot, v_u_boot, lam_ratio_boot, meta = load_bootstrap(paths, args.boot)
     B = v_s_boot.shape[0]
     print(f'  B={B}  n_s={meta["n_s"]}  n_u={meta["n_u"]}  '
           f'skipped={meta.get("skipped", 0)}')
@@ -373,7 +395,9 @@ def main():
 
     print('Plotting ...', flush=True)
     plot7(paths, v_s_boot, v_u_boot, lam_ratio_boot, meta, df_base,
-          field_labels, inst_field_map)
+          field_labels, inst_field_map,
+          out_stem=BOOT_OUT_STEMS[args.boot],
+          boot_label=BOOT_LABELS[args.boot])
 
 
 if __name__ == '__main__':

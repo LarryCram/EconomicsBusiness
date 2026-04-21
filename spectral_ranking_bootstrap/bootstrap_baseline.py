@@ -7,13 +7,14 @@ Two sampling modes (select with --mode):
         Sample 80% of unique citer works (without replacement).  Keep only edge
         rows in the work-level SI and IS tables where the citer work was drawn.
         Both SI and IS are filtered by the same work selection, so dropping a
-        work removes its contribution consistently from both matrices.  Models
-        metadata errors at the OpenAlex work level.
+        work removes its contribution consistently from both matrices.
+        Measures rank sensitivity to work inclusion (sampling variability),
+        not errors in how works are recorded.
 
   edge
         Sample 80% (with replacement) of the deduplicated SI and IS unit edge
-        lists independently.  Models sensitivity to individual edge-level
-        citation noise.
+        lists independently.  Measures sensitivity to individual edge-level
+        citation links.
 
 Each replicate is filtered to its bipartite core (iterative removal of
 sources/institutions with zero indegree or zero outdegree), matching the SCC
