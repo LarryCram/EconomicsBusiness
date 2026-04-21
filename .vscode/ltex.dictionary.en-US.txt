@@ -70,3 +70,8 @@ GEB
 ss
 bip
 Behav
+capitalise
+equalises
+NSWEB
+LOWESS
+summarise

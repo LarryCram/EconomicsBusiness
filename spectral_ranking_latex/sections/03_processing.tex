@@ -13,7 +13,7 @@ The \textit{ERA 2023 Submission Journal List}~\cite[][SJL]{australianresearchcou
 Field of Research (FoR) codes to each entry.
 From the full list of 26{,}241 journals we retain those for which \emph{every} assigned FoR code falls within
 Division~35 (Commerce, Management, Tourism and Services) or
-Division~38 (Economics)---specifically the four-digit groups
+Division~38 (Economics)---specifically the 35 and 38 two-digit divisions and the four-digit groups
 3501--3509 and 3801--3803, 3899.
 \textit{Clarivate Web of Science Journal Citation Reports}~\cite[][JCR]{clarivateanalyticsJournalCitationReports2026} assign each
 journal a Web of Science category. We retain those in
@@ -22,7 +22,7 @@ or ``Business, Finance''.
 
 Every journal in JQL, SJL, and JCR has at least one ISSN, and may have several. These registry ISSNs are joined independently to the February 2026 OpenAlex sources snapshot using its list of ISSNs as the matching key and selecting only the `journal' source-type. Around 30 additional matches are identified by exact title matching for OpenAlex sources that lack an ISSN. We denote the union of matched OpenAlex sources OAS\textsuperscript{*}.
 
-For OAS\textsuperscript{*} sources we extract work and authorship data and examine the annual-output distributions for sources and institutions. Retention curves (Fig.~\ref{fig:retention}) show that a majority of institutions and a substantial fraction of sources contributing fewer than 20 works per year in the census window, producing long tails that contribute little stable citation density. We therefore adopt the thresholds $\tau_S = 20$ works/source/year and $\tau_U = 20$ works/institution/year. Sources retained under $\tau_S$ form the set OAS; institutions retained under $\tau_U$ form $\mathfrak{U}$.
+For OAS\textsuperscript{*} sources we extract work and authorship data and examine the annual-output distributions for sources and institutions. The retention curves (Fig.~\ref{fig:retention}) plot the decline in unit count as the cut-off for works published per year rises, revealing that a majority of institutions and a substantial fraction of sources contributes fewer than 20 works per year in the census window. The long tails add negligible amounts to the citation density, and accordingly we adopt thresholds $\tau_S = 20$ works/source/year and $\tau_I = 20$ works/institution/year. Sources retained above the threshold $\tau_S$ form the set OAS, and institutions retained under $\tau_I$ form $\mathfrak{I}$.
 
 \begin{figure}[!htb]
 	\centering
@@ -32,9 +32,9 @@ For OAS\textsuperscript{*} sources we extract work and authorship data and exami
 	\label{fig:retention}
 \end{figure}
 
-Using sources and institutions that satisfy these thresholds, we extract works, authorships and references published between 2000 and 2024, retaining works typed as `article' or `review' and excluding works that are paratext, retracted, or without an authorship entity. For the baseline results of Section~\ref{sec:results} the census and target windows coincide at $t^c = t^t = [2020, 2024]$; the full 2000--2024 extraction supports the time-series sensitivity runs $t_1,\dots,t_4$ reported there.
+Using sources and institutions that satisfy these thresholds, we extract works, authorships and references published between 2000 and 2024, retaining works typed as `article' or `review' and excluding works that are paratext, retracted, or without an authorship entity. Although most results relate to the period 2020-2024, the wider 2000--2024 time window supports the time-series sensitivity runs reported below.
 
-Sources span subfields $F$ within the broad $\mathfrak{F}$ set of sources in Economics and Business, labelled as follows. Each source in OAS carries one or more subfield labels designating categories, groups, subjects, and topics in JQL, SJR, JCR, and OAJ respectively. These labels are mapped by hand to the broad subfields $E$ (economics) and $B$ (business), or left unmapped (e.g. Psychology, Education from JQL). Ambiguous labels (e.g. Finance, Accounting) are mapped to $E$. The mappings are counted, and the source classified as follows:
+Within the broad field of Economics and Business, many sources publish in subfields $F$ within the set $\mathfrak{F}$. To relate OAS sources to subfields ${F}$ we capitalise on registry subfield labels (categories, groups, subjects, and topics in JQL, SJR, JCR, and OAS respectively). These labels are mapped by hand to the broad subfields $F=E$ (economics) or $F=B$ (business), or $F=X$ when the subfield is out of scope (e.g. Psychology, Education from JQL). Fields in Finance and in Accounting are mapped to $F=E$. Some sources publish sizeable amounts in both E and B; they are designated ambiguous, $F=A$. The mappings are counted, and the source classified as follows:
 \begin{itemize}
 	\setlength{\itemsep}{0pt}
 	\item `E' when its E-count is $\geq 2$ and its B-count is $< 2$ (economics-dominant);
@@ -43,13 +43,12 @@ Sources span subfields $F$ within the broad $\mathfrak{F}$ set of sources in Eco
 	\item `X' when both E-count and B-count are $< 2$ (weak signal in both fields).
 \end{itemize}
 Institutions generally publish in multiple subfields, so direct categorical
-classification is unsuitable. Instead, we characterise each institution by
-the stochastic reference matrix $H_{SI}$. For each source~$s$,
-$H_{SI}[s,U]$ is the fraction of $s$'s citation weight directed at
-institution~$u$, so every source contributes equally regardless of its total
-output. The field-$F$ score for institution~$u$ is
-$\sum_{k:\,\mathrm{subfield}(k)=F} H_{SI}[k,u]$.
-An institution is assigned $F = X$ if its $X$-score is at least
-$\tfrac{1}{2}$; otherwise it takes the dominant label among $\{E, B, A\}$.
+classification is unsuitable. Instead, we use the 
+stochastic reference matrix $H_{SI}$ to relate an institution to already-classified sources. For each source~$s$, $H_{SI}[s,u]$ is the fraction of $s$'s reference weight directed at
+institution~$u$, counted without regard to the total output of the source. 
+By summing over sources, compute $f_{Fu}$ as the fraction of institution~$u$'s incoming reference weight from $F$-classified sources.
+Institutions are assigned field labels by a quota rule: top 30\% by $f_{Xu}$ receive $X$;
+from the remainder, top 10\% by $f_{Au}$ receive $A$; the rest are split $E$:$B$ at a 5:8 ratio,
+with $E$ preferred when $f_{Eu}\geq f_{Bu}$.
 
 \input{../tables/table1_registry_overview}

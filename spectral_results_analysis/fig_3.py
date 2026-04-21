@@ -11,8 +11,9 @@ All runs use baseline F from params.csv, τ_U=τ_S=20, ρ=0, α=1.
 field_eb=X units excluded.
 
 Outputs:
-  plots/fig_3.pdf / fig_3_latex.pdf   — rank curves (2×1)
-  plots/fig_3a.pdf / fig_3a_latex.pdf — scatter panels (2×1)
+  plots/fig_3.pdf / fig_3_latex.pdf         — rank curves (2×1)
+  plots/fig_3a.pdf / fig_3a_latex.pdf       — scatter panels (2×1)
+  spectral_ranking_latex/tables/table_unit_effects.tex — illustrative v≈1 cases
 """
 
 import sys
@@ -41,6 +42,9 @@ _fx            = _baseline['fx']
 BASELINE_TABLE = f'rk_{_run_code}_{_fx}_tauU{_tau_u}_tauS{_tau_s}_vartau_rho0_m0110_chi50_alpha100'
 SS_TABLE       = f'rk_{_run_code}_{_fx}_tauU{_tau_u}_tauS{_tau_s}_vartau_rho0_m1000_chi50_alpha100'
 II_TABLE       = f'rk_{_run_code}_{_fx}_tauU{_tau_u}_tauS{_tau_s}_vartau_rho0_m0001_chi50_alpha100'
+EL_TABLE       = f'el_{_run_code}_{_fx}_tauU{_tau_u}_tauS{_tau_s}_vartau'
+
+V1_BAND = 0.05  # |log(v)| < 0.05  →  v in (e^-0.05, e^+0.05) ≈ (0.951, 1.051)
 
 # Visual spec per label
 STYLE = {
@@ -291,7 +295,7 @@ def load_cross_type_colors(series: dict) -> tuple:
     """
     paths = load_config()
     el_path = paths.working / 'edge_lists.duckdb'
-    el_table = f'el_{_run_code}_A_tauU{_tau_u}_tauS{_tau_s}_vartau'
+    el_table = f'el_{_run_code}_{_fx}_tauU{_tau_u}_tauS{_tau_s}_vartau'
 
     v_s = series['m=0110']['S'][['unit_idx', 'v']].rename(columns={'v': 'v_s'})
     v_i = series['m=0110']['I'][['unit_idx', 'v']].rename(columns={'v': 'v_i'})
@@ -420,7 +424,9 @@ def plot3(src_rank_map: dict, inst_rank_map: dict, series: dict) -> None:
     _save(fig, sup, 'fig_3', paths)
 
 
-def plot3a(src_rank_map: dict, inst_rank_map: dict, series: dict) -> None:
+def plot3a(src_rank_map: dict, inst_rank_map: dict, series: dict,
+           src_highlights: pd.DataFrame | None = None,
+           inst_highlights: pd.DataFrame | None = None) -> None:
     """Right panels: vSS/vII vs v_bipartite scatter with cross-type colour."""
     paths = load_config()
     _pub_theme()
@@ -437,18 +443,223 @@ def plot3a(src_rank_map: dict, inst_rank_map: dict, series: dict) -> None:
                         cmap='viridis_r',
                         cbar_label='mean $v_I$ (bipartite)',
                         color_map=src_colors)
+    if src_highlights is not None and not src_highlights.empty:
+        axes[0].scatter(src_highlights['v_bip'].values, src_highlights['v_ss'].values,
+                        marker='+', s=150, color='black', linewidths=1.5, zorder=6)
     _draw_scatter_panel(axes[1], fig, series, 'I', 'm=0001',
                         '$v$  II only  (m=0001)',
                         'Institutions — $v_{\\rm II}$ vs $v_{\\rm bip}$',
                         cmap='plasma_r',
                         cbar_label='mean $v_S$ (bipartite)',
                         color_map=inst_colors)
+    if inst_highlights is not None and not inst_highlights.empty:
+        axes[1].scatter(inst_highlights['v_bip'].values, inst_highlights['v_ii'].values,
+                        marker='+', s=150, color='black', linewidths=1.5, zorder=6)
 
     sup = fig.suptitle(
         '$v_{\\rm SS}$ vs $v_{\\rm bip}$ and $v_{\\rm II}$ vs $v_{\\rm bip}$',
         fontsize=9, y=1.01,
     )
     _save(fig, sup, 'fig_3a', paths)
+
+
+# ─── Unit-effects table (table_unit_effects.tex) ─────────────────────────────
+
+def _explain_source(row) -> str:
+    v_bip, v_ss, mv_i = row['v_bip'], row['v_ss'], row['mean_v_I_bip']
+    return (
+        f"v_SB ({v_bip:.3f}) is {'above' if v_bip > v_ss else 'below'} v_SS ({v_ss:.3f}). "
+        f"In the bipartite model v_SB equals the H_SI-weighted mean v_IB of cited "
+        f"institutions ({mv_i:.3f}, {'above' if mv_i > 1.0 else 'below'} the institutional mean of 1), "
+        f"placing this source {'above' if v_bip > 1.0 else 'below'} the bipartite average. "
+        f"v_SS reflects source-source citations, which are absent from the bipartite model."
+    )
+
+
+def _explain_institution(row) -> str:
+    v_bip, v_ii, mv_s = row['v_bip'], row['v_ii'], row['mean_v_S_bip']
+    return (
+        f"v_IB ({v_bip:.3f}) is {'above' if v_bip > v_ii else 'below'} v_II ({v_ii:.3f}). "
+        f"In the bipartite model v_IB equals the H_IS-weighted mean v_SB of citing "
+        f"sources ({mv_s:.3f}, {'above' if mv_s > 1.0 else 'below'} the source mean of 1), "
+        f"placing this institution {'above' if v_bip > 1.0 else 'below'} the bipartite average. "
+        f"v_II reflects institution-institution citations, which are absent from the bipartite model."
+    )
+
+
+def _write_unit_effects_table(df: pd.DataFrame) -> None:
+    src = df[df['type'] == 'Sources'].copy()
+    ins = df[df['type'] == 'Institutions'].copy()
+
+    case_order_s = ['min v_ss | v_bip≈1', 'max v_ss | v_bip≈1',
+                    'min v_bip | v_ss≈1', 'max v_bip | v_ss≈1']
+    case_order_i = ['min v_ii | v_bip≈1', 'max v_ii | v_bip≈1',
+                    'min v_bip | v_ii≈1', 'max v_bip | v_ii≈1']
+    case_label = {
+        'min v_ss | v_bip≈1':  r'$\min v_{\rm SS}$',
+        'max v_ss | v_bip≈1':  r'$\max v_{\rm SS}$',
+        'min v_bip | v_ss≈1':  r'$\min v_{\rm bip}$',
+        'max v_bip | v_ss≈1':  r'$\max v_{\rm bip}$',
+        'min v_ii | v_bip≈1':  r'$\min v_{\rm II}$',
+        'max v_ii | v_bip≈1':  r'$\max v_{\rm II}$',
+        'min v_bip | v_ii≈1':  r'$\min v_{\rm bip}$',
+        'max v_bip | v_ii≈1':  r'$\max v_{\rm bip}$',
+    }
+
+    def fmt(x):
+        return f'{float(x):.2f}'
+
+    def src_row(r):
+        return (f'{r["name"]} & {fmt(r["v_bip"])} & {fmt(r["v_ss"])} & {fmt(r["mean_v_I_bip"])}'
+                f' & {case_label[r["case"]]} \\\\\n')
+
+    def ins_row(r):
+        return (f'{r["name"]} & {fmt(r["v_bip"])} & {fmt(r["v_ii"])} & {fmt(r["mean_v_S_bip"])}'
+                f' & {case_label[r["case"]]} \\\\\n')
+
+    src_rows = ''.join(src_row(src[src['case'] == c].iloc[0]) for c in case_order_s)
+    ins_rows = ''.join(ins_row(ins[ins['case'] == c].iloc[0]) for c in case_order_i)
+
+    tex = (
+        r'\begin{table}[htbp]' + '\n'
+        r'\centering\small' + '\n'
+        r'\caption{Illustrative sources and institutions near $v=1$, showing how' + '\n'
+        r'$v_{\rm bip}$ diverges from $v_{\rm SS}$ and $v_{\rm II}$.' + '\n'
+        r'$\bar{v}^{\rm bip}$ is the $H$-weighted mean bipartite rank of cross-type' + '\n'
+        r'partners. Field: E\,=\,economics, B\,=\,business, A\,=\,ambiguous.}' + '\n'
+        r'\label{tab:unit_effects}' + '\n'
+        r'\begin{tabular}{lrrrl}' + '\n'
+        r'\toprule' + '\n'
+        r'\multicolumn{5}{l}{\textit{Sources}} \\[2pt]' + '\n'
+        r'Name & $v_{\rm bip}$ & $v_{\rm SS}$ & $\bar{v}_{I}^{\rm bip}$ & Case \\' + '\n'
+        r'\midrule' + '\n'
+        + src_rows
+        + r'\midrule' + '\n'
+        r'\multicolumn{5}{l}{\textit{Institutions}} \\[2pt]' + '\n'
+        r'Name & $v_{\rm bip}$ & $v_{\rm II}$ & $\bar{v}_{S}^{\rm bip}$ & Case \\' + '\n'
+        r'\midrule' + '\n'
+        + ins_rows
+        + r'\bottomrule' + '\n'
+        r'\end{tabular}' + '\n'
+        r'\end{table}' + '\n'
+    )
+
+    tables_dir = Path(__file__).parent.parent / 'spectral_ranking_latex' / 'tables'
+    tables_dir.mkdir(parents=True, exist_ok=True)
+    out = tables_dir / 'table_unit_effects.tex'
+    out.write_text(tex)
+    print(f'Saved {out}')
+
+
+def build_unit_effects_table(series: dict, paths) -> None:
+    """Generate table_unit_effects.tex — illustrative units near v=1."""
+    print('Building unit-effects table ...')
+    el_path = paths.working / 'edge_lists.duckdb'
+    par     = paths.working / 'parquet'
+
+    df_s_bip = series['m=0110']['S'][['unit_idx', 'v']].rename(columns={'v': 'v_bip'})
+    df_i_bip = series['m=0110']['I'][['unit_idx', 'v']].rename(columns={'v': 'v_bip'})
+    df_ss    = series['m=1000']['S'][['unit_idx', 'v']].rename(columns={'v': 'v_ss'})
+    df_ii    = series['m=0001']['I'][['unit_idx', 'v']].rename(columns={'v': 'v_ii'})
+
+    if df_ss.empty or df_ii.empty:
+        print('  WARNING: SS or II run missing — skipping unit-effects table')
+        return
+
+    with duckdb.connect(str(el_path), read_only=True) as db:
+        el = db.execute(f"""
+            SELECT citer_source_idx, cited_inst_idx, SUM(cited_inst_weight) AS w
+            FROM {EL_TABLE}
+            WHERE citer_source_idx IS NOT NULL AND cited_inst_idx IS NOT NULL
+            GROUP BY citer_source_idx, cited_inst_idx
+        """).df()
+
+    # Source → H_SI-weighted mean v_IB
+    el_s = el.merge(df_i_bip.rename(columns={'unit_idx': 'cited_inst_idx', 'v_bip': 'v_i'}),
+                    on='cited_inst_idx', how='inner')
+    el_s['wv'] = el_s['w'] * el_s['v_i']
+    agg_s = el_s.groupby('citer_source_idx')[['wv', 'w']].sum()
+    agg_s['mean_v_I_bip'] = agg_s['wv'] / agg_s['w']
+    agg_s = agg_s[['mean_v_I_bip']].reset_index().rename(columns={'citer_source_idx': 'unit_idx'})
+
+    # Institution → H_IS-weighted mean v_SB
+    el_i = el.merge(df_s_bip.rename(columns={'unit_idx': 'citer_source_idx', 'v_bip': 'v_s'}),
+                    on='citer_source_idx', how='inner')
+    el_i['wv'] = el_i['w'] * el_i['v_s']
+    agg_i = el_i.groupby('cited_inst_idx')[['wv', 'w']].sum()
+    agg_i['mean_v_S_bip'] = agg_i['wv'] / agg_i['w']
+    agg_i = agg_i[['mean_v_S_bip']].reset_index().rename(columns={'cited_inst_idx': 'unit_idx'})
+
+    sm = pd.read_parquet(str(par / 'source_master.parquet'),
+                         columns=['source_idx', 'source_name', 'field_eb'])
+    sm = sm.rename(columns={'source_idx': 'unit_idx'})
+
+    inst_eb = pd.read_parquet(str(par / 'institution_field_eb.parquet'),
+                              columns=['unit_idx', 'field_eb'])
+    corp_inst = pd.read_parquet(str(par / 'corpus_institutions.parquet'),
+                                columns=['institution_idx', 'institution_name'])
+    corp_inst = corp_inst.rename(columns={'institution_idx': 'unit_idx'})
+
+    non_x_src  = set(sm.loc[sm['field_eb']  != 'X', 'unit_idx'])
+    non_x_inst = set(inst_eb.loc[inst_eb['field_eb'] != 'X', 'unit_idx'])
+
+    src = (df_s_bip
+           .merge(df_ss,  on='unit_idx', how='inner')
+           .merge(agg_s,  on='unit_idx', how='left')
+           .merge(sm[['unit_idx', 'source_name', 'field_eb']], on='unit_idx', how='inner'))
+    src = src[src['unit_idx'].isin(non_x_src)].copy()
+
+    inst = (df_i_bip
+            .merge(df_ii,     on='unit_idx', how='inner')
+            .merge(agg_i,     on='unit_idx', how='left')
+            .merge(inst_eb,   on='unit_idx', how='inner')
+            .merge(corp_inst, on='unit_idx', how='left'))
+    inst = inst[inst['unit_idx'].isin(non_x_inst)].copy()
+    inst = inst.rename(columns={'institution_name': 'source_name'})
+
+    rows = []
+    for band_col, alt_col, case_lo, case_hi, utype, data in [
+        ('v_ss',  'v_bip', 'min v_bip | v_ss≈1',  'max v_bip | v_ss≈1',  'Sources',      src),
+        ('v_bip', 'v_ss',  'min v_ss | v_bip≈1',   'max v_ss | v_bip≈1',  'Sources',      src),
+        ('v_ii',  'v_bip', 'min v_bip | v_ii≈1',   'max v_bip | v_ii≈1',  'Institutions', inst),
+        ('v_bip', 'v_ii',  'min v_ii | v_bip≈1',   'max v_ii | v_bip≈1',  'Institutions', inst),
+    ]:
+        band = data[np.abs(np.log(data[band_col])) < V1_BAND].copy()
+        if not band.empty:
+            rows.append((utype, case_lo, band.loc[band[alt_col].idxmin()]))
+            rows.append((utype, case_hi, band.loc[band[alt_col].idxmax()]))
+
+    records = []
+    for unit_type, case, r in rows:
+        is_src = unit_type == 'Sources'
+        records.append({
+            'type':         unit_type,
+            'case':         case,
+            'name':         r['source_name'],
+            'field_eb':     r['field_eb'],
+            'v_bip':        round(float(r['v_bip']), 3),
+            'v_ss':         round(float(r['v_ss']),  3) if is_src  else '',
+            'mean_v_I_bip': round(float(r['mean_v_I_bip']), 3) if is_src else '',
+            'v_ii':         '' if is_src else round(float(r['v_ii']),  3),
+            'mean_v_S_bip': '' if is_src else round(float(r['mean_v_S_bip']), 3),
+            'explanation':  _explain_source(r) if is_src else _explain_institution(r),
+        })
+
+    out_df = pd.DataFrame(records)
+    csv_path = paths.plots / 'fig3_v1_examples.csv'
+    out_df.to_csv(str(csv_path), index=False)
+    print(f'  Saved {csv_path}')
+    _write_unit_effects_table(out_df)
+
+    src_hl = out_df[out_df['type'] == 'Sources'][['v_bip', 'v_ss']].copy()
+    src_hl['v_bip'] = src_hl['v_bip'].astype(float)
+    src_hl['v_ss']  = src_hl['v_ss'].astype(float)
+
+    inst_hl = out_df[out_df['type'] == 'Institutions'][['v_bip', 'v_ii']].copy()
+    inst_hl['v_bip'] = inst_hl['v_bip'].astype(float)
+    inst_hl['v_ii']  = inst_hl['v_ii'].astype(float)
+
+    return src_hl, inst_hl
 
 
 # ─── Main ─────────────────────────────────────────────────────────────────────
@@ -470,7 +681,9 @@ def main():
     print('Including field_eb=X units in plots (no non-X filtering).')
 
     plot3(src_rank_map, inst_rank_map, series)
-    plot3a(src_rank_map, inst_rank_map, series)
+    src_highlights, inst_highlights = build_unit_effects_table(series, paths)
+    plot3a(src_rank_map, inst_rank_map, series,
+           src_highlights=src_highlights, inst_highlights=inst_highlights)
 
 
 if __name__ == '__main__':

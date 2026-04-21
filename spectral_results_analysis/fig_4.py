@@ -282,7 +282,7 @@ def main():
     tau_s    = _tau_s
     run_code = _run_code
     alpha    = 1.0
-    fx, rho  = 'A', 0
+    fx, rho  = _baseline['fx'], 0
 
     field_labels, _ = load_field_labels(paths)
     print(f"Field labels: {sum(v=='E' for v in field_labels.values())} E, "

@@ -518,8 +518,8 @@ def rank(csr_data, m: tuple, chi: float, alpha: float,
     elif m == (1, 1, 1, 1):
         # Full joint: assemble χ-scaled N×N matrix, then power iteration
         C = bmat(
-            [[(1 - chi) ** 2 * csr_data.C_SS,  chi * (1 - chi) * csr_data.C_SI],
-             [chi * (1 - chi) * csr_data.C_IS,  chi ** 2        * csr_data.C_II]],
+            [[csr_data.C_SS,                    chi * (1 - chi) * csr_data.C_SI],
+             [chi * (1 - chi) * csr_data.C_IS,  csr_data.C_II                  ]],
             format='csr',
         )
         H, _ = _row_normalise(C)

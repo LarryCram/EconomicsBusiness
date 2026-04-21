@@ -4,10 +4,10 @@
 \label{sec:results}
 % ---------------------------------------------------------------
 
-The model supports three structural arrangements: (1) the unit mask $m$ picks blocks, (2) the subfield $F$ selects from $\mathfrak{F}$ (E, B, A, X), and (3) the time windows $T_t$ select census and target years over {[2020,2024], [2015,2019], [2010, 2014], [2005, 2009], and [2000, 2004]}. We also present a sensitivity analysis for the parameters $\rho, \chi, (\alpha, \mu), and t^c$, together with a bootstrap study of uncertainties. 
+The model supports three structural arrangements that we present in order: (1) blocks are picked by the unit mask $m$ encoded as $1000 \rightarrow S$ (sources only), $0001 \rightarrow I$ (institutions only), $0110 \rightarrow B$ (bipartite) and $1111 \rightarrow J$ (joint), (2) subfields are picked from $\mathfrak{F}$ (E, B, A, X), and (3) fully overlapping census and target time windows are picked from the set \[\{T_t: t = 1 \ldots 5\} = \{[2000, 2004], [2005, 2009], [2010, 2014], [2015,2019, [2020,2024]\}\]. We also present a sensitivity analysis for the parameters $\rho, \chi, (\alpha, \mu), \rm{and}~ t^c$, together with a bootstrap study of uncertainties. Results focus on $v_S$ and $v_I$, the source and institution influence vectors, and we designate a particular model by superscript, e.g. $v_S^{SEt_5}$ is the source influence vector for the S ($m=1000$) block, $F=E$, and census and target time windows 2020-2024. 
 
-\paragraph{Mask structure}
-Figure~\ref{fig:fig3} compares spectral ranks across unit masks. The $x$-axis is the cardinal rank of sources (upper) and institutions (lower) in the baseline unit m=0110 (i.e. bipartite $S \rightarrow I \rightarrow S, \alpha=1, F=A, \mu=0, \rho=1, T_1 = [2020-2024]$). The solid black curve traces the corresponding ordinal rank $v$. Units near $v=1$ lie at the weighted average, at rank position ~25\% for sources and ~20\% for institutions. Overlaid on the bipartite source curve are $v$ ranks for the mask 1000 (red $\times$, $S \rightarrow S$) and 1111 at $\chi^*$ (green $\times$, full $S+I \rightarrow S+I$). The $x$-axis is the same unit in every case. For institutions, masks $m=0001$ ($I \rightarrow I$) and $m=1111$ replace the source alternatives.
+
+Figure~\ref{fig:fig3} compares spectral ranks across the four unit masks. The $x$-axis is the cardinal rank of sources (left) and institutions (right) in the baseline unit (i.e. bipartite with $S \rightarrow I \rightarrow S, \alpha=1, \mu=0, \rho=1, T_1 = [2020-2024]$ and F including all subfields). The solid black curve traces the corresponding ordinal rank $v$. Units near $v=1$ lie at the unit weighted average, at rank position ~25\% for sources and ~20\% for institutions. Overlaid on the bipartite source curve are $v_S^S$ (red $\times$, $S \rightarrow S$) and $v_S^J$ (green $\times$, joint $S+I \rightarrow S+I$). A point on the $x$-axis is the same unit in every case. For institutions, we show $v_I^I$ ($I \rightarrow I$) and $v_I^J$ (joint).
 
 \begin{figure}[h]
   \centering
@@ -26,48 +26,40 @@ Figure~\ref{fig:fig3} compares spectral ranks across unit masks. The $x$-axis is
   \label{fig:fig3a}
 \end{figure}
 
-Two striking features of Figure~\ref{fig:fig3} are (i) the tightness of the Institution dispersion compared with Sources, and (ii) the difference between the source influence $v_S$ in the bipartite baseline $m=0110$ and the source-source case $m=1000$. The tightness of 0001 and 1111 against 0110 for institutions, compared with sources, reflects the ratio of normalised stationary weighted effective branching for the two stochastic matrices,
+Two features of Figure~\ref{fig:fig3} are (i) the tightness of the institution dispersion compared with sources, and (ii) the difference between the source influence in the bipartite baseline $v_S^B$ the source-only case $v_S^S$. The tightness of $v_I^I$ and $v_I^J$ against $v_I^B$, compared with $v_S^S$ and $v_S^J$ against $v_S^B$ reflects the ratio of normalised stationary weighted effective branching (NSWEB, $\bar{\epsilon}_{\pi}$) for the two stochastic matrices,
 \[
-\bar m_{\pi}
+\bar{\epsilon}_{\pi}
 =
 \sum_i \pi_i m_i
 =
 \sum_i \pi_i \exp\!\left(-\sum_j H_{ij}\log H_{ij}\right)
 \]
-where $\pi$ is the stationary distribution Equation~\ref{eq:eig}. We find that $\bar{m}$ is 3.5 times larger for institutions ($H_II$) than sources ($H_SS$), implying that on average the influence of an institution spreads over 3.5 times more destinations after one step, than the influence of a source.
+where $\pi$ is the stationary distribution Equation~\ref{eq:eig}. We find that $\bar{\epsilon}$ is 3.5 times larger for institutions ($H_{II}$) than sources ($H_{SS}$), implying that on average the influence of an institution spreads over 3.5 times more destinations after one step, than the influence of a source.
 
-To account for the wide dispersion of 1000 relative to 0110 for sources, note that 1000 is a realisation of the direct journal-journal 
-citation network studied by \citep{pinski,bergstrom} and used 
-to form the Clarivate Article Influence Score (AIS). A least-squares fit of the logarithmic 2023 AIS against $v_S$
-follows $\mathrm{AIS}\propto v^{0.91}$ ($R^2=0.82$), confirming alignment despite differences in corpus, time coverage,
-and inclusion of unit self-references. For 1000 the influence of a journal reflects the influence of the journals that reference it. On the other hand, in the bipartite case 0110, the influence of a journal reflects the influence of the institutions that reference. 
+To account for the wide dispersion of $v_S^S$ against $v_S^B$, note that $v_S^S$ is a realisation of the direct journal-journal citation network studied by \cite{pinski, westEigenfactorMetricsNetwork2010, bollenJournalStatus2006} and \cite{franceschet} and used 
+to form the Clarivate Article Influence Score (AIS). A least-squares fit of the logarithmic 2023 AIS for our journal set against $v_S^S$
+follows $\mathrm{AIS}\propto (v_S^{S}){^{0.91}}$ ($R^2=0.82$), confirming alignment despite differences in corpus, time coverage,
+and inclusion of unit self-references. For $v_S^S$ the influence of a journal reflects the influence of the journals that reference it. On the other hand, in the bipartite case $v_S^B$, the influence of a journal reflects the influence of the institutions that reference it. 
 
 Figure~\ref{fig:fig3a} and Table~\ref{tab:unit_effects} illustrates this coupling in action. 
-The Figure shades each source with a hue representing the mean weighted influence of the institutions that are connected to it: sources with relatively high $v_ss$ have relatively high $v_I^bip$, compared with sources having low $v_ss$ and $v_I^bip$. The balancing for some units can be delicate, as shown in Table~\ref{tab:unit_effects}. It exhibits eight samples of this behavior, selected as extremes (upper, lower, left, right)  along the `average unit' 
-region around $v=1$. Among the sources, note how the source J\. Prop\. Inv\. (SCImago Q1/Q2) has $v_{\rm bip} > v_{\rm SS}$ due to the high influence of the institutions that reference it, while Econometrics (ISSN 2225-1146, Q2) has $v_{\rm bip} < v_{\rm SS}$ despite the high influence of its referencing institutions since the sources that reference it are of lower influence. Games Econ\. Behav\. has very high $v_{\rm SS}$ which is lowered by the high, but lower $\bar{v}_{I}^{\rm bip}$, while Eon\. Geog\. has high $v_{\rm SS}$ raised further by high $\bar{v}_{I}^{\rm bip}$. The spread between institution $v_{\rm II}$ and $v_bip$ is lower than for sources, and for all four cases shown, the value of $\bar{v}_I^{bip}$ determines whether 
+The Figure shades each source with a hue representing the mean weighted influence of the institutions that are connected to it: sources with relatively high $v_S^S$ have relatively high $v_I^B$, compared with sources having low $v_S^S$ and $v_I^B$. The balancing for some units can be delicate, as shown in Table~\ref{tab:unit_effects}. It exhibits eight samples of this behavior, selected as extremes (upper, lower, left, right)  along the `average unit' 
+region around $v=1$. Among the sources, note how the source  has $v_{\rm bip} > v_{\rm SS}$ due to the high influence of the institutions that reference it, while  (ISSN 2225-1146, Q2) has $v_{\rm bip} < v_{\rm SS}$ despite the high influence of its referencing institutions since the sources that reference it are of lower influence. Games Econ\. Behav\. has very high $v_{\rm SS}$ which is lowered by the high, but lower $\bar{v}_{I}^{\rm bip}$, while Eon\. Geog\. has high $v_{\rm SS}$ raised further by high $\bar{v}_{I}^{\rm bip}$. The spread between institution $v_{\rm II}$ and $v_bip$ is lower than for sources, and for all four cases shown, the value of $\bar{v}_I^{bip}$ determines whether 
 $v_bip > v_{II}$
 
-\input{../tables/table_unit_effects}
-\paragraph{Field structure}
+\input{./tables/table_unit_effects}
 
-Figure~\ref{fig:fig2} plots influence $v$ against baseline rank for
-the full corpus and for three field subsets: $F{=}E$ (economics-dominant
-sources, $N_S=384$), $F{=}B$ (business-dominant, $N_S=601$), and $F{=}A$
-(ambiguous sources strong in both fields, $N_S=133$).
-The $x$-axis is locked to the all-sources baseline rank so that each unit
-appears at its baseline position; sources absent from a subset are simply
-omitted from that series.
-LOWESS trend lines (bandwidth $f=5/n$, fitted on $\log v$) summarise each
-overlay.
+Figure~\ref{fig:fig2} illustrates how subfields affect ranking. For sources, 
+the three field subsets are $v_S^E$ (economics-dominant
+sources, $N_S=384$), $v_S^B$ (business-dominant, $N_S=601$), and $s_S^A$
+(ambiguous sources present in both fields, $N_S=133$).
+The $x$-axis is locked to the all-sources baseline rank and each unit
+appears at its baseline position. Sources absent from a subset are 
+omitted from that series. The LOWESS trend lines (bandwidth $f=5/n$, fitted on $\log v$) 
+summarise each overlay.
 
-The source panel reveals a systematic field effect.
-Restricting to $F{=}E$ sources shifts the trend line \emph{below} the
-baseline across nearly the full rank range, while $F{=}B$ sits close to or
-slightly above the baseline.
-The $F{=}A$ (ambiguous) sources fall furthest below baseline, but this
-reflects sparseness ($N_S=133$) rather than intrinsic quality: ambiguous
-sources are drawn from both fields and lose cross-field citation flow under
-no restriction at all.
+Restricting to $F=E, B, \rm{or} A$ {lowers} the trend line of $v_S$ compared with 
+the baseline across most of the full rank range, less so for $F=B$ and more so for $F=A$.
+While $v_S^B(E,B,A)$ receives weighted influence from most institutions, $v_S^S(E,B,A)$ is increased by a few highly ranked sources (see inset) so that low-ranked sources have reduced influence due to normalisation.   
 
 The institution panel tells a more nuanced story.
 For the top 30--40 institutions by baseline rank the $F{=}B$ trend lies
@@ -113,10 +105,10 @@ is more robust to field-scope choice than any pure source--source method.
   \centering
   \includegraphics[width=\textwidth]{../plots/fig_2_latex.pdf}
   \caption{Influence $v$ against baseline rank by field scope
-    ($\mathbf{m}{=}0110$, $\tau_U{=}\tau_S{=}20$, $\rho{=}0$, $\alpha{=}1$,
+    ($\mathbf{m}{=}0110$, $\tau_I{=}\tau_S{=}20$, $\rho{=}0$, $\alpha{=}1$,
     $t_x{=}5$, 2020--24).
     Left: sources ($N_S^{\rm base}{=}1{,}626$).
-    Right: institutions ($N_U^{\rm base}{=}2{,}629$).
+    Right: institutions ($N_I^{\rm base}{=}2{,}629$).
     Black line: baseline (all sources).
     Red $+$: $F{=}E$ ($N_S{=}384$).
     Blue $+$: $F{=}B$ ($N_S{=}601$).
@@ -142,7 +134,7 @@ volatility.
 Institutions are no less stable in rank than sources despite having
 more volatile absolute $v$ values across windows, which reflects the
 growing size of the institution corpus as additional universities
-cross the $\tau_U$ threshold over the 25-year period.
+cross the $\tau_I$ threshold over the 25-year period.
 The greater smoothness of the institution panel in Figure~\ref{fig:fig3}
 and the comparable long-run rank stability in Figure~\ref{fig:fig6}
 point to the same mechanism: the $SI$--$IS$ coupling acts as a
@@ -201,7 +193,7 @@ and the associated increase in faculty size.
     red = crossed $v=1$ downward.
     Dotted diagonal: $v_{t_1}=v_{t_5}$.
     Dashed lines: $v=1$ on each axis.
-    Parameters: $F=A$, $\tau_U=\tau_S=20$, $\rho=0$,
+    Parameters: $F=A$, $\tau_I=\tau_S=20$, $\rho=0$,
     $\mathbf{m}=0110$, $\alpha=1$.}
   \label{fig:figstability}
 \end{figure}
@@ -209,7 +201,7 @@ and the associated increase in faculty size.
 \paragraph{Parameters}
 
 Figure~\ref{fig:fig5} shows influence $v$ against baseline rank for
-five parameter variants, overlaid on the baseline ($\tau_U{=}\tau_S{=}20$,
+five parameter variants, overlaid on the baseline ($\tau_I{=}\tau_S{=}20$,
 $\rho{=}0$, $\alpha{=}1$, $\mathbf{m}{=}0110$, all sources, 2020--24).
 
 \begin{figure}[htbp]
@@ -218,8 +210,8 @@ $\rho{=}0$, $\alpha{=}1$, $\mathbf{m}{=}0110$, all sources, 2020--24).
   \caption{Parameter sensitivity of influence $v$ against baseline
     rank.
     Left: sources.  Right: institutions.
-    Black line: baseline ($\tau_U{=}\tau_S{=}20$, $\rho{=}0$, $\alpha{=}1$).
-    Purple $\times$: $\tau{=}40$ ($N_S{=}945$, $N_U{=}1{,}533$).
+    Black line: baseline ($\tau_I{=}\tau_S{=}20$, $\rho{=}0$, $\alpha{=}1$).
+    Purple $\times$: $\tau{=}40$ ($N_S{=}945$, $N_I{=}1{,}533$).
     Orange $\times$: $\rho{=}1$.
     Blue $\times$: census window 2024 only ($t^c{=}1$yr).
     Red $\times$: $\alpha{=}0.85$, $\mu{=}1/N$ (uniform Katz prior).
@@ -229,9 +221,9 @@ $\rho{=}0$, $\alpha{=}1$, $\mathbf{m}{=}0110$, all sources, 2020--24).
 \end{figure}
 
 \textit{Threshold $\tau$.}
-Raising both thresholds to $\tau_U{=}\tau_S{=}40$ reduces the corpus from
-$N_S{=}1{,}626$ sources and $N_U{=}2{,}629$ institutions to $N_S{=}945$
-and $N_U{=}1{,}533$, a reduction of roughly 40\% in each set.
+Raising both thresholds to $\tau_I{=}\tau_S{=}40$ reduces the corpus from
+$N_S{=}1{,}626$ sources and $N_I{=}2{,}629$ institutions to $N_S{=}945$
+and $N_I{=}1{,}533$, a reduction of roughly 40\% in each set.
 Despite this large change in corpus composition, the influence scores of
 the surviving units track the baseline almost exactly:
 the lowess trend for $\tau{=}40$ overlaps the baseline across the full rank

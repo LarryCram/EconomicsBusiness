@@ -39,8 +39,9 @@ _baseline  = next(r for r in load_runs() if r['label'] == 'baseline')
 _run_code  = _baseline['run_code']
 _tau_u     = _baseline['tau_u']
 _tau_s     = _baseline['tau_s']
+_fx        = _baseline['fx']
 
-BASELINE_TABLE = f'rk_{_run_code}_A_tauU{_tau_u}_tauS{_tau_s}_vartau_rho0_m0110_chi50_alpha100'
+BASELINE_TABLE = f'rk_{_run_code}_{_fx}_tauU{_tau_u}_tauS{_tau_s}_vartau_rho0_m0110_chi50_alpha100'
 
 JCR_PATH = Path(__file__).parent.parent / 'data' / 'wos_jcr_eb.csv'
 
@@ -247,7 +248,7 @@ def plot8a(df: pd.DataFrame, paths) -> None:
     ax.set_yscale('log')
     ax.set_xlim(x_lo, x_hi)
     ax.set_ylim(0.001, y_hi)
-    ax.set_xlabel('Influence per work $v$  (baseline m=0110, log scale)', labelpad=4)
+    ax.set_xlabel('Influence $v$  (baseline m=0110, log scale)', labelpad=4)
     ax.set_ylabel('JCR indicator value (log scale)', labelpad=4)
     ax.legend(fontsize=8, framealpha=0.85, loc='upper left')
 

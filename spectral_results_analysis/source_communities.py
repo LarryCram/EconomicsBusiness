@@ -36,9 +36,10 @@ _baseline = next(r for r in load_runs() if r['label'] == 'baseline')
 _run_code = _baseline['run_code']
 _tau_u    = _baseline['tau_u']
 _tau_s    = _baseline['tau_s']
+_fx       = _baseline['fx']
 
-BASELINE_TABLE = f'rk_{_run_code}_A_tauU{_tau_u}_tauS{_tau_s}_vartau_rho0_m0110_chi50_alpha100'
-SS_TABLE       = f'rk_{_run_code}_A_tauU{_tau_u}_tauS{_tau_s}_vartau_rho0_m1000_chi50_alpha100'
+BASELINE_TABLE = f'rk_{_run_code}_{_fx}_tauU{_tau_u}_tauS{_tau_s}_vartau_rho0_m0110_chi50_alpha100'
+SS_TABLE       = f'rk_{_run_code}_{_fx}_tauU{_tau_u}_tauS{_tau_s}_vartau_rho0_m1000_chi50_alpha100'
 
 # Leiden resolution parameter (γ); increase to get finer communities
 RESOLUTION = 1.0
@@ -64,9 +65,9 @@ def build_matrices(el_path: Path) -> tuple[np.ndarray, sp.csr_matrix, sp.csr_mat
     """
     with duckdb.connect(str(el_path)) as db:
         print('Building C_SS ...')
-        csr_ss = build_csr(db, _run_code, 'A', _tau_u, _tau_s, 0, (1, 0, 0, 0))
+        csr_ss = build_csr(db, _run_code, _fx, _tau_u, _tau_s, 0, (1, 0, 0, 0))
         print('Building C_SI, C_IS ...')
-        csr_si_is = build_csr(db, _run_code, 'A', _tau_u, _tau_s, 0, (0, 1, 1, 0))
+        csr_si_is = build_csr(db, _run_code, _fx, _tau_u, _tau_s, 0, (0, 1, 1, 0))
 
     # Intersect source sets (SCC filtering may differ between modes)
     ids_ss  = set(csr_ss.source_ids.tolist())
