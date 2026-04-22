@@ -233,10 +233,27 @@ def preload_ref_edges(db, units_table: str, works_df: pd.DataFrame) -> dict:
                 like_sets[int(cw)] = candidates
 
     A_full = float(units['a_s'].sum() + units['a_u'].sum())
+
+    # Fraction of REFERENCES (not just works) whose cited_work is in a like-set
+    refs_in_ls = np.sum([1 for cw in cited_work_dense if int(cw) in like_sets])
+    ref_ls_frac = refs_in_ls / max(len(cited_work_dense), 1)
+    # Average like-set size (for works that are in one)
+    ls_sizes = [len(v) for v in like_sets.values()]
+    avg_ls_size = float(np.mean(ls_sizes)) if ls_sizes else 0.0
+
     print(
-        f'  Ref preload: N_refs={len(rho_w):,}  N_cw={N_cw:,}  '
-        f'like_set_coverage={len(like_sets)/N_cw:.1%}  '
-        f'n_s={n_s}  n_u={n_u}',
+        f'  Ref preload: N_refs={len(rho_w):,}  N_cw={N_cw:,}  n_s={n_s}  n_u={n_u}',
+        flush=True,
+    )
+    print(
+        f'  Like-sets: work_coverage={len(like_sets)/N_cw:.1%}  '
+        f'ref_coverage={ref_ls_frac:.1%}  avg_set_size={avg_ls_size:.1f}',
+        flush=True,
+    )
+    print(
+        f'  At p=0.05: ~{0.05 * ref_ls_frac:.2%} of refs effectively replaced per replicate '
+        f'(p × ref_coverage × (1 − 1/avg_k) ≈ '
+        f'{0.05 * ref_ls_frac * (1 - 1/avg_ls_size) if avg_ls_size > 1 else 0:.2%} different work)',
         flush=True,
     )
 
