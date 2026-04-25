@@ -31,6 +31,7 @@ import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 import seaborn as sns
+from scipy.stats import siegelslopes
 
 sys.path.insert(0, str(Path(__file__).parent.parent))
 from util import load_config, load_runs
@@ -199,7 +200,7 @@ def plot8(df: pd.DataFrame, paths) -> None:
 
 def plot8a(df: pd.DataFrame, paths) -> None:
     """
-    Scatter of each JCR indicator vs v, with OLS trend lines.
+    Scatter of each JCR indicator vs v, with Siegel robust trend lines.
     x-axis: v, 0–50.  y-axis: indicator value (linear scale).
     Trend lines fitted on all matched data for each indicator.
     """
@@ -228,20 +229,19 @@ def plot8a(df: pd.DataFrame, paths) -> None:
             zorder=2,
         )
 
-        # OLS in log-log space: log(y) = m * log(v) + b  (straight line on log-log axes)
+        # Siegel robust fit in log-log space
         valid = sub[sub[col] > 0]
         lx = np.log(valid['v'].values)
         ly = np.log(valid[col].values)
-        m, b = np.polyfit(lx, ly, 1)
-        ly_hat = m * lx + b
-        r2 = 1.0 - np.sum((ly - ly_hat) ** 2) / np.sum((ly - ly.mean()) ** 2)
+        m, b = siegelslopes(ly, lx)
+        mad = np.median(np.abs(ly - (b + m * lx)))
         ax.plot(
             x_line,
             np.exp(b) * x_line ** m,
             color=colour,
             linewidth=1.6,
             zorder=3,
-            label=f'{label}  $v^{{{m:.2f}}}$  $R^2={r2:.2f}$  (n={len(valid):,})',
+            label=f'{label}  $v^{{{m:.2f}}}$  MAD={mad:.2f}  (n={len(valid):,})',
         )
 
     ax.set_xscale('log')
@@ -253,7 +253,7 @@ def plot8a(df: pd.DataFrame, paths) -> None:
     ax.legend(fontsize=8, framealpha=0.85, loc='upper left')
 
     sup = fig.suptitle(
-        'JCR indicators vs $v$ with OLS trend lines  '
+        'JCR indicators vs $v$ with Siegel robust trend lines  '
         '(JCR-matched sources only)',
         fontsize=9, y=1.01,
     )
@@ -275,7 +275,7 @@ def plot8b(df: pd.DataFrame, paths) -> None:
     """
     x-axis: Article Influence Score (log).
     y-axis: v plus the three remaining JCR indicators (log).
-    Power-law OLS trend line for each y series.
+    Siegel robust power-law trend line for each y series.
     """
     AIS_COL = 'Article Influence Score'
     Y_SERIES = [
@@ -308,21 +308,18 @@ def plot8b(df: pd.DataFrame, paths) -> None:
             zorder=2,
         )
 
-        # Power-law OLS: log(y) = m * log(x) + b
+        # Siegel robust fit in log-log space
         lx = np.log(sub[AIS_COL].values)
         ly = np.log(sub[col].values)
-        m, b = np.polyfit(lx, ly, 1)
-        ly_hat = m * lx + b
-        ss_res = np.sum((ly - ly_hat) ** 2)
-        ss_tot = np.sum((ly - ly.mean()) ** 2)
-        r2 = 1.0 - ss_res / ss_tot
+        m, b = siegelslopes(ly, lx)
+        mad = np.median(np.abs(ly - (b + m * lx)))
         ax.plot(
             x_line,
             np.exp(b) * x_line ** m,
             color=colour,
             linewidth=1.6,
             zorder=3,
-            label=f'{label}  $\\propto$ AIS$^{{{m:.2f}}}$  $R^2={r2:.2f}$  (n={len(sub):,})',
+            label=f'{label}  $\\propto$ AIS$^{{{m:.2f}}}$  MAD={mad:.2f}  (n={len(sub):,})',
         )
 
     ax.set_xscale('log')
@@ -335,7 +332,7 @@ def plot8b(df: pd.DataFrame, paths) -> None:
 
     sup = fig.suptitle(
         '$v$ and JCR indicators vs Article Influence Score  '
-        '(power-law OLS trend lines)',
+        '(Siegel robust power-law trend lines)',
         fontsize=9, y=1.01,
     )
 

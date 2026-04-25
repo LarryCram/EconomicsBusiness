@@ -13,6 +13,7 @@ field_eb=X units excluded.
 Outputs:
   plots/fig_3.pdf / fig_3_latex.pdf         — rank curves (2×1)
   plots/fig_3a.pdf / fig_3a_latex.pdf       — scatter panels (2×1)
+  plots/fig_3c.pdf / fig_3c_latex.pdf       — log(π) and log(v) vs log(a) scatter
   spectral_ranking_latex/tables/table_unit_effects.tex — illustrative v≈1 cases
 """
 
@@ -30,7 +31,7 @@ from matplotlib.colors import LogNorm
 _V_LO, _V_HI = 0.005, 20
 _V_TICKS = [0.01, 0.1, 1, 10]
 
-# Linearised log₁₀ axis spec for fig_3b
+# Linearised log₁₀ axis spec for fig_3c
 _LOG_TICKS = [-2, -1, 0, 1]
 _LOG_LO, _LOG_HI = -2.35, 1.35
 
@@ -55,7 +56,7 @@ EL_TABLE       = f'el_{_run_code}_{_fx}_tauU{_tau_u}_tauS{_tau_s}_vartau'
 
 V1_BAND = 0.05  # |log(v)| < 0.05  →  v in (e^-0.05, e^+0.05) ≈ (0.951, 1.051)
 
-# Field colours for fig_3b
+# Field colours for fig_3c
 _FIELD_COLOR  = {'E': '#e41a1c', 'B': '#377eb8', 'A': '#ff7f00', 'X': '#999999'}
 _FIELD_MARKER = {'E': 'o', 'B': 's', 'A': 'D', 'X': 'x'}
 _FIELD_ORDER  = ['X', 'A', 'B', 'E']   # plotted bottom-to-top
@@ -843,6 +844,83 @@ def plot3b(src_rank_map: dict, inst_rank_map: dict, series: dict) -> None:
     _save(fig, sup, 'fig_3b', paths)
 
 
+# ─── Fig 3b: π and v vs a_i ───────────────────────────────────────────────────
+
+def plot3c_pi_v(series: dict) -> None:
+    """
+    Illustrate v = π·A / (2·aᵢ).
+
+    For the baseline bipartite run (m=0110), scatter log₁₀(π) and log₁₀(v)
+    against log₁₀(aᵢ) for sources (left) and institutions (right).
+
+    π is recovered from the stored v and a_p via  π = v · 2·a / A
+    where A = Σ a_s + Σ a_u  (total works across both unit types).
+    """
+    paths = load_config()
+    _pub_theme()
+
+    df_s = series['m=0110']['S'].copy()
+    df_i = series['m=0110']['I'].copy()
+
+    A = float(df_s['a_p'].sum() + df_i['a_p'].sum())
+
+    from scipy.stats import siegelslopes
+
+    for df in (df_s, df_i):
+        a = df['a_p'].clip(lower=1).values.astype(float)
+        v = df['v'].values.astype(float)
+        df['log_a']  = np.log10(a)
+        df['log_v']  = np.log10(np.clip(v,             1e-10, None))
+        df['log_pi'] = np.log10(np.clip(v * 2 * a / A, 1e-10, None))
+
+    fig, axes = plt.subplots(1, 2, figsize=(10, 4.5))
+    fig.subplots_adjust(wspace=0.38)
+
+    _series = [
+        ('log_pi', '#377eb8', r'$\log_{10}(\pi_i)$'),
+        ('log_v',  '#e41a1c', r'$\log_{10}(v_i)$'),
+    ]
+
+    for ax, df, title, tag in [
+        (axes[0], df_s, 'Sources',      'S'),
+        (axes[1], df_i, 'Institutions', 'I'),
+    ]:
+        x = df['log_a'].values
+        x_line = np.linspace(x.min(), x.max(), 200)
+
+        for col, colour, lbl in _series:
+            y = df[col].values
+            ax.scatter(x, y, c=colour, s=7, alpha=0.35, linewidths=0, zorder=2)
+            slope, intercept = siegelslopes(y, x)
+            ax.plot(x_line, intercept + slope * x_line,
+                    color=colour, lw=1.6, zorder=3, label=lbl)
+
+        # Power-law fit of log(v) ~ Index * log(π) directly
+        lv  = df['log_v'].values
+        lpi = df['log_pi'].values
+        idx, icept = siegelslopes(lv, lpi)
+        mad = np.median(np.abs(lv - (icept + idx * lpi)))
+        ax.text(0.98, 0.04,
+                rf'$v_{{{tag}}} \sim \pi_{{{tag}}}^{{{idx:.2f}}}$'
+                rf'$\;(\mathrm{{MAD}}={mad:.2f})$',
+                transform=ax.transAxes, ha='right', va='bottom',
+                color='black', fontsize=8,
+                bbox=dict(boxstyle='round,pad=0.2', fc='white', alpha=0.8, ec='none'))
+
+        ax.axhline(0, color='#999999', lw=0.8, ls='--', zorder=1)
+        ax.set_xlabel(r'$\log_{10}(a_i)$', labelpad=4)
+        ax.set_ylabel(r'$\log_{10}$', labelpad=4)
+        ax.set_title(title, fontsize=11, pad=6)
+        ax.legend(fontsize=9, framealpha=0.85, loc='upper left')
+
+    sup = fig.suptitle(
+        r'$v_i = \pi_i \cdot A\,/\,2a_i$: per-work influence vs work count'
+        r'  (baseline, m=0110)',
+        fontsize=9, y=1.01,
+    )
+    _save(fig, sup, 'fig_3c', paths)
+
+
 # ─── Main ─────────────────────────────────────────────────────────────────────
 
 def main():
@@ -866,6 +944,7 @@ def main():
     plot3a(src_rank_map, inst_rank_map, series,
            src_highlights=src_highlights, inst_highlights=inst_highlights)
     plot3b(src_rank_map, inst_rank_map, series)
+    plot3c_pi_v(series)
 
 
 if __name__ == '__main__':
