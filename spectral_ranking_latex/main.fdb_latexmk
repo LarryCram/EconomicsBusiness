@@ -1,21 +1,21 @@
 # Fdb version 4
-["bibtex main"] 1776996613.08865 "main.aux" "main.bbl" "main" 1777071959.40223 0
-  "./MyLibrary.bib" 1777002431.43825 8586381 66e4c8dd095c85f6fb9ce6b75298f15d ""
+["bibtex main"] 1776996613.08865 "main.aux" "main.bbl" "main" 1777078394.17353 0
+  "./MyLibrary.bib" 1777072217.17352 8586381 66e4c8dd095c85f6fb9ce6b75298f15d ""
   "./sciomtcs.bib" 1758004733 38814 e32becf37c07e9c5a5ecec51c1c262af ""
   "./spbasic.bst" 1757517455 33250 b27924137faccbc3d13ebae5a7538c63 ""
-  "main.aux" 1777071959.02862 15676 d0ad52a247775f4896d7754612ec873d "pdflatex"
+  "main.aux" 1777078393.77003 15676 d0ad52a247775f4896d7754612ec873d "pdflatex"
   (generated)
   "main.bbl"
   "main.blg"
   (rewritten before read)
-["pdflatex"] 1777071958.34984 "/home/lc/Projects/EconomicsBusiness/spectral_ranking_latex/main.tex" "main.pdf" "main" 1777071959.40242 0
+["pdflatex"] 1777078393.06433 "/home/lc/Projects/EconomicsBusiness/spectral_ranking_latex/main.tex" "main.pdf" "main" 1777078394.17377 0
   "../plots/fig_1_latex.pdf" 1776984821.84841 19077 cc12117919fbf0a6ea9b334b8ce292d3 ""
-  "../plots/fig_2_latex.pdf" 1777050802.0553 91183 9ac58faa81850dacb8604dddb039fe9f ""
-  "../plots/fig_3a_latex.pdf" 1777050806.03514 77794 cf7a7bb9c681edb284bf6a08972b679e ""
-  "../plots/fig_3b_latex.pdf" 1777050806.81956 118305 42667ef094eb3fa6da097035a2bc9048 ""
-  "../plots/fig_5_latex.pdf" 1777050818.1645 134198 1f14da837d4636f05465427f7797a1f0 ""
-  "../plots/fig_6_latex.pdf" 1777050823.04845 168396 0d99f96aaf016e7cddc3a6f4b8575e28 ""
-  "../plots/fig_stability_scatter_latex.pdf" 1777050830.30833 38104 641dff6e55df8e5112d551f3279ee570 ""
+  "../plots/fig_2_latex.pdf" 1777078362.92231 91186 a8176307a790331762747792b7b98a21 ""
+  "../plots/fig_3a_latex.pdf" 1777078367.11432 77794 b0ecc7a28ae4714af4e7c0c2f0f03fba ""
+  "../plots/fig_3b_latex.pdf" 1777078367.93905 118298 1f3446579f221a0de2df0816048ab3b0 ""
+  "../plots/fig_5_latex.pdf" 1777078379.89005 134200 4e14487416d73444d196f806ce5c839e ""
+  "../plots/fig_6_latex.pdf" 1777078384.95103 168394 40be16099dc5f8bdcc0a637f2d432bf6 ""
+  "../plots/fig_stability_scatter_latex.pdf" 1777078392.47703 38104 1e747f2a8ca918fe6ec22e4ffed5d286 ""
   "../tables/table1_registry_overview.tex" 1776846128.97012 989 fb5f2f2633d15c7f158520746e068db9 ""
   "/etc/texmf/web2c/texmf.cnf" 1768766222.50773 475 c0e671620eb5563b2130f56340a5fde8 ""
   "/home/lc/Projects/EconomicsBusiness/spectral_ranking_latex/main.tex" 1776846128.96803 1807 fd590ab93c45c6fc8b1c6c190399d107 ""
@@ -224,9 +224,9 @@
   "/usr/share/texmf/web2c/texmf.cnf" 1741904018 41538 c016915c1d51223b6dbbfe27341748a8 ""
   "/var/lib/texmf/fonts/map/pdftex/updmap/pdftex.map" 1768766240 5467255 9a64d1b40e0b893fc5588ecce9d8accf ""
   "/var/lib/texmf/web2c/pdftex/pdflatex.fmt" 1768766286 3347051 b210dd19afa7cdfe2454020fc7cff434 ""
-  "main.aux" 1777071959.02862 15676 d0ad52a247775f4896d7754612ec873d "pdflatex"
+  "main.aux" 1777078393.77003 15676 d0ad52a247775f4896d7754612ec873d "pdflatex"
   "main.bbl" 1776996613.31419 9202 633234effa6162e9610bca61b2682863 "bibtex main"
-  "main.out" 1777071959.02962 846 08dfd44a0dab4ab8e3cce46ba8fe4750 "pdflatex"
+  "main.out" 1777078393.77103 846 08dfd44a0dab4ab8e3cce46ba8fe4750 "pdflatex"
   "main.tex" 1776846128.96803 1807 fd590ab93c45c6fc8b1c6c190399d107 ""
   "sections/01_introduction.tex" 1776846128.96803 6190 b8aa2c273da5d544308a98c36311ef55 ""
   "sections/02_model_specification.tex" 1777071958.16857 17026 cc0aa4cff70477d544f53b9ced35c67f ""
@@ -235,7 +235,7 @@
   "sections/05_discussion.tex" 1774429456.14359 392 753ef4e6e9875bf5a51fb9052b90440e ""
   "sections/06_prospects.tex" 1773282420.00526 190 4eccb76168b576fb53f3c3cec6a10a7a ""
   "sections/07_addenda.tex" 1773732813.05246 169 ab267bb7851bed7154eca9aec31f8233 ""
-  "tables/table_unit_effects.tex" 1777050804.92641 1282 1bc87b21870014c3d546b79f53d5ebac ""
+  "tables/table_unit_effects.tex" 1777078365.96852 1282 1bc87b21870014c3d546b79f53d5ebac ""
   (generated)
   "main.aux"
   "main.log"

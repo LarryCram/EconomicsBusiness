@@ -188,6 +188,127 @@ def _draw_panel(ax, ranks, v_base, boot_flat, rank_flat,
 
 Y_LO, Y_HI = 0.02, 20.0
 
+OA_ERROR_TYPES  = ['year', 'source', 'institution', 'reference']
+OA_ERROR_LABELS = {
+    'year':        'Year',
+    'source':      'Source',
+    'institution': 'Institution',
+    'reference':   'Reference',
+}
+
+
+def _draw_cell(ax, ranks, v_base, boot_flat, rank_flat,
+               n_aligned, B,
+               show_xlabel: bool = False,
+               show_ylabel: bool = False,
+               row_label: str = '') -> None:
+    """Draw one facet cell: scatter + band + baseline, minimal decoration."""
+    ax.scatter(
+        rank_flat, boot_flat,
+        c='#aaaaaa', s=1, alpha=0.04, linewidths=0, rasterized=True, zorder=1,
+    )
+    boot_2d = boot_flat.reshape(B, n_aligned)
+    p05 = np.nanpercentile(boot_2d, 5,  axis=0)
+    p95 = np.nanpercentile(boot_2d, 95, axis=0)
+    ax.fill_between(ranks, p05, p95,
+                    color='#888888', alpha=0.18, linewidth=0, zorder=2)
+    ax.plot(ranks, v_base, color='black', linewidth=1.2, alpha=1.0, zorder=3)
+
+    ax.set_yscale('log')
+    ax.set_ylim(Y_LO, Y_HI)
+    ax.set_xlim(1, n_aligned)
+    ax.axhline(1.0, color='#bbbbbb', linewidth=0.7, linestyle='--', zorder=0)
+
+    if show_xlabel:
+        ax.set_xlabel('Baseline rank', fontsize=8, labelpad=3)
+    else:
+        ax.set_xlabel('')
+        ax.tick_params(labelbottom=False)
+
+    if show_ylabel:
+        ax.set_ylabel(
+            f'{row_label}\n$v$', fontsize=8, labelpad=3,
+        )
+    else:
+        ax.set_ylabel('')
+
+
+def plot7a_oa_errors(paths, df_base) -> None:
+    """
+    2-row × 4-column facet: rows = Sources / Institutions,
+    columns = year / source / institution / reference error types.
+    Shared y-axis.  Omits the 'all' composite run.
+    Saves fig7a_oa_errors.pdf and fig7a_oa_errors_latex.pdf.
+    """
+    boot_base = paths.working / 'bootstrap_oa_errors'
+
+    # Load available error-type runs (skip missing)
+    et_data: dict[str, tuple] = {}
+    for et in OA_ERROR_TYPES:
+        d = boot_base / f'stage4_{et}'
+        npy = d / 'v_s_boot.npy'
+        if not npy.exists():
+            print(f'  Missing {d} — skipping', flush=True)
+            continue
+        et_data[et] = load_bootstrap(d)
+        B = et_data[et][0].shape[0]
+        print(f'  {et}: B={B}', flush=True)
+
+    if not et_data:
+        print('No per-error-type bootstrap outputs found; skipping fig7a_oa_errors.')
+        return
+
+    col_keys = [et for et in OA_ERROR_TYPES if et in et_data]
+    n_cols   = len(col_keys)
+
+    df_s     = df_base[df_base['unit_type'] == 'S'].copy()
+    df_i     = df_base[df_base['unit_type'] == 'U'].copy()
+    src_ids  = df_s['unit_idx'].to_numpy(dtype=np.int64)
+    src_v    = df_s['v'].to_numpy(dtype=np.float64)
+    inst_ids = df_i['unit_idx'].to_numpy(dtype=np.int64)
+    inst_v   = df_i['v'].to_numpy(dtype=np.float64)
+
+    sns.set_theme(style='whitegrid', font_scale=0.85)
+    fig, axes = plt.subplots(
+        2, n_cols,
+        figsize=(2.8 * n_cols, 5.6),
+        sharey=True, sharex=False,
+    )
+    fig.subplots_adjust(wspace=0.06, hspace=0.28)
+
+    for col, et in enumerate(col_keys):
+        v_s_boot, v_u_boot, _, meta = et_data[et]
+        B = v_s_boot.shape[0]
+
+        ranks_s, v_base_s, boot_flat_s, rank_flat_s, n_s, *_ = \
+            build_panel_data(v_s_boot, src_v, src_ids, meta['source_ids'])
+        ranks_i, v_base_i, boot_flat_i, rank_flat_i, n_i, *_ = \
+            build_panel_data(v_u_boot, inst_v, inst_ids, meta['inst_ids'])
+
+        ax_s = axes[0, col]
+        ax_i = axes[1, col]
+
+        _draw_cell(ax_s, ranks_s, v_base_s, boot_flat_s, rank_flat_s, n_s, B,
+                   show_xlabel=False, show_ylabel=(col == 0), row_label='Sources')
+        _draw_cell(ax_i, ranks_i, v_base_i, boot_flat_i, rank_flat_i, n_i, B,
+                   show_xlabel=True,  show_ylabel=(col == 0), row_label='Institutions')
+
+        ax_s.set_title(OA_ERROR_LABELS[et], fontsize=9, pad=4)
+
+    out_stem = 'fig7a_oa_errors'
+    sup = fig.suptitle('OA error bootstrap — influence per work', fontsize=9, y=1.01)
+
+    out = paths.plots / f'{out_stem}.pdf'
+    fig.savefig(out, bbox_inches='tight', dpi=150)
+    print(f'Saved {out}')
+
+    sup.set_visible(False)
+    fig.savefig(paths.plots / f'{out_stem}_latex.pdf', bbox_inches='tight', dpi=150)
+    print(f'Saved {paths.plots / (out_stem + "_latex.pdf")}')
+    sup.set_visible(True)
+
+    plt.close(fig)
+
 
 def report_outliers(v_boot: np.ndarray, unit_ids: list, label: str,
                     name_map: dict = None) -> None:
@@ -371,6 +492,10 @@ def main():
           field_labels,
           out_stem=BOOT_OUT_STEMS[args.boot],
           boot_label=BOOT_LABELS[args.boot])
+
+    if args.boot == 'bootstrap_oa_errors':
+        print('\nPlotting per-error-type facet (fig7a_oa_errors) ...', flush=True)
+        plot7a_oa_errors(paths, df_base)
 
 
 if __name__ == '__main__':

@@ -17,11 +17,11 @@ Stage 4 — build_rankings
     B bipartite (m=0110) spectral rankings from random pairings of Stage 2 × Stage 3.
     Uses the fixed baseline unit set; no tau recomputation.
 
-Error rates (all 10%):
-    pub_year  — ±1 year, boundary-clipped: 2020→2021, 2024→2023 only
-    source    — uniform draw from OAS source pool
-    institution — 75% within-country, 25% global uniform
-    references  — 5% same-source cited-work, 5% cross-source cited-work
+Error rates (empirically estimated):
+    pub_year    — 2%   ±1 year, boundary-clipped: 2020→2021, 2024→2023 only
+    source      — 0.03% uniform draw from OAS source pool
+    institution — 3%   75% within-country, 25% global uniform (Tübingen study: ~100/2800)
+    references  — 5%   2.5% same-source cited-work, 2.5% cross-source cited-work
 
 Storage: $WORKING/bootstrap_oa_errors/
     stage1_base_works.parquet
@@ -59,8 +59,12 @@ from spectral_ranking_bootstrap.bootstrap_baseline import _bipartite_core
 
 YEAR_LO   = 2020
 YEAR_HI   = 2024
-P_ERROR   = 0.10
-P_WITHIN  = 0.75
+# Per-type OA error rates (empirically estimated)
+P_ERROR_YEAR = 0.020   # 2%   publication-year errors
+P_ERROR_SRC  = 0.0003  # 0.03% work-to-journal misassignment
+P_ERROR_INST = 0.030   # 3%   institution errors (Tübingen study ~100/2800)
+P_ERROR_REF  = 0.050   # 5%   reference errors (total; split equally same/cross)
+P_WITHIN     = 0.75    # fraction of institution errors within same country
 STAGE_DIR = 'bootstrap_oa_errors'
 
 
@@ -197,9 +201,11 @@ def perturb_works_one(base: pd.DataFrame,
     work_ids = base['work_idx'].unique()
     n_works  = len(work_ids)
     u        = rng.random(n_works)
-    py_mask  = u < P_ERROR
-    src_mask = (u >= P_ERROR) & (u < 2 * P_ERROR)
-    ins_mask = (u >= 2 * P_ERROR) & (u < 3 * P_ERROR)
+    _cut_src  = P_ERROR_YEAR + P_ERROR_SRC
+    _cut_inst = _cut_src + P_ERROR_INST
+    py_mask  = u < P_ERROR_YEAR
+    src_mask = (u >= P_ERROR_YEAR) & (u < _cut_src)
+    ins_mask = (u >= _cut_src)     & (u < _cut_inst)
 
     parts: list[pd.DataFrame] = []
 
@@ -400,8 +406,8 @@ def build_ref_replicates(db, el_table: str, base_works: pd.DataFrame,
 
     cited_src = base_refs['cited_source_idx'].to_numpy(dtype=np.int64)
     N_refs    = len(base_refs)
-    p_same    = 0.5 * P_ERROR
-    p_diff    = P_ERROR
+    p_same    = 0.5 * P_ERROR_REF
+    p_diff    = P_ERROR_REF
 
     print(f'Stage 3: generating {B} ref replicates ...', flush=True)
     all_parts: list[pd.DataFrame] = []
@@ -761,7 +767,7 @@ def main():
                         choices=['1', '2', '3', '4', 'all'],
                         help='Which stage(s) to run (default: all)')
     parser.add_argument('--n',    type=int, default=32,  help='Replicates (stages 2-4)')
-    parser.add_argument('--seed', type=int, default=42,  help='Base random seed')
+    parser.add_argument('--seed', type=int, default=0,  help='Base random seed')
     args = parser.parse_args()
 
     import duckdb
