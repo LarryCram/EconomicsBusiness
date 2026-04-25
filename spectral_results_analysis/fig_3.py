@@ -30,6 +30,15 @@ from matplotlib.colors import LogNorm
 _V_LO, _V_HI = 0.005, 20
 _V_TICKS = [0.01, 0.1, 1, 10]
 
+# Linearised log₁₀ axis spec for fig_3b
+_LOG_TICKS = [-2, -1, 0, 1]
+_LOG_LO, _LOG_HI = -2.35, 1.35
+
+
+def _lv(v: np.ndarray) -> np.ndarray:
+    """log₁₀, clipped to avoid -inf."""
+    return np.log10(np.clip(v, 1e-10, None))
+
 sys.path.insert(0, str(Path(__file__).parent.parent))
 from util import load_config, load_runs
 
@@ -45,6 +54,12 @@ II_TABLE       = f'rk_{_run_code}_{_fx}_tauU{_tau_u}_tauS{_tau_s}_vartau_rho0_m0
 EL_TABLE       = f'el_{_run_code}_{_fx}_tauU{_tau_u}_tauS{_tau_s}_vartau'
 
 V1_BAND = 0.05  # |log(v)| < 0.05  →  v in (e^-0.05, e^+0.05) ≈ (0.951, 1.051)
+
+# Field colours for fig_3b
+_FIELD_COLOR  = {'E': '#e41a1c', 'B': '#377eb8', 'A': '#ff7f00', 'X': '#999999'}
+_FIELD_MARKER = {'E': 'o', 'B': 's', 'A': 'D', 'X': 'x'}
+_FIELD_ORDER  = ['X', 'A', 'B', 'E']   # plotted bottom-to-top
+_LEGEND_ORDER = ['E', 'B', 'A', 'X']   # shown top-to-bottom in legend
 
 # Visual spec per label
 STYLE = {
@@ -188,7 +203,10 @@ def fetch_data(db) -> tuple:
 # ─── Plot ─────────────────────────────────────────────────────────────────────
 
 def _draw_panel(ax, series: dict, unit_key: str, panel_labels: list,
-                n_baseline: int, panel_title: str) -> None:
+                n_baseline: int, panel_title: str,
+                log_linear_y: bool = False,
+                label_map: dict | None = None,
+                marker_map: dict | None = None) -> None:
     for label in panel_labels:
         if label not in series:
             continue
@@ -199,44 +217,53 @@ def _draw_panel(ax, series: dict, unit_key: str, panel_labels: list,
         style = STYLE[label]
         is_baseline = style['marker'] is None
         n_overlap = len(df)
+        yv = _lv(df['v'].values) if log_linear_y else df['v'].values
+
+        disp = label_map[label] if (label_map and label in label_map) else label
 
         if is_baseline:
             ax.plot(
                 df['baseline_rank'].values,
-                df['v'].values,
+                yv,
                 color=style['color'],
                 linewidth=style['lw'],
                 alpha=style['alpha'],
                 zorder=style['zorder'],
-                label=label,
+                label=disp,
             )
         else:
+            marker = marker_map[label] if (marker_map and label in marker_map) else style['marker']
+            sz = 10 if marker_map else style['s']
+            lbl = disp if label_map else f'{disp}  ({n_overlap:,}/{n_baseline:,})'
             ax.scatter(
                 df['baseline_rank'].values,
-                df['v'].values,
+                yv,
                 color=style['color'],
-                marker=style['marker'],
-                s=style['s'],
+                marker=marker,
+                s=sz,
                 linewidths=style['lw'],
                 zorder=style['zorder'],
                 alpha=style.get('alpha', 0.5),
-                label=f'{label}  ({n_overlap:,}/{n_baseline:,})',
+                label=lbl,
             )
 
-    ax.set_yscale('log')
-    ax.set_ylim(_V_LO, _V_HI)
-    ax.set_yticks(_V_TICKS)
-    ax.yaxis.set_major_formatter(mticker.ScalarFormatter())
-    ax.axhline(1.0, color='#999999', linewidth=1.0, linestyle='--', zorder=0)
-    ax.text(
-        n_baseline * 0.98, 1.0,
-        '$v=1$',
-        ha='right', va='bottom',
-        fontsize=9, color='#999999',
-    )
+    if log_linear_y:
+        ax.set_ylim(_LOG_LO, _LOG_HI)
+        ax.set_yticks(_LOG_TICKS)
+        ax.axhline(0, color='#999999', linewidth=1.0, linestyle='--', zorder=0)
+        ax.set_ylabel(r'$\log(v)$', labelpad=4)
+    else:
+        ax.set_yscale('log')
+        ax.set_ylim(_V_LO, _V_HI)
+        ax.set_yticks(_V_TICKS)
+        ax.yaxis.set_major_formatter(mticker.ScalarFormatter())
+        ax.axhline(1.0, color='#999999', linewidth=1.0, linestyle='--', zorder=0)
+        ax.text(n_baseline * 0.98, 1.0, '$v=1$',
+                ha='right', va='bottom', fontsize=9, color='#999999')
+        ax.set_ylabel('Influence per work $v$', labelpad=4)
+
     ax.set_xlim(1, n_baseline)
     ax.set_xlabel('Baseline rank  (m=0110)', labelpad=4)
-    ax.set_ylabel('Influence per work $v$', labelpad=4)
     ax.set_title(panel_title, fontsize=11, pad=6)
     ax.legend(fontsize=9, framealpha=0.85, loc='upper right')
 
@@ -509,12 +536,15 @@ def _write_unit_effects_table(df: pd.DataFrame) -> None:
     def fmt(x):
         return f'{float(x):.2f}'
 
+    def esc(s):
+        return str(s).replace('&', r'\&')
+
     def src_row(r):
-        return (f'{r["name"]} & {fmt(r["v_bip"])} & {fmt(r["v_ss"])} & {fmt(r["mean_v_I_bip"])}'
+        return (f'{esc(r["name"])} & {fmt(r["v_bip"])} & {fmt(r["v_ss"])} & {fmt(r["mean_v_I_bip"])}'
                 f' & {case_label[r["case"]]} \\\\\n')
 
     def ins_row(r):
-        return (f'{r["name"]} & {fmt(r["v_bip"])} & {fmt(r["v_ii"])} & {fmt(r["mean_v_S_bip"])}'
+        return (f'{esc(r["name"])} & {fmt(r["v_bip"])} & {fmt(r["v_ii"])} & {fmt(r["mean_v_S_bip"])}'
                 f' & {case_label[r["case"]]} \\\\\n')
 
     src_rows = ''.join(src_row(src[src['case'] == c].iloc[0]) for c in case_order_s)
@@ -662,6 +692,157 @@ def build_unit_effects_table(series: dict, paths) -> None:
     return src_hl, inst_hl
 
 
+# ─── Fig 3b ───────────────────────────────────────────────────────────────────
+
+def _load_field_labels(paths) -> tuple[dict, dict]:
+    """Return (src_labels, inst_labels) dicts: unit_idx -> field_eb."""
+    par = paths.working / 'parquet'
+    sm = pd.read_parquet(str(par / 'source_master.parquet'),
+                         columns=['source_idx', 'field_eb'])
+    src_labels = dict(zip(sm['source_idx'].astype(int), sm['field_eb']))
+
+    inst_df = pd.read_parquet(str(par / 'institution_field_eb.parquet'),
+                              columns=['unit_idx', 'field_eb'])
+    inst_labels = dict(zip(inst_df['unit_idx'].astype(int), inst_df['field_eb']))
+    return src_labels, inst_labels
+
+
+def _log_axes(ax, xlabel: str, ylabel: str) -> None:
+    """Apply linearised-log₁₀ axis formatting to ax."""
+    ax.set_xlim(_LOG_LO, _LOG_HI)
+    ax.set_ylim(_LOG_LO, _LOG_HI)
+    ax.set_xticks(_LOG_TICKS)
+    ax.set_yticks(_LOG_TICKS)
+    ax.set_xlabel(xlabel, labelpad=4)
+    ax.set_ylabel(ylabel, labelpad=4, rotation=90)
+    ax.axvline(0, color='#cccccc', lw=0.7, ls=':', zorder=0)
+    ax.axhline(0, color='#cccccc', lw=0.7, ls=':', zorder=0)
+    ax.plot([_LOG_LO, _LOG_HI], [_LOG_LO, _LOG_HI],
+            color='#888888', lw=0.8, ls='--', zorder=1)
+    ax.set_aspect('equal')
+
+
+def _draw_log_overlay(ax, series: dict, unit_key: str, alt_modes: list,
+                      xlabel: str, ylabel: str, mode_labels: dict) -> None:
+    """Top row: x=log(v^B), overlaid alternative modes."""
+    _log_axes(ax, xlabel, ylabel)
+
+    _MODE_STYLE = {
+        'm=1000': dict(c='#d62728', marker='o', s=8,  alpha=0.35, lw=0),
+        'm=0001': dict(c='#d62728', marker='o', s=8,  alpha=0.35, lw=0),
+        'm=1111': dict(c='#2ca02c', marker='o', s=8,  alpha=0.35, lw=0),
+    }
+
+    df_bip = series['m=0110'][unit_key]
+    for mode in alt_modes:
+        if mode not in series or series[mode][unit_key].empty:
+            continue
+        df_alt = series[mode][unit_key]
+        df = (df_bip[['unit_idx', 'v']].rename(columns={'v': 'v_bip'})
+              .merge(df_alt[['unit_idx', 'v']].rename(columns={'v': 'v_alt'}),
+                     on='unit_idx', how='inner'))
+        df = df[(df['v_bip'] > 0) & (df['v_alt'] > 0)]
+        x = _lv(df['v_bip'].values)
+        y = _lv(df['v_alt'].values)
+        st = _MODE_STYLE[mode]
+        ax.scatter(x, y, c=st['c'], marker=st['marker'], s=st['s'],
+                   alpha=st['alpha'], linewidths=st['lw'], zorder=3,
+                   label=f'{mode_labels[mode]}  (n={len(df):,})')
+
+    ax.legend(fontsize=8, framealpha=0.85, loc='upper left')
+
+
+def _draw_log_field(ax, series: dict, unit_key: str, alt_mode: str,
+                    field_labels: dict, xlabel: str, ylabel: str) -> None:
+    """Bottom row: x=log(v^B), field-coloured single mode."""
+    _log_axes(ax, xlabel, ylabel)
+
+    df_bip = series['m=0110'][unit_key]
+    if alt_mode not in series or series[alt_mode][unit_key].empty:
+        ax.text(0.5, 0.5, f'{alt_mode} not available',
+                transform=ax.transAxes, ha='center', va='center', fontsize=9)
+        return
+
+    df_alt = series[alt_mode][unit_key]
+    df = (df_bip[['unit_idx', 'v']].rename(columns={'v': 'v_bip'})
+          .merge(df_alt[['unit_idx', 'v']].rename(columns={'v': 'v_alt'}),
+                 on='unit_idx', how='inner'))
+    df = df[(df['v_bip'] > 0) & (df['v_alt'] > 0)].copy()
+    df['field'] = df['unit_idx'].map(field_labels).fillna('X')
+
+    for fld in _FIELD_ORDER:
+        sub = df[df['field'] == fld]
+        if sub.empty:
+            continue
+        ax.scatter(_lv(sub['v_bip'].values), _lv(sub['v_alt'].values),
+                   c=_FIELD_COLOR[fld], marker=_FIELD_MARKER[fld],
+                   s=10, alpha=0.55, linewidths=0.3, zorder=3,
+                   label=f'{fld}  (n={len(sub):,})')
+
+    handles, labels = ax.get_legend_handles_labels()
+    key = {lbl.split()[0]: i for i, lbl in enumerate(labels)}
+    idx = [key[f] for f in _LEGEND_ORDER if f in key]
+    ax.legend([handles[i] for i in idx], [labels[i] for i in idx],
+              fontsize=8, framealpha=0.85, loc='upper left', markerscale=1.6)
+    ax.text(0.97, 0.03, f'n={len(df):,}', transform=ax.transAxes,
+            fontsize=8, ha='right', va='bottom', color='#555555')
+
+
+def plot3b(src_rank_map: dict, inst_rank_map: dict, series: dict) -> None:
+    """2×2 linearised-log₁₀ cross-mask scatter.
+
+    TL: log(v_S^B) vs log(v_S^S) + log(v_S^J) overlaid
+    TR: log(v_I^B) vs log(v_I^I) + log(v_I^J) overlaid
+    BL: log(v_S^B) vs log(v_S^S), field-coloured
+    BR: log(v_I^B) vs log(v_I^I), field-coloured
+    """
+    paths = load_config()
+    _pub_theme()
+
+    src_labels, inst_labels = _load_field_labels(paths)
+
+    fig, axes = plt.subplots(2, 2, figsize=(9, 9))
+    fig.subplots_adjust(hspace=0.35, wspace=0.35)
+
+    _draw_panel(axes[0, 0], series, 'S', S_LABELS,
+                n_baseline=len(src_rank_map), panel_title='Sources',
+                log_linear_y=True,
+                label_map={'m=0110': r'$v_S^B$',
+                           'm=1000': r'$v_S^S$',
+                           'm=1111': r'$v_S^J$'},
+                marker_map={'m=1000': 'o', 'm=1111': 'D'})
+    axes[0, 0].set_xlabel(r'$v_S^B$ rank', labelpad=4)
+    axes[0, 0].set_ylabel(r'$\log(v_S^U)$', labelpad=4)
+    axes[0, 0].set_xlim(0, len(src_rank_map))
+    axes[0, 0].set_ylim(_LOG_LO, 1.8)
+
+    _draw_panel(axes[0, 1], series, 'I', I_LABELS,
+                n_baseline=len(inst_rank_map), panel_title='Institutions',
+                log_linear_y=True,
+                label_map={'m=0110': r'$v_I^B$',
+                           'm=0001': r'$v_I^I$',
+                           'm=1111': r'$v_I^J$'},
+                marker_map={'m=0001': 'o', 'm=1111': 'D'})
+    axes[0, 1].set_xlabel(r'$v_I^B$ rank', labelpad=4)
+    axes[0, 1].set_ylabel(r'$\log(v_I^U)$', labelpad=4)
+    axes[0, 1].set_xlim(0, len(inst_rank_map))
+    axes[0, 1].set_ylim(_LOG_LO, 1.8)
+    _draw_log_field(
+        axes[1, 0], series, 'S', 'm=1000', src_labels,
+        xlabel=r'$\log(v_S^B)$', ylabel=r'$\log(v_S^S)$',
+    )
+    _draw_log_field(
+        axes[1, 1], series, 'I', 'm=0001', inst_labels,
+        xlabel=r'$\log(v_I^B)$', ylabel=r'$\log(v_I^I)$',
+    )
+
+    sup = fig.suptitle(
+        'Cross-mask influence: bipartite vs within-layer',
+        fontsize=9, y=1.01,
+    )
+    _save(fig, sup, 'fig_3b', paths)
+
+
 # ─── Main ─────────────────────────────────────────────────────────────────────
 
 def main():
@@ -684,6 +865,7 @@ def main():
     src_highlights, inst_highlights = build_unit_effects_table(series, paths)
     plot3a(src_rank_map, inst_rank_map, series,
            src_highlights=src_highlights, inst_highlights=inst_highlights)
+    plot3b(src_rank_map, inst_rank_map, series)
 
 
 if __name__ == '__main__':

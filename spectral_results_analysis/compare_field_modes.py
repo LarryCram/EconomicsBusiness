@@ -27,8 +27,9 @@ _run_code = _baseline['run_code']
 _tau_u    = _baseline['tau_u']
 _tau_s    = _baseline['tau_s']
 
-BASE_0110 = f'rk_{_run_code}_ALL_tauU{_tau_u}_tauS{_tau_s}_vartau_rho0_m0110_chi50_alpha100'
-BASE_1000 = f'rk_{_run_code}_ALL_tauU{_tau_u}_tauS{_tau_s}_vartau_rho0_m1000_chi50_alpha100'
+_fx       = _baseline['fx']
+BASE_0110 = f'rk_{_run_code}_{_fx}_tauU{_tau_u}_tauS{_tau_s}_vartau_rho0_m0110_chi50_alpha100'
+BASE_1000 = f'rk_{_run_code}_{_fx}_tauU{_tau_u}_tauS{_tau_s}_vartau_rho0_m1000_chi50_alpha100'
 
 OVERLAY_PAIRS = [
     # (field, label_0110, label_1000, label_0001)

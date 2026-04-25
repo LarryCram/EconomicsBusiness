@@ -11,7 +11,7 @@ RUNS = load_runs()
 
 
 def test_all_rows_loaded():
-    assert len(RUNS) == 15
+    assert len(RUNS) == 32
 
 
 def test_skip_filters():

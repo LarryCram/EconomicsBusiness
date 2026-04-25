@@ -194,7 +194,10 @@ def filter_and_match(db):
             END AS field_eb
         FROM scored;
 
-        COPY (SELECT * FROM source_master) TO '{PARQUET}/source_master.parquet' (FORMAT PARQUET);
+        COPY (
+            SELECT * FROM source_master
+            WHERE econ_bus_density >= 0.4 OR econ_bus_density IS NULL
+        ) TO '{PARQUET}/source_master.parquet' (FORMAT PARQUET);
         """
     db.sql(sql)
     sql = f"""

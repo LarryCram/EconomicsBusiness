@@ -253,8 +253,9 @@ def test_checkpoint_roundtrip(tmp_path):
     B, n_s, n_u = 5, 10, 8
     v_s_boot = np.random.rand(B, n_s).astype(np.float32)
     v_u_boot = np.random.rand(B, n_u).astype(np.float32)
+    lam_ratio_boot = np.random.rand(B).astype(np.float32)
     meta = dict(
-        n=B, seed=42, tol=1e-7,
+        n=B, seed=42,
         n_s=n_s, n_u=n_u,
         source_ids=list(range(n_s)),
         inst_ids=list(range(n_u)),
@@ -263,9 +264,9 @@ def test_checkpoint_roundtrip(tmp_path):
         completed=B,
     )
 
-    save_checkpoint(tmp_path, v_s_boot, v_u_boot, meta)
+    save_checkpoint(tmp_path, v_s_boot, v_u_boot, lam_ratio_boot, meta)
 
-    v_s_rt, v_u_rt, meta_rt = load_checkpoint(tmp_path)
+    v_s_rt, v_u_rt, lam_rt, meta_rt = load_checkpoint(tmp_path)
 
     assert v_s_rt.shape == (B, n_s), f"v_s shape: {v_s_rt.shape}"
     assert v_u_rt.shape == (B, n_u), f"v_u shape: {v_u_rt.shape}"
@@ -296,8 +297,9 @@ def test_resume_skips_completed(tmp_path):
     v_s_partial[:completed] = 99.0
     v_u_partial[:completed] = 99.0
 
+    lam_partial = np.zeros(B, dtype=np.float32)
     meta = dict(
-        n=B, seed=42, tol=1e-7,
+        n=B, seed=42,
         n_s=n_s, n_u=n_u,
         source_ids=list(range(10, 10 + n_s)),
         inst_ids=list(range(100, 100 + n_u)),
@@ -305,10 +307,10 @@ def test_resume_skips_completed(tmp_path):
         baseline_table='el_20242024_A_tauU20_tauS20',
         completed=completed,
     )
-    save_checkpoint(tmp_path, v_s_partial, v_u_partial, meta)
+    save_checkpoint(tmp_path, v_s_partial, v_u_partial, lam_partial, meta)
 
     # Load checkpoint and verify resume logic
-    v_s_boot, v_u_boot, meta_rt = load_checkpoint(tmp_path)
+    v_s_boot, v_u_boot, _lam_rt, meta_rt = load_checkpoint(tmp_path)
     start_b = meta_rt['completed']
 
     assert start_b == 3, f"Expected start_b=3, got {start_b}"

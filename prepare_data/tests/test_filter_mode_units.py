@@ -215,7 +215,7 @@ class TestNaming:
 
     def test_mode_units_table_name_fixtau(self):
         name = mode_units_table(RUN_CODE, FX, TAU_U, TAU_S, (0, 1, 1, 0),
-                                ref_units='20242024_ALL_tauU20_tauS20')
+                                ref_units='20242024_EBAX_tauU20_tauS20')
         assert name == f'_units_{RUN_CODE}_{FX}_tauU{TAU_U}_tauS{TAU_S}_fixtau_m0110'
 
     def test_raw_units_table_name_vartau(self):
@@ -224,7 +224,7 @@ class TestNaming:
 
     def test_raw_units_table_name_fixtau(self):
         name = raw_units_table(RUN_CODE, FX, TAU_U, TAU_S,
-                               ref_units='20242024_ALL_tauU20_tauS20')
+                               ref_units='20242024_EBAX_tauU20_tauS20')
         assert name == f'_units_{RUN_CODE}_{FX}_tauU{TAU_U}_tauS{TAU_S}_fixtau'
 
 

@@ -37,8 +37,9 @@ _run_code      = _baseline['run_code']
 _tau_u         = _baseline['tau_u']
 _tau_s         = _baseline['tau_s']
 _fx            = _baseline['fx']
-BASELINE_TABLE = f'rk_{_run_code}_{_fx}_tauU{_tau_u}_tauS{_tau_s}_vartau_rho0_m0110_chi50_alpha100'
-EL_TABLE       = f'el_{_run_code}_{_fx}_tauU{_tau_u}_tauS{_tau_s}_vartau'
+BASELINE_TABLE         = f'rk_{_run_code}_{_fx}_tauU{_tau_u}_tauS{_tau_s}_vartau_rho0_m0110_chi50_alpha100'
+BASELINE_DIRECT_TABLE  = f'rk_{_run_code}_{_fx}_tauU{_tau_u}_tauS{_tau_s}_vartau_rho0_m0110_chi50_alpha100_omega1'
+EL_TABLE               = f'el_{_run_code}_{_fx}_tauU{_tau_u}_tauS{_tau_s}_vartau'
 
 FIELD_COLOURS = {
     'E':   '#e41a1c',   # red
@@ -58,9 +59,8 @@ INST_FIELD_COLOURS = {
 
 # ─── Data ─────────────────────────────────────────────────────────────────────
 
-def load_bootstrap(paths, boot_subdir: str = 'bootstrap') -> tuple:
-    """Load v_s_boot, v_u_boot, lam_ratio_boot arrays and meta from $WORKING/{boot_subdir}/."""
-    boot_dir = paths.working / boot_subdir
+def load_bootstrap(boot_dir: Path) -> tuple:
+    """Load v_s_boot, v_u_boot, lam_ratio_boot arrays and meta from boot_dir."""
     v_s_boot = np.load(boot_dir / 'v_s_boot.npy')   # (B, n_s)
     v_u_boot = np.load(boot_dir / 'v_u_boot.npy')   # (B, n_u)
     lam_path = boot_dir / 'lam_ratio_boot.npy'
@@ -75,11 +75,11 @@ def load_bootstrap(paths, boot_subdir: str = 'bootstrap') -> tuple:
     return v_s_boot, v_u_boot, lam_ratio_boot, meta
 
 
-def load_baseline(rk_path: Path) -> pd.DataFrame:
+def load_baseline(rk_path: Path, table: str = BASELINE_TABLE) -> pd.DataFrame:
     """Load baseline v and unit_type from rankings.duckdb."""
     with duckdb.connect(str(rk_path), read_only=True) as db:
         df = db.execute(
-            f"SELECT unit_idx, unit_type, v FROM {BASELINE_TABLE}"
+            f"SELECT unit_idx, unit_type, v FROM {table}"
         ).df()
     return df
 
@@ -233,7 +233,7 @@ def report_eigenvalues(lam_ratio_boot: np.ndarray) -> None:
 
 
 def plot7(paths, v_s_boot, v_u_boot, lam_ratio_boot, meta, df_base,
-          field_labels: tuple, inst_field_map=None,
+          field_labels: tuple,
           out_stem: str = 'fig_7', boot_label: str = '80% resample') -> None:
     B = v_s_boot.shape[0]
 
@@ -245,21 +245,10 @@ def plot7(paths, v_s_boot, v_u_boot, lam_ratio_boot, meta, df_base,
     ranks_s, v_base_s, boot_flat_s, rank_flat_s, n_s, dense_s, order_s = \
         build_panel_data(v_s_boot, src_v, src_ids, meta['source_ids'])
 
-    # Outlier report — aligned boot array is (B, n_s) in rank order
     src_ids_ranked = [meta['source_ids'][dense_s[i]] for i in range(n_s)]
     boot_s_ranked  = v_s_boot[:, [dense_s[i] for i in range(n_s)]]
     print('\nBootstrap outliers (replicates outside [0.02, 20]):')
     report_outliers(boot_s_ranked, src_ids_ranked, 'Sources', name_map=field_labels[1])
-
-    # Per-point colour by field_eb (repeated B times)
-    field_per_unit = np.array([
-        field_labels[0].get(meta['source_ids'][dense_s[i]], None)
-        for i in range(n_s)
-    ])
-    colours_per_unit = np.array([
-        FIELD_COLOURS.get(f, FIELD_COLOURS[None]) for f in field_per_unit
-    ])
-    colours_flat_s = np.tile(colours_per_unit, B)
 
     # ── Institutions ─────────────────────────────────────────────────────────
     df_i = df_base[df_base['unit_type'] == 'U'].copy()
@@ -276,46 +265,15 @@ def plot7(paths, v_s_boot, v_u_boot, lam_ratio_boot, meta, df_base,
     if lam_ratio_boot is not None:
         report_eigenvalues(lam_ratio_boot)
 
-    # Per-point colour by institution field (repeated B times)
-    if inst_field_map is not None:
-        inst_field_per_unit = np.array([
-            inst_field_map.get(meta['inst_ids'][dense_i[i]], 'X')
-            for i in range(n_i)
-        ])
-        colours_per_inst = np.array([
-            INST_FIELD_COLOURS.get(f, INST_FIELD_COLOURS['X'])
-            for f in inst_field_per_unit
-        ])
-        colours_flat_i = np.tile(colours_per_inst, B)
-    else:
-        colours_flat_i = None
-
     # ── Plot ─────────────────────────────────────────────────────────────────
     sns.set_theme(style='whitegrid', font_scale=0.95)
     fig, axes = plt.subplots(2, 1, figsize=(9, 8))
     fig.subplots_adjust(hspace=0.44)
 
     _draw_panel(axes[0], ranks_s, v_base_s, boot_flat_s, rank_flat_s,
-                n_s, B, 'Sources', colours=colours_flat_s)
+                n_s, B, 'Sources')
     _draw_panel(axes[1], ranks_i, v_base_i, boot_flat_i, rank_flat_i,
-                n_i, B, 'Institutions', colours=colours_flat_i)
-
-    # Legend for source colours
-    for label, colour in [('E', FIELD_COLOURS['E']),
-                           ('B', FIELD_COLOURS['B']),
-                           ('A', FIELD_COLOURS['A']),
-                           ('X', FIELD_COLOURS[None])]:
-        axes[0].scatter([], [], c=colour, s=20, label=label)
-    axes[0].legend(fontsize=7, framealpha=0.85, loc='upper right')
-
-    # Legend for institution colours
-    if inst_field_map is not None:
-        for label, colour in [('E', INST_FIELD_COLOURS['E']),
-                               ('B', INST_FIELD_COLOURS['B']),
-                               ('A', INST_FIELD_COLOURS['A']),
-                               ('X', INST_FIELD_COLOURS['X'])]:
-            axes[1].scatter([], [], c=colour, s=20, label=label)
-        axes[1].legend(fontsize=7, framealpha=0.85, loc='upper right')
+                n_i, B, 'Institutions')
 
     skipped = meta.get('skipped', 0)
     sup = fig.suptitle(
@@ -346,13 +304,28 @@ def plot7(paths, v_s_boot, v_u_boot, lam_ratio_boot, meta, df_base,
 # ─── Main ─────────────────────────────────────────────────────────────────────
 
 BOOT_LABELS = {
-    'bootstrap':          '80% resample',
-    'bootstrap_oa_errors': 'OA wrong-reference errors',
+    'bootstrap':           '80% resample',
+    'bootstrap_oa_errors': 'OA metadata errors',
 }
 
 BOOT_OUT_STEMS = {
-    'bootstrap':          'fig_7',
+    'bootstrap':           'fig_7',
     'bootstrap_oa_errors': 'fig_7_oa_errors',
+}
+
+# Sub-directory within $WORKING/<boot>/ where the npy files live
+BOOT_STAGE_DIRS = {
+    'bootstrap':           '',
+    'bootstrap_oa_errors': 'stage4',
+}
+
+# Baseline ranking table to compare against for each bootstrap type.
+# 80%-resample uses author-fractional baseline (omega=0).
+# OA-errors bootstrap rebuilds matrices with 1/N_inst, so compare against
+# the direct-inst-weight run (omega=1, label='baseline-direct').
+BOOT_BASELINE_TABLES = {
+    'bootstrap':           BASELINE_TABLE,
+    'bootstrap_oa_errors': BASELINE_DIRECT_TABLE,
 }
 
 
@@ -370,7 +343,10 @@ def main():
     paths   = load_config()
     rk_path = paths.working / 'rankings.duckdb'
 
-    boot_dir = paths.working / args.boot
+    stage_sub = BOOT_STAGE_DIRS.get(args.boot, '')
+    boot_dir  = paths.working / args.boot
+    if stage_sub:
+        boot_dir = boot_dir / stage_sub
     if not (boot_dir / 'v_s_boot.npy').exists():
         raise FileNotFoundError(
             f'Bootstrap arrays not found in {boot_dir}. '
@@ -378,24 +354,21 @@ def main():
         )
 
     print(f'Loading bootstrap arrays from {boot_dir} ...', flush=True)
-    v_s_boot, v_u_boot, lam_ratio_boot, meta = load_bootstrap(paths, args.boot)
+    v_s_boot, v_u_boot, lam_ratio_boot, meta = load_bootstrap(boot_dir)
     B = v_s_boot.shape[0]
     print(f'  B={B}  n_s={meta["n_s"]}  n_u={meta["n_u"]}  '
           f'skipped={meta.get("skipped", 0)}')
 
-    print('Loading baseline ranking ...', flush=True)
-    df_base = load_baseline(rk_path)
+    baseline_tbl = BOOT_BASELINE_TABLES[args.boot]
+    print(f'Loading baseline ranking ({baseline_tbl}) ...', flush=True)
+    df_base = load_baseline(rk_path, baseline_tbl)
 
     print('Loading field labels ...', flush=True)
     field_labels = load_field_labels(paths)   # (field_eb_dict, name_dict)
 
-    print('Loading institution field labels ...', flush=True)
-    inst_field_map = fetch_inst_field_labels(paths.parquet)
-    print(f'  {len(inst_field_map)} institutions classified')
-
     print('Plotting ...', flush=True)
     plot7(paths, v_s_boot, v_u_boot, lam_ratio_boot, meta, df_base,
-          field_labels, inst_field_map,
+          field_labels,
           out_stem=BOOT_OUT_STEMS[args.boot],
           boot_label=BOOT_LABELS[args.boot])
 

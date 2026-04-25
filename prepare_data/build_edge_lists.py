@@ -15,6 +15,7 @@ cited_inst_idx       BIGINT   -- institution of cited work (one row per retained
 inst_weight          DOUBLE   -- ω_iu author-fractional (paper eq. 1), citing side
 direct_inst_weight   DOUBLE   -- 1 / n_retained_institutions_of_citing_work
 cited_inst_weight    DOUBLE   -- ω_jv author-fractional (paper eq. 1), cited side
+direct_cited_inst_weight DOUBLE -- 1 / n_retained_institutions_of_cited_work
 R_i                  BIGINT   -- intra-corpus reference count of citing work
 a_citer_source       BIGINT   -- work count of citer source in this corpus
 a_cited_source       BIGINT   -- work count of cited source in this corpus
@@ -35,11 +36,11 @@ At matrix build time supply:
 
 Institution retention
 ---------------------
-For fx='ALL' the retained institution set is computed from the full corpus.
-For all field subsets (E, B, A, M, EB, X) the institution set is inherited
-from the corresponding ALL corpus
-(_units_{run_code}_ALL_tauU{tau_u}_tauS{tau_s}).
-ALL must therefore be built before its field subsets within each
+For fx='EBAX' the retained institution set is computed from the full corpus.
+For all field subsets (E, B, A, EBA, X) the institution set is inherited
+from the corresponding EBAX corpus
+(_units_{run_code}_EBAX_tauU{tau_u}_tauS{tau_s}).
+EBAX must therefore be built before its field subsets within each
 (run_code, tau_u, tau_s) group.
 """
 
@@ -59,16 +60,17 @@ paths   = load_config()
 PARQUET = paths.parquet
 DB_PATH = paths.working / 'edge_lists.duckdb'
 
-FIELD_COND = {
-    'E':   "AND sm.field_eb = 'E'",
-    'B':   "AND sm.field_eb = 'B'",
-    'A':   "AND sm.field_eb = 'A'",   # ambiguous overlap (E+B)
-    # Backward-compat alias: historical M bucket is non-X (E+B+A).
-    'M':   "AND sm.field_eb IN ('E', 'B', 'A')",
-    'EB':  "AND sm.field_eb IN ('E', 'B', 'A')",
-    'X':   "AND sm.field_eb = 'X'",
-    'ALL': "",
-}
+def _field_cond(fx: str) -> str:
+    """SQL WHERE fragment derived from the set of letters in fx.
+    fx letters must be a subset of {'E','B','A','X'}; EBAX → no filter."""
+    letters = set(fx) & {'E', 'B', 'A', 'X'}
+    if letters == {'E', 'B', 'A', 'X'}:
+        return ""
+    elif len(letters) == 1:
+        return f"AND sm.field_eb = '{next(iter(letters))}'"
+    else:
+        quoted = ', '.join(f"'{c}'" for c in 'EBAX' if c in letters)
+        return f"AND sm.field_eb IN ({quoted})"
 
 
 def _tau_sfx(ref_units: str) -> str:
@@ -94,7 +96,7 @@ def _units_name(run_code: str, fx: str, tau_u: int, tau_s: int,
 def corpus_configs_from_csv() -> list:
     """
     Derive unique corpus configurations from params.csv.
-    Returns list of dicts ordered so that fx='ALL' precedes non-ALL within
+    Returns list of dicts ordered so that fx='EBAX' precedes non-EBAX within
     each (run_code, tau_u, tau_s) group.
     """
     rows = load_runs()
@@ -124,7 +126,7 @@ def corpus_configs_from_csv() -> list:
         # Within each (run_code, tau_u, tau_s) group, ALL comes before others.
         has_ref = 1 if c['ref_units'] else 0
         return (has_ref, c['run_code'], c['tau_u'], c['tau_s'],
-            0 if c['fx'] == 'ALL' else 1, c['fx'])
+            0 if c['fx'] == 'EBAX' else 1, c['fx'])
 
     return sorted(configs, key=sort_key)
 
@@ -142,7 +144,7 @@ def build_one(db, run_code: str, tc0: int, tc1: int, tt0: int, tt1: int,
     inherited_inst_table : str or None
         If provided, institution retention is read from this table
         (unit_type='U' rows) instead of being computed from the corpus.
-        Used for field subsets (E/B/A/M/EB/X) which inherit the ALL-corpus
+        Used for field subsets (E/B/A/EBA/X) which inherit the EBAX-corpus
         institution set of the same window.
     inherited_src_table : str or None
         If provided, source retention is read from this table
@@ -155,7 +157,7 @@ def build_one(db, run_code: str, tc0: int, tc1: int, tt0: int, tt1: int,
     min_year     = min(cs, ts)
     max_year     = max(ce, te)
     census_years = ce - cs + 1
-    fc           = FIELD_COND[fx]
+    fc           = _field_cond(fx)
     tname        = table_name(run_code, fx, tau_u, tau_s, ref_units)
 
     db.execute(f"""
@@ -294,9 +296,10 @@ def build_one(db, run_code: str, tc0: int, tc1: int, tt0: int, tt1: int,
             SELECT iw.work_idx,
                    fw.source_idx,
                    iw.institution_idx,
-                   iw.inst_weight      AS cited_inst_weight,
-                   acs.source_works    AS a_cited_source,
-                   ain.inst_frac_works AS a_cited_inst
+                   iw.inst_weight        AS cited_inst_weight,
+                   iw.direct_inst_weight AS direct_cited_inst_weight,
+                   acs.source_works      AS a_cited_source,
+                   ain.inst_frac_works   AS a_cited_inst
             FROM iw
             JOIN fw        ON iw.work_idx        = fw.work_idx
             JOIN a_source acs ON fw.source_idx    = acs.source_idx
@@ -312,6 +315,7 @@ def build_one(db, run_code: str, tc0: int, tc1: int, tt0: int, tt1: int,
             ci.inst_weight,
             ci.direct_inst_weight,
             cj.cited_inst_weight,
+            cj.direct_cited_inst_weight,
             ci.ref_count         AS R_i,
             ci.a_citer_source,
             cj.a_cited_source,
@@ -538,12 +542,12 @@ def main():
         print('=== Cleaning stale tables ===')
         clean_stale(db)
 
-        # Group configs by (run_code, tau_u, tau_s); ALL is first within each group
+        # Group configs by (run_code, tau_u, tau_s); EBAX is first within each group
         from itertools import groupby
         key_fn = lambda c: (c['run_code'], c['tau_u'], c['tau_s'])
         for group_key, group in groupby(configs, key=key_fn):
             run_code, tau_u, tau_s = group_key
-            all_units_table = f'_units_{run_code}_ALL_tauU{tau_u}_tauS{tau_s}_vartau'
+            all_units_table = f'_units_{run_code}_EBAX_tauU{tau_u}_tauS{tau_s}_vartau'
 
             for c in group:
                 fx        = c['fx']
@@ -557,8 +561,8 @@ def main():
                     inherited_units = f'_units_{ref_units}_vartau'
                     inh_inst = inherited_units
                     inh_src  = inherited_units
-                elif fx != 'ALL':
-                    # Field subset: inherit institutions from ALL corpus of same window
+                elif fx != 'EBAX':
+                    # Field subset: inherit institutions from EBAX corpus of same window
                     inh_inst = all_units_table
                     inh_src  = None
                 else:
@@ -584,7 +588,7 @@ def main():
         db.sql("SELECT * FROM _catalog ORDER BY run_code, F_x, tau_u").show()
 
         # Sample baseline edge list
-        baseline_tname = table_name('20242024', 'ALL', 20, 20)  # ref_units='' → _vartau
+        baseline_tname = table_name('20242024', 'EBAX', 20, 20)  # ref_units='' → _vartau
         print(f"\n=== Baseline edge list sample ({baseline_tname}) ===")
         db.sql(f"SELECT * FROM {baseline_tname} LIMIT 20").show()
 

@@ -1,6 +1,36 @@
 # BOOTSTRAP.md — Bootstrap Uncertainty Analysis for Baseline Ranking
 
-## Goal
+## Goal - metadata error
+
+Openalex has metadata errors at work level and at reference list level.
+
+We have a large corpus 2000-2024 and are using 2020-2024 as the baseline.
+
+#### Error pub_year
+
+pub_year is out randomly in xpr% of works by +/-1 year. Impacts year-filtered edge list on citer side and cited_side. It will be easier to avoid out-of census/target year issues by confining the errors to -1 at the latest year and +1 at the ealiest year.
+
+#### Error wrong source
+
+Source is out randomly on xws% of works. Effects both sides of edge list.
+
+#### Error wrong institution
+
+Institution is out randomly on xwi% of works. Effects both sides of edge list.
+Many errors are within country, and fewer cross country. Within country share ywc. 
+Assume these are institution errors and do not tie them to author errors even in fractionation case.
+
+#### Error wrong reference
+
+A referenced work is randomly assigned to the wrong work in xwr% edge rows. This work itself can be erroneous for the above reasons. Draw from the census/target set.
+
+#### Metadata errors could draw works from outside, but the number of outside works that would survive the filtering is small so all metadata errors occur within the large corpus. 
+
+#### Magnitude of error
+
+Use 10% for all x-type erors. Take ywc=0.75.
+
+## Goal - sampling error
 
 Quantify sampling uncertainty in the baseline spectral ranking
 (m=0110, run_code=20242024, F=A, τ_U=20, τ_S=20, ρ=0, α=1.0) by

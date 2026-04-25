@@ -48,7 +48,7 @@ class CSRData:
 
 
 def build_csr(db, run_code: str, fx: str, tau_u: int, tau_s: int, rho: int, m: tuple,
-              ref_units: str = '') -> CSRData:
+              ref_units: str = '', direct_inst: bool = False) -> CSRData:
     """
     Build raw CSR blocks for corpus (run_code, fx, tau_u, tau_s) with ρ weighting.
 
@@ -56,12 +56,14 @@ def build_csr(db, run_code: str, fx: str, tau_u: int, tau_s: int, rho: int, m: t
     ----------
     db : duckdb connection (open, writeable not required).
     run_code : 8-char time window key, e.g. '20242024'.
-    fx : field subset ('E', 'B', 'A', 'EB', 'NEB').
+    fx : field subset — letters from {'E','B','A','X'} e.g. 'EBAX', 'EBA', 'E'.
     tau_u : institution retention threshold (mean annual census works).
     tau_s : source retention threshold (mean annual census works).
     rho : 0 → fixed count (ρ_i = R̄/R_i); 1 → full count (ρ_i = 1).
     m : (m_SS, m_SI, m_IS, m_II) ∈ {0,1}^4 — which blocks to build.
     ref_units : non-empty string for fixtau corpora.
+    direct_inst : False → author-fractional ω (inst_weight / cited_inst_weight);
+                  True  → direct 1/N_inst ω (direct_inst_weight / direct_cited_inst_weight).
 
     Returns
     -------
@@ -121,11 +123,14 @@ def build_csr(db, run_code: str, fx: str, tau_u: int, tau_s: int, rho: int, m: t
     else:
         rho_col = "1.0"
 
+    iw_col  = 'direct_inst_weight'       if direct_inst else 'inst_weight'
+    ciw_col = 'direct_cited_inst_weight' if direct_inst else 'cited_inst_weight'
     db.execute(f"""
         CREATE OR REPLACE TEMP TABLE _tmp_el AS
         SELECT citer_work_idx, citer_source_idx, citer_inst_idx,
                cited_work_idx,  cited_source_idx, cited_inst_idx,
-               inst_weight, cited_inst_weight,
+               {iw_col}  AS inst_weight,
+               {ciw_col} AS cited_inst_weight,
                {rho_col} AS rho_w
         FROM {tname}
     """)

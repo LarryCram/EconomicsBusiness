@@ -250,8 +250,8 @@ We construct many realisations of $\mathbf{\tilde{H}}$ to test unit pairings, su
 $\mathbf{\tilde{H}}$ is a sparse matrix constructed from the filtered and weighted edge list $\mathcal{E}$ accumulated over $\mathfrak{R}$, stored in compressed sparse row (CSR) format. We use two numerical approaches, applied to different regimes:
 \begin{itemize}
 	\setlength{\itemsep}{0pt}
-	\item For runs with $\alpha=1$, $\boldsymbol{\mu}=\mathbf{0}$ including the baseline, the dominant eigenpair of $\mathbf{\tilde{H}}^\top$ is computed with \texttt{scipy.sparse.linalg.eigs}, which also returns the next few eigenvalues and thereby verifies primitivity (a unique eigenvalue of modulus~1).
-	\item For $\alpha<1$ runs (sensitivity and bootstrap), the power iteration
+	\item For runs with $\alpha=1$, $\boldsymbol{\mu}=\mathbf{0}$ including the baseline and bootstrap, the dominant eigenpair of $\mathbf{\tilde{H}}^\top$ is computed with \texttt{scipy.sparse.linalg.eigs}, which also returns the next few eigenvalues and thereby verifies primitivity (a unique eigenvalue of modulus~1).
+	\item For $\alpha<1$ sensitivity runs, the power iteration
 \begin{equation}
 	\boldsymbol{\pi}^{(k+1)}
 	\;=\;

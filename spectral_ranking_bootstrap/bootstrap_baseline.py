@@ -339,6 +339,28 @@ def _bipartite_core(C_SI: sp.csr_matrix, C_IS: sp.csr_matrix) -> tuple:
     return s_idx, u_idx, n_iter
 
 
+def compute_v(
+    pi_s: np.ndarray,
+    pi_u: np.ndarray,
+    a_s:  np.ndarray,
+    a_u:  np.ndarray,
+) -> tuple:
+    """
+    Convert eigenvector components to influence scores.
+
+    v_s[i] = A * pi_s[i] / 2 / a_s[i]
+    v_u[j] = A * pi_u[j] / 2 / a_u[j]
+
+    where A = a_s.sum() + a_u.sum().
+
+    Returns (v_s, v_u) as float32 arrays.
+    """
+    A = float(a_s.sum() + a_u.sum())
+    v_s = (A * pi_s / 2.0 / a_s).astype(np.float32)
+    v_u = (A * pi_u / 2.0 / a_u).astype(np.float32)
+    return v_s, v_u
+
+
 def bootstrap_step(b: int, seed: int, edges: dict, tol: float) -> tuple:
     """
     Run one bootstrap replicate.

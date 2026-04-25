@@ -16,7 +16,7 @@ echo "=== Communities: source citation networks ==="
 echo "=== Fig 2: field scope sensitivity ==="
 "$PYTHON" spectral_results_analysis/fig_2.py
 
-echo "=== Fig 3: vSS vs vSB / vII vs vIB ==="
+echo "=== Fig 3: rank curves, cross-mask scatter, fig_3b ==="
 "$PYTHON" spectral_results_analysis/fig_3.py
 
 echo "=== Fig 4: community identity phi2/sqrt(v) ==="
@@ -28,8 +28,8 @@ echo "=== Fig 5 ==="
 echo "=== Fig 6 ==="
 "$PYTHON" spectral_results_analysis/fig_6.py
 
-echo "=== Fig 7: bootstrap stability ==="
-"$PYTHON" spectral_results_analysis/fig_7.py
+# echo "=== Fig 7: bootstrap stability ==="
+# "$PYTHON" spectral_results_analysis/fig_7.py
 
 echo "=== Fig 8 ==="
 "$PYTHON" spectral_results_analysis/fig_8.py
@@ -42,5 +42,14 @@ echo "=== Fig log-ratio stability ==="
 
 echo "=== Network entropy diagnostics ==="
 "$PYTHON" spectral_results_analysis/network_entropy.py
+
+echo "=== Column structure diagnostics ==="
+"$PYTHON" spectral_results_analysis/column_structure.py
+
+echo "=== Cross-mask influence gain ==="
+"$PYTHON" spectral_results_analysis/cross_mask_gain.py
+
+echo "=== Compare field modes ==="
+"$PYTHON" spectral_results_analysis/compare_field_modes.py
 
 echo "=== Results pipeline complete ==="

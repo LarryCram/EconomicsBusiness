@@ -51,16 +51,16 @@ for _r in _runs:
 
 TAU_U_VALUES = [0, 1, 2, 3, 4, 5, 10, 15, 20]
 
-# Additional WHERE clause on source_master.field_eb for each F_x
-FIELD_COND = {
-    'E': "AND sm.field_eb = 'E'",
-    'B': "AND sm.field_eb = 'B'",
-    'A': "AND sm.field_eb = 'A'",
-    'M': "AND sm.field_eb IN ('E', 'B', 'A')",
-    'EB': "AND sm.field_eb IN ('E', 'B', 'A')",
-    'X': "AND sm.field_eb = 'X'",
-    'ALL': "",
-}
+def _field_cond(fx: str) -> str:
+    """SQL WHERE fragment derived from the set of letters in fx."""
+    letters = set(fx) & {'E', 'B', 'A', 'X'}
+    if letters == {'E', 'B', 'A', 'X'}:
+        return ""
+    elif len(letters) == 1:
+        return f"AND sm.field_eb = '{next(iter(letters))}'"
+    else:
+        quoted = ', '.join(f"'{c}'" for c in 'EBAX' if c in letters)
+        return f"AND sm.field_eb IN ({quoted})"
 
 # Baseline window for elbow plot
 _baseline_r = next(r for r in _runs if r['label'] == 'baseline')
@@ -78,7 +78,7 @@ def compute_retention(db, run_code: str, fx: str) -> pd.DataFrame:
     min_year = min(cs, ts)
     max_year = max(ce, te)
     n_years  = max_year - min_year + 1
-    fc = FIELD_COND[fx]
+    fc = _field_cond(fx)
 
     return db.sql(f"""
         WITH inst_works AS (
