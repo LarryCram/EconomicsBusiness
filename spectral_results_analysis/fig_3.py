@@ -422,6 +422,8 @@ def _pub_theme():
 
 
 def _save(fig, sup, stem: str, paths) -> None:
+    was_interactive = plt.isinteractive()
+    plt.ioff()
     out = paths.plots / f'{stem}.pdf'
     fig.savefig(out, bbox_inches='tight')
     print(f'Saved {out}')
@@ -430,6 +432,8 @@ def _save(fig, sup, stem: str, paths) -> None:
     print(f'Saved {paths.plots / f"{stem}_latex.pdf"}')
     sup.set_visible(True)
     plt.close(fig)
+    if was_interactive:
+        plt.ion()
 
 
 def plot3(src_rank_map: dict, inst_rank_map: dict, series: dict) -> None:
@@ -789,59 +793,81 @@ def _draw_log_field(ax, series: dict, unit_key: str, alt_mode: str,
             fontsize=8, ha='right', va='bottom', color='#555555')
 
 
-def plot3b(src_rank_map: dict, inst_rank_map: dict, series: dict) -> None:
-    """2×2 linearised-log₁₀ cross-mask scatter.
+def plot3by(src_rank_map: dict, inst_rank_map: dict, series: dict) -> None:
+    """1×2 rank curves — log(v) vs baseline rank, alternative modes overlaid.
 
-    TL: log(v_S^B) vs log(v_S^S) + log(v_S^J) overlaid
-    TR: log(v_I^B) vs log(v_I^I) + log(v_I^J) overlaid
-    BL: log(v_S^B) vs log(v_S^S), field-coloured
-    BR: log(v_I^B) vs log(v_I^I), field-coloured
+    Left:  sources   — m=0110 (baseline), m=1000 (SS), m=1111 (joint χ*)
+    Right: institutions — m=0110, m=0001 (II), m=1111
     """
     paths = load_config()
     _pub_theme()
 
-    src_labels, inst_labels = _load_field_labels(paths)
+    fig, (ax_s, ax_i) = plt.subplots(1, 2, figsize=(10, 4.5))
+    fig.subplots_adjust(wspace=0.35)
 
-    fig, axes = plt.subplots(2, 2, figsize=(9, 9))
-    fig.subplots_adjust(hspace=0.35, wspace=0.35)
-
-    _draw_panel(axes[0, 0], series, 'S', S_LABELS,
+    _draw_panel(ax_s, series, 'S', S_LABELS,
                 n_baseline=len(src_rank_map), panel_title='Sources',
                 log_linear_y=True,
                 label_map={'m=0110': r'$v_S^B$',
                            'm=1000': r'$v_S^S$',
                            'm=1111': r'$v_S^J$'},
                 marker_map={'m=1000': 'o', 'm=1111': 'D'})
-    axes[0, 0].set_xlabel(r'$v_S^B$ rank', labelpad=4)
-    axes[0, 0].set_ylabel(r'$\log(v_S^U)$', labelpad=4)
-    axes[0, 0].set_xlim(0, len(src_rank_map))
-    axes[0, 0].set_ylim(_LOG_LO, 1.8)
+    ax_s.set_xlabel(r'$v_S^B$ rank', labelpad=4)
+    ax_s.set_ylabel(r'$\log(v_S^U)$', labelpad=4)
+    ax_s.set_xlim(0, len(src_rank_map))
+    ax_s.set_ylim(_LOG_LO, 1.8)
 
-    _draw_panel(axes[0, 1], series, 'I', I_LABELS,
+    _draw_panel(ax_i, series, 'I', I_LABELS,
                 n_baseline=len(inst_rank_map), panel_title='Institutions',
                 log_linear_y=True,
                 label_map={'m=0110': r'$v_I^B$',
                            'm=0001': r'$v_I^I$',
                            'm=1111': r'$v_I^J$'},
                 marker_map={'m=0001': 'o', 'm=1111': 'D'})
-    axes[0, 1].set_xlabel(r'$v_I^B$ rank', labelpad=4)
-    axes[0, 1].set_ylabel(r'$\log(v_I^U)$', labelpad=4)
-    axes[0, 1].set_xlim(0, len(inst_rank_map))
-    axes[0, 1].set_ylim(_LOG_LO, 1.8)
+    ax_i.set_xlabel(r'$v_I^B$ rank', labelpad=4)
+    ax_i.set_ylabel(r'$\log(v_I^U)$', labelpad=4)
+    ax_i.set_xlim(0, len(inst_rank_map))
+    ax_i.set_ylim(_LOG_LO, 1.8)
+
+    sup = fig.suptitle(
+        'Cross-mask influence: rank curves by network mode',
+        fontsize=9, y=1.01,
+    )
+    _save(fig, sup, 'fig_3by', paths)
+
+
+def plot3bz(src_rank_map: dict, inst_rank_map: dict, series: dict) -> None:
+    """1×2 field-coloured log(v^B) vs log(v^S / v^I) scatter.
+
+    Left:  log(v_S^B) vs log(v_S^S), sources coloured by field_eb
+    Right: log(v_I^B) vs log(v_I^I), institutions coloured by field_eb
+    """
+    paths = load_config()
+    _pub_theme()
+
+    src_labels, inst_labels = _load_field_labels(paths)
+
+    # equal-aspect axes need a wider figure; log range is 3.7 units each axis
+    fig, (ax_s, ax_i) = plt.subplots(1, 2, figsize=(11, 5))
+    fig.subplots_adjust(wspace=0.35)
+
     _draw_log_field(
-        axes[1, 0], series, 'S', 'm=1000', src_labels,
+        ax_s, series, 'S', 'm=1000', src_labels,
         xlabel=r'$\log(v_S^B)$', ylabel=r'$\log(v_S^S)$',
     )
+    ax_s.set_title('Sources', fontsize=11, pad=6)
+
     _draw_log_field(
-        axes[1, 1], series, 'I', 'm=0001', inst_labels,
+        ax_i, series, 'I', 'm=0001', inst_labels,
         xlabel=r'$\log(v_I^B)$', ylabel=r'$\log(v_I^I)$',
     )
+    ax_i.set_title('Institutions', fontsize=11, pad=6)
 
     sup = fig.suptitle(
         'Cross-mask influence: bipartite vs within-layer',
         fontsize=9, y=1.01,
     )
-    _save(fig, sup, 'fig_3b', paths)
+    _save(fig, sup, 'fig_3bz', paths)
 
 
 # ─── Fig 3b: π and v vs a_i ───────────────────────────────────────────────────
@@ -943,7 +969,8 @@ def main():
     src_highlights, inst_highlights = build_unit_effects_table(series, paths)
     plot3a(src_rank_map, inst_rank_map, series,
            src_highlights=src_highlights, inst_highlights=inst_highlights)
-    plot3b(src_rank_map, inst_rank_map, series)
+    plot3by(src_rank_map, inst_rank_map, series)
+    plot3bz(src_rank_map, inst_rank_map, series)
     plot3c_pi_v(series)
 
 

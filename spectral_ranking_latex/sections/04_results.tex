@@ -1,52 +1,84 @@
-% !TeX root = ../main.tex
+%!TeX root = ../main.tex
 % ---------------------------------------------------------------
 \section{Results}
 \label{sec:results}
 % ---------------------------------------------------------------
 
-The model supports three structural arrangements that we present in order: (1) blocks are picked by the unit mask $m$ encoded as $1000 \rightarrow S$ (sources only), $0001 \rightarrow I$ (institutions only), $0110 \rightarrow B$ (bipartite) and $1111 \rightarrow J$ (joint), (2) subfields are picked from $\mathfrak{F}$ (E, B, A, X), and (3) fully overlapping census and target time windows are picked from the set \[\{T_t: t = 1 \ldots 5\} = \{[2000, 2004], [2005, 2009], [2010, 2014], [2015,2019, [2020,2024]\}\]. We also present a sensitivity analysis for the parameters $\rho, \chi, (\alpha, \mu), \rm{and}~ t^c$, together with a bootstrap study of uncertainties. Results focus on $v_S$ and $v_I$, the source and institution influence vectors, and we designate a particular model by superscript, e.g. $v_S^{SEt_5}$ is the source influence vector for the S ($m=1000$) block, $F=E$, and census and target time windows 2020-2024. 
+The model supports three structural arrangements that we present in order: (1) blocks, picked by the unit mask $m$ and encoded as $1000 \rightarrow S$ (sources only), $0001 \rightarrow I$ (institutions only), $0110 \rightarrow B$ (bipartite) and $1111 \rightarrow J$ (joint), (2) subfields, picked from $\mathfrak{F}$ (E, B, A, X), and (3) census and target time windows, overlapped ($t_c=t_t$) and picked from the sets \[\{T_t: t = 1 \ldots 5\} = \{[2000, 2004], [2005, 2009], [2010, 2014], [2015,2019], [2020,2024]\}.\]We also present a sensitivity analysis for the parameters $\rho,~\chi,~\omega,~(\alpha,~\mu),~\rm{and}~ t_c$, together with a bootstrap study of uncertainties. Results focus on $v_S$ and $v_I$, the source and institution influence vectors, derived from the ranking probability by Equation \ref{eq:vstar}. An instance of the model is designated using a subscript for the unit and superscripts to designate block arrangements and parameters. For example, $v_I^{S,E,T_5}$ is the institution influence vector for the S ($m=1000$) block, $F=E$ (Economics), and census and target time windows 2020-2024. 
+
+Figure~\ref{fig:fig_3by} presents key results, comparing influence values across the four unit masks. The $x$-direction is the falling cardinal rank of sources (left) and institutions (right) in the baseline (i.e. bipartite with $S \rightarrow I \rightarrow S,~\alpha=1,~\mu=0,~\rho=1,~\omega=1.~~T_5 = [2020-2024]$ and $F=EBAX,~\rm{all~subfields}$). The solid black curve traces the corresponding influence $v$ in the $y$-direction. Units near $v=1$ have average influence, corresponding to rank position $\approx~25\%$ for sources and $\approx~20\%$ for institutions. Overlaid on the bipartite source curve are $v_S^S$ (red $\times$, $S \rightarrow S$) and $v_S^J$ (green $\times$, joint $S+I \rightarrow S+I$). A point on the $x$-axis is the same unit in every case. For institutions, we show $v_I^I$ ($I \rightarrow I$) and $v_I^J$ (joint).
+
+\begin{figure}[!hbt]
+  \centering
+  \includegraphics[width=0.65\textwidth]{../plots/fig_3by_latex.pdf}
+  \caption{Logarithm of influence versus rank for 
+    sources (left) and institutions (right).
+    Black line: $v^B$ (bipartite, baseline);
+    red circles: $v_S^S$ / $v_I^I$ (within-block);
+    green diamonds: $v^J$ (joint $S+I$).
+    $x$-axis is the cardinal rank for the baseline.}
+  \label{fig:fig_3by}
+\end{figure}
+
+Notable are the tightness of the institution dispersion compared with sources, and the difference between the source influence in the bipartite baseline $v_S^B$ and the source-only case $v_S^S$. These features arise from the structure of the citation matrices $H$ and $M$, in particular the way that references spread as they are given, and concentrate as they are received. To measure this, consider the Shannon evenness $J_i$ \citep{stirlingGeneralFrameworkAnalysing2007} of an $n_{\text{row}}\times n_{\text{col}}$ row stochastic citation matrix $X~=~x_{ij}$. At row $i$ it is  
+\begin{equation}
+  J_i = \frac{x_i}{\log n_{\text{col}}}, \qquad
+  x_i = -\sum_j X_{ij}\log X_{ij},
+  \label{eq:row_evenness}
+\end{equation}
+with $J_i\in[0,1]$. If a row has uniform probabilities $J=1$, while a concentration at one referenced source gives $J=0$. The mean over all rows,
+\begin{equation}
+  \bar{J} = \frac{1}{n_{\text{row}}}\sum_i J_i,
+  \label{eq:J_bar}
+\end{equation}
+is larger when outward references are dispersed across the whole corpus.
+A similar measure $J_{\text{col}}$ applies to the mean column sums $p_j = \sum_iX_{ij} / n_{\text{row}}$, namely
+\begin{equation}
+  J_{\text{col}} = \frac{-\sum_j p_j \log p_j}{\log n_{\text{col}}},
+  \label{eq:J_col}
+\end{equation}
+with $J_{\text{col}}=1$ when units receive equal reference in-flow and $J_{\text{col}}\to 0$
+as in-flow concentrates on a single unit. The fan-out $\bar{K} = n_{\text{col}}^{\bar{J}}$ converts normalised row evenness to a count: the geometric mean number of distinct targets reached in one step over the Markov chain.
 
 
-Figure~\ref{fig:fig3} compares spectral ranks across the four unit masks. The $x$-axis is the cardinal rank of sources (left) and institutions (right) in the baseline unit (i.e. bipartite with $S \rightarrow I \rightarrow S, \alpha=1, \mu=0, \rho=1, T_1 = [2020-2024]$ and F including all subfields). The solid black curve traces the corresponding ordinal rank $v$. Units near $v=1$ lie at the unit weighted average, at rank position ~25\% for sources and ~20\% for institutions. Overlaid on the bipartite source curve are $v_S^S$ (red $\times$, $S \rightarrow S$) and $v_S^J$ (green $\times$, joint $S+I \rightarrow S+I$). A point on the $x$-axis is the same unit in every case. For institutions, we show $v_I^I$ ($I \rightarrow I$) and $v_I^J$ (joint).
+\input{../tables/table_kernel_structure}
+
+
+Table~\ref{tab:kernel_structure} quantifies how institutions spread outgoing references far more broadly than sources ($\bar{J}_{II}=0.74$ vs $\bar{J}_{SS}=0.50$; fan-out $7.3\times$ larger),
+yet concentrate incoming source references more sharply than any other kernel
+($J_{\text{col}}(C_{IS})=0.87$).
+
+Both effects carry through to the two-step kernels.
+For sources, $M_S$ combines high row evenness ($\bar{J}=0.84$) with the same
+low column evenness ($J_{\text{col}}=0.87$): the bipartite round-trip spreads
+probability broadly but still rewards the most-cited journals,
+producing the fan-shaped scatter in Figure~\ref{fig:fig_3bz}.
+For institutions, $M_I$ is more balanced ($\bar{J}=0.90$, $J_{\text{col}}=0.93$):
+the bipartite path equalises most institutions while concentrating
+the top slightly more than the direct path alone, so $v_I^B$
+exceeds $v_I^I$ only at the highest ranks.
 
 \begin{figure}[!htb]
   \centering
-  \includegraphics[width=\textwidth]{../plots/fig_3b_latex.pdf}
-  \caption{(left) Influence $v$ against baseline ordinal rank.
-    Black line: bipartite baseline $\mathbf{m}=0110$.
-    Red $\times$: $\mathbf{m}=1000$ (top) / $\mathbf{m}=0001$ (bottom).
-    Green $\times$: $\mathbf{m}=1111$.}
-  \label{fig:fig3}
+  \includegraphics[width=\textwidth]{../plots/fig_3bz_latex.pdf}
+  \caption{Bipartite vs within-layer influence.
+    Sources (left): $\log v_S^S$ vs $\log v_S^B$.
+    Institutions (right): $\log v_I^I$ vs $\log v_I^B$.
+    Points coloured by subfield (E, B, A, X).}
+  \label{fig:fig_3bz}
 \end{figure}
 
-\begin{figure}[h]
-  \centering
-  \includegraphics[height=6cm]{../plots/fig_3a_latex.pdf}
-  \caption{Influence $v(1000)$ (upper) and $v(0001)$ (lower) versus corresponding $v$(0110). For sources, units are shaded by the baseline rank of the corresponding set of institutions, and vice versa for institutions}
-  \label{fig:fig3a}
-\end{figure}
+% To account for the wide dispersion of $v_S^S$ against $v_S^B$, note that $v_S^S$ is a realisation of the direct journal-journal citation network studied by \cite{pinski, westEigenfactorMetricsNetwork2010, bollenJournalStatus2006} and \cite{franceschet} and used 
+% to form the Clarivate Article Influence Score (AIS). A least-squares fit of the logarithmic 2023 AIS for our journal set against $v_S^S$
+% follows $\mathrm{AIS}\propto (v_S^{S}){^{0.91}}$ ($R^2=0.82$), confirming alignment despite differences in corpus, time coverage,
+% and inclusion of unit self-references. For $v_S^S$ the influence of a journal reflects the influence of the journals that reference it. On the other hand, in the bipartite case $v_S^B$, the influence of a journal reflects the influence of the institutions that reference it. 
 
-Two features of Figure~\ref{fig:fig3} are (i) the tightness of the institution dispersion compared with sources, and (ii) the difference between the source influence in the bipartite baseline $v_S^B$ the source-only case $v_S^S$. The tightness of $v_I^I$ and $v_I^J$ against $v_I^B$, compared with $v_S^S$ and $v_S^J$ against $v_S^B$ reflects the ratio of normalised stationary weighted effective branching (NSWEB, $\bar{\epsilon}_{\pi}$) for the two stochastic matrices,
-\[
-\bar{\epsilon}_{\pi}
-=
-\sum_i \pi_i m_i
-=
-\sum_i \pi_i \exp\!\left(-\sum_j H_{ij}\log H_{ij}\right)
-\]
-where $\pi$ is the stationary distribution Equation~\ref{eq:eig}. We find that $\bar{\epsilon}$ is 3.5 times larger for institutions ($H_{II}$) than sources ($H_{SS}$), implying that on average the influence of an institution spreads over 3.5 times more destinations after one step, than the influence of a source.
+% Figure~\ref{fig:fig3a} and Table~\ref{tab:unit_effects} illustrates this coupling in action. 
+% The Figure shades each source with a hue representing the mean weighted influence of the institutions that are connected to it: sources with relatively high $v_S^S$ have relatively high $v_I^B$, compared with sources having low $v_S^S$ and $v_I^B$. The balancing for some units can be delicate, as shown in Table~\ref{tab:unit_effects}. It exhibits eight samples of this behavior, selected as extremes (upper, lower, left, right)  along the `average unit' 
+% region around $v=1$. Among the sources, note how the source  has $v_{\rm bip} > v_{\rm SS}$ due to the high influence of the institutions that reference it, while  (ISSN 2225-1146, Q2) has $v_{\rm bip} < v_{\rm SS}$ despite the high influence of its referencing institutions since the sources that reference it are of lower influence. Games Econ\. Behav\. has very high $v_{\rm SS}$ which is lowered by the high, but lower $\bar{v}_{I}^{\rm bip}$, while Eon\. Geog\. has high $v_{\rm SS}$ raised further by high $\bar{v}_{I}^{\rm bip}$. The spread between institution $v_{\rm II}$ and $v_bip$ is lower than for sources, and for all four cases shown, the value of $\bar{v}_I^{bip}$ determines whether 
+% $v_bip > v_{II}$
 
-To account for the wide dispersion of $v_S^S$ against $v_S^B$, note that $v_S^S$ is a realisation of the direct journal-journal citation network studied by \cite{pinski, westEigenfactorMetricsNetwork2010, bollenJournalStatus2006} and \cite{franceschet} and used 
-to form the Clarivate Article Influence Score (AIS). A least-squares fit of the logarithmic 2023 AIS for our journal set against $v_S^S$
-follows $\mathrm{AIS}\propto (v_S^{S}){^{0.91}}$ ($R^2=0.82$), confirming alignment despite differences in corpus, time coverage,
-and inclusion of unit self-references. For $v_S^S$ the influence of a journal reflects the influence of the journals that reference it. On the other hand, in the bipartite case $v_S^B$, the influence of a journal reflects the influence of the institutions that reference it. 
-
-Figure~\ref{fig:fig3a} and Table~\ref{tab:unit_effects} illustrates this coupling in action. 
-The Figure shades each source with a hue representing the mean weighted influence of the institutions that are connected to it: sources with relatively high $v_S^S$ have relatively high $v_I^B$, compared with sources having low $v_S^S$ and $v_I^B$. The balancing for some units can be delicate, as shown in Table~\ref{tab:unit_effects}. It exhibits eight samples of this behavior, selected as extremes (upper, lower, left, right)  along the `average unit' 
-region around $v=1$. Among the sources, note how the source  has $v_{\rm bip} > v_{\rm SS}$ due to the high influence of the institutions that reference it, while  (ISSN 2225-1146, Q2) has $v_{\rm bip} < v_{\rm SS}$ despite the high influence of its referencing institutions since the sources that reference it are of lower influence. Games Econ\. Behav\. has very high $v_{\rm SS}$ which is lowered by the high, but lower $\bar{v}_{I}^{\rm bip}$, while Eon\. Geog\. has high $v_{\rm SS}$ raised further by high $\bar{v}_{I}^{\rm bip}$. The spread between institution $v_{\rm II}$ and $v_bip$ is lower than for sources, and for all four cases shown, the value of $\bar{v}_I^{bip}$ determines whether 
-$v_bip > v_{II}$
-
-\input{./tables/table_unit_effects}
+\input{../tables/table_unit_effects}
 
 Figure~\ref{fig:fig2} illustrates how subfields affect ranking. For sources, 
 the three field subsets are $v_S^E$ (economics-dominant
@@ -135,7 +167,7 @@ Institutions are no less stable in rank than sources despite having
 more volatile absolute $v$ values across windows, which reflects the
 growing size of the institution corpus as additional universities
 cross the $\tau_I$ threshold over the 25-year period.
-The greater smoothness of the institution panel in Figure~\ref{fig:fig3}
+The greater smoothness of the institution panel in Figure~\ref{fig:fig_3by}
 and the comparable long-run rank stability in Figure~\ref{fig:fig6}
 point to the same mechanism: the $SI$--$IS$ coupling acts as a
 stabiliser, averaging out the local fluctuations in citation practice
