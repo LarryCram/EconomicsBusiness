@@ -2,3 +2,11 @@ JIF
 OpenAlex
 unipartite
 eigenpair
+Docampo
+bibliometrically
+Clarivate
+JI
+stablised
+Katz-Hubbell
+LOWESS
+Wilcoxon
