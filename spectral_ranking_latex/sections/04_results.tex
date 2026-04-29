@@ -6,7 +6,7 @@
 
 The model supports three structural arrangements we present in order: (1) blocks, picked by the unit mask $m$ and encoded as $1000 \rightarrow S$ (sources only), $0001 \rightarrow I$ (institutions only), $0110 \rightarrow B$ (bipartite) and $1111 \rightarrow J$ (joint), (2) subfields, picked from $\mathfrak{F}$ (E, B, A, X), and (3) census and target time windows, overlapped ($t_c=t_t$) and picked from the sets \[\{T_t: t = 1 \ldots 5\} = \{[2000, 2004], [2005, 2009], [2010, 2014], [2015,2019], [2020,2024]\}.\]We also present a sensitivity analysis for the parameters $\rho,~\chi,~\omega,~(\alpha,~\mu),~\rm{and}~ t_c$, together with a bootstrap study of uncertainties. Results focus on $v_S$ and $v_I$, the source and institution influence vectors, derived from the ranking probability by Equation \ref{eq:vstar}. An instance of the model is designated using a subscript for the unit and superscripts as required to designate structural arrangements and parameters. For example, $v_I^{S,E,T_5}$ is the institution influence vector for the $S$ ($m=1000$) block, $F=E$ (Economics), and census and target time windows 2020-2024. 
 
-Figure~\ref{fig:fig_3by} compares influence values across the four unit masks. The $x$-direction is the cardinal rank of sources (left) and institutions (right) in the baseline (i.e. bipartite resolvent with $S \rightarrow I \rightarrow S,~\alpha=1,~\mu=0,~\rho=1,~\omega=1.~~T_5 = [2020-2024]$ and $F=EBAX,~\rm{all~subfields}$). The solid black curve traces the corresponding influence value $v$ in the $y$-direction. Units near $v=1$ have average influence, corresponding to rank position $\approx~25\%$ for sources and $\approx~20\%$ for institutions. For most sources and institutions, $v \in [1, 0.1]$. Overlaid on the bipartite source curve are $v_S^S$ (red $\times$, $S \rightarrow S$) and $v_S^J$ (green $\times$, joint $S+I \rightarrow S+I$). A point on the $x$-axis is the same unit in every case. For institutions, we show $v_I^I$ ($I \rightarrow I$) and $v_I^J$ (joint). Figure~\ref{fig:fig_3bz} directly compares bipartite $v^B$ and single-unit $v^{S,I}$ influence, colouring points by subfield (see below).
+Figure~\ref{fig:fig_3by} compares influence values across the four unit masks. The $x$-direction is the cardinal rank of sources (left) and institutions (right) in the baseline (i.e. bipartite resolvent with $S \rightarrow I \rightarrow S,~\alpha=1,~\mu=0,~\rho=0,~\omega=0,~T_5 = [2020-2024]$ and $F=EBAX,~\rm{all~subfields}$). The solid black curve traces the corresponding influence value $v$ in the $y$-direction. Units near $v=1$ have average influence, corresponding to rank position $\approx~25\%$ for sources and $\approx~20\%$ for institutions. For most sources and institutions, $v \in [1, 0.1]$. Overlaid on the bipartite source curve are $v_S^S$ (red $\times$, $S \rightarrow S$) and $v_S^J$ (green $\times$, joint $S+I \rightarrow S+I$). A point on the $x$-axis is the same unit in every case. For institutions, we show $v_I^I$ ($I \rightarrow I$) and $v_I^J$ (joint). Figure~\ref{fig:fig_3bz} directly compares bipartite $v^B$ and single-unit $v^{S,I}$ influence, colouring points by subfield (see below).
 
 \begin{figure}[!hbt]
   \centering
@@ -59,11 +59,11 @@ Table~\ref{tab:kernel_structure} quantifies how, in one step, institutions sprea
 
 With this understanding of the role of unit masking, we now explore the effects of subfields. Figure~\ref{fig:fig_3by} shows that subfields stand out in unit influence values, even when subfields are not used in the ranking. The prominent effect is the differential response of $E$ and $B$ sources to the bipartite ranking compared with the single unit ranking. Specifically, influence boost due to greater unit concentration as described above is a feature of $E$-sources rather than $B$-sources. This exemplifies the observation of \cite{pinskiCitationInfluenceJournal1976} and \cite{waltmanSourceNormalizedIndicators2013} that spectral ranking is sensitive to the presence of subfields: not only are there different responses, but these responses may themselves alter the rankings and influence scores.  
 
-Figure~\ref{fig:fig_2c} illustrates the process by exhibiting influence distribution within each subfield. Rather that the subfield separation seen in Figure~\ref{fig:fig_3by}, subfields are mingled in similar distributions. Both B and E sources attain similar values of high influence, with influence for B-sources rising by around 10-20\% and E-sources falling by a comparable amount. The different behaviour between combined and separated subfields is apparent in the second eigenvector of the combined corpus (not shown), where the two subfields are cleanly separated by sign. Subfield separation occurs despite the relatively low modularity of the full corpus, 0.2 for the source-only network, 0.07 for institutions, and 0.002/0.0001 for the two forms ($S \rightarrow I$ and $I \rightarrow S$) of the bipartite network.
+Figure~\ref{fig:fig_2c} illustrates the process by exhibiting influence distribution within each subfield. Rather than the subfield separation seen in Figure~\ref{fig:fig_3by}, subfields are mingled in similar distributions. Both B and E sources attain similar values of high influence, with influence for B-sources rising by around 10-20\% and E-sources falling by a comparable amount. The different behaviour between combined and separated subfields is apparent in the second eigenvector of the combined corpus (not shown), where the two subfields are cleanly separated by sign. Subfield separation occurs despite the relatively low modularity of the full corpus, 0.2 for the source-only network, 0.07 for institutions, and 0.002/0.0001 for the two forms ($S \rightarrow I$ and $I \rightarrow S$) of the bipartite network.
 
 \begin{figure}[!htb]
   \centering
-  \includegraphics[width=\textwidth]{../plots/fig_3bz_latex.pdf}
+  \includegraphics[width=\textwidth]{../plots/fig_2c_latex.pdf}
   \caption{Bipartite vs within-layer influence, evaluated separately for each subfield.
     Sources (left): $\log v_S^S$ vs $\log v_S^B$.
     Institutions (right): $\log v_I^I$ vs $\log v_I^B$.
@@ -101,7 +101,7 @@ that would otherwise produce volatile source rankings.
 \end{figure}
 
 Figure~\ref{fig:figstability} quantifies the achievement and persistence of
-above-average influence---defined as $v>1$--across the 25-year span.
+above-average influence - defined as $v>1$ - across the 25-year span.
 Approximately 25\% of sources and 20\% of institutions have
 above-average influence in each window, and this fraction is stable over time.
 Considering the 835~sources and 606~institutions present in both the
@@ -146,9 +146,6 @@ In addition to the structural results presented above (units, subfields and time
     Black line: baseline ($\tau_I{=}\tau_S{=}20$, $\rho{=}0$, $\alpha{=}1$).
     Purple $\times$: $\tau{=}40$ ($N_S{=}945$, $N_I{=}1{,}533$).
     Orange $\times$: $\rho{=}1$.
-    Blue $\times$: census window 2024 only ($t^c{=}1$yr).
-    Red $\times$: $\alpha{=}0.85$, $\mu{=}1/N$ (uniform Katz prior).
-    Green $\times$: $\alpha{=}0.85$, $\mu{=}1/N_p$ (unit-scaled prior).
     $x$-axis locked to baseline rank; units absent from a variant are omitted.}
   \label{fig:fig5}
 \end{figure}
@@ -156,36 +153,30 @@ In addition to the structural results presented above (units, subfields and time
 Raising the work-per-year threshold to $\tau_I{=}\tau_S{=}40$ reduces the corpus size by around 40\% for each unit. Despite this reduction, the influence scores of the surviving units track the baseline closely, with Spearman coefficients $>~0.98$. However, the higher threshold removes low-ranked units differentially, raising influence for high-$v$ units and lowering it by about $0.08$ for sources and $0.15$ in $\log{v}$ for the bulk of units. Consequently, the median absolute rank shift is large among the lower-influence population, $167$ for sources and $189$ for institutions. 
 
 Removing the normalisation of reference list lengths ($\rho{=}1$)
-leads to a small overall reduction of source influence, 0.12 in $\log{v}$
-and substantial variation with a standard deviation of 0.4 in $\log{v}$ for sources and 0.26 for institutions. These relatively large fractional variations occur across units, leading to a median change in rank of 5\% for sources and institutions. 
+leads to a small overall reduction of source influence, 0.12 in $\log{r=\Delta(v)/v}$, wile introducing substantial changes in influence, s.d. $\log{r} = 0.4$ for sources and s.d. $\log{r} = 0.26$ for institutions. These relatively large fractional variations occur across all units, leading to a median change in rank of 5\% for sources and institutions. 
 
-\textit{Census window $t^c$.}
-Restricting the citation census to a single year ($t^c{=}2024$ only,
-$N_S{=}1{,}466$) shifts $v$ substantially for many units but symmetrically
-around the baseline in log space: sources gain or lose in roughly equal
-measure, and the trend line does not systematically deviate from baseline.
-This pattern reflects the fact that a one-year window introduces higher
-sampling variance for every unit rather than a systematic upward or downward
-bias, and is broadly consistent with the construction of the Clarivate AIS,
-which also uses a one-year citation window.
+The overlapping census and target windows for the baseline model might be thought to over-count references, especially those close in publication date. When the census window is reduced to one year ($t_c=2024$), total reference counts reduce and many values of $v$ change  (s.d. $log(r) = 0.4 (\rm{sources}), 0.23 (\rm{institutions})$). Because the change occurs rather uniformly over $\mathbf{H}$ the shape of $v^{S,I}$ is similar to $v^B$.
 
-\textit{Katz--Hubbell damping $\alpha$ and prior $\mu$.}
-Setting $\alpha{=}0.85$ with either prior produces a large change below the
-corpus-average line $v{=}1$, while units well above $v{=}1$ are largely
-unaffected.
-The mechanism is the prior $\mu$: at $\alpha < 1$ the stationary
-distribution $\pi$ receives a contribution proportional to
-$(1{-}\alpha)\mu_p$ at every unit, which establishes a floor on $\pi_p$.
-When converted to influence $v_p \propto \pi_p/a_p$, units with
-very small work counts $a_p$ are strongly lifted: the approximately 20 units
-that stand well above the $\alpha{=}0.85$ cluster in the source panel each
-have only 2--5 articles in the baseline corpus.
-The choice of prior shape (uniform $1/N$ vs.\ unit-scaled $1/N_p$) shifts
-the floor level but does not change the qualitative pattern.
-For the baseline $\alpha{=}1$ the prior plays no role, and $v$ is determined
-entirely by the network structure.
+Moving between institution weights based on author fractional counting and inform counting leads to very small changes in source $v$; for institutions $s.d. \log{r} = 0.1$ with no change in median value, and the median rank changes by 27 places.
 
-\paragraph{Bootstrap}
-The sets of units used in our models are samples from a larger population. In addition, as a very large inhomogeneous database of bibliometric metadata, OpenAlex includes a range of errors. Together, sampling and database errors lead to uncertainty in the values of influence. To estimate these, we adopt a five-element statistical model for metadata errors within the baseline. The errors are introduced at the work level, and carried through all steps of the non-linear algorithm for baseline influence. 
+The introduction of the Katz-Hubble damping parameter $\alpha=0.85$ and prior $\mu=1/N_p, p~\in~\mathfrak{P}$ leads to the marked changes exhibited in Figure~\ref{fig:fig5d}. The primary driver is the support for $v$ provided by the prior $\mu$: with any $\alpha < 1$ the stationary distribution $\pi$ receives a contribution proportional to $(1{-}\alpha)\mu_p$ at every unit, establishing a relatively level floor on $\pi_p$. When converted to 
+influence $v_p \propto  \pi_p / a_p$, variations in unit work count $a_i$
+lead to variations in $v$, including large rises for a few units having very  small work: the $\approx 20$  units that stand well above the bulk of source influences have only 2--4 works in the baseline corpus. The floor mechanism is present in both bipartite (baseline) and single-unit influence values, when the Katz-Hubbell (or PageRank) formulation is adopted.
+The choice of prior (uniform $1/N$ vs.\ unit-scaled $1/N_p$) shifts
+the floor level slightly but does not change the qualitative pattern and is not shown here. The Eigenvector ranking \cite{bergstromEigenfactorMetricsFigure2008}, while similar to this model, excludes unit self-references. The consequent change in influence slightly reduces the median source rank (82 to 79), while the median influence rank shift reduces from 136 to 118 due to the increased dispersion of references over institutions. 
 
-Sampling error is modelled by drawing samples with replacement from the full set of baseline works \citep{efronBootstrapMethodsAnother1992}. Publication year errors and uncertainties are variously present due to differences between preprint date, early-access publication dates, print/electronic archival dates, and metadata errors. By examining the concordance between OpenAlex publication year and the series of Volume, Issue and Page for sources with such metadata, we estimate that publication date errors can for our purposes be modelled as delta-year drawn from a uniform distribution over [-2, +2] years for 0.1\% of all works. The same approach suggests that some works are misallocated to sources (e.g. an issue of SK appears in ), at a rate below 0.03\%. A study by (Tubingen) suggests that while OpenAlex sets the standard for work-institution accuracy, the error level is nevertheless around 0.5\%. Errors in reference lists occur when the intended reference is given to another work, sometimes within although more often outside the corpus. 
+\begin{figure}[!htbp]
+  \centering
+  \includegraphics[width=\textwidth]{../plots/fig_5d_latex.pdf}
+  \caption{Parameter sensitivity of influence $v$ to Katz-Hubbell modifications.
+    Left: sources.  Right: institutions.
+    $x$-axis locked to baseline rank; units absent from a variant are omitted.}
+  \label{fig:fig5d}
+\end{figure}
+
+
+The sets of units used in our models are samples from the larger population of sources and institutions. In addition, OpenAlex includes a wide variety of errors, some that are relatively unimportant for this study (e.g. errors in language, source type and names) and others that may have large consequences. Together, sampling and critical database errors can lead to uncertainty in the values of influence. To estimate these, we adopt a bootstrap approach {efronBootstrapMethodsAnother1992} that couples sampling error with four models of OpenAlex metadata statistical errors. The sampling and metadata errors are introduced at the work level, and carried through all steps of the non-linear algorithm for baseline influence. 
+
+Sampling error is modelled by drawing samples with replacement from the full set of baseline works. Publication year errors and uncertainties are widespread in bibliometric databases, due to different treatment of preprint date, early-access publication dates, print/electronic archival dates, and metadata errors. To explore errors in publication year and source assignment we examine gaps in the concordance between publication year and the (Volume, Issue, Page) sequence for sources having such metadata (note that many sources no longer include these sequential descriptors associated with print media). From this, we estimate that publication year errors affecting corpus filtering can be modelled by randomly choosing $A/50$ works from the 5-year window preceding the earliest target date, and moving their publication year into the corpus window while retaining source, institution and reference list. While rare, works are sometimes misallocated to sources (e.g. an issue of SK appears in ): we model this by randomly altering the source of 0.03\% of works. Errors are also made in the assignment of works to institutions. A study at Tübingen University suggests that even though OpenAlex sets the standard for work-institution accuracy, the error level is nevertheless around 0.5\% which we model by a random reallocation of 0.5\% of works' institutions. Errors occur reference lists when they are truncated or intermixed with other lists, or when an intended reference is miss-allocated by indexers within the corpus. We model reference list errors by pointing 5\% of references to another work, 75\% within the same source and the remainder to another source. 
+
+The bootstrap algorithm first constructs 1000 replicates of adjusted corpus works for each kind of work variation: sampling, publication year, and source/institution allocation, saving differences from the baseline work set (Stage 1). It also constructs 1000 replicates of the adjusted work-level citer-cited table, saving differences from the baseline (Stage 2). Sampling works randomly from the four Stage 1 sets and reference connections from Stage 2, the algorithm applies standard preprocessing and resolvent to find 1000 replicates of influence $v$. To avoid modelling author uncertainties the bootstrap adopts institutional fractionation to determine institution weights, and uses the same fractionation for the bootstrap baseline.  

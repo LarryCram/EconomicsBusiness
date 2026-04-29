@@ -170,9 +170,16 @@ def _draw_panel(ax, ranks, v_base, boot_flat, rank_flat,
     ax.fill_between(ranks, p05, p95,
                     color='#888888', alpha=0.18, linewidth=0, zorder=2)
 
+    # 10% running geometric mean of per-unit median bootstrap v
+    boot_2d_panel = boot_flat.reshape(B, n_aligned)
+    med_v = np.nanmedian(boot_2d_panel, axis=0)
+    ax.plot(ranks, _boot_running_mean(med_v),
+            color='#cc0000', linewidth=1.4, alpha=0.9, zorder=4,
+            label='running mean')
+
     # Baseline curve
     ax.plot(ranks, v_base,
-            color='black', linewidth=1.4, alpha=1.0, zorder=3,
+            color='black', linewidth=1.4, alpha=1.0, zorder=5,
             label='baseline')
 
     ax.set_yscale('log')
@@ -198,12 +205,26 @@ OA_ERROR_LABELS = {
 }
 
 
+def _boot_running_mean(v: np.ndarray, frac: float = 0.10) -> np.ndarray:
+    """Centered running geometric mean; window grows as min(rank, frac*n)."""
+    log_v = np.log10(np.clip(v, 1e-10, None))
+    n = len(log_v)
+    w_max = max(3, round(n * frac))
+    result = np.empty(n)
+    for i in range(n):
+        w = min(i + 1, w_max)          # rank-1 at top, caps at frac*n
+        lo = max(0, i - w // 2)
+        hi = min(n, i + w // 2 + 1)
+        result[i] = log_v[lo:hi].mean()
+    return np.power(10.0, result)
+
+
 def _draw_cell(ax, ranks, v_base, boot_flat, rank_flat,
                n_aligned, B,
                show_xlabel: bool = False,
                show_ylabel: bool = False,
                row_label: str = '') -> None:
-    """Draw one facet cell: scatter + band + baseline, minimal decoration."""
+    """Draw one facet cell: scatter + band + baseline + running mean, minimal decoration."""
     ax.scatter(
         rank_flat, boot_flat,
         c='#cc0000', s=1, alpha=0.04, linewidths=0, rasterized=True, zorder=1,
@@ -213,7 +234,8 @@ def _draw_cell(ax, ranks, v_base, boot_flat, rank_flat,
     p95 = np.nanpercentile(boot_2d, 95, axis=0)
     ax.fill_between(ranks, p05, p95,
                     color='#cc0000', alpha=0.18, linewidth=0, zorder=2)
-    ax.plot(ranks, v_base, color='black', linewidth=1.2, alpha=1.0, zorder=3)
+
+    ax.plot(ranks, v_base, color='black', linewidth=1.2, alpha=1.0, zorder=5)
 
     ax.set_yscale('log')
     ax.set_ylim(Y_LO, Y_HI)
@@ -296,7 +318,7 @@ def plot7a_oa_errors(paths, df_base) -> None:
 
         ax_s.set_title(OA_ERROR_LABELS[et], fontsize=9, pad=4)
 
-    out_stem = 'fig7a_oa_errors'
+    out_stem = 'fig_7b_oa_errors'
     sup = fig.suptitle('OA error bootstrap — influence per work', fontsize=9, y=1.01)
 
     out = paths.plots / f'{out_stem}.pdf'
@@ -354,6 +376,98 @@ def report_eigenvalues(lam_ratio_boot: np.ndarray) -> None:
         print(f'  λ₂/λ₁ ≥ {thresh}: {n} replicates ({100*n/len(valid):.1f}%)')
 
 
+def report_boot_stability(
+    boot_flat_s: np.ndarray, v_base_s: np.ndarray, n_s: int,
+    boot_flat_i: np.ndarray, v_base_i: np.ndarray, n_i: int,
+    B: int, label: str = '',
+) -> None:
+    """
+    Print rank-stability statistics for bootstrap replicates, analogous to
+    report_stability() in fig_5.py.  Statistics are averaged over B replicates.
+    """
+    from scipy import stats as _stats
+
+    hdr = (f'{"Type":<5}  {"n":>6}  {"B":>5}  '
+           f'{"Spear ρ":>8}  {"med log-r":>10}  {"sd log-r":>9}  '
+           f'{"med|Δrank|":>11}  {"med|Δpct|":>10}')
+    title = f'Bootstrap rank stability{(" — " + label) if label else ""}'
+    print('\n' + '─' * len(hdr))
+    print(title)
+    print('─' * len(hdr))
+    print(hdr)
+    print('─' * len(hdr))
+
+    strat_hdr = (f'  {"Type":<5}  {"quartile":<12}  {"n_units":>8}  '
+                 f'{"v range":<16}  {"med log-r":>10}  {"sd log-r":>9}')
+
+    for ukey, boot_flat, v_base, n in [
+        ('S', boot_flat_s, v_base_s, n_s),
+        ('I', boot_flat_i, v_base_i, n_i),
+    ]:
+        boot_2d = boot_flat.reshape(B, n)        # (B, n), units in baseline rank order
+        baseline_ranks = np.arange(1, n + 1)
+
+        # Spearman ρ per replicate → mean across replicates
+        rhos = np.array([
+            _stats.spearmanr(boot_2d[b], v_base).statistic
+            for b in range(B)
+        ])
+        mean_rho = float(np.nanmean(rhos))
+
+        # Log-ratio: (B, n) array
+        with np.errstate(divide='ignore', invalid='ignore'):
+            lr = np.log(boot_2d / v_base[np.newaxis, :])   # (B, n)
+
+        lr_valid = lr[np.isfinite(lr)]
+        med_lr = float(np.median(lr_valid))
+        sd_lr  = float(np.std(lr_valid, ddof=1))
+
+        # Rank displacement per replicate → mean of per-replicate medians
+        med_dr_list = []
+        for b in range(B):
+            row = boot_2d[b]
+            finite = np.isfinite(row)
+            if finite.sum() < 2:
+                continue
+            order = np.argsort(-np.where(finite, row, -np.inf))
+            boot_ranks = np.empty(n, dtype=np.int32)
+            boot_ranks[order] = np.arange(1, n + 1)
+            med_dr_list.append(float(np.median(np.abs(boot_ranks - baseline_ranks))))
+
+        med_dr  = float(np.mean(med_dr_list))
+        med_rel = med_dr / n
+
+        print(f'{ukey:<5}  {n:>6,}  {B:>5}  '
+              f'{mean_rho:>8.4f}  {med_lr:>+10.4f}  {sd_lr:>9.4f}  '
+              f'{med_dr:>11.1f}  {med_rel:>10.4f}')
+
+        # ── Rank-stratified log-ratio (units already sorted by baseline rank) ──
+        # units at position 0..n-1 are in descending v order (rank 1 = highest v)
+        # v_base[0] > v_base[1] > … so quartile boundaries are positions
+        q_bounds = [0, n // 4, n // 2, 3 * n // 4, n]
+        q_labels = ['Q1 (top 25%)', 'Q2', 'Q3', 'Q4 (bot 25%)']
+        print(strat_hdr)
+        for qi, (lo, hi, qlabel) in enumerate(
+                zip(q_bounds[:-1], q_bounds[1:], q_labels)):
+            lr_q = lr[:, lo:hi]
+            lr_q_valid = lr_q[np.isfinite(lr_q)]
+            med_q = float(np.median(lr_q_valid))
+            sd_q  = float(np.std(lr_q_valid, ddof=1))
+            v_lo  = float(v_base[hi - 1])
+            v_hi  = float(v_base[lo])
+            print(f'  {ukey:<5}  {qlabel:<12}  {hi - lo:>8}  '
+                  f'{v_lo:>6.3f}–{v_hi:<6.3f}    {med_q:>+10.4f}  {sd_q:>9.4f}')
+
+    print('─' * len(hdr))
+    print('Spear ρ     mean over B replicates of Spearman(v_boot, v_base).')
+    print('med log-r   median of log(v_boot/v_base) pooled over B and units;')
+    print('            positive for low-v units and negative for high-v units cancel')
+    print('            in the pooled median — see rank-stratified breakdown above.')
+    print('sd log-r    SD of log(v_boot/v_base) pooled.')
+    print('med|Δrank|  mean over B replicates of median |rank_boot − rank_base|.')
+    print('med|Δpct|   med|Δrank| / n; fractional percentile displacement.')
+
+
 def plot7(paths, v_s_boot, v_u_boot, lam_ratio_boot, meta, df_base,
           field_labels: tuple,
           out_stem: str = 'fig_7', boot_label: str = '80% resample') -> None:
@@ -386,6 +500,12 @@ def plot7(paths, v_s_boot, v_u_boot, lam_ratio_boot, meta, df_base,
 
     if lam_ratio_boot is not None:
         report_eigenvalues(lam_ratio_boot)
+
+    report_boot_stability(
+        boot_flat_s, v_base_s, n_s,
+        boot_flat_i, v_base_i, n_i,
+        B, label=boot_label,
+    )
 
     # ── Plot ─────────────────────────────────────────────────────────────────
     sns.set_theme(style='whitegrid', font_scale=0.95)
@@ -432,7 +552,7 @@ BOOT_LABELS = {
 
 BOOT_OUT_STEMS = {
     'bootstrap':           'fig_7',
-    'bootstrap_oa_errors': 'fig_7_oa_errors',
+    'bootstrap_oa_errors': 'fig_7a_oa_errors',
 }
 
 # Sub-directory within $WORKING/<boot>/ where the npy files live
@@ -494,7 +614,7 @@ def main():
           boot_label=BOOT_LABELS[args.boot])
 
     if args.boot == 'bootstrap_oa_errors':
-        print('\nPlotting per-error-type facet (fig7a_oa_errors) ...', flush=True)
+        print('\nPlotting per-error-type facet (fig_7b_oa_errors) ...', flush=True)
         plot7a_oa_errors(paths, df_base)
 
 
