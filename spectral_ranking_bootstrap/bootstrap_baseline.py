@@ -66,12 +66,17 @@ def compute_r_bar(db, el_table: str) -> float:
 
 
 def create_tmp_el(db, el_table: str, r_bar: float) -> None:
-    """Materialise _tmp_el with rho_w column, exactly as build_csr.py does for rho=0."""
+    """Materialise _tmp_el with rho_w column, exactly as build_csr.py does for rho=0.
+
+    Uses direct 1/N_inst institution weights (omega=1) — no author model needed
+    in the bootstrap since works are resampled, not authors.
+    """
     db.execute(f"""
         CREATE OR REPLACE TEMP TABLE _tmp_el AS
         SELECT citer_work_idx, citer_source_idx, citer_inst_idx,
                cited_work_idx,  cited_source_idx, cited_inst_idx,
-               inst_weight, cited_inst_weight,
+               direct_inst_weight       AS inst_weight,
+               direct_cited_inst_weight AS cited_inst_weight,
                {r_bar} / CAST(R_i AS DOUBLE) AS rho_w
         FROM {el_table}
     """)

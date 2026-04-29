@@ -3,8 +3,8 @@ fig_6.py — Time-series comparison: baseline (2020–24) vs t1-fix–t4-fix.
 
 1×2 layout with shared y-axis:
 
-    Left panel:  Sources (fixed-universe runs; + markers, solid running mean)
-    Right panel: Institutions (fixed-universe runs; + markers, solid running mean)
+    Left panel:  Sources      (fixed-universe runs; + markers, adaptive running mean)
+    Right panel: Institutions (fixed-universe runs; + markers, adaptive running mean)
 
 Outputs:
     plots/fig_6.pdf        — 1×2 with title (exploration)
@@ -138,16 +138,32 @@ def fetch_data(db) -> tuple:
 
 # ─── Plot helpers ─────────────────────────────────────────────────────────────
 
-def _running_mean_log(v_series: np.ndarray, w: int) -> np.ndarray:
-    log_v = np.log10(v_series)
-    return np.power(10.0,
-        np.asarray(pd.Series(log_v).rolling(w, center=True, min_periods=1).mean(),
-                   dtype=float))
+def _running_mean_log_adaptive(v_series: np.ndarray, ranks: np.ndarray,
+                               n_baseline: int,
+                               w_lo: float = 0.01,
+                               w_hi: float = 0.10) -> np.ndarray:
+    """
+    Centered running geometric mean with rank-adaptive window width.
+
+    Window (as fraction of n_present) grows linearly from w_lo at rank 1
+    to w_hi at rank n_baseline, giving fine resolution at the steep top end.
+    """
+    log_v = np.log10(np.clip(v_series, 1e-10, None))
+    n = len(log_v)
+    result = np.empty(n)
+    for i in range(n):
+        frac = ranks[i] / n_baseline
+        w = max(3, round(n * (w_lo + (w_hi - w_lo) * frac)))
+        lo = max(0, i - w // 2)
+        hi = min(n, i + w // 2 + 1)
+        result[i] = log_v[lo:hi].mean()
+    return np.power(10.0, result)
 
 
 def _draw_scatter_panel(ax, df_s_base, df_i_base, pairs,
                         unit_idx: int, n_baseline: int,
-                        panel_title: str, mode: str) -> None:
+                        panel_title: str, mode: str,
+                        x_max: int | None = None) -> None:
     """
     unit_idx : 0 = sources, 1 = institutions.
     mode     : 'tau' = τ-per-window series; 'fix' = fixed-universe series.
@@ -178,9 +194,10 @@ def _draw_scatter_panel(ax, df_s_base, df_i_base, pairs,
                    color=colour, marker=marker, s=28, linewidths=0.7,
                    alpha=0.28, zorder=2,
                    label=f'{period}  ({n:,}/{n_baseline:,})')
-        w = max(50, len(df) // 10)
         ax.plot(df['baseline_rank'],
-                _running_mean_log(df['v'].values, w),
+                _running_mean_log_adaptive(df['v'].values,
+                                           df['baseline_rank'].values,
+                                           n_baseline),
                 color=colour, linewidth=1.3, linestyle=ls, alpha=0.85, zorder=3)
 
     if not any_series and mode == 'fix':
@@ -188,18 +205,65 @@ def _draw_scatter_panel(ax, df_s_base, df_i_base, pairs,
                 ha='center', va='center', transform=ax.transAxes,
                 fontsize=9, color='grey')
 
+    x_lim = x_max if x_max is not None else n_baseline
     ax.set_yscale('log')
     ax.set_ylim(0.02, 20)
     ax.axhline(1.0, color='#999999', linewidth=0.8, linestyle='--', zorder=0)
-    ax.text(n_baseline * 0.98, 1.0, '$v=1$',
+    ax.text(x_lim * 0.98, 1.0, '$v=1$',
             ha='right', va='bottom', fontsize=7.5, color='#999999')
-    ax.set_xlim(1, n_baseline)
+    ax.set_xlim(1, x_lim)
     ax.set_xlabel('Baseline rank', labelpad=4)
     ax.set_title(panel_title, fontsize=10, pad=6)
     handles, labels = ax.get_legend_handles_labels()
     # baseline (black line) was added first — move it to the bottom
     ax.legend(handles[1:] + handles[:1], labels[1:] + labels[:1],
               fontsize=6.0, framealpha=0.85, loc='upper right', ncol=1)
+
+
+# ─── Network concentration diagnostics ───────────────────────────────────────
+
+def _gini(arr: np.ndarray) -> float:
+    arr = np.sort(arr.astype(float))
+    n = len(arr)
+    idx = np.arange(1, n + 1)
+    return float((2 * (idx * arr).sum()) / (n * arr.sum()) - (n + 1) / n)
+
+
+def print_network_stats(db_el, runs: list) -> None:
+    """
+    For each window, query the edge list and compute:
+      Gini   — Gini coefficient of citation in-weight per source
+               (in-weight = Σ 1/R_i over all references received)
+      Top-5  — share of total in-weight absorbed by the top 5 sources
+      mean_log_v (geometric mean proxy) — printed from the ranking if available,
+               but network stats are from the raw edge list only.
+
+    A lower Gini / higher n_src in 2000 relative to 2020 shows the network
+    is more evenly arranged, explaining the lower max(v).
+    """
+    tables = {row[0] for row in db_el.execute('SHOW TABLES').fetchall()}
+    print(f'\n{"Label":<10}  {"Period":<10}  {"n_src":>6}  '
+          f'{"Gini in-wt":>11}  {"Top-5 shr":>10}  {"Top-1 shr":>10}')
+    print('-' * 65)
+    for r in runs:
+        tau_sfx  = '_fixtau' if r.get('ref_units', '') else '_vartau'
+        el_table = (f"el_{r['run_code']}_{r['fx']}"
+                    f"_tauU{r['tau_u']}_tauS{r['tau_s']}{tau_sfx}")
+        if el_table not in tables:
+            continue
+        df = db_el.execute(f"""
+            SELECT cited_source_idx, SUM(1.0 / R_i) AS in_weight
+            FROM {el_table}
+            GROUP BY cited_source_idx
+        """).df()
+        w      = df['in_weight'].to_numpy()
+        w_sort = np.sort(w)[::-1]
+        g      = _gini(w)
+        top5   = w_sort[:5].sum()  / w.sum()
+        top1   = w_sort[:1].sum()  / w.sum()
+        period = f"{r['tc0']}–{str(r['tc1'])[-2:]}"
+        print(f"{r['label']:<10}  {period:<10}  {len(w):>6,}  "
+              f"{g:>11.4f}  {top5:>10.4f}  {top1:>10.4f}")
 
 
 # ─── Console summary ──────────────────────────────────────────────────────────
@@ -230,8 +294,24 @@ def print_summary(pairs, n_base_s: int, n_base_i: int) -> None:
               f'{len(df_i_tau):>7,}  {n_fix_i:>7,}  {drop_i:>7,}  {rho_i:>6.3f}')
 
     print(f'\nBaseline universe: {n_base_s:,} sources, {n_base_i:,} institutions')
-    print('drop = baseline units absent from fixed-universe ranking (SCC filter)')
-    print('ρ    = Spearman correlation between v_fix and v_tau on common units')
+    print()
+    print('Column definitions:')
+    print('  τ-pw  = citations from that period, sources = journals with ≥τ papers')
+    print('          in THAT period  (e.g. 2000-04 active journals for t1)')
+    print('  fix   = same citations, but sources restricted to the 2020-24 baseline')
+    print('          journals only  (journals active then but not now are excluded)')
+    print('  drop  = baseline journals absent from the fix ranking because they')
+    print('          had too few citations in that period to enter the SCC')
+    print()
+    print('Spearman ρ  (comparing fix vs τ-pw on their common journals):')
+    print('  Both runs use the same period\'s citations. They differ only in which')
+    print('  journals are included. ρ measures whether including extra journals')
+    print('  (those active in 2000-04 but gone by 2020-24, or vice versa) changes')
+    print('  the rank order of the journals that appear in both rankings.')
+    print('  ρ ≈ 1  → the ranking of surviving journals is unaffected by whether')
+    print('           defunct journals are included in the network.')
+    print('  ρ < 1  → defunct/new journals act as significant conduits and their')
+    print('           presence reshuffles the rankings of the shared journals.')
 
 
 # ─── Main ─────────────────────────────────────────────────────────────────────
@@ -243,7 +323,7 @@ def plot6(src_rank_map, inst_rank_map, df_s_base, df_i_base, pairs) -> None:
     n_base_s = len(src_rank_map)
     n_base_i = len(inst_rank_map)
 
-    fig, axes = plt.subplots(1, 2, figsize=(14, 4.6), sharey=True)
+    fig, axes = plt.subplots(1, 2, figsize=(14, 5), sharey=True)
     fig.subplots_adjust(wspace=0.10)
 
     _draw_scatter_panel(axes[0], df_s_base, df_i_base, pairs,
@@ -251,7 +331,6 @@ def plot6(src_rank_map, inst_rank_map, df_s_base, df_i_base, pairs) -> None:
     _draw_scatter_panel(axes[1], df_s_base, df_i_base, pairs,
                         1, n_base_i, 'Institutions', mode='fix')
 
-    # Shared y-axis label on the left panel only
     axes[0].set_ylabel('Influence per work $v$', labelpad=4)
     axes[1].set_ylabel('')
 
@@ -285,6 +364,10 @@ def main():
 
     n_base_s = len(src_rank_map)
     n_base_i = len(inst_rank_map)
+
+    el_path = paths.working / 'edge_lists.duckdb'
+    with duckdb.connect(str(el_path), read_only=True) as db_el:
+        print_network_stats(db_el, [_baseline] + _tau_runs)
 
     print_summary(pairs, n_base_s, n_base_i)
     plot6(src_rank_map, inst_rank_map, df_s_base, df_i_base, pairs)

@@ -6,8 +6,15 @@ Stage 1 — build_base_works
     Source: corpus_works.parquet + corpus_authorships.parquet.
 
 Stage 2 — build_work_replicates
-    B perturbed work tables: disjoint ~10% pub_year / ~10% source / ~10% institution
-    errors per replicate.  Only changed rows persisted (delta format).
+    B perturbed work tables.  For each replicate, three independent draws:
+      pub_year    — 1% of in-window works are replaced by a random pre-window work
+                    (2016–2019) drawn WITH REPLACEMENT from stage1_prewindow_pool.
+                    The replacement inherits the source/institution of the drawn work
+                    but keeps the original (in-window) pub_year.
+      source      — 0.03% of remaining works get a new source (uniform OAS draw).
+      institution — 3% of remaining works get a new institution (75% within-country).
+    Error types are drawn independently; pub_year takes precedence on conflicts.
+    Only changed rows persisted (delta format).
 
 Stage 3 — build_ref_replicates
     B perturbed reference tables: ~10% wrong references (5% same-source,
@@ -18,7 +25,8 @@ Stage 4 — build_rankings
     Uses the fixed baseline unit set; no tau recomputation.
 
 Error rates (empirically estimated):
-    pub_year    — 2%   ±1 year, boundary-clipped: 2020→2021, 2024→2023 only
+    pub_year    — 1%   of in-window works replaced by a randomly drawn pre-window
+                        work (2016–2019, with replacement); original pub_year kept.
     source      — 0.03% uniform draw from OAS source pool
     institution — 3%   75% within-country, 25% global uniform (Tübingen study: ~100/2800)
     references  — 5%   2.5% same-source cited-work, 2.5% cross-source cited-work
@@ -33,7 +41,7 @@ Storage: $WORKING/bootstrap_oa_errors/
     stage4/v_u_boot.npy                (B, n_u) float32
     stage4/lam_ratio_boot.npy          (B,) float32
     stage4/meta.json                   includes error_filter='all'
-    stage4_{type}/...                  same layout for --error-type year|source|institution|reference
+    stage4_{type}/...                  same layout for type in year|source|institution|reference|resample
 
 CLI
 ---
@@ -57,10 +65,12 @@ from util import load_config, load_runs
 from spectral_ranking.katz_ranker import bipartite, _row_normalise
 from spectral_ranking_bootstrap.bootstrap_baseline import _bipartite_core
 
-YEAR_LO   = 2020
-YEAR_HI   = 2024
+YEAR_LO      = 2020
+YEAR_HI      = 2024
+YEAR_PRE_LO  = 2016    # start of pre-window replacement pool
+YEAR_PRE_HI  = 2019    # end   of pre-window replacement pool
 # Per-type OA error rates (empirically estimated)
-P_ERROR_YEAR = 0.020   # 2%   publication-year errors
+P_ERROR_YEAR = 0.010   # 1%   in-window works replaced by pre-window draws
 P_ERROR_SRC  = 0.0003  # 0.03% work-to-journal misassignment
 P_ERROR_INST = 0.030   # 3%   institution errors (Tübingen study ~100/2800)
 P_ERROR_REF  = 0.050   # 5%   reference errors (total; split equally same/cross)
@@ -154,6 +164,47 @@ def build_base_works(paths) -> pd.DataFrame:
     out_path = out_dir / 'stage1_base_works.parquet'
     base.to_parquet(str(out_path), index=False)
     print(f'  Stage 1 saved: {out_path}  ({len(base):,} rows)', flush=True)
+
+    # ── Pre-window replacement pool: all OAS corpus works 2016–2019 ───────────
+    print(f'Stage 1: building pre-window pool ({YEAR_PRE_LO}–{YEAR_PRE_HI}) ...', flush=True)
+    pre_works = pd.read_parquet(
+        str(paths.parquet / 'corpus_works.parquet'),
+        columns=['work_idx', 'publication_year', 'source_idx'],
+    )
+    pre_works = pre_works[pre_works['publication_year'].between(YEAR_PRE_LO, YEAR_PRE_HI)].copy()
+    pre_works = pre_works.dropna(subset=['source_idx'])
+    pre_works = pre_works.rename(columns={'publication_year': 'pub_year'})
+    pre_works['pub_year']    = pre_works['pub_year'].astype(np.int16)
+    pre_works['source_idx']  = pre_works['source_idx'].astype(np.int64)
+    print(f'  Pre-window OAS works: {len(pre_works):,}', flush=True)
+
+    auth_pre = pd.read_parquet(
+        str(paths.parquet / 'corpus_authorships.parquet'),
+        columns=['work_idx', 'institution_idx', 'country_code'],
+    )
+    auth_pre = auth_pre[auth_pre['work_idx'].isin(pre_works['work_idx'])].copy()
+    auth_pre = auth_pre.drop_duplicates(['work_idx', 'institution_idx'])
+    auth_pre = auth_pre.dropna(subset=['institution_idx'])
+    n_inst_pre = auth_pre.groupby('work_idx').size().rename('n_inst')
+    auth_pre   = auth_pre.join(n_inst_pre, on='work_idx')
+    auth_pre['inst_weight'] = (1.0 / auth_pre['n_inst']).astype(np.float32)
+    auth_pre = auth_pre.drop(columns='n_inst').rename(columns={'institution_idx': 'inst_idx'})
+    auth_pre['inst_idx'] = auth_pre['inst_idx'].astype(np.int64)
+
+    pre_base = pre_works.merge(
+        auth_pre[['work_idx', 'inst_idx', 'inst_weight', 'country_code']],
+        on='work_idx', how='left',
+    )
+    no_inst_pre = pre_base['inst_idx'].isna()
+    pre_base.loc[no_inst_pre, 'inst_weight'] = np.float32(1.0)
+    pre_base['inst_idx'] = pre_base['inst_idx'].astype('Int64')
+
+    pre_path = out_dir / 'stage1_prewindow_pool.parquet'
+    pre_base.to_parquet(str(pre_path), index=False)
+    print(f'  Pre-window pool saved: {pre_path}  '
+          f'({pre_base["work_idx"].nunique():,} unique works, {len(pre_base):,} rows)',
+          flush=True)
+
     return base
 
 
@@ -179,76 +230,119 @@ def _build_inst_pools(inst_pool: pd.DataFrame) -> tuple:
     return cc_to_insts, all_inst_arr, all_cc_arr
 
 
+def resample_works_one(in_win_ids: np.ndarray, rng: np.random.Generator) -> dict:
+    """
+    100%-with-replacement resample of in-window works (standard bootstrap).
+
+    Draws len(in_win_ids) indices with replacement.
+    Returns {work_idx: count} for works drawn ≥1 time; absent works are not stored.
+    ~63.2% unique coverage expected per replicate (1 - 1/e).
+    """
+    n = len(in_win_ids)
+    drawn = in_win_ids[rng.integers(0, n, size=n)]
+    unique, counts = np.unique(drawn, return_counts=True)
+    return dict(zip(unique.tolist(), counts.tolist()))
+
+
 def perturb_works_one(base: pd.DataFrame,
+                      pre_window: pd.DataFrame,
                       source_pool: np.ndarray,
                       inst_pool: pd.DataFrame,
                       rng: np.random.Generator,
                       _inst_pools: tuple | None = None) -> pd.DataFrame:
     """
-    Apply one round of disjoint errors to base_works — fully vectorised.
+    Apply one round of independent OA errors to base_works.
 
-    Returns only the changed rows (delta), with an extra column:
-        inst_idx_old  Int64   — original inst_idx for I-type errors; pd.NA otherwise
+    Error types (all independent; pub_year takes precedence on the same work):
 
-    For Y- and S-type errors, ALL (work, inst) rows for that work are returned
-    (since pub_year and source_idx are work-level properties shared by all rows).
-    For I-type errors, ALL rows for affected works are returned so that
-    apply_work_delta can replace them cleanly.
+      pub_year (1%) — replace a randomly selected in-window work with a work drawn
+          WITH REPLACEMENT from pre_window (2016-2019).  The replacement inherits
+          the drawn work's source_idx, inst_idx, inst_weight, and country_code, but
+          keeps the original in-window pub_year so the work remains in the corpus.
+          ALL (work, inst) rows for the replaced work are overwritten.
 
-    _inst_pools: pre-built result of _build_inst_pools(inst_pool).  Pass from the
-    outer B-loop to avoid rebuilding on every call.
+      source (0.03%) — for remaining works, change source_idx to a uniform draw
+          from source_pool.  ALL rows for the work are updated.
+
+      institution (3%) — for remaining works, swap one institution per work
+          (75% within-country, 25% global uniform).
+
+    Returns only changed rows (delta), with extra columns:
+        inst_idx_old  Int64 — original inst_idx for institution errors; pd.NA otherwise
+        error_type    str
+
+    pre_window: DataFrame from stage1_prewindow_pool.parquet (columns identical to base).
+    _inst_pools: pre-built result of _build_inst_pools(inst_pool); pass from B-loop.
     """
-    work_ids = base['work_idx'].unique()
-    n_works  = len(work_ids)
-    u        = rng.random(n_works)
-    _cut_src  = P_ERROR_YEAR + P_ERROR_SRC
-    _cut_inst = _cut_src + P_ERROR_INST
-    py_mask  = u < P_ERROR_YEAR
-    src_mask = (u >= P_ERROR_YEAR) & (u < _cut_src)
-    ins_mask = (u >= _cut_src)     & (u < _cut_inst)
+    in_window   = base['pub_year'].between(YEAR_LO, YEAR_HI)
+    in_win_ids  = base[in_window]['work_idx'].unique()
+    n_in        = len(in_win_ids)
+
+    # Independent draws for each error type
+    u_py  = rng.random(n_in)
+    u_src = rng.random(n_in)
+    u_ins = rng.random(n_in)
+
+    py_sel  = in_win_ids[u_py  < P_ERROR_YEAR]
+    src_sel = in_win_ids[u_src < P_ERROR_SRC]
+    ins_sel = in_win_ids[u_ins < P_ERROR_INST]
+
+    # pub_year replacement takes precedence; remove those works from source/institution
+    py_set  = set(py_sel.tolist())
+    src_sel = src_sel[~np.isin(src_sel, list(py_set))]
+    ins_set = set(ins_sel.tolist()) - py_set
+    ins_sel = ins_sel[np.isin(ins_sel, list(ins_set))]
+    # institution further takes precedence over source
+    src_sel = src_sel[~np.isin(src_sel, list(ins_set))]
 
     parts: list[pd.DataFrame] = []
 
-    # ── pub_year — fully vectorised ───────────────────────────────────────────
-    if py_mask.any():
-        py_works  = work_ids[py_mask]
-        py_subset = base[base['work_idx'].isin(set(py_works.tolist()))].copy()
-        # One old-year per unique work; vectorised ±1 with boundary clipping
-        uniq  = py_subset.drop_duplicates('work_idx').set_index('work_idx')['pub_year']
-        delta = rng.integers(0, 2, size=len(uniq), dtype=np.int16) * 2 - 1
-        new_y = uniq.values.astype(np.int16) + delta
-        new_y = np.where(new_y < YEAR_LO, np.int16(YEAR_LO + 1), new_y)
-        new_y = np.where(new_y > YEAR_HI, np.int16(YEAR_HI - 1), new_y)
-        py_map = dict(zip(uniq.index.tolist(), new_y.tolist()))
-        py_subset['pub_year'] = py_subset['work_idx'].map(py_map).astype(np.int16)
-        py_subset['inst_idx_old'] = pd.array([pd.NA] * len(py_subset), dtype='Int64')
-        py_subset['error_type'] = 'year'
-        parts.append(py_subset)
+    # ── pub_year: replace in-window work with pre-window draw ─────────────────
+    if len(py_sel) > 0 and len(pre_window) > 0:
+        prewin_unique = pre_window['work_idx'].unique()
+        draw_idx      = rng.integers(0, len(prewin_unique), size=len(py_sel))
+        drawn_works   = prewin_unique[draw_idx]
+
+        orig_year_ser = (base[base['work_idx'].isin(py_set)]
+                         .drop_duplicates('work_idx')
+                         .set_index('work_idx')['pub_year'])
+
+        drawn_map = pd.DataFrame({
+            'drawn_work': drawn_works,
+            'work_idx':   py_sel,
+            'pub_year':   orig_year_ser.loc[py_sel].values.astype(np.int16),
+        })
+
+        # Bring in source/inst/country from the drawn pre-window work (drop its year)
+        pre_renamed = (pre_window
+                       .rename(columns={'work_idx': 'drawn_work'})
+                       .drop(columns=['pub_year']))
+        merged = drawn_map.merge(pre_renamed, on='drawn_work', how='left')
+        merged = merged.drop(columns=['drawn_work'])
+        merged['pub_year']     = merged['pub_year'].astype(np.int16)
+        merged['inst_idx_old'] = pd.array([pd.NA] * len(merged), dtype='Int64')
+        merged['error_type']   = 'year'
+        parts.append(merged)
 
     # ── source — vectorised ───────────────────────────────────────────────────
-    if src_mask.any():
-        src_works  = work_ids[src_mask]
-        new_srcs   = rng.choice(source_pool, size=len(src_works), replace=True)
-        src_map    = dict(zip(src_works.tolist(), new_srcs.tolist()))
-        src_subset = base[base['work_idx'].isin(set(src_works.tolist()))].copy()
-        src_subset['source_idx'] = src_subset['work_idx'].map(src_map).astype(np.int64)
+    if len(src_sel) > 0:
+        new_srcs   = rng.choice(source_pool, size=len(src_sel), replace=True)
+        src_map    = dict(zip(src_sel.tolist(), new_srcs.tolist()))
+        src_subset = base[base['work_idx'].isin(set(src_sel.tolist()))].copy()
+        src_subset['source_idx']   = src_subset['work_idx'].map(src_map).astype(np.int64)
         src_subset['inst_idx_old'] = pd.array([pd.NA] * len(src_subset), dtype='Int64')
-        src_subset['error_type'] = 'source'
+        src_subset['error_type']   = 'source'
         parts.append(src_subset)
 
     # ── institution — vectorised, no per-work Python loop ─────────────────────
-    if ins_mask.any():
+    if len(ins_sel) > 0:
         if _inst_pools is None:
             _inst_pools = _build_inst_pools(inst_pool)
         cc_to_insts, all_inst_arr, all_cc_arr = _inst_pools
 
-        ins_works  = work_ids[ins_mask]
-        ins_subset = base[base['work_idx'].isin(set(ins_works.tolist()))].copy()
-        ins_subset  = ins_subset.reset_index(drop=True)
-
+        ins_subset = base[base['work_idx'].isin(ins_set)].copy().reset_index(drop=True)
         valid_rows = ins_subset[ins_subset['inst_idx'].notna()].copy()
         if len(valid_rows) > 0:
-            # Random row selection per work via sort-key trick
             valid_rows['_rk'] = rng.random(len(valid_rows))
             pick_pos = valid_rows.groupby('work_idx', sort=False)['_rk'].idxmin()
             picked   = valid_rows.loc[pick_pos].copy()
@@ -259,14 +353,12 @@ def perturb_works_one(base: pd.DataFrame,
             new_inst_ids = np.empty(n_p, dtype=np.int64)
             new_inst_ccs = np.empty(n_p, dtype=object)
 
-            # Cross-country draws: one vectorised call
             cross = ~within_flag
             if cross.any():
                 ci = rng.integers(0, len(all_inst_arr), size=int(cross.sum()))
                 new_inst_ids[cross] = all_inst_arr[ci]
                 new_inst_ccs[cross] = all_cc_arr[ci]
 
-            # Within-country draws: one vectorised call per unique country (~100 iters)
             for cc, (pool_insts, pool_ccs) in cc_to_insts.items():
                 mask = within_flag & (countries == cc)
                 if mask.any():
@@ -274,35 +366,30 @@ def perturb_works_one(base: pd.DataFrame,
                     new_inst_ids[mask] = pool_insts[ci]
                     new_inst_ccs[mask] = cc
 
-            # Fallback: within_flag=True but country not in pool → cross draw
             no_pool = within_flag & ~np.isin(countries, list(cc_to_insts.keys()))
             if no_pool.any():
                 ci = rng.integers(0, len(all_inst_arr), size=int(no_pool.sum()))
                 new_inst_ids[no_pool] = all_inst_arr[ci]
                 new_inst_ccs[no_pool] = all_cc_arr[ci]
 
-            # Build lookup dicts: work_idx → old/new inst
-            old_by_work = dict(zip(
-                picked['work_idx'].tolist(),
-                picked['inst_idx'].astype(np.int64).tolist(),
-            ))
+            old_by_work    = dict(zip(picked['work_idx'].tolist(),
+                                      picked['inst_idx'].astype(np.int64).tolist()))
             new_id_by_work = dict(zip(picked['work_idx'].tolist(), new_inst_ids.tolist()))
             new_cc_by_work = dict(zip(picked['work_idx'].tolist(), new_inst_ccs.tolist()))
 
-            # Apply: in ins_subset rows for picked works, swap the target institution
             ins_delta = ins_subset[
                 ins_subset['work_idx'].isin(set(picked['work_idx'].tolist()))
             ].copy()
 
-            old_arr     = ins_delta['work_idx'].map(old_by_work).to_numpy()
-            cur_arr     = ins_delta['inst_idx'].to_numpy(dtype=object)
-            is_target   = cur_arr == old_arr   # row-wise comparison
+            old_arr   = ins_delta['work_idx'].map(old_by_work).to_numpy()
+            cur_arr   = ins_delta['inst_idx'].to_numpy(dtype=object)
+            is_target = cur_arr == old_arr
 
             new_id_arr  = ins_delta['work_idx'].map(new_id_by_work).to_numpy()
             new_cc_arr2 = ins_delta['work_idx'].map(new_cc_by_work).to_numpy(dtype=object)
 
             cur_int = np.where(is_target, new_id_arr, old_arr.astype(float)).astype(object)
-            ins_delta['inst_idx']    = pd.array(
+            ins_delta['inst_idx'] = pd.array(
                 [int(v) if v is not None and not (isinstance(v, float) and np.isnan(v))
                  else pd.NA for v in cur_int], dtype='Int64')
             ins_delta['country_code'] = np.where(is_target, new_cc_arr2,
@@ -336,6 +423,16 @@ def build_work_replicates(base: pd.DataFrame, paths,
     out_path = out_dir / 'stage2_work_errors.parquet'
     print(f'Stage 2: generating {B} work replicates ...', flush=True)
 
+    # Pre-window pool for pub_year replacement (built in Stage 1)
+    pre_path = out_dir / 'stage1_prewindow_pool.parquet'
+    if not pre_path.exists():
+        raise FileNotFoundError(
+            f'{pre_path} not found — run Stage 1 first to build the pre-window pool.'
+        )
+    pre_window = pd.read_parquet(str(pre_path))
+    print(f'  Pre-window pool: {pre_window["work_idx"].nunique():,} unique works '
+          f'({YEAR_PRE_LO}–{YEAR_PRE_HI})', flush=True)
+
     source_pool = base['source_idx'].dropna().unique().astype(np.int64)
     inst_pool   = pd.read_parquet(
         str(paths.parquet / 'corpus_institutions.parquet'),
@@ -351,7 +448,7 @@ def build_work_replicates(base: pd.DataFrame, paths,
     t0 = time.perf_counter()
     for b in range(B):
         rng   = np.random.default_rng(seed + b)
-        delta = perturb_works_one(base, source_pool, inst_pool, rng,
+        delta = perturb_works_one(base, pre_window, source_pool, inst_pool, rng,
                                   _inst_pools=inst_pools)
         if len(delta) > 0:
             delta.insert(0, 'replicate_id', np.int32(b))
@@ -494,7 +591,8 @@ def apply_ref_delta(base_refs_arr: np.ndarray, err_idx: np.ndarray,
 
 def _build_matrices(refs_arr: np.ndarray, works_yr: pd.DataFrame,
                     src_index: pd.Index, inst_index: pd.Index,
-                    r_bar: float, n_s: int, n_u: int
+                    r_bar: float, n_s: int, n_u: int,
+                    work_mult: dict | None = None,
                     ) -> tuple[sp.csr_matrix, sp.csr_matrix]:
     """
     Build C_SI (n_s × n_u) and C_IS (n_u × n_s) from reference and work arrays.
@@ -511,6 +609,10 @@ def _build_matrices(refs_arr: np.ndarray, works_yr: pd.DataFrame,
     valid_set = set(works_yr['work_idx'].to_numpy().tolist())
     citer_ok  = np.isin(refs_arr[:, 0], list(valid_set))
     cited_ok  = np.isin(refs_arr[:, 1], list(valid_set))
+    if work_mult is not None:
+        # Citers absent from the resample (multiplicity 0) contribute no references
+        citer_ok = citer_ok & np.array(
+            [work_mult.get(int(w), 0) > 0 for w in refs_arr[:, 0]], dtype=bool)
     keep      = citer_ok & cited_ok
     refs      = refs_arr[keep]
     if len(refs) == 0:
@@ -519,6 +621,10 @@ def _build_matrices(refs_arr: np.ndarray, works_yr: pd.DataFrame,
     # ── Compute R_i and rho_w ──────────────────────────────────────────────────
     _, inv, counts = np.unique(refs[:, 0], return_inverse=True, return_counts=True)
     rho_w = r_bar / counts[inv]   # (N_keep,)
+    if work_mult is not None:
+        # Scale each reference by the citer's resample count (k appearances = k× weight)
+        rho_w = rho_w * np.array(
+            [work_mult.get(int(cw), 1) for cw in refs[:, 0]], dtype=np.float64)
 
     # ── Work-property lookup: work_idx → source_idx (int64) ───────────────────
     # A work has exactly one source; multiple rows (one per inst).
@@ -610,7 +716,9 @@ def build_rankings(paths, B: int = 32, seed: int = 42,
         'year'        — apply only year-error work deltas; no ref deltas
         'source'      — apply only source-error work deltas; no ref deltas
         'institution' — apply only institution-error work deltas; no ref deltas
-        'reference'   — no work deltas; apply all ref deltas
+        'reference'   — no work deltas; apply all ref deltas; no resample
+        'resample'    — 100%-with-replacement resample only; no work/ref deltas
+        'all'         — all work deltas + ref deltas + resample
         Output goes to stage4/ for 'all', stage4_{filter}/ for specific types.
     """
     import duckdb
@@ -652,6 +760,9 @@ def build_rankings(paths, B: int = 32, seed: int = 42,
     # ── Load stage inputs ──────────────────────────────────────────────────────
     print('Stage 4: loading stage 1-3 outputs ...', flush=True)
     base_works = pd.read_parquet(str(out_dir / 'stage1_base_works.parquet'))
+    in_win_ids = (base_works[base_works['pub_year'].between(YEAR_LO, YEAR_HI)]
+                  ['work_idx'].unique().astype(np.int64))
+    print(f'  In-window works available for resample: {len(in_win_ids):,}', flush=True)
 
     work_errors = pd.read_parquet(str(out_dir / 'stage2_work_errors.parquet'))
     work_deltas: dict[int, pd.DataFrame] = {
@@ -682,11 +793,16 @@ def build_rankings(paths, B: int = 32, seed: int = 42,
         work_deltas = {}
         ref_deltas  = ref_deltas_all
         print(f'  error_filter=reference: no work deltas, '
-              f'{len(ref_deltas)} ref replicates', flush=True)
+              f'{len(ref_deltas)} ref replicates, no resample', flush=True)
+    elif error_filter == 'resample':
+        work_deltas = {}
+        ref_deltas  = {}
+        print(f'  error_filter=resample: sampling error only (100% w/ replacement)',
+              flush=True)
     else:  # 'all'
         ref_deltas = ref_deltas_all
         print(f'  error_filter=all: {len(work_deltas)} work replicates, '
-              f'{len(ref_deltas)} ref replicates', flush=True)
+              f'{len(ref_deltas)} ref replicates, + resample', flush=True)
 
     max_b2 = max(work_deltas) + 1 if work_deltas else 1
     max_b3 = max(ref_deltas)  + 1 if ref_deltas  else 1
@@ -716,8 +832,15 @@ def build_rankings(paths, B: int = 32, seed: int = 42,
         refs_b  = (apply_ref_delta(base_refs_arr, ref_err[0], ref_err[1])
                    if ref_err is not None else base_refs_arr)
 
+        if error_filter in ('all', 'resample'):
+            rng_rs    = np.random.default_rng(seed + 30_000 + b)
+            work_mult = resample_works_one(in_win_ids, rng_rs)
+        else:
+            work_mult = None
+
         C_SI, C_IS = _build_matrices(refs_b, works_yr,
-                                     src_index, inst_index, r_bar, n_s, n_u)
+                                     src_index, inst_index, r_bar, n_s, n_u,
+                                     work_mult=work_mult)
 
         if C_SI.nnz == 0 or C_IS.nnz == 0:
             continue
@@ -766,8 +889,8 @@ def main():
     parser.add_argument('--stage', default='all',
                         choices=['1', '2', '3', '4', 'all'],
                         help='Which stage(s) to run (default: all)')
-    parser.add_argument('--n',    type=int, default=32,  help='Replicates (stages 2-4)')
-    parser.add_argument('--seed', type=int, default=0,  help='Base random seed')
+    parser.add_argument('--n',    type=int, default=1000, help='Replicates (stages 2-4)')
+    parser.add_argument('--seed', type=int, default=42,  help='Base random seed')
     args = parser.parse_args()
 
     import duckdb
@@ -802,7 +925,7 @@ def main():
         db.close()
 
     if '4' in run_stages:
-        for ef in ('all', 'year', 'source', 'institution', 'reference'):
+        for ef in ('all', 'year', 'source', 'institution', 'reference', 'resample'):
             print(f'\n── Stage 4: error_filter={ef!r} ──', flush=True)
             build_rankings(paths, B=B, seed=seed, error_filter=ef)
 

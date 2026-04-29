@@ -17,8 +17,10 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).parent.parent.parent))
 
 from spectral_ranking_bootstrap.bootstrap_oa_errors import (
-    YEAR_LO, YEAR_HI, P_ERROR, P_WITHIN,
+    YEAR_LO, YEAR_HI, YEAR_PRE_LO, YEAR_PRE_HI,
+    P_ERROR_YEAR, P_ERROR_SRC, P_ERROR_INST, P_WITHIN,
     perturb_works_one,
+    resample_works_one,
     apply_work_delta,
     apply_ref_delta,
     load_base_refs,
@@ -68,9 +70,25 @@ def make_inst_pool() -> pd.DataFrame:
     return pd.DataFrame(rows)
 
 
-BASE_WORKS = make_base_works()
-INST_POOL  = make_inst_pool()
-SRC_POOL   = SRC_IDS.copy()
+def make_pre_window() -> pd.DataFrame:
+    """Synthetic pre-window pool (2016-2019, 20 works)."""
+    n = 20
+    rng = np.random.default_rng(99)
+    return pd.DataFrame({
+        'work_idx':    np.arange(1001, 1001 + n, dtype=np.int64),
+        'pub_year':    np.tile([YEAR_PRE_LO, YEAR_PRE_LO+1, YEAR_PRE_HI-1, YEAR_PRE_HI],
+                               n // 4 + 1)[:n].astype(np.int16),
+        'source_idx':  SRC_IDS[rng.integers(0, len(SRC_IDS), n)],
+        'inst_idx':    pd.array(INST_IDS[rng.integers(0, len(INST_IDS), n)], dtype='Int64'),
+        'inst_weight': np.ones(n, dtype=np.float32),
+        'country_code': [COUNTRIES[rng.integers(0, 3)] for _ in range(n)],
+    })
+
+
+BASE_WORKS  = make_base_works()
+INST_POOL   = make_inst_pool()
+SRC_POOL    = SRC_IDS.copy()
+PRE_WINDOW  = make_pre_window()
 
 
 # ── Stage 2 tests ──────────────────────────────────────────────────────────────
@@ -78,7 +96,7 @@ SRC_POOL   = SRC_IDS.copy()
 class TestPerturb:
     def _delta(self, seed=0):
         rng = np.random.default_rng(seed)
-        return perturb_works_one(BASE_WORKS, SRC_POOL, INST_POOL, rng)
+        return perturb_works_one(BASE_WORKS, PRE_WINDOW, SRC_POOL, INST_POOL, rng)
 
     def test_returns_dataframe(self):
         d = self._delta()
@@ -90,84 +108,67 @@ class TestPerturb:
                     'inst_weight', 'country_code', 'inst_idx_old'):
             assert col in d.columns, f'Missing column {col}'
 
-    def test_error_rates_approx_10pct_each(self):
-        # Run many replicates and check rates
-        n_reps = 50
-        work_ids = BASE_WORKS['work_idx'].unique()
-        n_works  = len(work_ids)
-
-        py_count = src_count = ins_count = 0
-        changed_per_rep = []
+    def test_error_rates_approx(self):
+        """pub_year ~1%, institution ~3% of in-window works affected."""
+        n_reps   = 100
+        in_win   = BASE_WORKS[BASE_WORKS['pub_year'].between(YEAR_LO, YEAR_HI)]
+        in_wids  = set(in_win['work_idx'].unique().tolist())
+        n_in     = len(in_wids)
+        py_counts, ins_counts = [], []
         for b in range(n_reps):
             rng = np.random.default_rng(1000 + b)
-            d   = perturb_works_one(BASE_WORKS, SRC_POOL, INST_POOL, rng)
-            changed_set = set(d['work_idx'].tolist())
-
-            # Work-level error classification
-            py_works  = set(d.loc[d['inst_idx_old'].isna() &
-                                   (d.groupby('work_idx')['pub_year'].transform('first') !=
-                                    BASE_WORKS.set_index('work_idx')['pub_year'].reindex(d['work_idx']).values),
-                                   'work_idx'].tolist())
-            # just count changed works vs total (crude but fast check)
-            changed_per_rep.append(len(changed_set))
-
-        avg_changed = np.mean(changed_per_rep)
-        expected = n_works * 3 * P_ERROR   # ~30% of works change
-        assert abs(avg_changed - expected) / n_works < 0.10, \
-            f'Avg changed={avg_changed:.1f}, expected ~{expected:.1f}'
+            d   = perturb_works_one(BASE_WORKS, PRE_WINDOW, SRC_POOL, INST_POOL, rng)
+            py_counts.append(d[d['error_type'] == 'year']['work_idx'].nunique())
+            ins_counts.append(d[d['error_type'] == 'institution']['work_idx'].nunique())
+        assert abs(np.mean(py_counts)  - P_ERROR_YEAR * n_in) < 0.05 * n_in, \
+            f'pub_year rate off: mean={np.mean(py_counts):.2f}, expected~{P_ERROR_YEAR*n_in:.2f}'
+        assert abs(np.mean(ins_counts) - P_ERROR_INST * n_in) < 0.05 * n_in, \
+            f'institution rate off: mean={np.mean(ins_counts):.2f}, expected~{P_ERROR_INST*n_in:.2f}'
 
     def test_disjoint_errors(self):
-        """Each work appears in at most one error type per replicate."""
+        """pub_year, source, institution errors do not overlap on the same work."""
         for b in range(20):
             rng = np.random.default_rng(2000 + b)
-            d   = perturb_works_one(BASE_WORKS, SRC_POOL, INST_POOL, rng)
+            d   = perturb_works_one(BASE_WORKS, PRE_WINDOW, SRC_POOL, INST_POOL, rng)
             if len(d) == 0:
                 continue
-            # Works that changed pub_year: inst_idx_old is NA and pub_year differs from base
-            base_py = BASE_WORKS.set_index('work_idx')['pub_year']
-            base_src = BASE_WORKS.drop_duplicates('work_idx').set_index('work_idx')['source_idx']
-            d_dedup = d.drop_duplicates('work_idx')
-            py_changed  = set(d_dedup[
-                d_dedup['work_idx'].map(base_py) != d_dedup['pub_year']
-            ]['work_idx'].tolist())
-            src_changed = set(d_dedup[
-                d_dedup['work_idx'].map(base_src) != d_dedup['source_idx']
-            ]['work_idx'].tolist())
-            ins_changed = set(d[d['inst_idx_old'].notna()]['work_idx'].tolist())
-            # Check pairwise disjoint
-            assert len(py_changed & src_changed) == 0, 'pub_year and source errors overlap'
-            assert len(py_changed & ins_changed) == 0, 'pub_year and inst errors overlap'
-            assert len(src_changed & ins_changed) == 0, 'source and inst errors overlap'
+            py_wids  = set(d[d['error_type'] == 'year']['work_idx'].tolist())
+            src_wids = set(d[d['error_type'] == 'source']['work_idx'].tolist())
+            ins_wids = set(d[d['error_type'] == 'institution']['work_idx'].tolist())
+            assert len(py_wids & src_wids) == 0,  'pub_year and source errors overlap'
+            assert len(py_wids & ins_wids) == 0,  'pub_year and inst errors overlap'
+            assert len(src_wids & ins_wids) == 0, 'source and inst errors overlap'
 
-    def test_pub_year_boundary_lo(self):
-        """Works at YEAR_LO can only go to YEAR_LO+1, never below YEAR_LO."""
-        lo_works = BASE_WORKS[BASE_WORKS['pub_year'] == YEAR_LO]['work_idx'].unique()
-        if len(lo_works) == 0:
-            pytest.skip('No works at YEAR_LO in fixture')
+    def test_pub_year_replacement_keeps_original_year(self):
+        """Replaced works keep the original in-window pub_year."""
+        base_py = BASE_WORKS.drop_duplicates('work_idx').set_index('work_idx')['pub_year']
         for b in range(30):
             rng = np.random.default_rng(3000 + b)
-            d   = perturb_works_one(BASE_WORKS, SRC_POOL, INST_POOL, rng)
-            affected = d[d['work_idx'].isin(lo_works)]
-            assert (affected['pub_year'] >= YEAR_LO).all(), \
-                f'pub_year below {YEAR_LO} for boundary work'
+            d   = perturb_works_one(BASE_WORKS, PRE_WINDOW, SRC_POOL, INST_POOL, rng)
+            yr_rows = d[d['error_type'] == 'year'].drop_duplicates('work_idx')
+            for _, row in yr_rows.iterrows():
+                wid = row['work_idx']
+                assert int(row['pub_year']) == int(base_py[wid]), \
+                    f'work {wid}: year changed from {base_py[wid]} to {row["pub_year"]}'
+                assert YEAR_LO <= int(row['pub_year']) <= YEAR_HI, \
+                    f'work {wid}: pub_year {row["pub_year"]} outside window'
 
-    def test_pub_year_boundary_hi(self):
-        """Works at YEAR_HI can only go to YEAR_HI-1, never above YEAR_HI."""
-        hi_works = BASE_WORKS[BASE_WORKS['pub_year'] == YEAR_HI]['work_idx'].unique()
-        if len(hi_works) == 0:
-            pytest.skip('No works at YEAR_HI in fixture')
+    def test_pub_year_replacement_source_from_prewindow(self):
+        """Replaced works get source_idx from the pre-window pool, not the original."""
+        pre_src_set = set(PRE_WINDOW['source_idx'].tolist())
         for b in range(30):
             rng = np.random.default_rng(4000 + b)
-            d   = perturb_works_one(BASE_WORKS, SRC_POOL, INST_POOL, rng)
-            affected = d[d['work_idx'].isin(hi_works)]
-            assert (affected['pub_year'] <= YEAR_HI).all(), \
-                f'pub_year above {YEAR_HI} for boundary work'
+            d   = perturb_works_one(BASE_WORKS, PRE_WINDOW, SRC_POOL, INST_POOL, rng)
+            yr_rows = d[d['error_type'] == 'year'].drop_duplicates('work_idx')
+            for _, row in yr_rows.iterrows():
+                assert int(row['source_idx']) in pre_src_set, \
+                    f"year-error source {row['source_idx']} not from pre-window pool"
 
     def test_inst_weight_recomputed(self):
         """inst_weight must equal 1/N_i after any institution change."""
         for b in range(10):
             rng = np.random.default_rng(5000 + b)
-            d   = perturb_works_one(BASE_WORKS, SRC_POOL, INST_POOL, rng)
+            d   = perturb_works_one(BASE_WORKS, PRE_WINDOW, SRC_POOL, INST_POOL, rng)
             ins = d[d['inst_idx_old'].notna()]
             if len(ins) == 0:
                 continue
@@ -176,6 +177,52 @@ class TestPerturb:
                 expected_w = np.float32(1.0 / max(n_i, 1))
                 assert np.allclose(grp['inst_weight'].values, expected_w, atol=1e-6), \
                     f'inst_weight mismatch for work {wid}'
+
+
+# ── resample_works_one tests ───────────────────────────────────────────────────
+
+class TestResampleWorksOne:
+    IN_WIN_IDS = np.arange(1, 101, dtype=np.int64)  # 100 works
+
+    def test_returns_dict(self):
+        rng = np.random.default_rng(0)
+        result = resample_works_one(self.IN_WIN_IDS, rng)
+        assert isinstance(result, dict)
+
+    def test_total_count_equals_n(self):
+        """Sum of multiplicities equals the draw size (len(in_win_ids))."""
+        rng = np.random.default_rng(0)
+        result = resample_works_one(self.IN_WIN_IDS, rng)
+        assert sum(result.values()) == len(self.IN_WIN_IDS)
+
+    def test_all_keys_in_source(self):
+        rng = np.random.default_rng(0)
+        result = resample_works_one(self.IN_WIN_IDS, rng)
+        src_set = set(self.IN_WIN_IDS.tolist())
+        assert all(k in src_set for k in result)
+
+    def test_no_zero_multiplicity_stored(self):
+        """Absent works are not stored; all stored counts are ≥ 1."""
+        rng = np.random.default_rng(0)
+        result = resample_works_one(self.IN_WIN_IDS, rng)
+        assert all(v >= 1 for v in result.values())
+
+    def test_coverage_approx_63_pct(self):
+        """Unique coverage per replicate converges to ~1 - 1/e ≈ 63.2%."""
+        n = len(self.IN_WIN_IDS)
+        coverages = [
+            len(resample_works_one(self.IN_WIN_IDS, np.random.default_rng(b))) / n
+            for b in range(300)
+        ]
+        mean_cov = float(np.mean(coverages))
+        expected = 1.0 - 1.0 / np.e
+        assert abs(mean_cov - expected) < 0.04, \
+            f'Coverage {mean_cov:.3f} far from expected {expected:.3f}'
+
+    def test_different_seeds_give_different_resamples(self):
+        r0 = resample_works_one(self.IN_WIN_IDS, np.random.default_rng(0))
+        r1 = resample_works_one(self.IN_WIN_IDS, np.random.default_rng(1))
+        assert set(r0.keys()) != set(r1.keys()) or r0 != r1
 
 
 # ── apply_work_delta tests ─────────────────────────────────────────────────────
@@ -274,12 +321,12 @@ class TestBuildMatrices:
     SRC_IDX  = pd.Index(np.array([10, 20], dtype=np.int64))
     INST_IDX = pd.Index(np.array([100, 200], dtype=np.int64))
 
-    def _build(self, refs=None, works=None):
+    def _build(self, refs=None, works=None, work_mult=None):
         r = refs  if refs  is not None else self.REFS
         w = works if works is not None else self.WORKS
         works_yr = w[w['pub_year'].between(YEAR_LO, YEAR_HI)]
         return _build_matrices(r, works_yr, self.SRC_IDX, self.INST_IDX,
-                               r_bar=2.0, n_s=2, n_u=2)
+                               r_bar=2.0, n_s=2, n_u=2, work_mult=work_mult)
 
     def test_shapes(self):
         C_SI, C_IS = self._build()
@@ -312,6 +359,23 @@ class TestBuildMatrices:
         C_SI, C_IS = self._build(refs=empty_refs)
         assert C_SI.nnz == 0
         assert C_IS.nnz == 0
+
+    def test_work_mult_zero_excludes_citer(self):
+        """A citer with multiplicity 0 (not in resample) contributes no edges."""
+        C_SI_base, _ = self._build()
+        # Work 1 is a citer (refs [1,2,20] and [1,3,10]); exclude it
+        mult_no1 = {2: 1, 3: 1}   # work 1 absent
+        C_SI_no1, _ = self._build(work_mult=mult_no1)
+        assert C_SI_no1.nnz <= C_SI_base.nnz
+        assert C_SI_no1.sum() < C_SI_base.sum()
+
+    def test_work_mult_double_scales_weight(self):
+        """A citer with multiplicity 2 doubles its contribution to the matrix."""
+        mult_one = {1: 1, 2: 1, 3: 1}
+        mult_two = {1: 2, 2: 1, 3: 1}   # work 1 appears twice
+        C_SI_one, _ = self._build(work_mult=mult_one)
+        C_SI_two, _ = self._build(work_mult=mult_two)
+        assert C_SI_two.sum() > C_SI_one.sum()
 
 
 # ── _rank_one tests ────────────────────────────────────────────────────────────

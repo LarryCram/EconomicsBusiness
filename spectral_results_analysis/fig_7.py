@@ -188,12 +188,13 @@ def _draw_panel(ax, ranks, v_base, boot_flat, rank_flat,
 
 Y_LO, Y_HI = 0.02, 20.0
 
-OA_ERROR_TYPES  = ['year', 'source', 'institution', 'reference']
+OA_ERROR_TYPES  = ['year', 'source', 'institution', 'reference', 'resample']
 OA_ERROR_LABELS = {
     'year':        'Year',
     'source':      'Source',
     'institution': 'Institution',
     'reference':   'Reference',
+    'resample':    'Sampling',
 }
 
 
@@ -205,13 +206,13 @@ def _draw_cell(ax, ranks, v_base, boot_flat, rank_flat,
     """Draw one facet cell: scatter + band + baseline, minimal decoration."""
     ax.scatter(
         rank_flat, boot_flat,
-        c='#aaaaaa', s=1, alpha=0.04, linewidths=0, rasterized=True, zorder=1,
+        c='#cc0000', s=1, alpha=0.04, linewidths=0, rasterized=True, zorder=1,
     )
     boot_2d = boot_flat.reshape(B, n_aligned)
     p05 = np.nanpercentile(boot_2d, 5,  axis=0)
     p95 = np.nanpercentile(boot_2d, 95, axis=0)
     ax.fill_between(ranks, p05, p95,
-                    color='#888888', alpha=0.18, linewidth=0, zorder=2)
+                    color='#cc0000', alpha=0.18, linewidth=0, zorder=2)
     ax.plot(ranks, v_base, color='black', linewidth=1.2, alpha=1.0, zorder=3)
 
     ax.set_yscale('log')
@@ -441,11 +442,10 @@ BOOT_STAGE_DIRS = {
 }
 
 # Baseline ranking table to compare against for each bootstrap type.
-# 80%-resample uses author-fractional baseline (omega=0).
-# OA-errors bootstrap rebuilds matrices with 1/N_inst, so compare against
-# the direct-inst-weight run (omega=1, label='baseline-direct').
+# Both bootstrap types use direct 1/N_inst weights (omega=1) — no author model
+# needed when resampling works — so both compare against baseline-direct.
 BOOT_BASELINE_TABLES = {
-    'bootstrap':           BASELINE_TABLE,
+    'bootstrap':           BASELINE_DIRECT_TABLE,
     'bootstrap_oa_errors': BASELINE_DIRECT_TABLE,
 }
 
