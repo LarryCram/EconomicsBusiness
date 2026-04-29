@@ -314,6 +314,95 @@ def print_summary(pairs, n_base_s: int, n_base_i: int) -> None:
     print('           presence reshuffles the rankings of the shared journals.')
 
 
+# ─── v>1 works table ─────────────────────────────────────────────────────────
+
+def print_v_gt1_table(db_rk, db_el, runs: list) -> None:
+    """
+    Work-level v>1 table.  For each run, counts distinct works (union of
+    citer and cited sides of the edge list) and reports:
+      src v>1        — works whose source has v > 1
+      any inst v>1   — works with at least one ranked institution having v > 1
+      all inst v>1   — works where every ranked institution has v > 1
+    """
+    rk_tables = {row[0] for row in db_rk.execute('SHOW TABLES').fetchall()}
+    el_tables = {row[0] for row in db_el.execute('SHOW TABLES').fetchall()}
+
+    print(f'\n{"Label":<12}  {"Period":<10}  {"n_works":>8}  '
+          f'{"src>1":>7}  {"src%":>6}  '
+          f'{"≥1 inst>1":>10}  {"≥1%":>6}  '
+          f'{"all inst>1":>11}  {"all%":>6}')
+    print('-' * 90)
+
+    for r in runs:
+        rk_tname = _table_name(r)
+        tau_sfx  = '_fixtau' if r.get('ref_units', '') else '_vartau'
+        el_tname = (f"el_{r['run_code']}_{r['fx']}"
+                    f"_tauU{r['tau_u']}_tauS{r['tau_s']}{tau_sfx}")
+
+        if rk_tname not in rk_tables or el_tname not in el_tables:
+            continue
+
+        df_rk = db_rk.execute(
+            f"SELECT unit_idx, unit_type, v FROM {rk_tname}"
+        ).df()
+        df_src_v  = (df_rk[df_rk['unit_type'] == 'S'][['unit_idx', 'v']]
+                     .rename(columns={'unit_idx': 'src_idx',  'v': 'src_v'}))
+        df_inst_v = (df_rk[df_rk['unit_type'] == 'U'][['unit_idx', 'v']]
+                     .rename(columns={'unit_idx': 'inst_idx', 'v': 'inst_v'}))
+
+        db_el.register('_src_v_tmp',  df_src_v)
+        db_el.register('_inst_v_tmp', df_inst_v)
+
+        row = db_el.execute(f"""
+            WITH
+            all_edges AS (
+                SELECT citer_work_idx AS work_idx,
+                       citer_source_idx AS source_idx,
+                       citer_inst_idx   AS inst_idx
+                FROM {el_tname}
+                UNION
+                SELECT cited_work_idx,
+                       cited_source_idx,
+                       cited_inst_idx
+                FROM {el_tname}
+            ),
+            work_src_v AS (
+                SELECT DISTINCT ae.work_idx, s.src_v
+                FROM all_edges ae
+                JOIN _src_v_tmp s ON s.src_idx = ae.source_idx
+            ),
+            work_inst_agg AS (
+                SELECT ae.work_idx,
+                       MAX(iv.inst_v) AS max_inst_v,
+                       MIN(iv.inst_v) AS min_inst_v
+                FROM all_edges ae
+                JOIN _inst_v_tmp iv ON iv.inst_idx = ae.inst_idx
+                GROUP BY ae.work_idx
+            )
+            SELECT
+                (SELECT COUNT(DISTINCT work_idx) FROM all_edges)                    AS n_works,
+                (SELECT COUNT(DISTINCT work_idx) FROM work_src_v WHERE src_v > 1)   AS src_gt1,
+                COUNT(DISTINCT work_idx) FILTER(WHERE max_inst_v > 1)               AS any_inst_gt1,
+                COUNT(DISTINCT work_idx) FILTER(WHERE min_inst_v > 1)               AS all_inst_gt1
+            FROM work_inst_agg
+        """).fetchone()
+
+        db_el.unregister('_src_v_tmp')
+        db_el.unregister('_inst_v_tmp')
+
+        n, src_gt1, any_gt1, all_gt1 = row
+        def pct(x): return 100.0 * x / n if n else float('nan')
+        period = f"{r['tc0']}–{str(r['tc1'])[-2:]}"
+        print(f"{r['label']:<12}  {period:<10}  {n:>8,}  "
+              f"{src_gt1:>7,}  {pct(src_gt1):>5.1f}%  "
+              f"{any_gt1:>10,}  {pct(any_gt1):>5.1f}%  "
+              f"{all_gt1:>11,}  {pct(all_gt1):>5.1f}%")
+
+    print()
+    print('n_works = distinct works appearing in the edge list (citer ∪ cited).')
+    print('src>1   = source has v>1; ≥1/all inst>1 = ≥1 or all ranked institutions have v>1.')
+
+
 # ─── Main ─────────────────────────────────────────────────────────────────────
 
 def plot6(src_rank_map, inst_rank_map, df_s_base, df_i_base, pairs) -> None:
@@ -359,15 +448,17 @@ def main():
             'Run spectral_ranking/run_rankings.py first.'
         )
 
-    with duckdb.connect(str(rk_path), read_only=True) as db:
-        src_rank_map, inst_rank_map, df_s_base, df_i_base, pairs = fetch_data(db)
+    el_path = paths.working / 'edge_lists.duckdb'
+
+    with duckdb.connect(str(rk_path), read_only=True) as db_rk, \
+         duckdb.connect(str(el_path), read_only=True) as db_el:
+        src_rank_map, inst_rank_map, df_s_base, df_i_base, pairs = fetch_data(db_rk)
+        all_runs = [_baseline] + _tau_runs + _fix_runs
+        print_v_gt1_table(db_rk, db_el, all_runs)
+        print_network_stats(db_el, [_baseline] + _tau_runs)
 
     n_base_s = len(src_rank_map)
     n_base_i = len(inst_rank_map)
-
-    el_path = paths.working / 'edge_lists.duckdb'
-    with duckdb.connect(str(el_path), read_only=True) as db_el:
-        print_network_stats(db_el, [_baseline] + _tau_runs)
 
     print_summary(pairs, n_base_s, n_base_i)
     plot6(src_rank_map, inst_rank_map, df_s_base, df_i_base, pairs)
