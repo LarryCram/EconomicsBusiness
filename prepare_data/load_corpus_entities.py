@@ -81,15 +81,23 @@ def load_references(db):
     print("REFERENCES EXTRACT COMPLETE!")
 
 
+INSTITUTION_TYPES = ('education', 'nonprofit', 'government', 'other')
+
+
 def load_institutions(db):
     """
     Build corpus_institutions.parquet.
 
-    Aggregates corpus_authorships by institution, computes works_count and
-    works_per_year = works_count / CORPUS_YEARS, and enriches with OpenAlex
-    institution metadata.  institution_idx is derived from the OpenAlex
-    institution id by stripping the 'https://openalex.org/I' prefix.
+    Aggregates corpus_authorships by institution, enriches with OpenAlex
+    institution metadata, and filters to type IN ('education', 'nonprofit',
+    'government').  This excludes companies, healthcare facilities, archives,
+    and other non-research entities that enter via OpenAlex authorship errors
+    or are otherwise out of scope.
+
+    institution_idx is derived from the OpenAlex institution id by stripping
+    the 'https://openalex.org/I' prefix.
     """
+    type_list = ', '.join(f"'{t}'" for t in INSTITUTION_TYPES)
     db.sql(f"""
         COPY (
             WITH inst_works AS (
@@ -106,6 +114,7 @@ def load_institutions(db):
                        country_code,
                        type
                 FROM '{OPENALEX}/institutions.parquet'
+                WHERE type IN ({type_list})
             )
             SELECT iw.institution_idx,
                    im.institution_name,
@@ -114,7 +123,7 @@ def load_institutions(db):
                    iw.works_count,
                    ROUND(iw.works_count / {CORPUS_YEARS}.0, 4) AS works_per_year
             FROM inst_works iw
-            LEFT JOIN inst_meta im USING (institution_idx)
+            INNER JOIN inst_meta im USING (institution_idx)
             ORDER BY iw.works_count DESC
         ) TO '{PARQUET}/corpus_institutions.parquet' (FORMAT PARQUET)
     """)

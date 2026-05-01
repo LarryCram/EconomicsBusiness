@@ -85,5 +85,24 @@ Multi-file LaTeX in `spectral_ranking_latex/`. Master file is `main.tex`; sectio
 - Section 3 (source selection, scope filtering, corpus construction): complete
 - Sections 4–6 and Supplement: placeholder
 
+## Katz-Hubbell work-level ranking
+`spectral_ranking_works/rank_works_katz_hubbell.py` — run after baseline spectral ranking.
+Uses Google-matrix power iteration (α=0.85, uniform prior) on the work-work citation matrix.
+KH distribution is heavy-tailed (min≈0.84, median=1, max≈3400×median) so **median is the preferred aggregation** for source and institution comparisons; mean is dominated by special-issue outliers.
+
+Output (`$WORKING/work_rankings/`):
+- `work_rankings_katz_hubbell.parquet` — work_idx, v_kh, out_weight
+- `source_rankings_katz_hubbell.parquet` — source_idx, n_works, v_median, v_uniform, v_degree
+- `institution_rankings_katz_hubbell.parquet` — institution_idx, n_works, v_median, v_uniform, v_degree
+
+Script prints spectral-vs-KH comparison tables for top-60 sources and top-50 institutions at end of run.
+
+## OpenAlex disambiguation errors
+Known confirmed errors in corpus (wrong institution absorbing papers from a famous namesake):
+- **John Brown University** (inst_idx=175594653) ← Brown University papers; OA `display_name_alternatives` is empty, so not auto-detectable
+- **Universidad del Noreste** (inst_idx=87182695, MX) ← Northeastern University papers; `display_name_alternatives` contains "Northeastern University"
+
+Detection algorithm: flag corpus institutions whose `display_name_alternatives` contains the exact `display_name` of another corpus institution with >2× the works. Catches alias-based errors; name-similarity errors (John Brown) require manual inspection of suspicious spectral ranks with low KH median ranks.
+
 ## Machines
 Two home Linux machines plus HPC. Code and LaTeX sync via GitHub. Data moves via portable SSD.

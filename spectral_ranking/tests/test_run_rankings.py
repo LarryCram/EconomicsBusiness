@@ -13,40 +13,40 @@ from run_rankings import RunParams, table_name, _dense_rank_desc, runs_from_csv
 # ─── table_name ───────────────────────────────────────────────────────────────
 
 def test_table_name_baseline():
-    p = RunParams(run_code='20242024', fx='A', tau_u=20, tau_s=20,
+    p = RunParams(run_code='20242024', fx='EBAX', tau_u=20, tau_s=20,
                   rho=0, m=(0,1,1,0), chi=0.5, alpha=1.0, label='baseline')
-    assert table_name(p) == 'rk_20242024_A_tauU20_tauS20_vartau_rho0_m0110_chi50_alpha100'
+    assert table_name(p) == 'rk_20242024_EBAX_tauU20_tauS20_vartau_rho0_m0110_chi50_alpha100'
 
 
 def test_table_name_chi_star():
-    p = RunParams(run_code='20242024', fx='A', tau_u=20, tau_s=20,
+    p = RunParams(run_code='20242024', fx='EBAX', tau_u=20, tau_s=20,
                   rho=0, m=(1,1,1,1), chi=-1.0, alpha=1.0, label='full-joint-chi-star')
-    assert table_name(p) == 'rk_20242024_A_tauU20_tauS20_vartau_rho0_m1111_chiSTAR_alpha100'
+    assert table_name(p) == 'rk_20242024_EBAX_tauU20_tauS20_vartau_rho0_m1111_chiSTAR_alpha100'
 
 
 def test_table_name_time_series():
-    p = RunParams(run_code='00040004', fx='A', tau_u=20, tau_s=20,
+    p = RunParams(run_code='00040004', fx='EBAX', tau_u=20, tau_s=20,
                   rho=0, m=(0,1,1,0), chi=0.5, alpha=1.0, label='t1')
-    assert table_name(p) == 'rk_00040004_A_tauU20_tauS20_vartau_rho0_m0110_chi50_alpha100'
+    assert table_name(p) == 'rk_00040004_EBAX_tauU20_tauS20_vartau_rho0_m0110_chi50_alpha100'
 
 
 def test_table_name_tau40():
-    p = RunParams(run_code='20242024', fx='A', tau_u=40, tau_s=40,
+    p = RunParams(run_code='20242024', fx='EBAX', tau_u=40, tau_s=40,
                   rho=0, m=(0,1,1,0), chi=0.5, alpha=1.0, label='tau40')
-    assert table_name(p) == 'rk_20242024_A_tauU40_tauS40_vartau_rho0_m0110_chi50_alpha100'
+    assert table_name(p) == 'rk_20242024_EBAX_tauU40_tauS40_vartau_rho0_m0110_chi50_alpha100'
 
 
 def test_table_name_rho1():
-    p = RunParams(run_code='20242024', fx='A', tau_u=20, tau_s=20,
+    p = RunParams(run_code='20242024', fx='EBAX', tau_u=20, tau_s=20,
                   rho=1, m=(0,1,1,0), chi=0.5, alpha=1.0, label='rho1')
-    assert table_name(p) == 'rk_20242024_A_tauU20_tauS20_vartau_rho1_m0110_chi50_alpha100'
+    assert table_name(p) == 'rk_20242024_EBAX_tauU20_tauS20_vartau_rho1_m0110_chi50_alpha100'
 
 
 def test_table_name_fixtau():
-    p = RunParams(run_code='00040004', fx='A', tau_u=20, tau_s=20,
+    p = RunParams(run_code='00040004', fx='EBAX', tau_u=20, tau_s=20,
                   rho=0, m=(0,1,1,0), chi=0.5, alpha=1.0, label='t1-fix',
-                  ref_units='20242024_A_tauU20_tauS20')
-    assert table_name(p) == 'rk_00040004_A_tauU20_tauS20_fixtau_rho0_m0110_chi50_alpha100'
+                  ref_units='20242024_EBAX_tauU20_tauS20')
+    assert table_name(p) == 'rk_00040004_EBAX_tauU20_tauS20_fixtau_rho0_m0110_chi50_alpha100'
 
 
 # ─── _dense_rank_desc ─────────────────────────────────────────────────────────

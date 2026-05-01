@@ -260,7 +260,7 @@ def test_checkpoint_roundtrip(tmp_path):
         source_ids=list(range(n_s)),
         inst_ids=list(range(n_u)),
         run_code='20242024',
-        baseline_table='el_20242024_A_tauU20_tauS20',
+        baseline_table='el_20242024_EBAX_tauU20_tauS20',
         completed=B,
     )
 
@@ -304,7 +304,7 @@ def test_resume_skips_completed(tmp_path):
         source_ids=list(range(10, 10 + n_s)),
         inst_ids=list(range(100, 100 + n_u)),
         run_code='20242024',
-        baseline_table='el_20242024_A_tauU20_tauS20',
+        baseline_table='el_20242024_EBAX_tauU20_tauS20',
         completed=completed,
     )
     save_checkpoint(tmp_path, v_s_partial, v_u_partial, lam_partial, meta)

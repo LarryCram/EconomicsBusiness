@@ -23,7 +23,6 @@ Table 3: Corpus features.
         corpus_works.parquet
         corpus_authorships.parquet
         corpus_references.parquet
-        openalex institutions parquet
     Intermediate:
         corpus_institutions.parquet         -- institution-level summary with works_per_year
     Outputs (written to data/):
@@ -49,7 +48,6 @@ DATA           = paths.data
 TABLES         = paths.tables
 WORKING        = paths.working
 PARQUET        = paths.parquet
-OPENALEX       = paths.openalex
 
 TAU_U        = _baseline['tau_u']
 TAU_S        = _baseline['tau_s']

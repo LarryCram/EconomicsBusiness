@@ -188,6 +188,9 @@ def build_one(db, run_code: str, tc0: int, tc1: int, tt0: int, tt1: int,
             SELECT institution_idx
             FROM iw_raw
             WHERE work_idx IN (SELECT work_idx FROM fw_census)
+              AND institution_idx IN (
+                  SELECT institution_idx FROM '{PARQUET}/corpus_institutions.parquet'
+              )
             GROUP BY institution_idx
             HAVING COUNT(DISTINCT work_idx) / {census_years}.0 >= {tau_u}
         ),"""

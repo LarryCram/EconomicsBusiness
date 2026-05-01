@@ -54,7 +54,7 @@ def _find_el_table(db, run_code: str, tau_u: int, tau_s: int) -> str:
             f'Available: {[t for t in tables if t.startswith(prefix)]}'
         )
     for t in candidates:
-        if '_ALL_' in t:
+        if '_EBAX_' in t:
             return t
     return candidates[0]
 
@@ -156,10 +156,14 @@ def _compute_eigenpairs(H: sp.csr_matrix, k: int = 6) -> dict:
 
 
 def _leading_vector(ep: dict | None, side: str) -> np.ndarray | None:
-    """Extract leading real eigenvector, oriented to positive mean."""
+    """Extract the eigenvector whose eigenvalue is closest to +1 on the real axis."""
     if ep is None:
         return None
-    v = np.real(ep['vecs'][:, 0])
+    vals = ep['vals']
+    # Prefer eigenvalue nearest +1 (Perron root for row-stochastic);
+    # avoids picking a complex rotation when a periodic SCC dominates by modulus.
+    best = int(np.argmin(np.abs(vals - 1.0)))
+    v = np.real(ep['vecs'][:, best])
     if v.mean() < 0:
         v = -v
     return v

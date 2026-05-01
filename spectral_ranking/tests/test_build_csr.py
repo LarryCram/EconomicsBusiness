@@ -17,7 +17,7 @@ from build_csr import build_csr, CSRData
 
 # ─── Fixtures ─────────────────────────────────────────────────────────────────
 
-def _make_db(run_code='20242024', fx='A', tau_u=20, tau_s=20):
+def _make_db(run_code='20242024', fx='EBAX', tau_u=20, tau_s=20):
     """
     Build a minimal in-memory DuckDB with one edge list table and its units table.
 
@@ -85,8 +85,8 @@ def _make_db(run_code='20242024', fx='A', tau_u=20, tau_s=20):
 
 def test_correct_tables_used():
     """build_csr looks up el_{run_code}_... not el_t{tx}_..."""
-    db = _make_db(run_code='20242024', fx='A', tau_u=20, tau_s=20)
-    data = build_csr(db, '20242024', 'A', 20, 20, rho=0, m=(1,1,1,1))
+    db = _make_db(run_code='20242024', fx='EBAX', tau_u=20, tau_s=20)
+    data = build_csr(db, '20242024', 'EBAX', 20, 20, rho=0, m=(1,1,1,1))
     assert data.n_s == 2
     assert data.n_u == 2
 
@@ -94,14 +94,14 @@ def test_correct_tables_used():
 def test_missing_table_raises():
     db = duckdb.connect(':memory:')
     with pytest.raises(RuntimeError, match="not found"):
-        build_csr(db, '99999999', 'A', 20, 20, rho=0, m=(0,1,1,0))
+        build_csr(db, '99999999', 'EBAX', 20, 20, rho=0, m=(0,1,1,0))
 
 
 # ─── Block selection ──────────────────────────────────────────────────────────
 
 def test_m_0110_si_is_not_none():
     db = _make_db()
-    data = build_csr(db, '20242024', 'A', 20, 20, rho=0, m=(0,1,1,0))
+    data = build_csr(db, '20242024', 'EBAX', 20, 20, rho=0, m=(0,1,1,0))
     assert data.C_SS is None
     assert data.C_SI is not None
     assert data.C_IS is not None
@@ -110,7 +110,7 @@ def test_m_0110_si_is_not_none():
 
 def test_m_1000_ss_only():
     db = _make_db()
-    data = build_csr(db, '20242024', 'A', 20, 20, rho=0, m=(1,0,0,0))
+    data = build_csr(db, '20242024', 'EBAX', 20, 20, rho=0, m=(1,0,0,0))
     assert data.C_SS is not None
     assert data.C_SI is None
     assert data.C_IS is None
@@ -119,14 +119,14 @@ def test_m_1000_ss_only():
 
 def test_m_0001_ii_only():
     db = _make_db()
-    data = build_csr(db, '20242024', 'A', 20, 20, rho=0, m=(0,0,0,1))
+    data = build_csr(db, '20242024', 'EBAX', 20, 20, rho=0, m=(0,0,0,1))
     assert data.C_SS is None
     assert data.C_II is not None
 
 
 def test_m_1111_all_blocks():
     db = _make_db()
-    data = build_csr(db, '20242024', 'A', 20, 20, rho=0, m=(1,1,1,1))
+    data = build_csr(db, '20242024', 'EBAX', 20, 20, rho=0, m=(1,1,1,1))
     assert data.C_SS is not None
     assert data.C_SI is not None
     assert data.C_IS is not None
@@ -137,7 +137,7 @@ def test_m_1111_all_blocks():
 
 def test_block_shapes():
     db = _make_db()
-    data = build_csr(db, '20242024', 'A', 20, 20, rho=0, m=(1,1,1,1))
+    data = build_csr(db, '20242024', 'EBAX', 20, 20, rho=0, m=(1,1,1,1))
     assert data.C_SS.shape == (2, 2)
     assert data.C_SI.shape == (2, 2)
     assert data.C_IS.shape == (2, 2)
@@ -150,8 +150,8 @@ def test_rho0_vs_rho1_differ():
     """With R_i=1 for all works, rho=0 gives R̄/R_i = 1 = rho=1, so weights equal."""
     db0 = _make_db()
     db1 = _make_db()
-    d0 = build_csr(db0, '20242024', 'A', 20, 20, rho=0, m=(0,1,1,0))
-    d1 = build_csr(db1, '20242024', 'A', 20, 20, rho=1, m=(0,1,1,0))
+    d0 = build_csr(db0, '20242024', 'EBAX', 20, 20, rho=0, m=(0,1,1,0))
+    d1 = build_csr(db1, '20242024', 'EBAX', 20, 20, rho=1, m=(0,1,1,0))
     # With uniform R_i=1, R̄=1, so rho_w identical — sums should match
     assert abs(d0.C_SI.sum() - d1.C_SI.sum()) < 1e-10
 
@@ -160,7 +160,7 @@ def test_rho0_vs_rho1_differ():
 
 def test_source_and_inst_ids():
     db = _make_db()
-    data = build_csr(db, '20242024', 'A', 20, 20, rho=0, m=(0,1,1,0))
+    data = build_csr(db, '20242024', 'EBAX', 20, 20, rho=0, m=(0,1,1,0))
     assert set(data.source_ids) == {1, 2}
     assert set(data.inst_ids)   == {1, 2}
     assert len(data.a_s) == 2
