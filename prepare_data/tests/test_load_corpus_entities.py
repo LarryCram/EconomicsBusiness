@@ -13,7 +13,7 @@ import pytest
 import duckdb
 import tempfile
 import os
-from load_corpus_entities import INSTITUTION_TYPES
+from load_corpus_entities import INSTITUTION_TYPES, INSTITUTION_EXCLUSIONS
 
 
 # ── Helpers ───────────────────────────────────────────────────────────────────
@@ -57,7 +57,9 @@ def _make_db_with_tables(tmp_path):
         -- archive (should be excluded)
         (110, 10, 'Judy',  60, 'National Library',  NULL, 'US'),
         -- NULL institution_idx (should be excluded at authorship level)
-        (111, 11, 'Karl',  NULL, NULL,              NULL, 'US')
+        (111, 11, 'Karl',  NULL, NULL,              NULL, 'US'),
+        -- OA disambiguation exclusion (education type but manually excluded)
+        (112, 12, 'Lena',  80, 'Imposter U',        NULL, 'US')
     """)
 
     # Synthetic OpenAlex institutions
@@ -77,15 +79,18 @@ def _make_db_with_tables(tmp_path):
         ('https://openalex.org/I40', 'Pharma Corp',      'US', 'company'),
         ('https://openalex.org/I50', 'City Hospital',    'US', 'healthcare'),
         ('https://openalex.org/I60', 'National Library', 'US', 'archive'),
-        ('https://openalex.org/I70', 'Federal Reserve',  'US', 'other')
+        ('https://openalex.org/I70', 'Federal Reserve',  'US', 'other'),
+        ('https://openalex.org/I80', 'Imposter U',       'US', 'education')
     """)
 
     return db
 
 
-def _run_institution_query(db, corpus_years=25):
+def _run_institution_query(db, corpus_years=25, extra_exclusions=()):
     """Run the load_institutions logic against the synthetic tables."""
-    type_list = ', '.join(f"'{t}'" for t in INSTITUTION_TYPES)
+    type_list      = ', '.join(f"'{t}'" for t in INSTITUTION_TYPES)
+    all_exclusions = INSTITUTION_EXCLUSIONS + tuple(extra_exclusions)
+    exclusion_list = ', '.join(str(i) for i in all_exclusions)
     return db.execute(f"""
         WITH inst_works AS (
             SELECT institution_idx,
@@ -102,6 +107,8 @@ def _run_institution_query(db, corpus_years=25):
                    type
             FROM oa_institutions
             WHERE type IN ({type_list})
+              AND CAST(REGEXP_REPLACE(id, 'https://openalex.org/I', '') AS BIGINT)
+                  NOT IN ({exclusion_list})
         )
         SELECT iw.institution_idx,
                im.institution_name,
@@ -113,6 +120,18 @@ def _run_institution_query(db, corpus_years=25):
         INNER JOIN inst_meta im USING (institution_idx)
         ORDER BY iw.works_count DESC
     """).fetchdf()
+
+
+# ── INSTITUTION_EXCLUSIONS constant ──────────────────────────────────────────
+
+def test_exclusions_contains_john_brown():
+    assert 175594653 in INSTITUTION_EXCLUSIONS
+
+def test_exclusions_contains_noreste():
+    assert 87182695 in INSTITUTION_EXCLUSIONS
+
+def test_exclusions_contains_anderson_sc():
+    assert 68812265 in INSTITUTION_EXCLUSIONS
 
 
 # ── INSTITUTION_TYPES constant ────────────────────────────────────────────────
@@ -182,10 +201,18 @@ def test_government_retained():
     assert 30 in result['institution_idx'].values       # Central Bank
 
 def test_retained_count():
-    """Exactly 4 institutions should survive: education, nonprofit, government, other."""
+    """4 type-allowed institutions survive; Imposter U (idx=80) is excluded."""
     db = _make_db_with_tables(None)
-    result = _run_institution_query(db)
+    result = _run_institution_query(db, extra_exclusions=(80,))
     assert len(result) == 4
+
+def test_imposter_excluded_by_exclusion_list():
+    """Imposter U passes type filter but is blocked by extra_exclusions."""
+    db = _make_db_with_tables(None)
+    result_with    = _run_institution_query(db)
+    result_without = _run_institution_query(db, extra_exclusions=(80,))
+    assert 80 in result_with['institution_idx'].values
+    assert 80 not in result_without['institution_idx'].values
 
 
 # ── INNER JOIN: no orphan rows ────────────────────────────────────────────────

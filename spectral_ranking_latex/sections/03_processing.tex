@@ -1,8 +1,9 @@
-% ---------------------------------------------------------------
+%!TeX root = ../main.tex
+% ---------------------------------------------------------------% ---------------------------------------------------------------
 \section{Corpus selection}
 \label{sec:sources}
 
-OpenAlex \citep{priemOpenAlexFullyopenIndex2022} provides our bibliometric data. Corpus selection starts with a list of eligible sources having three features: evidence from one of our journal registries that the source
+OpenAlex \citep{priemOpenAlexFullyopenIndex2022, alperinAnalysisSuitabilityOpenAlex2024} provides our bibliometric data. Corpus selection starts with a list of eligible sources having three features: evidence from one of our journal registries that the source
 publishes economics or business research, an OpenAlex source identifier for corpus extraction, and a sufficient number of published works per year.
 
 The journal registries are as follows. Harzing's \textit{71st Edition of the Journal Quality List}~\cite[][JQL]{harzingJournalQualityList2024} assembles
@@ -22,19 +23,19 @@ or ``Business, Finance''.
 
 Every journal in JQL, SJL, and JCR has at least one ISSN, and may have several. These registry ISSNs are joined independently to the February 2026 OpenAlex sources snapshot using its list of ISSNs as the matching key and selecting only the `journal' source-type. Around 30 additional matches are identified by exact title matching for OpenAlex sources that lack an ISSN. We denote the union of matched OpenAlex sources OAS\textsuperscript{*}.
 
-For OAS\textsuperscript{*} sources we extract work and authorship data and examine the annual-output distributions for sources and institutions. The retention curves (Fig.~\ref{fig:retention}) plot the decline in unit count as the cut-off for works published per year rises, revealing that a majority of institutions and a substantial fraction of sources contributes fewer than 20 works per year in the census window. The long tails add negligible amounts to the citation density, and accordingly we adopt thresholds $\tau_S = 20$ works/source/year and $\tau_I = 20$ works/institution/year. Sources retained above the threshold $\tau_S$ form the set OAS, and institutions retained under $\tau_I$ form $\mathfrak{I}$.
+For OAS\textsuperscript{*} sources we extract work and authorship data and examine the annual-output distributions for sources and institutions. The retention curves (Fig.~\ref{fig:retention}) plot the decline in unit count as the thresholds ($\tau_S,~\tau_I$) for works published per year rises, revealing that a majority of institutions and a substantial fraction of sources contributes fewer than 20 works per year in the census window. The long tails add negligible amounts to the citation density, and accordingly we adopt thresholds $\tau_S = 20$ works/source/year and $\tau_I = 20$ works/institution/year. Sources retained above the threshold $\tau_S$ form the set OAS, and institutions retained under $\tau_I$ form $\mathfrak{I}$.
 
 \begin{figure}[!htb]
 	\centering
 	\includegraphics[width=0.8\textwidth]{../plots/fig_1_latex}
-	\caption{Institution and source retention curves. % TODO: describe axes once fig_1_latex.pdf is generated; mark $\tau=20$ threshold.
+	\caption{Institution and source retention curves. Selecting $\tau_S = \tau_I = 20$ retains 1688 sources and 2630 institutions, using works published between 2020 and 2024.
 	}
 	\label{fig:retention}
 \end{figure}
 
-Using sources and institutions that satisfy these thresholds, we extract works, authorships and references published between 2000 and 2024, retaining works typed as `article' or `review' and excluding works that are paratext, retracted, or without an authorship entity. Although most results relate to the period 2020-2024, the wider 2000--2024 time window supports the time-series sensitivity runs reported below.
+Using sources and institutions that satisfy these thresholds, we extract works, authorships and references published between 2000 and 2024, retaining works typed as `article' or `review' and excluding works that are paratext, retracted, or without an authorship entity. Although most results relate to the recent 5-year window 2020-2024, the wider 2000--2024 time window supports a time-series analysis.
 
-Within the broad field of Economics and Business, many sources publish in subfields $F$ within the set $\mathfrak{F}$. To relate OAS sources to subfields ${F}$ we capitalise on registry subfield labels (categories, groups, subjects, and topics in JQL, SJR, JCR, and OAS respectively). These labels are mapped by hand to the broad subfields $F=E$ (economics) or $F=B$ (business), or $F=X$ when the subfield is out of scope (e.g. Psychology, Education from JQL). Fields in Finance and in Accounting are mapped to $F=E$. Some sources publish sizeable amounts in both E and B; they are designated ambiguous, $F=A$. The mappings are counted, and the source classified as follows:
+Within the broad field of Economics and Business, many sources publish works in subfields $F$ within the set $\mathfrak{F}$. To relate OAS sources to subfields ${F}$ we capitalise on registry subfield labels (categories, groups, subjects, and topics in JQL, SJR, JCR, and OAS respectively). These labels are mapped by hand to the broad subfields $F=E$ (economics) or $F=B$ (business), or $F=X$ when the subfield is out of scope (e.g. Psychology, Education from JQL). Fields in Finance and in Accounting are mapped to $F=E$. Some sources publish sizeable amounts in both E and B; they are designated ambiguous, $F=A$. The mappings are counted, and each source classified as follows:
 \begin{itemize}
 	\setlength{\itemsep}{0pt}
 	\item `E' when its E-count is $\geq 2$ and its B-count is $< 2$ (economics-dominant);
@@ -43,12 +44,10 @@ Within the broad field of Economics and Business, many sources publish in subfie
 	\item `X' when both E-count and B-count are $< 2$ (weak signal in both fields).
 \end{itemize}
 Institutions generally publish in multiple subfields, so direct categorical
-classification is unsuitable. Instead, we use the 
-stochastic reference matrix $H_{SI}$ to relate an institution to already-classified sources. For each source~$s$, $H_{SI}[s,u]$ is the fraction of $s$'s reference weight directed at
+classification is unsuitable. To indicate the balance of E and B for an institution
+we use the stochastic reference matrix $H_{SI}$ to relate an institution to already-classified sources. For each source~$s$, $H_{SI}[s,u]$ is the fraction of $s$'s reference weight directed at
 institution~$u$, counted without regard to the total output of the source. 
-By summing over sources, compute $f_{Fu}$ as the fraction of institution~$u$'s incoming reference weight from $F$-classified sources.
-Institutions are assigned field labels by a quota rule: top 30\% by $f_{Xu}$ receive $X$;
-from the remainder, top 10\% by $f_{Au}$ receive $A$; the rest are split $E$:$B$ at a 5:8 ratio,
-with $E$ preferred when $f_{Eu}\geq f_{Bu}$.
+The sum over sources, $f_{Fu}$, is the fraction of institution~$u$'s incoming reference weight from $F$-classified sources. These fractions are sorted and institutions assigned field labels by a quota rule: top 30\% by $f_{Xu}$ receive $X$;
+from the remainder, top 10\% by $f_{Au}$ receive $A$; the rest are split $E$:$B$ at a 5:8 ratio reflecting the source ratio, with $E$ preferred when $f_{Eu}\geq f_{Bu}$. Classification of institutions by subfield is no more than tendency.
 
 \input{../tables/table1_registry_overview}

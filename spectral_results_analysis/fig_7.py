@@ -575,7 +575,7 @@ def main():
         description='Plot bootstrap uncertainty in spectral ranking.'
     )
     parser.add_argument(
-        '--boot', default='bootstrap',
+        '--boot', default='bootstrap_oa_errors',
         choices=list(BOOT_LABELS.keys()),
         help='Bootstrap subdirectory under $WORKING/ (default: bootstrap)',
     )

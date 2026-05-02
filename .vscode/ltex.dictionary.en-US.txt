@@ -75,3 +75,9 @@ equalises
 NSWEB
 LOWESS
 summarise
+Authorships
+citer-cited
+Soshiki
+Kagaku
+missattributed
+Noreste

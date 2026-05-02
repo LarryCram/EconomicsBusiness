@@ -83,6 +83,14 @@ def load_references(db):
 
 INSTITUTION_TYPES = ('education', 'nonprofit', 'government', 'other')
 
+# Confirmed OpenAlex authorship disambiguation errors: small institutions
+# absorbing papers from famous namesakes.  Excluded from corpus_institutions
+# so they propagate out of all downstream edge lists and rankings.
+#   175594653  John Brown University (AR)      ← Brown University papers
+#   87182695   Universidad del Noreste (MX)    ← Northeastern University papers
+#   68812265   Anderson University – SC        ← UCLA Anderson School papers
+INSTITUTION_EXCLUSIONS = (175594653, 87182695, 68812265)
+
 
 def load_institutions(db):
     """
@@ -90,14 +98,18 @@ def load_institutions(db):
 
     Aggregates corpus_authorships by institution, enriches with OpenAlex
     institution metadata, and filters to type IN ('education', 'nonprofit',
-    'government').  This excludes companies, healthcare facilities, archives,
-    and other non-research entities that enter via OpenAlex authorship errors
-    or are otherwise out of scope.
+    'government', 'other').  This excludes companies, healthcare facilities,
+    archives, and other non-research entities that enter via OpenAlex
+    authorship errors or are otherwise out of scope.
+
+    INSTITUTION_EXCLUSIONS removes confirmed OA disambiguation errors where
+    a small institution absorbs papers from a famous namesake.
 
     institution_idx is derived from the OpenAlex institution id by stripping
     the 'https://openalex.org/I' prefix.
     """
-    type_list = ', '.join(f"'{t}'" for t in INSTITUTION_TYPES)
+    type_list      = ', '.join(f"'{t}'"  for t in INSTITUTION_TYPES)
+    exclusion_list = ', '.join(str(i)    for i in INSTITUTION_EXCLUSIONS)
     db.sql(f"""
         COPY (
             WITH inst_works AS (
@@ -115,6 +127,8 @@ def load_institutions(db):
                        type
                 FROM '{OPENALEX}/institutions.parquet'
                 WHERE type IN ({type_list})
+                  AND CAST(REGEXP_REPLACE(id, 'https://openalex.org/I', '') AS BIGINT)
+                      NOT IN ({exclusion_list})
             )
             SELECT iw.institution_idx,
                    im.institution_name,
