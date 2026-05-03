@@ -53,7 +53,7 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 
 _LOG_LO, _LOG_HI = -2.35, 1.35
-_LOG_TICKS = [-2, -1, 0, 1]
+_LOG_TICKS = [-1, 0, 1]
 
 
 def _lv(v: np.ndarray) -> np.ndarray:
@@ -99,13 +99,13 @@ BASELINE_TABLE = f"rk_{_run_code}_{_baseline['fx']}_tauU{_tau_u}_tauS{_tau_s}_va
 # Visual style per overlay label (ordered: baseline drawn first)
 STYLE = {
     'baseline':        dict(color='black',   marker=None, lw=1.4, alpha_vis=1.0,  zorder=5),
-    'τ=40':            dict(color='#cc0000', marker='o',  lw=0.0, alpha_vis=0.50, zorder=4, s=18),
-    'ρ=1':             dict(color='#0044cc', marker='o',  lw=0.0, alpha_vis=0.50, zorder=3, s=18),
-    'census=1yr':      dict(color='#009900', marker='o',  lw=0.0, alpha_vis=0.50, zorder=4, s=18),
-    'α=0.85, μ=1/N_p': dict(color='#0055cc', marker='o', lw=0.0, alpha_vis=0.55, zorder=3, s=12),
-    'H_SS/II, no self': dict(color='#2ca02c', marker='o', lw=0.0, alpha_vis=0.55, zorder=3, s=12),
-    'no self-ref':     dict(color='#8800ff', marker='o', lw=0.0, alpha_vis=0.65, zorder=6, s=12),
-    'ω=1':             dict(color='#cc6600', marker='o',  lw=0.0, alpha_vis=0.50, zorder=3, s=18),
+    'τ=40':            dict(color='#e41a1c', marker='o',  lw=0.0, alpha_vis=0.50, zorder=4, s=12),
+    'ρ=1':             dict(color='#377eb8', marker='o',  lw=0.0, alpha_vis=0.50, zorder=3, s=12),
+    'census=1yr':      dict(color='#4daf4a', marker='o',  lw=0.0, alpha_vis=0.50, zorder=4, s=12),
+    'α=0.85, μ=1/N_p': dict(color='#377eb8', marker='o', lw=0.0, alpha_vis=0.55, zorder=3, s=12),
+    'H_SS/II, no self': dict(color='#4daf4a', marker='o', lw=0.0, alpha_vis=0.55, zorder=3, s=12),
+    'no self-ref':     dict(color='#e41a1c', marker='o', lw=0.0, alpha_vis=0.65, zorder=6, s=12),
+    'ω=1':             dict(color='#ff7f00', marker='o',  lw=0.0, alpha_vis=0.50, zorder=3, s=12),
 }
 
 

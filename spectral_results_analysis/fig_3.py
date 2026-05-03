@@ -32,7 +32,7 @@ _V_LO, _V_HI = 0.005, 20
 _V_TICKS = [0.01, 0.1, 1, 10]
 
 # Linearised log₁₀ axis spec for fig_3c
-_LOG_TICKS = [-2, -1, 0, 1]
+_LOG_TICKS = [-1, 0, 1]
 _LOG_LO, _LOG_HI = -2.35, 1.35
 
 
@@ -65,9 +65,9 @@ _LEGEND_ORDER = ['E', 'B', 'A', 'X']   # shown top-to-bottom in legend
 # Visual spec per label
 STYLE = {
     'm=0110': dict(color='black',   marker=None, zorder=4, lw=1.8, alpha=1.0),
-    'm=1000': dict(color='#d62728', marker='x',  zorder=3, s=55,   lw=1.0, alpha=0.5),
-    'm=0001': dict(color='#d62728', marker='x',  zorder=3, s=55,   lw=1.0, alpha=0.5),
-    'm=1111': dict(color='#2ca02c', marker='x',  zorder=2, s=55,   lw=1.0, alpha=0.5),
+    'm=1000': dict(color='#e41a1c', marker='x',  zorder=3, s=12,   lw=1.0, alpha=0.5),
+    'm=0001': dict(color='#e41a1c', marker='x',  zorder=3, s=12,   lw=1.0, alpha=0.5),
+    'm=1111': dict(color='#4daf4a', marker='x',  zorder=2, s=12,   lw=1.0, alpha=0.5),
 }
 
 S_LABELS = ['m=0110', 'm=1000', 'm=1111']
@@ -234,7 +234,7 @@ def _draw_panel(ax, series: dict, unit_key: str, panel_labels: list,
             )
         else:
             marker = marker_map[label] if (marker_map and label in marker_map) else style['marker']
-            sz = 10 if marker_map else style['s']
+            sz = style.get('s', 12)
             lbl = disp if label_map else f'{disp}  ({n_overlap:,}/{n_baseline:,})'
             ax.scatter(
                 df['baseline_rank'].values,
@@ -733,9 +733,9 @@ def _draw_log_overlay(ax, series: dict, unit_key: str, alt_modes: list,
     _log_axes(ax, xlabel, ylabel)
 
     _MODE_STYLE = {
-        'm=1000': dict(c='#d62728', marker='o', s=8,  alpha=0.35, lw=0),
-        'm=0001': dict(c='#d62728', marker='o', s=8,  alpha=0.35, lw=0),
-        'm=1111': dict(c='#2ca02c', marker='o', s=8,  alpha=0.35, lw=0),
+        'm=1000': dict(c='#e41a1c', marker='o', s=12, alpha=0.35, lw=0),
+        'm=0001': dict(c='#e41a1c', marker='o', s=12, alpha=0.35, lw=0),
+        'm=1111': dict(c='#4daf4a', marker='o', s=12, alpha=0.35, lw=0),
     }
 
     df_bip = series['m=0110'][unit_key]
@@ -781,7 +781,7 @@ def _draw_log_field(ax, series: dict, unit_key: str, alt_mode: str,
             continue
         ax.scatter(_lv(sub['v_bip'].values), _lv(sub['v_alt'].values),
                    c=_FIELD_COLOR[fld], marker=_FIELD_MARKER[fld],
-                   s=10, alpha=0.55, linewidths=0.3, zorder=3,
+                   s=12, alpha=0.55, linewidths=0.3, zorder=3,
                    label=f'{fld}  (n={len(sub):,})')
 
     handles, labels = ax.get_legend_handles_labels()
@@ -802,8 +802,8 @@ def plot3by(src_rank_map: dict, inst_rank_map: dict, series: dict) -> None:
     paths = load_config()
     _pub_theme()
 
-    fig, (ax_s, ax_i) = plt.subplots(1, 2, figsize=(10, 4.5))
-    fig.subplots_adjust(wspace=0.35)
+    fig, (ax_s, ax_i) = plt.subplots(1, 2, figsize=(10, 4.5), sharey=True)
+    fig.subplots_adjust(wspace=0.02)
 
     _draw_panel(ax_s, series, 'S', S_LABELS,
                 n_baseline=len(src_rank_map), panel_title='Sources',
@@ -813,9 +813,9 @@ def plot3by(src_rank_map: dict, inst_rank_map: dict, series: dict) -> None:
                            'm=1111': r'$v_S^J$'},
                 marker_map={'m=1000': 'o', 'm=1111': 'D'})
     ax_s.set_xlabel(r'$v_S^B$ rank', labelpad=4)
-    ax_s.set_ylabel(r'$\log(v_S^U)$', labelpad=4)
+    ax_s.set_ylabel(r'$\log(v)$', labelpad=4)
     ax_s.set_xlim(0, len(src_rank_map))
-    ax_s.set_ylim(_LOG_LO, 1.8)
+    ax_s.set_ylim(_LOG_LO, _LOG_HI)
 
     _draw_panel(ax_i, series, 'I', I_LABELS,
                 n_baseline=len(inst_rank_map), panel_title='Institutions',
@@ -825,9 +825,10 @@ def plot3by(src_rank_map: dict, inst_rank_map: dict, series: dict) -> None:
                            'm=1111': r'$v_I^J$'},
                 marker_map={'m=0001': 'o', 'm=1111': 'D'})
     ax_i.set_xlabel(r'$v_I^B$ rank', labelpad=4)
-    ax_i.set_ylabel(r'$\log(v_I^U)$', labelpad=4)
+    ax_i.set_ylabel('')
+    ax_i.tick_params(labelleft=False)
     ax_i.set_xlim(0, len(inst_rank_map))
-    ax_i.set_ylim(_LOG_LO, 1.8)
+    ax_i.set_ylim(_LOG_LO, _LOG_HI)
 
     sup = fig.suptitle(
         'Cross-mask influence: rank curves by network mode',
@@ -849,7 +850,7 @@ def plot3bz(src_rank_map: dict, inst_rank_map: dict, series: dict) -> None:
 
     # equal-aspect axes need a wider figure; log range is 3.7 units each axis
     fig, (ax_s, ax_i) = plt.subplots(1, 2, figsize=(11, 5))
-    fig.subplots_adjust(wspace=0.35)
+    fig.subplots_adjust(wspace=0.05)
 
     _draw_log_field(
         ax_s, series, 'S', 'm=1000', src_labels,
@@ -859,9 +860,10 @@ def plot3bz(src_rank_map: dict, inst_rank_map: dict, series: dict) -> None:
 
     _draw_log_field(
         ax_i, series, 'I', 'm=0001', inst_labels,
-        xlabel=r'$\log(v_I^B)$', ylabel=r'$\log(v_I^I)$',
+        xlabel=r'$\log(v_I^B)$', ylabel=r'',
     )
     ax_i.set_title('Institutions', fontsize=11, pad=6)
+    ax_i.tick_params(labelleft=False)
 
     sup = fig.suptitle(
         'Cross-mask influence: bipartite vs within-layer',

@@ -70,9 +70,9 @@ YEAR_HI      = 2024
 YEAR_PRE_LO  = 2016    # start of pre-window replacement pool
 YEAR_PRE_HI  = 2019    # end   of pre-window replacement pool
 # Per-type OA error rates (empirically estimated)
-P_ERROR_YEAR = 0.050   # 1%   in-window works replaced by pre-window draws
+P_ERROR_YEAR = 0.050   # 5%   in-window works replaced by pre-window draws
 P_ERROR_SRC  = 0.0003  # 0.03% work-to-journal misassignment
-P_ERROR_INST = 0.050   # 3%   institution errors (Tübingen study ~100/2800)
+P_ERROR_INST = 0.050   # 5%   institution errors (Tübingen study ~100/2800)
 P_ERROR_REF  = 0.050   # 5%   reference errors (total; split equally same/cross)
 P_WITHIN     = 0.75    # fraction of institution errors within same country
 STAGE_DIR = 'bootstrap_oa_errors'

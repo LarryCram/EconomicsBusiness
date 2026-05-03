@@ -401,7 +401,7 @@ def plot2(src_rank_map: dict, df_i_base: pd.DataFrame,
 # ─── Fig 2c: within-layer vs bipartite influence ──────────────────────────────
 
 _2C_LOG_LO, _2C_LOG_HI = -2.35, 1.35
-_2C_LOG_TICKS = [-2, -1, 0, 1]
+_2C_LOG_TICKS = [-1, 0, 1]
 
 _2C_FX_COLOR  = {'EBAX': '#333333', 'EBA': '#888888', 'E': '#e41a1c',
                  'B': '#377eb8', 'A': '#ff7f00', 'X': '#4daf4a'}
@@ -511,7 +511,7 @@ def _2c_draw_panel(ax, data, xlabel, ylabel, title):
         y  = np.log10(np.clip(df['v_single'].values, 1e-10, None))
         ax.scatter(x, y,
                    c=_2C_FX_COLOR[fx], marker=_2C_FX_MARKER[fx],
-                   s=6, alpha=0.50, linewidths=0.3, zorder=3,
+                   s=12, alpha=0.50, linewidths=0.3, zorder=3,
                    label=f'{_2C_FX_LABEL[fx]}  (n={len(df):,})')
     handles, labels = ax.get_legend_handles_labels()
     ax.legend(handles, labels, fontsize=8, framealpha=0.85, loc='upper left', markerscale=1.6)
@@ -531,14 +531,15 @@ def plot2c(db) -> None:
                          'xtick.major.size':  5,   'ytick.major.size':  5})
 
     fig, (ax_s, ax_i) = plt.subplots(1, 2, figsize=(11, 5))
-    fig.subplots_adjust(wspace=0.35)
+    fig.subplots_adjust(wspace=0.05)
 
     _2c_draw_panel(ax_s, data['S'],
                    xlabel=r'$\log(v_S^B)$', ylabel=r'$\log(v_S^S)$',
                    title='Sources')
     _2c_draw_panel(ax_i, data['I'],
-                   xlabel=r'$\log(v_I^B)$', ylabel=r'$\log(v_I^I)$',
+                   xlabel=r'$\log(v_I^B)$', ylabel=r'',
                    title='Institutions')
+    ax_i.tick_params(labelleft=False)
 
     sup = fig.suptitle(
         r'Within-layer vs bipartite influence by corpus $F$'

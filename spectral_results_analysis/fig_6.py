@@ -42,7 +42,10 @@ _fix_runs = sorted(
     key=lambda r: r['label'],
 )
 
-_COLOURS      = ['#7b00d4', '#0057ff', '#00aa00', '#ff1500']
+_LOG_LO, _LOG_HI = -2.35, 1.35
+_LOG_TICKS = [-1, 0, 1]
+
+_COLOURS      = ['#e41a1c', '#377eb8', '#4daf4a', '#ff7f00']
 BASELINE_COLOUR = 'black'
 
 _MU_SUFFIX = {'': '', 'uniform': '_muUniform', 'unit_scaled': '_muUnitScaled'}
@@ -157,7 +160,7 @@ def _running_mean_log_adaptive(v_series: np.ndarray, ranks: np.ndarray,
         lo = max(0, i - w // 2)
         hi = min(n, i + w // 2 + 1)
         result[i] = log_v[lo:hi].mean()
-    return np.power(10.0, result)
+    return result
 
 
 def _draw_scatter_panel(ax, df_s_base, df_i_base, pairs,
@@ -170,7 +173,8 @@ def _draw_scatter_panel(ax, df_s_base, df_i_base, pairs,
     Baseline curve always shown.
     """
     df_b = df_s_base if unit_idx == 0 else df_i_base
-    ax.plot(df_b['baseline_rank'], df_b['v'],
+    lv_b = np.log10(np.clip(df_b['v'].values, 1e-10, None))
+    ax.plot(df_b['baseline_rank'].values, lv_b,
             color=BASELINE_COLOUR, linewidth=1.4, alpha=1.0, zorder=4,
             label=_period_label(_baseline))
 
@@ -189,12 +193,13 @@ def _draw_scatter_panel(ax, df_s_base, df_i_base, pairs,
             continue
         any_series = True
         n = len(df)
+        lv = np.log10(np.clip(df['v'].values, 1e-10, None))
 
-        ax.scatter(df['baseline_rank'], df['v'],
-                   color=colour, marker=marker, s=28, linewidths=0.7,
+        ax.scatter(df['baseline_rank'].values, lv,
+                   color=colour, marker=marker, s=12, linewidths=0.7,
                    alpha=0.28, zorder=2,
                    label=f'{period}  ({n:,}/{n_baseline:,})')
-        ax.plot(df['baseline_rank'],
+        ax.plot(df['baseline_rank'].values,
                 _running_mean_log_adaptive(df['v'].values,
                                            df['baseline_rank'].values,
                                            n_baseline),
@@ -206,10 +211,10 @@ def _draw_scatter_panel(ax, df_s_base, df_i_base, pairs,
                 fontsize=9, color='grey')
 
     x_lim = x_max if x_max is not None else n_baseline
-    ax.set_yscale('log')
-    ax.set_ylim(0.02, 20)
-    ax.axhline(1.0, color='#999999', linewidth=0.8, linestyle='--', zorder=0)
-    ax.text(x_lim * 0.98, 1.0, '$v=1$',
+    ax.set_ylim(_LOG_LO, _LOG_HI)
+    ax.set_yticks(_LOG_TICKS)
+    ax.axhline(0.0, color='#999999', linewidth=0.8, linestyle='--', zorder=0)
+    ax.text(x_lim * 0.98, 0.0, '$v=1$',
             ha='right', va='bottom', fontsize=7.5, color='#999999')
     ax.set_xlim(1, x_lim)
     ax.set_xlabel('Baseline rank', labelpad=4)
@@ -413,15 +418,16 @@ def plot6(src_rank_map, inst_rank_map, df_s_base, df_i_base, pairs) -> None:
     n_base_i = len(inst_rank_map)
 
     fig, axes = plt.subplots(1, 2, figsize=(14, 5), sharey=True)
-    fig.subplots_adjust(wspace=0.10)
+    fig.subplots_adjust(wspace=0.02)
 
     _draw_scatter_panel(axes[0], df_s_base, df_i_base, pairs,
                         0, n_base_s, 'Sources', mode='fix')
     _draw_scatter_panel(axes[1], df_s_base, df_i_base, pairs,
                         1, n_base_i, 'Institutions', mode='fix')
 
-    axes[0].set_ylabel('Influence per work $v$', labelpad=4)
+    axes[0].set_ylabel(r'$\log(v)$', labelpad=4)
     axes[1].set_ylabel('')
+    axes[1].tick_params(labelleft=False)
 
     sup_text = 'Time-series comparison (fixed universe)'
     sup = fig.suptitle(sup_text, fontsize=9, y=1.01)

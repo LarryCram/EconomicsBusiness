@@ -33,6 +33,9 @@ from scipy import stats
 sys.path.insert(0, str(Path(__file__).parent.parent))
 from util import load_config, load_runs
 
+_LOG_LO, _LOG_HI = -2.35, 1.35
+_LOG_TICKS = [-1, 0, 1]
+
 WINDOWS = [
     ('2000–04', 't1',       1),
     ('2005–09', 't2',       2),
@@ -228,39 +231,46 @@ def _draw_scatter_panel(ax, both: pd.DataFrame, label_ids: set,
                         names: dict, shared_lims: list,
                         title: str, show_ylabel: bool,
                         show_labels: bool = True) -> None:
-    """Draw one v_t1 vs v_t5 scatter panel onto ax."""
+    """Draw one log(v_t1) vs log(v_t5) scatter panel onto ax."""
     COLOURS = {
-        'v>1_both':    ('#1f77b4', 'v>1 in both'),
-        'v>1_neither': ('#aec7e8', 'v≤1 in both'),
-        'riser':       ('#2ca02c', 'crossed $v=1$ upward'),
-        'faller':      ('#d62728', 'crossed $v=1$ downward'),
+        'v>1_both':    ('#377eb8', 'v>1 in both'),
+        'v>1_neither': ('#aaaaaa', 'v≤1 in both'),
+        'riser':       ('#4daf4a', 'crossed $v=1$ upward'),
+        'faller':      ('#e41a1c', 'crossed $v=1$ downward'),
     }
+    lv_t1 = np.log10(np.clip(both['v_t1'].values, 1e-10, None))
+    lv_t5 = np.log10(np.clip(both['v_t5'].values, 1e-10, None))
+
     for col, (c, lbl) in COLOURS.items():
-        mask = both[col]
-        ax.scatter(both.loc[mask, 'v_t1'], both.loc[mask, 'v_t5'],
+        mask = both[col].values
+        ax.scatter(lv_t1[mask], lv_t5[mask],
                    c=c, s=12, alpha=0.6, linewidths=0,
                    label=f'{lbl} (n={mask.sum():,})', zorder=2)
 
-    ax.axhline(1, color='#999999', linewidth=0.7, linestyle='--', zorder=0)
-    ax.axvline(1, color='#999999', linewidth=0.7, linestyle='--', zorder=0)
+    ax.axhline(0, color='#999999', linewidth=0.7, linestyle='--', zorder=0)
+    ax.axvline(0, color='#999999', linewidth=0.7, linestyle='--', zorder=0)
     ax.plot(shared_lims, shared_lims, color='#555555',
             linewidth=0.7, linestyle=':', zorder=0)
 
     if show_labels:
         for _, row in both[both['unit_idx'].isin(label_ids)].iterrows():
             name = names.get(int(row['unit_idx']), '?')
-            ax.annotate(name[:28], (row['v_t1'], row['v_t5']),
+            x = np.log10(max(float(row['v_t1']), 1e-10))
+            y = np.log10(max(float(row['v_t5']), 1e-10))
+            ax.annotate(name[:28], (x, y),
                         fontsize=5.5, ha='left', va='bottom',
                         xytext=(3, 2), textcoords='offset points',
                         color='#222222')
 
-    ax.set_xscale('log')
-    ax.set_yscale('log')
     ax.set_xlim(shared_lims)
     ax.set_ylim(shared_lims)
-    ax.set_xlabel('$v$  (2000–04)', labelpad=4)
+    ax.set_xticks(_LOG_TICKS)
+    ax.set_yticks(_LOG_TICKS)
+    ax.set_xlabel(r'$\log(v)$  (2000–04)', labelpad=4)
     if show_ylabel:
-        ax.set_ylabel('$v$  (2020–24)', labelpad=4)
+        ax.set_ylabel(r'$\log(v)$  (2020–24)', labelpad=4)
+    else:
+        ax.tick_params(labelleft=False)
     ax.set_title(title, fontsize=9, pad=5)
     ax.legend(fontsize=7, framealpha=0.85, loc='upper left')
 
@@ -275,14 +285,11 @@ def plot_v_scatter(panel: pd.DataFrame, movers: pd.DataFrame,
     both_s, lids_s = _prepare_scatter_data(panel, movers, names, 'S')
     both_u, lids_u = _prepare_scatter_data(panel, movers, names, 'U')
 
-    lo = 0.02
-    hi = max(both_s['v_t1'].max(), both_s['v_t5'].max(),
-             both_u['v_t1'].max(), both_u['v_t5'].max()) * 1.1
-    shared_lims = [lo, hi]
+    shared_lims = [_LOG_LO, _LOG_HI]
 
     sns.set_theme(style='whitegrid', font_scale=0.95)
     fig, axes = plt.subplots(1, 2, figsize=(12, 6), sharey=True)
-    fig.subplots_adjust(wspace=0.06)
+    fig.subplots_adjust(wspace=0.02)
 
     _draw_scatter_panel(axes[0], both_s, lids_s, names, shared_lims,
                         'Sources', show_ylabel=True, show_labels=False)

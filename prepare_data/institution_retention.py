@@ -315,10 +315,10 @@ def plot_fig1(df_inst: pd.DataFrame, df_src: pd.DataFrame) -> None:
     total_src  = int(df_src['cum_sources_above'].iloc[0])
 
     ax.plot(plot_inst['works_per_year'], plot_inst['pct_retained'],
-            color='steelblue', linewidth=1.5,
+            color='#377eb8', linewidth=1.5,
             label=f'Institutions  (total = {total_inst:,})')
     ax.plot(plot_src['works_per_year'],  plot_src['pct_retained'],
-            color='green',     linewidth=1.5,
+            color='#e41a1c', linewidth=1.5,
             label=f'Sources  (total = {total_src:,})')
 
     ax.set_ylim(60, 100)
