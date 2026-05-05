@@ -152,48 +152,53 @@ def build_panel_data(v_boot: np.ndarray,
 
 def _draw_panel(ax, ranks, v_base, boot_flat, rank_flat,
                 n_aligned, B, panel_title,
-                colours=None) -> None:
-    """Draw one panel: bootstrap scatter + percentile band + baseline."""
+                colours=None, show_ylabel=True) -> None:
+    """Draw one panel: scatter + blue min/max dots + running mean + baseline.
 
-    # Bootstrap scatter
-    ax.scatter(
-        rank_flat, boot_flat,
-        c=colours if colours is not None else '#aaaaaa',
-        s=1, alpha=0.04, linewidths=0, rasterized=True,
-        zorder=1,
-    )
+    y-axis is linear log10(v): ylim=(_LOG_LO, _LOG_HI), yticks=[-1, 0, 1].
+    """
+    lv_base = np.log10(np.clip(v_base, 1e-10, None))
+    lv_boot = np.log10(np.clip(boot_flat, 1e-10, None))
 
-    # 5th–95th percentile band per unit
-    boot_2d = boot_flat.reshape(B, n_aligned)
-    p05 = np.nanpercentile(boot_2d, 5,  axis=0)
-    p95 = np.nanpercentile(boot_2d, 95, axis=0)
-    ax.fill_between(ranks, p05, p95,
-                    color='#888888', alpha=0.18, linewidth=0, zorder=2)
+    ax.scatter(rank_flat, lv_boot,
+               c=colours if colours is not None else '#aaaaaa',
+               s=1, alpha=0.04, linewidths=0, rasterized=True, zorder=1)
 
-    # 10% running geometric mean of per-unit median bootstrap v
-    boot_2d_panel = boot_flat.reshape(B, n_aligned)
-    med_v = np.nanmedian(boot_2d_panel, axis=0)
-    ax.plot(ranks, _boot_running_mean(med_v),
-            color='#cc0000', linewidth=1.4, alpha=0.9, zorder=4,
-            label='running mean')
+    boot_2d_log = lv_boot.reshape(B, n_aligned)
+    ax.scatter(ranks, boot_2d_log.max(axis=0),
+               s=4, c=_BLUE, linewidths=0, zorder=6)
+    ax.scatter(ranks, boot_2d_log.min(axis=0),
+               s=4, c=_BLUE, linewidths=0, zorder=6)
 
-    # Baseline curve
-    ax.plot(ranks, v_base,
-            color='black', linewidth=1.4, alpha=1.0, zorder=5,
-            label='baseline')
+    # Running geometric mean of per-unit median, plotted in log space
+    med_v = np.nanmedian(boot_flat.reshape(B, n_aligned), axis=0)
+    lv_running = np.log10(np.maximum(_boot_running_mean(med_v), 1e-10))
+    ax.plot(ranks, lv_running,
+            color='#e41a1c', linewidth=1.4, alpha=0.9, zorder=4)
 
-    ax.set_yscale('log')
-    ax.set_ylim(0.02, 20)
-    ax.axhline(1.0, color='#999999', linewidth=0.8, linestyle='--', zorder=0)
-    ax.text(n_aligned * 0.98, 1.0, '$v=1$',
-            ha='right', va='bottom', fontsize=7.5, color='#999999')
+    ax.plot(ranks, lv_base,
+            color='black', linewidth=1.4, alpha=1.0, zorder=5)
+
+    ax.set_ylim(_LOG_LO, _LOG_HI)
+    ax.set_yticks(_LOG_TICKS)
     ax.set_xlim(1, n_aligned)
+    ax.axhline(0.0, color='#999999', linewidth=0.8, linestyle='--', zorder=0)
+    ax.text(n_aligned * 0.98, 0.0, '$v=1$',
+            ha='right', va='bottom', fontsize=7.5, color='#999999')
     ax.set_xlabel('Baseline rank', labelpad=4)
-    ax.set_ylabel('Influence per work $v$', labelpad=4)
     ax.set_title(panel_title, fontsize=10, pad=6)
+
+    if show_ylabel:
+        ax.set_ylabel(r'$\log(v)$', labelpad=4)
+    else:
+        ax.tick_params(labelleft=False)
 
 
 Y_LO, Y_HI = 0.02, 20.0
+
+_LOG_LO, _LOG_HI = -2.35, 1.35
+_LOG_TICKS = [-1, 0, 1]
+_BLUE = '#377eb8'
 
 OA_ERROR_TYPES  = ['year', 'source', 'institution', 'reference', 'resample']
 OA_ERROR_LABELS = {
@@ -221,39 +226,44 @@ def _boot_running_mean(v: np.ndarray, frac: float = 0.10) -> np.ndarray:
 
 def _draw_cell(ax, ranks, v_base, boot_flat, rank_flat,
                n_aligned, B,
-               show_xlabel: bool = False,
+               show_xlabel: bool = True,
                show_ylabel: bool = False,
-               row_label: str = '') -> None:
-    """Draw one facet cell: scatter + band + baseline + running mean, minimal decoration."""
-    ax.scatter(
-        rank_flat, boot_flat,
-        c='#cc0000', s=1, alpha=0.04, linewidths=0, rasterized=True, zorder=1,
-    )
-    boot_2d = boot_flat.reshape(B, n_aligned)
-    p05 = np.nanpercentile(boot_2d, 5,  axis=0)
-    p95 = np.nanpercentile(boot_2d, 95, axis=0)
-    ax.fill_between(ranks, p05, p95,
-                    color='#cc0000', alpha=0.18, linewidth=0, zorder=2)
+               unit_tag: str = '') -> None:
+    """Draw one facet cell: scatter cloud + blue min/max dots + baseline.
 
-    ax.plot(ranks, v_base, color='black', linewidth=1.2, alpha=1.0, zorder=5)
+    y-axis is linear log10(v): ylim=(_LOG_LO, _LOG_HI), yticks=[-1, 0, 1].
+    Blue dots mark the per-rank maximum and minimum across all B replicates.
+    """
+    lv_base = np.log10(np.clip(v_base, 1e-10, None))
+    lv_boot = np.log10(np.clip(boot_flat, 1e-10, None))
 
-    ax.set_yscale('log')
-    ax.set_ylim(Y_LO, Y_HI)
+    ax.scatter(rank_flat, lv_boot,
+               c='#e41a1c', s=1, alpha=0.04, linewidths=0, rasterized=True, zorder=1)
+
+    boot_2d_log = lv_boot.reshape(B, n_aligned)
+    ax.scatter(ranks, boot_2d_log.max(axis=0),
+               s=4, c=_BLUE, linewidths=0, zorder=6)
+    ax.scatter(ranks, boot_2d_log.min(axis=0),
+               s=4, c=_BLUE, linewidths=0, zorder=6)
+
+    ax.plot(ranks, lv_base, color='black', linewidth=1.2, alpha=1.0, zorder=5)
+
+    ax.set_ylim(_LOG_LO, _LOG_HI)
+    ax.set_yticks(_LOG_TICKS)
     ax.set_xlim(1, n_aligned)
-    ax.axhline(1.0, color='#bbbbbb', linewidth=0.7, linestyle='--', zorder=0)
+    ax.axhline(0.0, color='#bbbbbb', linewidth=0.7, linestyle='--', zorder=0)
 
     if show_xlabel:
         ax.set_xlabel('Baseline rank', fontsize=8, labelpad=3)
-    else:
-        ax.set_xlabel('')
-        ax.tick_params(labelbottom=False)
 
     if show_ylabel:
-        ax.set_ylabel(
-            f'{row_label}\n$v$', fontsize=8, labelpad=3,
-        )
+        ax.set_ylabel(r'$\log(v)$', fontsize=8, labelpad=3)
     else:
-        ax.set_ylabel('')
+        ax.tick_params(labelleft=False)
+
+    if unit_tag:
+        ax.text(0.03, 0.97, unit_tag, transform=ax.transAxes,
+                fontsize=7, va='top', ha='left', color='#555555')
 
 
 def plot7a_oa_errors(paths, df_base) -> None:
@@ -293,11 +303,13 @@ def plot7a_oa_errors(paths, df_base) -> None:
 
     sns.set_theme(style='whitegrid', font_scale=0.85)
     fig, axes = plt.subplots(
-        2, n_cols,
-        figsize=(2.8 * n_cols, 5.6),
+        1, n_cols * 2,
+        figsize=(2.6 * n_cols * 2, 3.2),
         sharey=True, sharex=False,
     )
-    fig.subplots_adjust(wspace=0.06, hspace=0.28)
+    if n_cols * 2 == 1:
+        axes = [axes]
+    fig.subplots_adjust(wspace=0.05)
 
     for col, et in enumerate(col_keys):
         v_s_boot, v_u_boot, _, meta = et_data[et]
@@ -308,18 +320,18 @@ def plot7a_oa_errors(paths, df_base) -> None:
         ranks_i, v_base_i, boot_flat_i, rank_flat_i, n_i, *_ = \
             build_panel_data(v_u_boot, inst_v, inst_ids, meta['inst_ids'])
 
-        ax_s = axes[0, col]
-        ax_i = axes[1, col]
+        ax_s = axes[2 * col]
+        ax_i = axes[2 * col + 1]
 
         _draw_cell(ax_s, ranks_s, v_base_s, boot_flat_s, rank_flat_s, n_s, B,
-                   show_xlabel=False, show_ylabel=(col == 0), row_label='Sources')
+                   show_xlabel=True, show_ylabel=(col == 0), unit_tag='S')
         _draw_cell(ax_i, ranks_i, v_base_i, boot_flat_i, rank_flat_i, n_i, B,
-                   show_xlabel=True,  show_ylabel=(col == 0), row_label='Institutions')
+                   show_xlabel=True, show_ylabel=False, unit_tag='I')
 
         ax_s.set_title(OA_ERROR_LABELS[et], fontsize=9, pad=4)
 
     out_stem = 'fig_7b_oa_errors'
-    sup = fig.suptitle('OA error bootstrap — influence per work', fontsize=9, y=1.01)
+    sup = fig.suptitle('OA error bootstrap — influence per work', fontsize=9, y=1.02)
 
     out = paths.plots / f'{out_stem}.pdf'
     fig.savefig(out, bbox_inches='tight', dpi=150)
@@ -509,13 +521,13 @@ def plot7(paths, v_s_boot, v_u_boot, lam_ratio_boot, meta, df_base,
 
     # ── Plot ─────────────────────────────────────────────────────────────────
     sns.set_theme(style='whitegrid', font_scale=0.95)
-    fig, axes = plt.subplots(2, 1, figsize=(9, 8))
-    fig.subplots_adjust(hspace=0.44)
+    fig, axes = plt.subplots(1, 2, figsize=(12, 4), sharey=True)
+    fig.subplots_adjust(wspace=0.05)
 
     _draw_panel(axes[0], ranks_s, v_base_s, boot_flat_s, rank_flat_s,
-                n_s, B, 'Sources')
+                n_s, B, 'Sources', show_ylabel=True)
     _draw_panel(axes[1], ranks_i, v_base_i, boot_flat_i, rank_flat_i,
-                n_i, B, 'Institutions')
+                n_i, B, 'Institutions', show_ylabel=False)
 
     skipped = meta.get('skipped', 0)
     sup = fig.suptitle(

@@ -7,29 +7,29 @@ Stage 1 — build_base_works
 
 Stage 2 — build_work_replicates
     B perturbed work tables.  For each replicate, three independent draws:
-      pub_year    — 1% of in-window works are replaced by a random pre-window work
+      pub_year    — 2% of in-window works are replaced by a random pre-window work
                     (2016–2019) drawn WITH REPLACEMENT from stage1_prewindow_pool.
                     The replacement inherits the source/institution of the drawn work
                     but keeps the original (in-window) pub_year.
       source      — 0.03% of remaining works get a new source (uniform OAS draw).
-      institution — 3% of remaining works get a new institution (75% within-country).
+      institution — 1% of remaining works get a new institution (75% within-country).
     Error types are drawn independently; pub_year takes precedence on conflicts.
     Only changed rows persisted (delta format).
 
 Stage 3 — build_ref_replicates
-    B perturbed reference tables: ~10% wrong references (5% same-source,
-    5% cross-source replacement).  Only changed rows persisted.
+    B perturbed reference tables: ~2% wrong references (1.5% same-source,
+    0.5% cross-source replacement).  Only changed rows persisted.
 
 Stage 4 — build_rankings
     B bipartite (m=0110) spectral rankings from random pairings of Stage 2 × Stage 3.
     Uses the fixed baseline unit set; no tau recomputation.
 
 Error rates (empirically estimated):
-    pub_year    — 1%   of in-window works replaced by a randomly drawn pre-window
+    pub_year    — 2%   of in-window works replaced by a randomly drawn pre-window
                         work (2016–2019, with replacement); original pub_year kept.
     source      — 0.03% uniform draw from OAS source pool
-    institution — 3%   75% within-country, 25% global uniform (Tübingen study: ~100/2800)
-    references  — 5%   2.5% same-source cited-work, 2.5% cross-source cited-work
+    institution — 1%   75% within-country, 25% global uniform
+    references  — 2%   1.5% same-source cited-work, 0.5% cross-source cited-work
 
 Storage: $WORKING/bootstrap_oa_errors/
     stage1_base_works.parquet
@@ -70,10 +70,10 @@ YEAR_HI      = 2024
 YEAR_PRE_LO  = 2016    # start of pre-window replacement pool
 YEAR_PRE_HI  = 2019    # end   of pre-window replacement pool
 # Per-type OA error rates (empirically estimated)
-P_ERROR_YEAR = 0.050   # 5%   in-window works replaced by pre-window draws
+P_ERROR_YEAR = 0.020   # 2%   in-window works replaced by pre-window draws
 P_ERROR_SRC  = 0.0003  # 0.03% work-to-journal misassignment
-P_ERROR_INST = 0.050   # 5%   institution errors (Tübingen study ~100/2800)
-P_ERROR_REF  = 0.050   # 5%   reference errors (total; split equally same/cross)
+P_ERROR_INST = 0.010   # 1%   institution errors
+P_ERROR_REF  = 0.020   # 2%   reference errors (total; 75% same-source, 25% cross-source)
 P_WITHIN     = 0.75    # fraction of institution errors within same country
 STAGE_DIR = 'bootstrap_oa_errors'
 
@@ -255,7 +255,7 @@ def perturb_works_one(base: pd.DataFrame,
 
     Error types (all independent; pub_year takes precedence on the same work):
 
-      pub_year (1%) — replace a randomly selected in-window work with a work drawn
+      pub_year (2%) — replace a randomly selected in-window work with a work drawn
           WITH REPLACEMENT from pre_window (2016-2019).  The replacement inherits
           the drawn work's source_idx, inst_idx, inst_weight, and country_code, but
           keeps the original in-window pub_year so the work remains in the corpus.
@@ -264,7 +264,7 @@ def perturb_works_one(base: pd.DataFrame,
       source (0.03%) — for remaining works, change source_idx to a uniform draw
           from source_pool.  ALL rows for the work are updated.
 
-      institution (3%) — for remaining works, swap one institution per work
+      institution (1%) — for remaining works, swap one institution per work
           (75% within-country, 25% global uniform).
 
     Returns only changed rows (delta), with extra columns:
@@ -503,7 +503,7 @@ def build_ref_replicates(db, el_table: str, base_works: pd.DataFrame,
 
     cited_src = base_refs['cited_source_idx'].to_numpy(dtype=np.int64)
     N_refs    = len(base_refs)
-    p_same    = 0.5 * P_ERROR_REF
+    p_same    = 0.75 * P_ERROR_REF
     p_diff    = P_ERROR_REF
 
     print(f'Stage 3: generating {B} ref replicates ...', flush=True)
