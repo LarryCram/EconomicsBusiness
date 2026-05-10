@@ -75,6 +75,8 @@ class _MockCSRData:
     a_u: np.ndarray
     n_s: int
     n_u: int
+    is_sentinel_s: Optional[np.ndarray] = None
+    is_sentinel_u: Optional[np.ndarray] = None
 
 ATOL = 1e-5
 
@@ -454,3 +456,61 @@ class TestRank:
         assert hasattr(result, 'lam2')
         assert hasattr(result, 'iters')
         assert hasattr(result, 'final_norm')
+
+
+# ─── Sentinel handling (ε=1) tests ────────────────────────────────────────────
+
+class TestSentinelHandling:
+
+    def _make_sentinel_data(self):
+        """
+        3 sources (ids 1, 2, 3) and 2 institutions (ids 1, 10).
+        Source 1 and institution 1 are sentinels (SX_IDX = IX_IDX = 1).
+        a_s = [5, 4, 3], a_u = [2, 6].
+        Real units: sources 2 and 3 (a_p = 4+3=7), institution 10 (a_p = 6).
+        Expected A = 7 + 6 = 13.
+        """
+        C_SI = sp.csr_matrix(np.array([
+            [1.0, 1.0],   # source 1 (sentinel)
+            [2.0, 1.0],   # source 2
+            [1.0, 2.0],   # source 3
+        ], dtype=float))
+        C_IS = sp.csr_matrix(np.array([
+            [1.0, 1.0, 1.0],   # inst 1 (sentinel)
+            [1.0, 2.0, 1.0],   # inst 10
+        ], dtype=float))
+        return _MockCSRData(
+            C_SS=None, C_SI=C_SI, C_IS=C_IS, C_II=None,
+            source_ids=np.array([1, 2, 3]),
+            inst_ids=np.array([1, 10]),
+            a_s=np.array([5.0, 4.0, 3.0]),
+            a_u=np.array([2.0, 6.0]),
+            n_s=3, n_u=2,
+            is_sentinel_s=np.array([True, False, False]),
+            is_sentinel_u=np.array([True, False]),
+        )
+
+    def test_sentinel_v_is_nan(self):
+        """v must be NaN at sentinel positions."""
+        data = self._make_sentinel_data()
+        result = rank(data, m=(0, 1, 1, 0), chi=0.5, alpha=1.0)
+        assert np.isnan(result.v_s[0]), "v_s[sentinel] must be NaN"
+        assert np.isnan(result.v_u[0]), "v_u[sentinel] must be NaN"
+
+    def test_real_unit_v_is_finite(self):
+        """v must be finite for non-sentinel positions."""
+        data = self._make_sentinel_data()
+        result = rank(data, m=(0, 1, 1, 0), chi=0.5, alpha=1.0)
+        assert np.all(np.isfinite(result.v_s[1:]))
+        assert np.all(np.isfinite(result.v_u[1:]))
+
+    def test_real_unit_wmean_v_is_1(self):
+        """a-weighted mean of v over real units must equal 1 (same scale as baseline)."""
+        data = self._make_sentinel_data()
+        result = rank(data, m=(0, 1, 1, 0), chi=0.5, alpha=1.0)
+        a_real_s = data.a_s[1:]        # sources 2, 3  (a_p = 4, 3)
+        a_real_u = data.a_u[1:]        # inst 10       (a_p = 6)
+        A_real   = a_real_s.sum() + a_real_u.sum()   # 13
+        wmean = (np.dot(a_real_s, result.v_s[1:]) +
+                 np.dot(a_real_u, result.v_u[1:])) / A_real
+        assert abs(wmean - 1.0) < 1e-6, f"a-weighted mean of real v = {wmean:.6f}, expected 1"

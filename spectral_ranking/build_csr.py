@@ -25,6 +25,10 @@ from dataclasses import dataclass
 from typing import Optional
 
 
+SX_IDX = 1   # sentinel source_idx for ε=1 runs
+IX_IDX = 1   # sentinel institution_idx for ε=1 runs
+
+
 @dataclass
 class CSRData:
     """
@@ -32,6 +36,9 @@ class CSRData:
 
     Blocks that were not requested (corresponding m bit = 0) are None.
     Matrices use dense indices 0…n_s-1 (sources) and 0…n_u-1 (institutions).
+
+    For ε=1 runs, is_sentinel_s and is_sentinel_u flag the positions of
+    SX_IDX/IX_IDX in the unit arrays.  Both are None for ε=0 runs.
     """
     C_SS: Optional[sp.csr_matrix]   # (n_s × n_s) source–source
     C_SI: Optional[sp.csr_matrix]   # (n_s × n_u) source–institution
@@ -46,9 +53,13 @@ class CSRData:
     n_s: int
     n_u: int
 
+    is_sentinel_s: Optional[np.ndarray] = None  # bool, True where source_ids == SX_IDX
+    is_sentinel_u: Optional[np.ndarray] = None  # bool, True where inst_ids == IX_IDX
+
 
 def build_csr(db, run_code: str, fx: str, tau_u: int, tau_s: int, rho: int, m: tuple,
-              ref_units: str = '', direct_inst: bool = False) -> CSRData:
+              ref_units: str = '', direct_inst: bool = False,
+              epsilon: int = 0) -> CSRData:
     """
     Build raw CSR blocks for corpus (run_code, fx, tau_u, tau_s) with ρ weighting.
 
@@ -73,9 +84,10 @@ def build_csr(db, run_code: str, fx: str, tau_u: int, tau_s: int, rho: int, m: t
     _t = {}   # timing dict — remove when no longer needed
 
     tau_sfx = '_fixtau' if ref_units else '_vartau'
+    eps_sfx = '_eps1' if epsilon else ''
     mstr   = ''.join(str(x) for x in m)
-    tname  = f'el_{run_code}_{fx}_tauU{tau_u}_tauS{tau_s}{tau_sfx}'
-    uname  = f'_units_{run_code}_{fx}_tauU{tau_u}_tauS{tau_s}{tau_sfx}_m{mstr}'
+    tname  = f'el_{run_code}_{fx}_tauU{tau_u}_tauS{tau_s}{tau_sfx}{eps_sfx}'
+    uname  = f'_units_{run_code}_{fx}_tauU{tau_u}_tauS{tau_s}{tau_sfx}_m{mstr}{eps_sfx}'
 
     # ── Load unit index ────────────────────────────────────────────────────
     t0 = time.perf_counter()
@@ -241,9 +253,14 @@ def build_csr(db, run_code: str, fx: str, tau_u: int, tau_s: int, rho: int, m: t
           + "  ".join(f"{k}={v:.2f}" for k, v in _t.items())
           + f"  TOTAL={total:.2f}", flush=True)
 
+    is_sentinel_s = (source_ids == SX_IDX) if epsilon else None
+    is_sentinel_u = (inst_ids   == IX_IDX) if epsilon else None
+
     return CSRData(
         C_SS=C_SS, C_SI=C_SI, C_IS=C_IS, C_II=C_II,
         source_ids=source_ids, inst_ids=inst_ids,
         a_s=a_s, a_u=a_u,
         n_s=n_s, n_u=n_u,
+        is_sentinel_s=is_sentinel_s,
+        is_sentinel_u=is_sentinel_u,
     )

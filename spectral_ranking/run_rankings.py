@@ -61,6 +61,7 @@ class RunParams:
     label:       str  = ''
     ref_units:   str  = ''    # non-empty → fixtau corpus
     direct_inst: bool = False  # False = author-fractional ω; True = 1/N_inst ω
+    epsilon:     int  = 0     # 1 → include cross-boundary sentinel edges
 
 
 _MU_SUFFIX = {
@@ -77,8 +78,9 @@ def table_name(p: RunParams) -> str:
     alpha_int = round(p.alpha * 100)
     mu_sfx    = _MU_SUFFIX.get(p.mu_type, f'_mu{p.mu_type}')
     omega_sfx = '_omega1' if p.direct_inst else ''
+    eps_sfx   = '_eps1' if p.epsilon else ''
     return (f'rk_{p.run_code}_{p.fx}_tauU{p.tau_u}_tauS{p.tau_s}{tau_sfx}'
-            f'_rho{p.rho}_m{mstr}_chi{chi_str}_alpha{alpha_int}{mu_sfx}{omega_sfx}')
+            f'_rho{p.rho}_m{mstr}_chi{chi_str}_alpha{alpha_int}{mu_sfx}{omega_sfx}{eps_sfx}')
 
 
 def _make_mu(mu_type: str, n_s: int, n_u: int) -> 'np.ndarray | None':
@@ -126,6 +128,7 @@ def runs_from_csv() -> list:
             label=r['label'],
             ref_units=r.get('ref_units', ''),
             direct_inst=bool(int(r.get('omega', 0))),
+            epsilon=int(r.get('epsilon', 0)),
         ))
     return result
 
@@ -177,6 +180,9 @@ def ensure_catalog(db) -> None:
     if 'omega' not in cols:
         db.execute("ALTER TABLE _catalog ADD COLUMN omega INTEGER")
         db.execute("UPDATE _catalog SET omega = 0")
+    if 'epsilon' not in cols:
+        db.execute("ALTER TABLE _catalog ADD COLUMN epsilon INTEGER")
+        db.execute("UPDATE _catalog SET epsilon = 0")
 
 
 def write_result(db, tname: str, p: RunParams, result, csr_data) -> None:
@@ -218,11 +224,11 @@ def write_result(db, tname: str, p: RunParams, result, csr_data) -> None:
     n_u = csr_data.n_u if result.pi_u is not None else 0
     db.execute(
         """INSERT OR REPLACE INTO _catalog
-           (table_name, run_code, fx, tau_u, tau_s, rho, omega,
+           (table_name, run_code, fx, tau_u, tau_s, rho, omega, epsilon,
             m_SS, m_SI, m_IS, m_II, chi, alpha, mu_type,
             n_s, n_u, lam1, lam2, iters, final_norm, label, created_at)
-           VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)""",
-        [tname, p.run_code, p.fx, p.tau_u, p.tau_s, p.rho, int(p.direct_inst),
+           VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)""",
+        [tname, p.run_code, p.fx, p.tau_u, p.tau_s, p.rho, int(p.direct_inst), p.epsilon,
          p.m[0], p.m[1], p.m[2], p.m[3],
          p.chi, p.alpha, p.mu_type,
          n_s, n_u,
@@ -234,13 +240,14 @@ def write_result(db, tname: str, p: RunParams, result, csr_data) -> None:
 
 
 def _dense_rank_desc(values: np.ndarray) -> np.ndarray:
-    """Return dense rank (1 = highest value). Ties share the same rank."""
-    order = np.argsort(-values, kind='stable')
-    ranks = np.empty(len(values), dtype=np.int32)
+    """Return dense rank (1 = highest value). Ties share same rank. NaN → last rank."""
+    safe  = np.where(np.isnan(values), -np.inf, values)
+    order = np.argsort(-safe, kind='stable')
+    ranks = np.empty(len(safe), dtype=np.int32)
     ranks[order[0]] = 1
     current_rank = 1
     for i in range(1, len(order)):
-        if values[order[i]] < values[order[i - 1]]:
+        if safe[order[i]] < safe[order[i - 1]]:
             current_rank += 1
         ranks[order[i]] = current_rank
     return ranks
@@ -249,12 +256,15 @@ def _dense_rank_desc(values: np.ndarray) -> np.ndarray:
 # ─── Main driver ──────────────────────────────────────────────────────────────
 
 def compute_chi_star(el_db, p: RunParams) -> float:
-    """Compute χ* = N_u / (N_s + N_u) from the mode-specific units table."""
+    """Compute χ* = N_u / (N_s + N_u) from the mode-specific units table.
+    Sentinels (unit_idx==1) are excluded so χ* reflects real units only."""
     tau_sfx = '_fixtau' if p.ref_units else '_vartau'
+    eps_sfx = '_eps1' if p.epsilon else ''
     mstr  = ''.join(str(x) for x in p.m)
-    uname = f'_units_{p.run_code}_{p.fx}_tauU{p.tau_u}_tauS{p.tau_s}{tau_sfx}_m{mstr}'
+    uname = f'_units_{p.run_code}_{p.fx}_tauU{p.tau_u}_tauS{p.tau_s}{tau_sfx}_m{mstr}{eps_sfx}'
     rows = el_db.execute(
-        f"SELECT unit_type, COUNT(*) AS n FROM {uname} GROUP BY unit_type"
+        f"SELECT unit_type, COUNT(*) AS n FROM {uname} "
+        f"WHERE unit_idx != 1 GROUP BY unit_type"
     ).fetchall()
     counts = {r[0]: r[1] for r in rows}
     n_s = counts.get('S', 0)
@@ -268,9 +278,10 @@ def run_one(el_db, rk_db, p: RunParams, verbose: bool = True) -> bool:
     required edge list table is absent (soft skip).
     """
     tau_sfx     = '_fixtau' if p.ref_units else '_vartau'
+    eps_sfx     = '_eps1' if p.epsilon else ''
     mstr        = ''.join(str(x) for x in p.m)
-    el_tname    = f'el_{p.run_code}_{p.fx}_tauU{p.tau_u}_tauS{p.tau_s}{tau_sfx}'
-    units_tname = f'_units_{p.run_code}_{p.fx}_tauU{p.tau_u}_tauS{p.tau_s}{tau_sfx}_m{mstr}'
+    el_tname    = f'el_{p.run_code}_{p.fx}_tauU{p.tau_u}_tauS{p.tau_s}{tau_sfx}{eps_sfx}'
+    units_tname = f'_units_{p.run_code}_{p.fx}_tauU{p.tau_u}_tauS{p.tau_s}{tau_sfx}_m{mstr}{eps_sfx}'
     tname       = table_name(p)
 
     existing = {row[0] for row in el_db.execute("SHOW TABLES").fetchall()}
@@ -292,7 +303,7 @@ def run_one(el_db, rk_db, p: RunParams, verbose: bool = True) -> bool:
 
     t0 = datetime.now()
     data = build_csr(el_db, p.run_code, p.fx, p.tau_u, p.tau_s, p.rho, p.m, p.ref_units,
-                     direct_inst=p.direct_inst)
+                     direct_inst=p.direct_inst, epsilon=p.epsilon)
     t_csr = (datetime.now() - t0).total_seconds()
 
     mu = _make_mu(p.mu_type, data.n_s, data.n_u)

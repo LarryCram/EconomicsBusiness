@@ -49,6 +49,13 @@ def test_table_name_fixtau():
     assert table_name(p) == 'rk_00040004_EBAX_tauU20_tauS20_fixtau_rho0_m0110_chi50_alpha100'
 
 
+def test_table_name_eps1():
+    p = RunParams(run_code='20242024', fx='EBAX', tau_u=20, tau_s=20,
+                  rho=0, m=(0,1,1,0), chi=0.5, alpha=1.0, label='baseline-eps',
+                  epsilon=1)
+    assert table_name(p) == 'rk_20242024_EBAX_tauU20_tauS20_vartau_rho0_m0110_chi50_alpha100_eps1'
+
+
 # ─── _dense_rank_desc ─────────────────────────────────────────────────────────
 
 def test_dense_rank_desc_basic():
@@ -77,7 +84,7 @@ def test_dense_rank_desc_single():
 
 def test_runs_from_csv_total_count():
     runs = runs_from_csv()
-    assert len(runs) == 32
+    assert len(runs) == 33
 
 
 def test_runs_from_csv_time_series_labels():
@@ -105,6 +112,20 @@ def test_runs_from_csv_chi_star():
     chi_star = [p for p in runs if p.chi == -1.0]
     assert len(chi_star) == 1
     assert chi_star[0].label == 'full-joint-chi-star'
+
+
+def test_runs_from_csv_baseline_eps():
+    runs = runs_from_csv()
+    eps_runs = [p for p in runs if p.epsilon == 1]
+    assert len(eps_runs) == 1
+    assert eps_runs[0].label == 'baseline-eps'
+
+
+def test_runs_from_csv_epsilon_zero_for_others():
+    runs = runs_from_csv()
+    for p in runs:
+        if p.label != 'baseline-eps':
+            assert p.epsilon == 0, f'{p.label} has unexpected epsilon={p.epsilon}'
 
 
 def test_runs_from_csv_run_code_format():

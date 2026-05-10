@@ -1,10 +1,10 @@
 """
-fig_5.py — Phase 2 parameter sensitivity: τ, ρ, (α, μ), and ω.
+fig_5.py — Phase 2 parameter sensitivity: τ, ρ, (α, μ), ω, and ε.
 
 Baseline: all sources, τ_U=τ_S=20, ρ=0, m=0110, α=1, ω=0 (author-fractional).
 x-axis locked to baseline rank (same convention as fig_2/fig_3).
 
-Six overlays:
+Seven overlays:
   τ=40              : raise both τ_U and τ_S to 40; α=1, ρ=0.
                       Units dropped by the higher threshold are absent.
 
@@ -29,9 +29,15 @@ Six overlays:
   ω=1               : direct 1/N_inst institution weights instead of
                       author-fractional; τ=20, ρ=0, α=1.
 
+  ε=1               : sentinel nodes absorb cross-boundary references
+                      (corpus→outside and outside→corpus); sentinel rows
+                      (unit_idx=1) are excluded from the comparison.
+                      Loaded from pre-computed baseline-eps ranking.
+
 All computations use the bipartite m=0110 mode.
 χ is not material for the bipartite mode and is not varied here.
 α=0.85 cases are computed on-the-fly via bipartite(); not stored in rankings.duckdb.
+ε=1 is loaded from rankings.duckdb (pre-computed baseline-eps run).
 
 Outputs:
   plots/fig_5.pdf        — all overlays combined, with title (exploration)
@@ -41,10 +47,14 @@ Outputs:
   plots/fig_5c.pdf/latex — census window sensitivity
   plots/fig_5d.pdf/latex — α=0.85 Katz–Hubbell sensitivity
   plots/fig_5e.pdf/latex — ω=1 institution weighting sensitivity
+  plots/fig_5f.pdf/latex — ε=1 sentinel-boundary sensitivity
 """
 
 import sys
 from pathlib import Path
+
+import matplotlib
+matplotlib.use('Agg')  # non-interactive backend: saves to file, never blocks on show()
 
 import duckdb
 import numpy as np
@@ -71,8 +81,6 @@ def _pub_theme():
 
 
 def _save(fig, sup, stem: str, paths) -> None:
-    was_interactive = plt.isinteractive()
-    plt.ioff()
     out = paths.plots / f'{stem}.pdf'
     fig.savefig(out, bbox_inches='tight')
     print(f'Saved {out}')
@@ -81,8 +89,6 @@ def _save(fig, sup, stem: str, paths) -> None:
     print(f'Saved {paths.plots / f"{stem}_latex.pdf"}')
     sup.set_visible(True)
     plt.close(fig)
-    if was_interactive:
-        plt.ion()
 
 sys.path.insert(0, str(Path(__file__).parent.parent))
 from util import load_config, load_runs
@@ -95,6 +101,7 @@ _tau_u         = _baseline['tau_u']
 _tau_s         = _baseline['tau_s']
 
 BASELINE_TABLE = f"rk_{_run_code}_{_baseline['fx']}_tauU{_tau_u}_tauS{_tau_s}_vartau_rho0_m0110_chi50_alpha100"
+EPS_TABLE      = BASELINE_TABLE + '_eps1'
 
 # Visual style per overlay label (ordered: baseline drawn first)
 STYLE = {
@@ -106,6 +113,7 @@ STYLE = {
     'H_SS/II, no self': dict(color='#4daf4a', marker='o', lw=0.0, alpha_vis=0.55, zorder=3, s=12),
     'no self-ref':     dict(color='#e41a1c', marker='o', lw=0.0, alpha_vis=0.65, zorder=6, s=12),
     'ω=1':             dict(color='#ff7f00', marker='o',  lw=0.0, alpha_vis=0.50, zorder=3, s=12),
+    'ε=1':             dict(color='#984ea3', marker='o',  lw=0.0, alpha_vis=0.55, zorder=4, s=12),
 }
 
 
@@ -190,7 +198,7 @@ def _compute_bipartite_v(
               f'iters_s={iters_s}  norm_s={norm_s:.2e}  '
               f'iters_u={iters_u}  norm_u={norm_u:.2e}')
     else:
-        pi_s, pi_u, _lam1, _lam2, iters, norm = bipartite(H_SI, H_IS, alpha=alpha, mu=mu)
+        pi_s, pi_u, _, _, iters, norm = bipartite(H_SI, H_IS, alpha=alpha, mu=mu)
         print(f'    n_s={csr.n_s:,}  n_u={csr.n_u:,}  iters={iters}  norm={norm:.2e}')
 
     # Joint-normalise matching rank() convention
@@ -248,6 +256,25 @@ def _compute_diag_single_v(
 
     print(f'    SS: n_s={csr_ss.n_s:,}  iters={iters_s}  norm={norm_s:.2e}')
     print(f'    II: n_u={csr_ii.n_u:,}  iters={iters_u}  norm={norm_u:.2e}')
+    return df_s, df_u
+
+
+def _load_stored_variant(rk_db, table: str) -> tuple:
+    """
+    Load v from a pre-computed ranking table, excluding sentinel rows (unit_idx=1).
+
+    Returns (df_s, df_u) with columns [unit_idx, v], or (None, None) if absent.
+    """
+    tables = {r[0] for r in rk_db.execute('SHOW TABLES').fetchall()}
+    if table not in tables:
+        print(f'  WARNING: {table} not found — skipping')
+        return None, None
+    df = rk_db.execute(
+        f"SELECT unit_idx, unit_type, v FROM {table} WHERE unit_idx != 1"
+    ).df()
+    df = df.dropna(subset=['v'])
+    df_s = df[df['unit_type'] == 'S'][['unit_idx', 'v']].copy()
+    df_u = df[df['unit_type'] == 'U'][['unit_idx', 'v']].copy()
     return df_s, df_u
 
 
@@ -349,6 +376,15 @@ def fetch_data(rk_db, el_db) -> tuple:
             'I': project(df_u, inst_rank_map),
         }
 
+    # ── ε=1: sentinel nodes for cross-boundary references ─────────────────────
+    print('  ε=1 (sentinel boundary) ...')
+    df_s, df_u = _load_stored_variant(rk_db, EPS_TABLE)
+    if df_s is not None:
+        series['ε=1'] = {
+            'S': project(df_s, src_rank_map),
+            'I': project(df_u, inst_rank_map),
+        }
+
     return src_rank_map, inst_rank_map, series
 
 
@@ -407,7 +443,7 @@ def plot5(src_rank_map: dict, inst_rank_map: dict, series: dict) -> None:
     paths = load_config()
     _pub_theme()
 
-    _SHOW = ['baseline', 'τ=40', 'ρ=1', 'census=1yr', 'ω=1']
+    _SHOW = ['baseline', 'τ=40', 'ρ=1', 'census=1yr', 'ω=1', 'ε=1']
     sub = {k: series[k] for k in _SHOW if k in series}
 
     fig, axes = plt.subplots(1, 2, figsize=(12, 5), sharey=True)
@@ -436,8 +472,7 @@ def plot5(src_rank_map: dict, inst_rank_map: dict, series: dict) -> None:
 
 # ─── Stability report ────────────────────────────────────────────────────────
 
-def report_stability(src_rank_map: dict, inst_rank_map: dict,
-                     series: dict) -> None:
+def report_stability(series: dict) -> None:
     """
     For each non-baseline variant and each unit type report:
       n        — units common to baseline and variant
@@ -594,6 +629,13 @@ def plot5e(src_rank_map, inst_rank_map, series):
                   title='Parameter sensitivity: institution weighting ω=1 (direct 1/N_inst)  (x-axis locked to baseline)')
 
 
+def plot5f(src_rank_map, inst_rank_map, series):
+    _plot5_single(src_rank_map, inst_rank_map, series,
+                  keys=['ε=1'],
+                  stem='fig_5f',
+                  title='Parameter sensitivity: sentinel boundary ε=1  (x-axis locked to baseline)')
+
+
 # ─── Main ─────────────────────────────────────────────────────────────────────
 
 def main():
@@ -618,12 +660,13 @@ def main():
         src_rank_map, inst_rank_map, series = fetch_data(rk_db, el_db)
 
     plot5(src_rank_map, inst_rank_map, series)
-    report_stability(src_rank_map, inst_rank_map, series)
+    report_stability(series)
     plot5a(src_rank_map, inst_rank_map, series)
     plot5b(src_rank_map, inst_rank_map, series)
     plot5c(src_rank_map, inst_rank_map, series)
     plot5d(src_rank_map, inst_rank_map, series)
     plot5e(src_rank_map, inst_rank_map, series)
+    plot5f(src_rank_map, inst_rank_map, series)
 
 
 if __name__ == '__main__':

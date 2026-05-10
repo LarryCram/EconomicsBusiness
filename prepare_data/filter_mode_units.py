@@ -59,21 +59,24 @@ def _tau_sfx(ref_units: str) -> str:
 
 
 def _el_name(run_code: str, fx: str, tau_u: int, tau_s: int,
-             ref_units: str = '') -> str:
-    return f'el_{run_code}_{fx}_tauU{tau_u}_tauS{tau_s}{_tau_sfx(ref_units)}'
+             ref_units: str = '', epsilon: int = 0) -> str:
+    eps_sfx = '_eps1' if epsilon else ''
+    return f'el_{run_code}_{fx}_tauU{tau_u}_tauS{tau_s}{_tau_sfx(ref_units)}{eps_sfx}'
 
 
 def raw_units_table(run_code: str, fx: str, tau_u: int, tau_s: int,
-                    ref_units: str = '') -> str:
+                    ref_units: str = '', epsilon: int = 0) -> str:
     """Name of the C_full SCC-filtered units table from build_edge_lists.py."""
-    return f'_units_{run_code}_{fx}_tauU{tau_u}_tauS{tau_s}{_tau_sfx(ref_units)}'
+    eps_sfx = '_eps1' if epsilon else ''
+    return f'_units_{run_code}_{fx}_tauU{tau_u}_tauS{tau_s}{_tau_sfx(ref_units)}{eps_sfx}'
 
 
 def mode_units_table(run_code: str, fx: str, tau_u: int, tau_s: int,
-                     m: tuple, ref_units: str = '') -> str:
+                     m: tuple, ref_units: str = '', epsilon: int = 0) -> str:
     """Name of the mode-specific SCC units table written by this script."""
+    eps_sfx = '_eps1' if epsilon else ''
     return (f'_units_{run_code}_{fx}_tauU{tau_u}_tauS{tau_s}'
-            f'{_tau_sfx(ref_units)}_m{mode_str(m)}')
+            f'{_tau_sfx(ref_units)}_m{mode_str(m)}{eps_sfx}')
 
 
 # ─── Block builder ────────────────────────────────────────────────────────────
@@ -100,7 +103,7 @@ def _build_connectivity_block(db, sql: str,
 # ─── Core SCC computation ─────────────────────────────────────────────────────
 
 def compute_mode_scc(db, run_code: str, fx: str, tau_u: int, tau_s: int,
-                     m: tuple, ref_units: str = '') -> tuple:
+                     m: tuple, ref_units: str = '', epsilon: int = 0) -> tuple:
     """
     Iteratively find the giant SCC of the mode-specific graph starting from
     the C_full SCC unit set already stored in the raw _units_ table.
@@ -123,8 +126,8 @@ def compute_mode_scc(db, run_code: str, fx: str, tau_u: int, tau_s: int,
     n_dropped_u  : total institutions dropped.
     """
     m_SS, m_SI, m_IS, m_II = m
-    tname = _el_name(run_code, fx, tau_u, tau_s, ref_units)
-    uname = raw_units_table(run_code, fx, tau_u, tau_s, ref_units)
+    tname = _el_name(run_code, fx, tau_u, tau_s, ref_units, epsilon)
+    uname = raw_units_table(run_code, fx, tau_u, tau_s, ref_units, epsilon)
 
     # Load initial unit set from the C_full SCC table
     units = db.execute(
@@ -210,6 +213,10 @@ def compute_mode_scc(db, run_code: str, fx: str, tau_u: int, tau_s: int,
                 drop_src  = np.array([], dtype=np.int64)
                 drop_inst = inst_ids[labels != giant]
 
+        # Sentinels (idx==1) are never dropped regardless of SCC membership.
+        drop_src  = drop_src[drop_src != 1]
+        drop_inst = drop_inst[drop_inst != 1]
+
         if len(drop_src) == 0 and len(drop_inst) == 0:
             print(f'      stable after {iteration} pass(es)', flush=True)
             break
@@ -234,12 +241,12 @@ def compute_mode_scc(db, run_code: str, fx: str, tau_u: int, tau_s: int,
 def write_mode_units(db, run_code: str, fx: str, tau_u: int, tau_s: int,
                      m: tuple, src_ids: np.ndarray, inst_ids: np.ndarray,
                      a_s: np.ndarray, a_u: np.ndarray,
-                     ref_units: str = '') -> None:
+                     ref_units: str = '', epsilon: int = 0) -> None:
     """
     Write surviving units to _units_..._m{mstr} table in edge_lists.duckdb.
     Overwrites any existing table of the same name.
     """
-    tname = mode_units_table(run_code, fx, tau_u, tau_s, m, ref_units)
+    tname = mode_units_table(run_code, fx, tau_u, tau_s, m, ref_units, epsilon)
 
     rows = (
         [{'unit_idx': int(idx), 'unit_type': 'S', 'a_p': float(ap)}
@@ -263,13 +270,13 @@ def write_mode_units(db, run_code: str, fx: str, tau_u: int, tau_s: int,
 
 def process_corpus(db, run_code: str, fx: str, tau_u: int, tau_s: int,
                    modes: list, dry_run: bool = False,
-                   ref_units: str = '') -> None:
+                   ref_units: str = '', epsilon: int = 0) -> None:
     """
     Compute and write mode-specific unit tables for all modes in `modes`
-    for one corpus (run_code, fx, tau_u, tau_s, ref_units).
+    for one corpus (run_code, fx, tau_u, tau_s, ref_units, epsilon).
     """
-    uname  = raw_units_table(run_code, fx, tau_u, tau_s, ref_units)
-    tname  = _el_name(run_code, fx, tau_u, tau_s, ref_units)
+    uname  = raw_units_table(run_code, fx, tau_u, tau_s, ref_units, epsilon)
+    tname  = _el_name(run_code, fx, tau_u, tau_s, ref_units, epsilon)
     tables = {r[0] for r in db.execute('SHOW TABLES').fetchall()}
 
     if tname not in tables:
@@ -284,11 +291,11 @@ def process_corpus(db, run_code: str, fx: str, tau_u: int, tau_s: int,
 
     for m in modes:
         mstr   = mode_str(m)
-        out_tn = mode_units_table(run_code, fx, tau_u, tau_s, m, ref_units)
+        out_tn = mode_units_table(run_code, fx, tau_u, tau_s, m, ref_units, epsilon)
         print(f'  {out_tn} ...', end='  ', flush=True)
 
         src_ids, inst_ids, a_s, a_u, n_ds, n_du = compute_mode_scc(
-            db, run_code, fx, tau_u, tau_s, m, ref_units
+            db, run_code, fx, tau_u, tau_s, m, ref_units, epsilon
         )
         n_out = len(src_ids) + len(inst_ids)
         print(f'n_s={len(src_ids):,}  n_u={len(inst_ids):,}  '
@@ -297,7 +304,7 @@ def process_corpus(db, run_code: str, fx: str, tau_u: int, tau_s: int,
 
         if not dry_run:
             write_mode_units(db, run_code, fx, tau_u, tau_s, m,
-                             src_ids, inst_ids, a_s, a_u, ref_units)
+                             src_ids, inst_ids, a_s, a_u, ref_units, epsilon)
 
 
 # ─── Stale-table cleanup ──────────────────────────────────────────────────────
@@ -309,7 +316,7 @@ def clean_stale_mode_units(db, expected_tables: set) -> None:
     build_edge_lists.py).
     """
     import re
-    pattern = re.compile(r'^_units_.*_m[01]{4}$')
+    pattern = re.compile(r'^_units_.*_m[01]{4}(_eps1)?$')
     all_tables = {r[0] for r in db.execute('SHOW TABLES').fetchall()}
     stale = [t for t in all_tables
              if pattern.match(t) and t not in expected_tables]
@@ -332,12 +339,13 @@ def main():
 
     rows = load_runs()
 
-    # Collect unique (run_code, fx, tau_u, tau_s, ref_units) → set of modes
+    # Collect unique (run_code, fx, tau_u, tau_s, ref_units, epsilon) → set of modes
     corpus_modes: dict = {}
     for r in rows:
-        m = tuple(int(c) for c in r['m'])
+        m       = tuple(int(c) for c in r['m'])
         ref_units = r.get('ref_units', '')
-        key = (r['run_code'], r['fx'], r['tau_u'], r['tau_s'], ref_units)
+        epsilon   = int(r.get('epsilon', 0))
+        key = (r['run_code'], r['fx'], r['tau_u'], r['tau_s'], ref_units, epsilon)
         corpus_modes.setdefault(key, set()).add(m)
 
     if not DB_PATH.exists():
@@ -347,9 +355,10 @@ def main():
         )
 
     expected_tables: set = set()
-    for (run_code, fx, tau_u, tau_s, ref_units), modes in corpus_modes.items():
+    for (run_code, fx, tau_u, tau_s, ref_units, epsilon), modes in corpus_modes.items():
         for m in modes:
-            expected_tables.add(mode_units_table(run_code, fx, tau_u, tau_s, m, ref_units))
+            expected_tables.add(
+                mode_units_table(run_code, fx, tau_u, tau_s, m, ref_units, epsilon))
 
     with duckdb.connect(str(DB_PATH), read_only=args.dry_run) as db:
         print('=== Cleaning stale mode-units tables ===')
@@ -359,12 +368,13 @@ def main():
             print('  (dry-run — skipping cleanup)')
 
         print('=== Building mode-specific unit tables ===')
-        for (run_code, fx, tau_u, tau_s, ref_units), modes in sorted(corpus_modes.items()):
+        for (run_code, fx, tau_u, tau_s, ref_units, epsilon), modes in sorted(corpus_modes.items()):
             print(f'\n  corpus: run_code={run_code}  fx={fx}  '
-                  f'tau_u={tau_u}  tau_s={tau_s}  ref_units={ref_units!r}', flush=True)
+                  f'tau_u={tau_u}  tau_s={tau_s}  ref_units={ref_units!r}  '
+                  f'epsilon={epsilon}', flush=True)
             process_corpus(db, run_code, fx, tau_u, tau_s,
                            sorted(modes), dry_run=args.dry_run,
-                           ref_units=ref_units)
+                           ref_units=ref_units, epsilon=epsilon)
 
     print('\nDone.')
 

@@ -72,11 +72,18 @@ def _make_db(run_code='20242024', fx='EBAX', tau_u=20, tau_s=20):
         (1, 'U', 1.0),
         (2, 'U', 1.0)
     """
-    # Base units table plus all mode-specific variants needed by build_csr
-    for suffix in ['', '_m0001', '_m0110', '_m1000', '_m1111']:
+    # Base units table plus all mode-specific variants (with and without _eps1)
+    for suffix in ['', '_m0001', '_m0110', '_m1000', '_m1111',
+                   '_eps1', '_m0001_eps1', '_m0110_eps1', '_m1000_eps1', '_m1111_eps1']:
         name = uname + suffix
         db.execute(units_ddl.format(name=name))
         db.execute(units_rows.format(name=name))
+
+    # epsilon=1 edge list (same data, different table name)
+    tname_eps = tname + '_eps1'
+    db.execute(f"""
+        CREATE TABLE {tname_eps} AS SELECT * FROM {tname}
+    """)
 
     return db
 
@@ -165,3 +172,36 @@ def test_source_and_inst_ids():
     assert set(data.inst_ids)   == {1, 2}
     assert len(data.a_s) == 2
     assert len(data.a_u) == 2
+
+
+# ─── Sentinel masks (epsilon=1) ───────────────────────────────────────────────
+
+def test_epsilon0_no_sentinel_masks():
+    db = _make_db()
+    data = build_csr(db, '20242024', 'EBAX', 20, 20, rho=0, m=(0,1,1,0), epsilon=0)
+    assert data.is_sentinel_s is None
+    assert data.is_sentinel_u is None
+
+
+def test_epsilon1_sentinel_masks_present():
+    db = _make_db()
+    data = build_csr(db, '20242024', 'EBAX', 20, 20, rho=0, m=(0,1,1,0), epsilon=1)
+    assert data.is_sentinel_s is not None
+    assert data.is_sentinel_u is not None
+    assert data.is_sentinel_s.dtype == bool
+    assert data.is_sentinel_u.dtype == bool
+
+
+def test_epsilon1_sentinel_position():
+    db = _make_db()
+    data = build_csr(db, '20242024', 'EBAX', 20, 20, rho=0, m=(0,1,1,0), epsilon=1)
+    # source_ids and inst_ids both contain idx=1; those positions must be True
+    s_pos = np.where(data.source_ids == 1)[0]
+    u_pos = np.where(data.inst_ids   == 1)[0]
+    assert len(s_pos) == 1 and data.is_sentinel_s[s_pos[0]]
+    assert len(u_pos) == 1 and data.is_sentinel_u[u_pos[0]]
+    # idx=2 must be False
+    s2_pos = np.where(data.source_ids == 2)[0]
+    u2_pos = np.where(data.inst_ids   == 2)[0]
+    assert not data.is_sentinel_s[s2_pos[0]]
+    assert not data.is_sentinel_u[u2_pos[0]]

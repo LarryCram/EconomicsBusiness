@@ -1,23 +1,23 @@
 # Fdb version 4
-["bibtex main"] 1778311763.38311 "main.aux" "main.bbl" "main" 1778311764.72653 0
-  "./MyLibrary.bib" 1778311760.33489 8675086 26a73b917e95580735486d42c90f7deb ""
+["bibtex main"] 1778311763.38311 "main.aux" "main.bbl" "main" 1778407100.38178 0
+  "./MyLibrary.bib" 1778399456.07095 8675086 26a73b917e95580735486d42c90f7deb ""
   "./sciomtcs.bib" 1758004733 38814 e32becf37c07e9c5a5ecec51c1c262af ""
   "./spbasic.bst" 1757517455 33250 b27924137faccbc3d13ebae5a7538c63 ""
-  "main.aux" 1778311764.35798 17140 752f5ca5b5390d6087b39df029b707e6 "pdflatex"
+  "main.aux" 1778407100.01403 17140 752f5ca5b5390d6087b39df029b707e6 "pdflatex"
   (generated)
   "main.bbl"
   "main.blg"
   (rewritten before read)
-["pdflatex"] 1778311763.61938 "/home/lc/Projects/EconomicsBusiness/spectral_ranking_latex/main.tex" "main.pdf" "main" 1778311764.72674 0
+["pdflatex"] 1778407099.26313 "/home/lc/Projects/EconomicsBusiness/spectral_ranking_latex/main.tex" "main.pdf" "main" 1778407100.38198 0
   "../plots/fig_1_latex.pdf" 1776984821.84841 19077 cc12117919fbf0a6ea9b334b8ce292d3 ""
-  "../plots/fig_2c_latex.pdf" 1778154180.06956 126320 e836f07b4037d84c24d4db42a8cdc297 ""
-  "../plots/fig_3by_latex.pdf" 1778154184.07584 71699 eaf78c493171e002b2dc8c782b97462f ""
-  "../plots/fig_3bz_latex.pdf" 1778154184.41805 59236 65d46d80fc836b4c0f03e32b6679c541 ""
-  "../plots/fig_5_latex.pdf" 1778154198.52207 111140 9e2ab2f46635011b011ee20788bd21c2 ""
-  "../plots/fig_5d_latex.pdf" 1778154200.0597 100638 072d4e30982c13661ef37a6cb5a6251f ""
-  "../plots/fig_6_latex.pdf" 1778154203.16986 174145 75f2a06a12611d12df587b05b4613323 ""
+  "../plots/fig_2c_latex.pdf" 1778400593.85963 126349 41725856f392b1bf0e0974a4b7e03af5 ""
+  "../plots/fig_3by_latex.pdf" 1778400597.94624 71704 9d0da356ea91e66e3b1c7e46cf6e5d8f ""
+  "../plots/fig_3bz_latex.pdf" 1778400598.29625 59230 7de73987fefb7d48b337ec870d1e0cb7 ""
+  "../plots/fig_5_latex.pdf" 1778407097.60844 135438 ac5c8538d5a8945f64c105e91fbc6f84 ""
+  "../plots/fig_5d_latex.pdf" 1778407099.09041 100636 4d42cbea830090e5228c1c54bcf2b8f1 ""
+  "../plots/fig_6_latex.pdf" 1778400616.83238 174152 ec03274012f13e3500864a2ef44d6772 ""
   "../plots/fig_7a_oa_errors_latex.pdf" 1778154208.13547 185086 c09c0ff533f3614d98d33293e5ee6e01 ""
-  "../plots/fig_stability_scatter_latex.pdf" 1778154227.89049 38064 ff0a3dc8b0f42c7c023cfc68ba71d903 ""
+  "../plots/fig_stability_scatter_latex.pdf" 1778400623.85632 38064 ff879c3b9ac9f35542ed7915cf53f402 ""
   "../tables/table1_registry_overview.tex" 1776846128.97012 989 fb5f2f2633d15c7f158520746e068db9 ""
   "../tables/table_kernel_structure.tex" 1777259261.99228 725 554f8722af1d04e79449f34fa569acb7 ""
   "/etc/texmf/web2c/texmf.cnf" 1768766222.50773 475 c0e671620eb5563b2130f56340a5fde8 ""
@@ -224,9 +224,9 @@
   "/usr/share/texmf/web2c/texmf.cnf" 1741904018 41538 c016915c1d51223b6dbbfe27341748a8 ""
   "/var/lib/texmf/fonts/map/pdftex/updmap/pdftex.map" 1768766240 5467255 9a64d1b40e0b893fc5588ecce9d8accf ""
   "/var/lib/texmf/web2c/pdftex/pdflatex.fmt" 1768766286 3347051 b210dd19afa7cdfe2454020fc7cff434 ""
-  "main.aux" 1778311764.35798 17140 752f5ca5b5390d6087b39df029b707e6 "pdflatex"
+  "main.aux" 1778407100.01403 17140 752f5ca5b5390d6087b39df029b707e6 "pdflatex"
   "main.bbl" 1778311763.61296 11876 539e771b248695965c3ef46256b1f5cd "bibtex main"
-  "main.out" 1778311764.35898 768 d1e4a05a9238f56c7c0886a34490d5cc "pdflatex"
+  "main.out" 1778407100.01503 768 d1e4a05a9238f56c7c0886a34490d5cc "pdflatex"
   "main.tex" 1778144631.79121 2050 27138256c7ad8b5108cd895a526ed4c1 ""
   "sections/01_introduction.tex" 1778144631.79131 6788 5949c1883e1c845c7b0103296b3a20b2 ""
   "sections/02_model_specification.tex" 1778144631.79143 16601 5ab8ab2e614e25d01a384005c7ea25b3 ""

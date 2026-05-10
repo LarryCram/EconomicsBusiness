@@ -34,11 +34,17 @@ def test_table_name_fixed_universe():
             == 'el_00040004_EBAX_tauU20_tauS20_fixtau')
 
 
+def test_table_name_epsilon():
+    assert (table_name('20242024', 'EBAX', 20, 20, epsilon=1)
+            == 'el_20242024_EBAX_tauU20_tauS20_vartau_eps1')
+
+
 # ─── corpus_configs_from_csv ──────────────────────────────────────────────────
 
 def test_configs_are_unique():
     configs = corpus_configs_from_csv()
-    keys = [(c['run_code'], c['fx'], c['tau_u'], c['tau_s'], c.get('ref_units', ''))
+    keys = [(c['run_code'], c['fx'], c['tau_u'], c['tau_s'],
+             c.get('ref_units', ''), c.get('epsilon', 0))
             for c in configs]
     assert len(keys) == len(set(keys)), "Duplicate corpus configs found"
 
@@ -94,30 +100,34 @@ def test_vartau_configs_have_empty_ref_units():
 def test_expected_configs_present():
     """All corpus configs needed for the paper must be present."""
     configs = corpus_configs_from_csv()
-    # key includes ref_units to distinguish vartau from fixtau
-    keys = {(c['run_code'], c['fx'], c['tau_u'], c['tau_s'], c.get('ref_units', ''))
+    # key includes ref_units and epsilon to distinguish all variants
+    keys = {(c['run_code'], c['fx'], c['tau_u'], c['tau_s'],
+             c.get('ref_units', ''), c.get('epsilon', 0))
             for c in configs}
 
-    # Baseline window: all field subsets at tau=20 (vartau)
+    # Baseline window: all field subsets at tau=20 (vartau, epsilon=0)
     for fx in ['EBAX', 'E', 'B', 'EBA', 'X', 'A']:
-        assert ('20242024', fx, 20, 20, '') in keys, f"Missing (20242024, {fx}, 20, 20, vartau)"
+        assert ('20242024', fx, 20, 20, '', 0) in keys, f"Missing (20242024, {fx}, 20, 20, vartau)"
 
     # tau sensitivity
-    assert ('20242024', 'EBAX', 40, 40, '') in keys, "Missing tau40 config"
+    assert ('20242024', 'EBAX', 40, 40, '', 0) in keys, "Missing tau40 config"
 
     # Time series (EBAX only, vartau)
     for rc in ['00040004', '05090509', '10141014', '15191519']:
-        assert (rc, 'EBAX', 20, 20, '') in keys, f"Missing time series vartau config {rc}"
+        assert (rc, 'EBAX', 20, 20, '', 0) in keys, f"Missing time series vartau config {rc}"
 
     # Fixed-universe time series (fixtau)
     ref = '20242024_EBAX_tauU20_tauS20'
     for rc in ['00040004', '05090509', '10141014', '15191519']:
-        assert (rc, 'EBAX', 20, 20, ref) in keys, f"Missing fixtau config {rc}"
+        assert (rc, 'EBAX', 20, 20, ref, 0) in keys, f"Missing fixtau config {rc}"
+
+    # Epsilon=1 baseline
+    assert ('20242024', 'EBAX', 20, 20, '', 1) in keys, "Missing baseline-eps config (epsilon=1)"
 
 
 def test_configs_have_required_keys():
     configs = corpus_configs_from_csv()
-    required = {'run_code', 'tc0', 'tc1', 'tt0', 'tt1', 'fx', 'tau_u', 'tau_s', 'ref_units'}
+    required = {'run_code', 'tc0', 'tc1', 'tt0', 'tt1', 'fx', 'tau_u', 'tau_s', 'ref_units', 'epsilon'}
     for c in configs:
         assert required <= c.keys(), f"Config missing keys: {required - c.keys()}"
 

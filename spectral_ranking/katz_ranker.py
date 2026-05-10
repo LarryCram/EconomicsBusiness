@@ -482,12 +482,35 @@ def rank(csr_data, m: tuple, chi: float, alpha: float,
     -------
     RankResult with pi_s, pi_u, v_s, v_u, lam1, lam2, iters, final_norm.
     """
+    # Sentinel masks (None for ε=0 runs; bool arrays for ε=1 runs).
+    is_s = csr_data.is_sentinel_s
+    is_u = csr_data.is_sentinel_u
+
+    def _A_real_s():
+        return csr_data.a_s[~is_s].sum() if (is_s is not None and is_s.any()) else csr_data.a_s.sum()
+
+    def _A_real_u():
+        return csr_data.a_u[~is_u].sum() if (is_u is not None and is_u.any()) else csr_data.a_u.sum()
+
+    def _mask_nan(v, mask):
+        if mask is not None and mask.any():
+            v = v.astype(float, copy=True)
+            v[mask] = np.nan
+        return v
+
+    def _pi_real(pi, mask):
+        # Sum of π over real units only.  For ε=0 (mask=None) this is 1.0 and
+        # cancels; for ε=1 it renormalises v so the a-weighted mean over real
+        # units equals 1, matching the baseline scale.
+        return pi[~mask].sum() if (mask is not None and mask.any()) else pi.sum()
+
     if m == (1, 0, 0, 0):
         # Source-only: power iteration on (N_s × N_s) H_SS
         H, _ = _row_normalise(csr_data.C_SS)
         pi, lam1, lam2, iters, norm = power_iteration(H, alpha)
-        A = csr_data.a_s.sum()
-        v_s = A * pi / csr_data.a_s
+        A       = _A_real_s()
+        pi_real = _pi_real(pi, is_s)
+        v_s = _mask_nan(A * pi / (pi_real * csr_data.a_s), is_s)
         return RankResult(pi_s=pi, pi_u=None, v_s=v_s, v_u=None,
                           lam1=lam1, lam2=lam2, iters=iters, final_norm=norm)
 
@@ -495,8 +518,9 @@ def rank(csr_data, m: tuple, chi: float, alpha: float,
         # Institution-only: power iteration on (N_u × N_u) H_II
         H, _ = _row_normalise(csr_data.C_II)
         pi, lam1, lam2, iters, norm = power_iteration(H, alpha)
-        A = csr_data.a_u.sum()
-        v_u = A * pi / csr_data.a_u
+        A       = _A_real_u()
+        pi_real = _pi_real(pi, is_u)
+        v_u = _mask_nan(A * pi / (pi_real * csr_data.a_u), is_u)
         return RankResult(pi_s=None, pi_u=pi, v_s=None, v_u=v_u,
                           lam1=lam1, lam2=lam2, iters=iters, final_norm=norm)
 
@@ -508,10 +532,10 @@ def rank(csr_data, m: tuple, chi: float, alpha: float,
         # Joint-normalise (each individually sums to 1; divide by 2 to sum jointly to 1)
         pi_s = pi_s_ind / 2.0
         pi_u = pi_u_ind / 2.0
-        # A = total fractional works; v=1 means average influence across both sides
-        A = csr_data.a_s.sum() + csr_data.a_u.sum()
-        v_s = A * pi_s / csr_data.a_s
-        v_u = A * pi_u / csr_data.a_u
+        A       = _A_real_s() + _A_real_u()
+        pi_real = _pi_real(pi_s, is_s) + _pi_real(pi_u, is_u)
+        v_s = _mask_nan(A * pi_s / (pi_real * csr_data.a_s), is_s)
+        v_u = _mask_nan(A * pi_u / (pi_real * csr_data.a_u), is_u)
         return RankResult(pi_s=pi_s, pi_u=pi_u, v_s=v_s, v_u=v_u,
                           lam1=lam1, lam2=lam2, iters=iters, final_norm=norm)
 
@@ -526,9 +550,10 @@ def rank(csr_data, m: tuple, chi: float, alpha: float,
         pi, lam1, lam2, iters, norm = power_iteration(H, alpha)
         pi_s = pi[:csr_data.n_s]
         pi_u = pi[csr_data.n_s:]
-        A = csr_data.a_s.sum() + csr_data.a_u.sum()
-        v_s = A * pi_s / csr_data.a_s
-        v_u = A * pi_u / csr_data.a_u
+        A       = _A_real_s() + _A_real_u()
+        pi_real = _pi_real(pi_s, is_s) + _pi_real(pi_u, is_u)
+        v_s = _mask_nan(A * pi_s / (pi_real * csr_data.a_s), is_s)
+        v_u = _mask_nan(A * pi_u / (pi_real * csr_data.a_u), is_u)
         return RankResult(pi_s=pi_s, pi_u=pi_u, v_s=v_s, v_u=v_u,
                           lam1=lam1, lam2=lam2, iters=iters, final_norm=norm)
 

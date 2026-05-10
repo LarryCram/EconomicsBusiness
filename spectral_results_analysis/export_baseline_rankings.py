@@ -4,9 +4,11 @@ export_baseline_rankings.py — one wide table with v and rank for all field fil
 Output: data/rankings_all_fields.csv
     unit_idx, unit_type, name, issn, field_eb, country_code, a_p
     v_EBAX, rank_EBAX, v_E, rank_E, v_B, rank_B, v_A, rank_A, v_X, rank_X
+    v_eps1, rank_eps1
 
 Units absent from a field-filtered run have NaN for that run's v/rank columns.
 a_p is taken from the baseline (F=EBAX) run.
+v_eps1 / rank_eps1 are from the baseline-eps (ε=1) run; sentinel row (unit_idx=1) excluded.
 """
 
 import sys
@@ -75,6 +77,30 @@ for label, suffix in RUNS:
         'rank_v': f'rank_{suffix}',
     }).drop(columns=['a_p'])
 
+# ── ε=1 run (baseline-eps) ────────────────────────────────────────────────────
+
+eps_df = None
+if 'baseline-eps' in all_runs:
+    r = all_runs['baseline-eps']
+    chi_str   = 'STAR' if r['chi'] == -1.0 else str(round(r['chi'] * 100))
+    alpha_int = round(r['alpha'] * 100)
+    eps_table = (
+        f"rk_{r['run_code']}_{r['fx']}"
+        f"_tauU{r['tau_u']}_tauS{r['tau_s']}_vartau"
+        f"_rho{r['rho']}_m{r['m']}_chi{chi_str}_alpha{alpha_int}_eps1"
+    )
+    try:
+        eps_df = db.execute(
+            f'SELECT unit_idx, unit_type, v, rank_v '
+            f'FROM {eps_table} WHERE unit_idx != 1'
+        ).fetchdf()
+        eps_df = eps_df.rename(columns={'v': 'v_eps1', 'rank_v': 'rank_eps1'})
+        print(f'[baseline-eps]  {eps_table}  ({len(eps_df):,} rows)')
+    except Exception as e:
+        print(f'[baseline-eps] table {eps_table} not found — skipped ({e})')
+else:
+    print('[baseline-eps] not in params.csv — skipped')
+
 db.close()
 
 if not run_dfs:
@@ -94,6 +120,9 @@ if a_p_base is not None:
     merged = merged.merge(a_p_base, on=['unit_idx', 'unit_type'], how='left')
 else:
     merged['a_p'] = pd.NA
+
+if eps_df is not None:
+    merged = merged.merge(eps_df, on=['unit_idx', 'unit_type'], how='left')
 
 # ── Attach names ──────────────────────────────────────────────────────────────
 
@@ -123,6 +152,8 @@ v_rank_cols = []
 for _, suffix in RUNS:
     if suffix in run_dfs:
         v_rank_cols += [f'v_{suffix}', f'rank_{suffix}']
+if eps_df is not None:
+    v_rank_cols += ['v_eps1', 'rank_eps1']
 
 out = out[['unit_idx', 'unit_type', 'name', 'issn', 'field_eb', 'country_code', 'a_p']
           + v_rank_cols]

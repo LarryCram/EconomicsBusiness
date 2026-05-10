@@ -28,8 +28,8 @@ echo "=== Fig 5 ==="
 echo "=== Fig 6 ==="
 "$PYTHON" spectral_results_analysis/fig_6.py
 
-echo "=== Fig 7: bootstrap stability ==="
-"$PYTHON" spectral_results_analysis/fig_7.py
+# echo "=== Fig 7: bootstrap stability ==="
+# "$PYTHON" spectral_results_analysis/fig_7.py
 
 echo "=== Fig 8 ==="
 "$PYTHON" spectral_results_analysis/fig_8.py
