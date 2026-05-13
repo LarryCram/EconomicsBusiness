@@ -1,0 +1,1598 @@
+Loading source and institution v scores from rankings.duckdb…
+Loading source master…
+Computing HCW flags  (joins 17M-row corpus_references parquet)…
+Aggregating by source and fitting LOWESS residuals…
+Computing institution HCW stats…
+
+Year-adjusted HCW thresholds (99th pctile of n_intra, all OAS works):
+  2000: n_intra ≥ ?
+  2005: n_intra ≥ ?
+  2010: n_intra ≥ ?
+  2015: n_intra ≥ 125
+  2020: n_intra ≥ 78
+  2023: n_intra ≥ 19
+
+Total HCW: 7,713  /  758,383 OAS works 2015–2024  (1.0%)
+
+── Source propensity table  (top 40 by |residual_sd|) ─────────────────────
+Source                                            v   n_wk  n_hcw    prop     fit      SD  fld  Subfield                            
+------------------------------------------------------------------------------------------------------------------------------------
+Academy of Management Annals                   7.58    267     59  0.2210  0.0647    11.5  B  Organizational Behavior and Human Re
+Journal of Innovation & Knowledge              0.68    627     53  0.0845  0.0021     6.0  B  Strategy and Management
+Journal of the Academy of Marketing Science    2.54    636     71  0.1116  0.0302     6.0  B  Marketing
+Business Strategy and the Environment          1.19  2,044    163  0.0797  0.0081     5.3  B  Marketing
+International Review of Financial Analysis     0.82  2,671    193  0.0723  0.0029     5.1  A  Accounting
+Journal of Retailing and Consumer Services     1.14  2,841    212  0.0746  0.0072     4.9  B  Marketing
+Journal of Management                          3.55    836     89  0.1065  0.0410     4.8  B  Organizational Behavior and Human Re
+International Journal of Management Reviews    2.07    292     26  0.0890  0.0237     4.8  B  Strategy and Management
+The Quarterly Journal of Economics            15.14    438     66  0.1507  0.0865     4.7  E  Economics and Econometrics
+Journal of International Business Studies      3.05    800     80  0.1000  0.0361     4.7  B  Strategy and Management
+Brookings Papers on Economic Activity          8.38    291      2  0.0069  0.0679    -4.5  E  General Economics, Econometrics and 
+Entrepreneurship Theory and Practice           3.36    515     50  0.0971  0.0392     4.3  B  Management of Technology and Innovat
+Energy Economics                               1.13  4,508    288  0.0639  0.0072     4.2  E  Economics and Econometrics
+Journal of Marketing                           8.43    546     67  0.1227  0.0680     4.0  B  Management of Technology and Innovat
+Journal of Business Venturing                  2.70    461     40  0.0868  0.0322     4.0  B  Management of Technology and Innovat
+Journal of Financial Economics                 8.16  1,340    161  0.1201  0.0670     3.9  A  Accounting
+Technovation                                   1.02    911     53  0.0582  0.0052     3.9  B  Strategy and Management
+Finance research letters                       0.71  5,562    284  0.0511  0.0023     3.6  A  Accounting
+Corporate Social Responsibility and Environmental Management   0.79  1,548     78  0.0504  0.0027     3.5  B  Strategy and Management
+Technological Forecasting and Social Change    1.09  5,162    278  0.0539  0.0064     3.5  B  Strategy and Management
+Econometrica                                  12.50    916     32  0.0349  0.0804    -3.3  E  Economics and Econometrics
+Journal of Retailing                           2.54    477     36  0.0755  0.0301     3.3  B  Marketing
+California Management Review                   2.07    280     19  0.0679  0.0237     3.2  B  Strategy and Management
+Supply Chain Management An International Journal   1.06    498     25  0.0502  0.0060     3.2  B  Management Information Systems
+Journal of Product Innovation Management       1.47    455     26  0.0571  0.0133     3.2  B  Strategy and Management
+Journal of Service Research                    2.68    374     28  0.0749  0.0319     3.2  B  Organizational Behavior and Human Re
+Quantitative Economics                         3.73    412      0  0.0000  0.0425    -3.1  E  General Economics, Econometrics and 
+Business Horizons                              1.05    832     39  0.0469  0.0058     3.0  B  Strategy and Management
+Academy of Management Journal                  4.64    753     67  0.0890  0.0494     2.9  B  Organizational Behavior and Human Re
+The RAND Journal of Economics                  4.99    330      4  0.0121  0.0516    -2.9  E  Economics and Econometrics
+Journal of Accounting Research                 4.59    374     33  0.0882  0.0490     2.9  A  Accounting
+Journal of service management                  1.87    420     25  0.0595  0.0205     2.9  B  Organizational Behavior and Human Re
+Journal of Economic Issues                     3.42    873      1  0.0011  0.0398    -2.8  E  Economics and Econometrics
+Strategic Management Journal                   5.00  1,132    102  0.0901  0.0517     2.8  B  Strategy and Management
+Review of Managerial Science                   0.77    667     27  0.0405  0.0026     2.8  B  Accounting
+Journal of Public Economics                    4.50  1,220     13  0.0107  0.0484    -2.8  E  Economics and Econometrics
+Journal of Business Research                   1.56  6,834    359  0.0525  0.0149     2.8  B  Marketing
+The British Accounting Review                  0.86    490     20  0.0408  0.0032     2.8  A  Accounting
+National Tax Journal                           3.41    428      1  0.0023  0.0396    -2.7  A  Accounting
+Journal of International Financial Markets Institutions and Money   0.78  1,028     41  0.0399  0.0027     2.7  A  Economics and Econometrics
+
+── Flagged sources  (residual_sd ≥ 2.0,  50 total) ──
+   Of which v < 1.5 (enclave sources): 25
+  Academy of Management Annals                  v= 7.58  n_hcw= 59  prop=0.2210  SD=+11.5  B  Organizational Behavior and Human Resource Management
+  Journal of Innovation & Knowledge             v= 0.68  n_hcw= 53  prop=0.0845  SD= +6.0  B  Strategy and Management  *** ENCLAVE
+  Journal of the Academy of Marketing Science   v= 2.54  n_hcw= 71  prop=0.1116  SD= +6.0  B  Marketing
+  Business Strategy and the Environment         v= 1.19  n_hcw=163  prop=0.0797  SD= +5.3  B  Marketing  *** ENCLAVE
+  International Review of Financial Analysis    v= 0.82  n_hcw=193  prop=0.0723  SD= +5.1  A  Accounting  *** ENCLAVE
+  Journal of Retailing and Consumer Services    v= 1.14  n_hcw=212  prop=0.0746  SD= +4.9  B  Marketing  *** ENCLAVE
+  Journal of Management                         v= 3.55  n_hcw= 89  prop=0.1065  SD= +4.8  B  Organizational Behavior and Human Resource Management
+  International Journal of Management Reviews   v= 2.07  n_hcw= 26  prop=0.0890  SD= +4.8  B  Strategy and Management
+  The Quarterly Journal of Economics            v=15.14  n_hcw= 66  prop=0.1507  SD= +4.7  E  Economics and Econometrics
+  Journal of International Business Studies     v= 3.05  n_hcw= 80  prop=0.1000  SD= +4.7  B  Strategy and Management
+  Entrepreneurship Theory and Practice          v= 3.36  n_hcw= 50  prop=0.0971  SD= +4.3  B  Management of Technology and Innovation
+  Energy Economics                              v= 1.13  n_hcw=288  prop=0.0639  SD= +4.2  E  Economics and Econometrics  *** ENCLAVE
+  Journal of Marketing                          v= 8.43  n_hcw= 67  prop=0.1227  SD= +4.0  B  Management of Technology and Innovation
+  Journal of Business Venturing                 v= 2.70  n_hcw= 40  prop=0.0868  SD= +4.0  B  Management of Technology and Innovation
+  Journal of Financial Economics                v= 8.16  n_hcw=161  prop=0.1201  SD= +3.9  A  Accounting
+  Technovation                                  v= 1.02  n_hcw= 53  prop=0.0582  SD= +3.9  B  Strategy and Management  *** ENCLAVE
+  Finance research letters                      v= 0.71  n_hcw=284  prop=0.0511  SD= +3.6  A  Accounting  *** ENCLAVE
+  Corporate Social Responsibility and Environmental Management  v= 0.79  n_hcw= 78  prop=0.0504  SD= +3.5  B  Strategy and Management  *** ENCLAVE
+  Technological Forecasting and Social Change   v= 1.09  n_hcw=278  prop=0.0539  SD= +3.5  B  Strategy and Management  *** ENCLAVE
+  Journal of Retailing                          v= 2.54  n_hcw= 36  prop=0.0755  SD= +3.3  B  Marketing
+  California Management Review                  v= 2.07  n_hcw= 19  prop=0.0679  SD= +3.2  B  Strategy and Management
+  Supply Chain Management An International Journal  v= 1.06  n_hcw= 25  prop=0.0502  SD= +3.2  B  Management Information Systems  *** ENCLAVE
+  Journal of Product Innovation Management      v= 1.47  n_hcw= 26  prop=0.0571  SD= +3.2  B  Strategy and Management  *** ENCLAVE
+  Journal of Service Research                   v= 2.68  n_hcw= 28  prop=0.0749  SD= +3.2  B  Organizational Behavior and Human Resource Management
+  Business Horizons                             v= 1.05  n_hcw= 39  prop=0.0469  SD= +3.0  B  Strategy and Management  *** ENCLAVE
+  Academy of Management Journal                 v= 4.64  n_hcw= 67  prop=0.0890  SD= +2.9  B  Organizational Behavior and Human Resource Management
+  Journal of Accounting Research                v= 4.59  n_hcw= 33  prop=0.0882  SD= +2.9  A  Accounting
+  Journal of service management                 v= 1.87  n_hcw= 25  prop=0.0595  SD= +2.9  B  Organizational Behavior and Human Resource Management
+  Strategic Management Journal                  v= 5.00  n_hcw=102  prop=0.0901  SD= +2.8  B  Strategy and Management
+  Review of Managerial Science                  v= 0.77  n_hcw= 27  prop=0.0405  SD= +2.8  B  Accounting  *** ENCLAVE
+  Journal of Business Research                  v= 1.56  n_hcw=359  prop=0.0525  SD= +2.8  B  Marketing
+  The British Accounting Review                 v= 0.86  n_hcw= 20  prop=0.0408  SD= +2.8  A  Accounting  *** ENCLAVE
+  Journal of International Financial Markets Institutions and Money  v= 0.78  n_hcw= 41  prop=0.0399  SD= +2.7  A  Economics and Econometrics  *** ENCLAVE
+  Research in International Business and Finance  v= 0.64  n_hcw= 82  prop=0.0388  SD= +2.7  A  Accounting  *** ENCLAVE
+  Journal of Operations Management              v= 2.13  n_hcw= 27  prop=0.0612  SD= +2.7  B  Management Information Systems
+  Economic Analysis and Policy                  v= 0.49  n_hcw= 59  prop=0.0379  SD= +2.7  E  Economics and Econometrics  *** ENCLAVE
+  Journal of Research in Interactive Marketing  v= 0.99  n_hcw= 15  prop=0.0409  SD= +2.6  B  Sociology and Political Science  *** ENCLAVE
+  The Journal of Economic Perspectives          v= 2.33  n_hcw= 29  prop=0.0622  SD= +2.6  E  General Economics, Econometrics and Finance
+  International Journal of Operations & Production Management  v= 1.38  n_hcw= 39  prop=0.0452  SD= +2.5  B  Management Information Systems  *** ENCLAVE
+  International Journal of Physical Distribution & Logistics Management  v= 0.87  n_hcw= 17  prop=0.0370  SD= +2.5  B  Management Information Systems  *** ENCLAVE
+  Financial Innovation                          v= 0.60  n_hcw= 23  prop=0.0351  SD= +2.4  A  Economics and Econometrics  *** ENCLAVE
+  Journal of Corporate Finance                  v= 2.63  n_hcw= 99  prop=0.0643  SD= +2.4  A  Accounting
+  Journal of World Business                     v= 2.54  n_hcw= 36  prop=0.0624  SD= +2.4  B  Strategy and Management
+  Journal of Knowledge Management               v= 0.90  n_hcw= 38  prop=0.0344  SD= +2.3  B  Communication  *** ENCLAVE
+  Journal of Management Studies                 v= 2.70  n_hcw= 52  prop=0.0627  SD= +2.2  B  Organizational Behavior and Human Resource Management
+  Journal of Hospitality Marketing & Management  v= 1.20  n_hcw= 17  prop=0.0385  SD= +2.2  B  Organizational Behavior and Human Resource Management  *** ENCLAVE
+  Academy of Management Review                  v= 4.72  n_hcw= 42  prop=0.0797  SD= +2.2  B  Organizational Behavior and Human Resource Management
+  International Journal of Consumer Studies     v= 1.07  n_hcw= 32  prop=0.0354  SD= +2.2  B  Marketing  *** ENCLAVE
+  International Journal of Production Economics  v= 1.13  n_hcw=106  prop=0.0358  SD= +2.1  B  Management Information Systems  *** ENCLAVE
+  Industrial Marketing Management               v= 1.60  n_hcw= 80  prop=0.0432  SD= +2.0  B  Organizational Behavior and Human Resource Management
+
+── TF-IDF title terms  (enclave sources vs all-HCW background) ─────────
+
+  Journal of Innovation & Knowledge  (v=0.68, n_hcw=53, prop=0.0845, SD=+6.0)
+  innovation(2.003), knowledge(0.995), digital(0.975), performance(0.902), enterprise(0.659), sustainable(0.609), management(0.602), green(0.543), transformation(0.523), development(0.523), organizational(0.465), capability(0.418), digitalization(0.413), sme(0.391), risktaking(0.386)
+
+  Business Strategy and the Environment  (v=1.19, n_hcw=163, prop=0.0797, SD=+5.3)
+  environmental(1.439), sustainable(0.990), green(0.970), performance(0.963), innovation(0.908), circular(0.890), sustainability(0.772), governance(0.719), economy(0.712), corporate(0.679), development(0.595), business(0.472), board(0.449), esg(0.405), systematic(0.370)
+
+  International Review of Financial Analysis  (v=0.82, n_hcw=193, prop=0.0723, SD=+5.1)
+  financial(0.719), risk(0.675), stock(0.655), corporate(0.627), covid19(0.604), china(0.598), esg(0.570), green(0.559), volatility(0.467), connectedness(0.432), digital(0.383), policy(0.356), pandemic(0.344), finance(0.344), fintech(0.340)
+
+  Journal of Retailing and Consumer Services  (v=1.14, n_hcw=212, prop=0.0746, SD=+4.9)
+  purchase(0.888), intention(0.859), consumer(0.843), customer(0.676), online(0.602), shopping(0.518), mobile(0.514), retail(0.508), engagement(0.507), brand(0.477), behavior(0.463), perspective(0.440), service(0.436), live(0.413), media(0.402)
+
+  Energy Economics  (v=1.13, n_hcw=288, prop=0.0639, SD=+4.2)
+  energy(1.693), green(1.186), oil(1.036), china(0.857), connectedness(0.542), carbon(0.530), renewable(0.494), environmental(0.491), crude(0.482), finance(0.477), volatility(0.470), emissions(0.463), chinas(0.450), policy(0.448), stock(0.424)
+
+  Technovation  (v=1.02, n_hcw=53, prop=0.0582, SD=+3.9)
+  innovation(2.124), digital(0.905), open(0.839), business(0.807), performance(0.773), capability(0.523), industries(0.505), framework(0.467), transformation(0.436), agenda(0.435), technology(0.431), perspective(0.419), smes(0.398), manufacturing(0.396), big(0.394)
+
+  Finance research letters  (v=0.71, n_hcw=284, prop=0.0511, SD=+3.6)
+  esg(0.713), covid19(0.679), stock(0.644), china(0.603), bitcoin(0.516), green(0.506), financial(0.489), risk(0.488), digital(0.481), corporate(0.475), volatility(0.441), policy(0.424), uncertainty(0.388), finance(0.350), cryptocurrency(0.332)
+
+  Corporate Social Responsibility and Environmental Management  (v=0.79, n_hcw=78, prop=0.0504, SD=+3.5)
+  corporate(1.463), environmental(1.192), performance(1.094), responsibility(1.007), board(0.872), governance(0.841), disclosure(0.758), scpesgscp(0.750), sustainable(0.650), financial(0.643), reporting(0.623), sustainability(0.620), diversity(0.557), gender(0.546), moderating(0.519)
+
+  Technological Forecasting and Social Change  (v=1.09, n_hcw=278, prop=0.0539, SD=+3.5)
+  innovation(1.157), digital(0.730), green(0.724), technological(0.545), technology(0.510), environmental(0.422), manufacturing(0.378), energy(0.367), industry(0.349), performance(0.344), business(0.339), perspective(0.335), digitalization(0.335), china(0.315), transformation(0.299)
+
+  Supply Chain Management An International Journal  (v=1.06, n_hcw=25, prop=0.0502, SD=+3.2)
+  supply(3.891), chain(3.556), resilience(2.180), blockchain(1.752), technology(0.731), literature(0.713), chains(0.699), performance(0.683), case(0.670), framework(0.594), systematic(0.557), industry(0.555), collaboration(0.519), management(0.479), digital(0.443)
+
+  Journal of Product Innovation Management  (v=1.47, n_hcw=26, prop=0.0571, SD=+3.2)
+  innovation(2.227), digital(0.852), design(0.717), transformation(0.711), process(0.648), open(0.641), management(0.614), capture(0.596), framework(0.571), thinking(0.562), things(0.552), agenda(0.532), value(0.530), internet(0.521), synthesis(0.504)
+
+  Business Horizons  (v=1.05, n_hcw=39, prop=0.0469, SD=+3.0)
+  generative(1.504), challenges(0.859), blockchain(0.842), chatbots(0.736), intelligence(0.730), artificial(0.729), opportunities(0.462), falsity(0.454), humanai(0.439), business(0.439), technologies(0.426), affordances(0.404), paradoxes(0.398), conversational(0.392), knowledge(0.369)
+
+  Review of Managerial Science  (v=0.77, n_hcw=27, prop=0.0405, SD=+2.8)
+  literature(1.320), systematic(1.204), innovation(0.953), business(0.951), digitalization(0.811), future(0.634), introduction(0.567), entrepreneurial(0.534), academic(0.523), guidelines(0.512), field(0.483), reviews(0.478), practice(0.470), management(0.443), ecosystems(0.428)
+
+  The British Accounting Review  (v=0.86, n_hcw=20, prop=0.0408, SD=+2.8)
+  disclosure(1.478), governance(1.172), board(1.046), disclosures(0.988), environmental(0.809), gender(0.799), carbon(0.738), value(0.689), performance(0.683), esg(0.660), audit(0.621), management(0.598), cost(0.598), accounting(0.567), family(0.545)
+
+  Journal of International Financial Markets Institutions and Money  (v=0.78, n_hcw=41, prop=0.0399, SD=+2.7)
+  connectedness(0.889), risk(0.820), cryptocurrency(0.718), global(0.715), esg(0.644), bank(0.644), stock(0.637), volatility(0.611), covid19(0.588), financial(0.564), information(0.498), hedging(0.493), stability(0.487), during(0.477), asymmetric(0.472)
+
+  Research in International Business and Finance  (v=0.64, n_hcw=82, prop=0.0388, SD=+2.7)
+  esg(0.752), covid19(0.735), china(0.679), stock(0.637), volatility(0.550), performance(0.500), bank(0.451), economic(0.438), banking(0.419), digital(0.405), corporate(0.379), return(0.379), cryptocurrency(0.359), spillover(0.349), finance(0.347)
+
+  Economic Analysis and Policy  (v=0.49, n_hcw=59, prop=0.0379, SD=+2.7)
+  green(1.645), china(1.012), innovation(0.981), policy(0.874), carbon(0.834), affect(0.716), sustainable(0.625), environmental(0.617), emissions(0.565), finance(0.562), enterprises(0.540), development(0.470), chinese(0.433), climate(0.423), corporate(0.410)
+
+  Journal of Research in Interactive Marketing  (v=0.99, n_hcw=15, prop=0.0409, SD=+2.6)
+  interactive(2.624), marketing(1.590), parasocial(1.493), media(1.338), influencers(1.216), editorial(1.142), agenda(0.922), communication(0.921), cocreation(0.845), perceived(0.776), purchase(0.760), intention(0.736), engagement(0.683), consumer(0.662), framework(0.660)
+
+  International Journal of Operations & Production Management  (v=1.38, n_hcw=39, prop=0.0452, SD=+2.5)
+  chain(2.497), supply(2.391), resilience(1.016), lean(0.898), digital(0.757), performance(0.700), operations(0.679), capabilities(0.648), management(0.614), disruptions(0.531), agility(0.496), servitization(0.478), industry(0.474), compounding(0.454), chains(0.448)
+
+  International Journal of Physical Distribution & Logistics Management  (v=0.87, n_hcw=17, prop=0.0370, SD=+2.5)
+  supply(3.338), chain(3.238), resilience(1.457), literature(1.310), omnichannel(1.181), management(1.173), enables(1.008), logistics(0.860), systematic(0.819), sustainable(0.813), retailing(0.740), blockchain(0.644), during(0.575), highdemand(0.545), item(0.545)
+
+  Financial Innovation  (v=0.60, n_hcw=23, prop=0.0351, SD=+2.4)
+  covid19(1.223), stock(1.136), cryptocurrency(1.024), pandemic(0.826), cryptocurrencies(0.766), spillover(0.748), fintech(0.714), during(0.638), dynamic(0.629), gold(0.556), investments(0.554), trading(0.530), financial(0.503), banking(0.498), spillovers(0.497)
+
+  Journal of Knowledge Management  (v=0.90, n_hcw=38, prop=0.0344, SD=+2.3)
+  knowledge(4.035), management(1.575), innovation(1.523), sharing(1.368), performance(0.988), transformational(0.743), capability(0.729), open(0.585), leadership(0.579), hiding(0.562), smes(0.556), capital(0.516), european(0.496), digital(0.486), culture(0.472)
+
+  Journal of Hospitality Marketing & Management  (v=1.20, n_hcw=17, prop=0.0385, SD=+2.2)
+  hospitality(2.079), service(1.719), current(1.526), robots(1.416), industry(1.360), overview(1.168), tourism(1.114), robotic(1.008), device(0.981), understanding(0.966), artificially(0.960), directions(0.958), intelligent(0.900), quality(0.897), emotional(0.860)
+
+  International Journal of Consumer Studies  (v=1.07, n_hcw=32, prop=0.0354, SD=+2.2)
+  agenda(2.016), future(1.871), consumer(1.397), systematic(1.306), covid‐19(1.046), literature(0.835), brand(0.832), behaviour(0.815), purchase(0.713), buying(0.627), consumption(0.544), vulnerability(0.492), panic(0.467), during(0.458), fear(0.438)
+
+  International Journal of Production Economics  (v=1.13, n_hcw=106, prop=0.0358, SD=+2.1)
+  supply(2.753), chain(2.476), performance(1.095), resilience(0.841), industry(0.829), manufacturing(0.693), management(0.640), adoption(0.541), blockchain(0.516), chains(0.494), big(0.492), analytics(0.471), perspective(0.460), technology(0.431), environmental(0.420)
+
+── Mutual reference table  (enclave sources, intensity = refs per HCW) ──
+Cited source                               Citer source                                 n_refs intensity
+----------------------------------------------------------------------------------------------------------
+International Review of Financial Analysis Finance research letters                      1,787      9.259
+Finance research letters                   Research in International Business and Finance    1,560      5.493
+Finance research letters                   International Review of Financial Analysis    1,293      4.553
+Business Strategy and the Environment      Corporate Social Responsibility and Environmental Management    1,073      6.583
+Energy Economics                           International Review of Financial Analysis      911      3.163
+Energy Economics                           Finance research letters                        862      2.993
+Energy Economics                           Economic Analysis and Policy                    801      2.781
+Finance research letters                   Energy Economics                                763      2.687
+International Review of Financial Analysis Energy Economics                                756      3.917
+Energy Economics                           Technological Forecasting and Social Change      663      2.302
+International Review of Financial Analysis Research in International Business and Finance      663      3.435
+Technological Forecasting and Social Change Energy Economics                                628      2.259
+Technological Forecasting and Social Change Business Strategy and the Environment           621      2.234
+International Journal of Production Economics Technological Forecasting and Social Change      563      5.311
+Energy Economics                           Research in International Business and Finance      520      1.806
+Finance research letters                   Financial Innovation                            493      1.736
+Corporate Social Responsibility and Environmental Management Business Strategy and the Environment           475      6.090
+International Journal of Production Economics Business Strategy and the Environment           439      4.142
+Finance research letters                   Journal of International Financial Markets Institutions and Money      424      1.493
+Technological Forecasting and Social Change Technovation                                    410      1.475
+Technological Forecasting and Social Change Finance research letters                        387      1.392
+Finance research letters                   Technological Forecasting and Social Change      373      1.313
+International Journal of Production Economics Supply Chain Management An International Journal      373      3.519
+International Journal of Production Economics International Journal of Operations & Production Management      360      3.396
+Journal of Retailing and Consumer Services International Journal of Consumer Studies       351      1.656
+Finance research letters                   Economic Analysis and Policy                    351      1.236
+Technovation                               Technological Forecasting and Social Change      346      6.528
+Business Strategy and the Environment      Technological Forecasting and Social Change      335      2.055
+Research in International Business and Finance Finance research letters                        332      4.049
+Technological Forecasting and Social Change Economic Analysis and Policy                    321      1.155
+International Review of Financial Analysis Financial Innovation                            291      1.508
+Journal of International Financial Markets Institutions and Money Finance research letters                        289      7.049
+Journal of Retailing and Consumer Services Technological Forecasting and Social Change      288      1.358
+Technological Forecasting and Social Change Journal of Knowledge Management                 272      0.978
+International Review of Financial Analysis Journal of International Financial Markets Institutions and Money      271      1.404
+International Journal of Operations & Production Management International Journal of Production Economics      258      6.615
+Technological Forecasting and Social Change International Journal of Production Economics      250      0.899
+Technological Forecasting and Social Change Corporate Social Responsibility and Environmental Management      249      0.896
+Technological Forecasting and Social Change Journal of Innovation & Knowledge               246      0.885
+Journal of International Financial Markets Institutions and Money International Review of Financial Analysis      231      5.634
+Technological Forecasting and Social Change International Review of Financial Analysis      228      0.820
+Technological Forecasting and Social Change Research in International Business and Finance      225      0.809
+Research in International Business and Finance International Review of Financial Analysis      221      2.695
+Journal of International Financial Markets Institutions and Money Research in International Business and Finance      211      5.146
+Energy Economics                           Business Strategy and the Environment           211      0.733
+International Review of Financial Analysis Technological Forecasting and Social Change      198      1.026
+International Review of Financial Analysis Economic Analysis and Policy                    187      0.969
+Journal of Product Innovation Management   Technological Forecasting and Social Change      184      7.077
+Business Strategy and the Environment      Finance research letters                        183      1.123
+The British Accounting Review              Business Strategy and the Environment           181      9.050
+Saved /home/lc/Projects/EconomicsBusiness/plots/enclave_mrt.csv
+
+── Institution map  (authors of enclave HCW,  2,208 HCW total,  top 50) ──
+Institution                                           v_inst  n_hcw  n_src    pct
+-----------------------------------------------------------------------------------
+Lebanese American University                            0.64     73     10    3.3%
+Montpellier Business School                             1.34     56     16    2.5%
+University of Economics Ho Chi Minh City                0.62     51      8    2.3%
+Southwestern University of Finance and Economics        0.75     50     11    2.3%
+Central South University                                0.86     45      8    2.0%
+Swansea University                                      1.07     43     11    1.9%
+University of Southampton                               1.24     42     11    1.9%
+Capital University of Economics and Business            0.73     39      8    1.8%
+Qingdao University                                      0.76     37      4    1.7%
+Xi'an Jiaotong University                               0.53     34     11    1.5%
+University of Akron                                     2.13     34      5    1.5%
+Nanchang University                                     1.12     34      6    1.5%
+Nanjing University of Finance and Economics             0.48     33      7    1.5%
+Xiamen University                                       0.87     31     10    1.4%
+Trinity College Dublin                                  1.00     30      8    1.4%
+Zhongnan University of Economics and Law                0.61     29     10    1.3%
+Beijing Technology and Business University              0.62     29      7    1.3%
+University of International Business and Economics      0.77     29      7    1.3%
+Hunan University                                        0.73     25      8    1.1%
+École de management de Lyon                             1.13     25      8    1.1%
+Shanghai University of Finance and Economics            0.85     24      8    1.1%
+Sunway University                                       0.44     24      9    1.1%
+Beijing Institute of Technology                         0.84     24      7    1.1%
+Jiangxi University of Finance and Economics             0.69     24      7    1.1%
+University of Turin                                     0.81     23      8    1.0%
+Swinburne University of Technology                      1.18     23     10    1.0%
+United Arab Emirates University                         0.75     23      8    1.0%
+Hong Kong Polytechnic University                        1.24     23      9    1.0%
+École de management de Normandie                        0.63     22      6    1.0%
+Lappeenranta-Lahti University of Technology             1.22     21     10    1.0%
+University of Vaasa                                     1.11     21      9    1.0%
+Chinese Academy of Sciences                             0.74     21      5    1.0%
+North-West University                                   0.37     21      4    1.0%
+University of Newcastle Australia                       1.16     20      5    0.9%
+University of Bradford                                  1.02     20      7    0.9%
+Macquarie University                                    1.05     20      8    0.9%
+University of Johannesburg                              0.39     20      7    0.9%
+Free University of Bozen-Bolzano                        1.61     19      8    0.9%
+Symbiosis International University                      0.20     19      8    0.9%
+Abu Dhabi University                                    0.41     19     11    0.9%
+Jinan University                                        0.75     19     10    0.9%
+Vietnam National University, Hanoi                      0.37     19      6    0.9%
+Shih Chien University                                   0.68     19      7    0.9%
+Southwest Jiaotong University                           0.65     19      8    0.9%
+Institutes of Science and Development                      —     19      5    0.9%
+University of Business and Technology                   0.31     19      6    0.9%
+Luleå University of Technology                          1.32     18      8    0.8%
+Anhui University of Finance and Economics               0.53     18      4    0.8%
+Institute of Economics                                     —     18      5    0.8%
+Paris School of Business                                0.68     18      8    0.8%
+
+── Enclave clusters (connected components on mutual citation graph) ──────
+  Cluster 0  (#c0392b):  Research in International Business and Finance, Corporate Social Responsibility and Environmental Management, Journal of Retailing and Consumer Services, Technological Forecasting and Social Change, International Journal of Physical Distribution & Logistics Management, Journal of Research in Interactive Marketing, Journal of Knowledge Management, Supply Chain Management An International Journal, Technovation, Journal of International Financial Markets Institutions and Money, Finance research letters, Journal of Product Innovation Management, Energy Economics, Business Horizons, Journal of Hospitality Marketing & Management, International Review of Financial Analysis, International Journal of Operations & Production Management, International Journal of Consumer Studies, International Journal of Production Economics, The British Accounting Review, Review of Managerial Science, Business Strategy and the Environment, Journal of Innovation & Knowledge, Economic Analysis and Policy, Financial Innovation
+  Institutions implicated: cluster 0: 1739
+Saved /home/lc/Projects/EconomicsBusiness/plots/enclave_source_propensity.csv
+Computing HCW referer v-distributions…
+Saved /home/lc/Projects/EconomicsBusiness/plots/enclave_hcw_referer_stats.csv  (7,713 HCW)
+Clustering HCW via Infomap…
+  HCW nodes: 7,713   HCW→HCW edges: 55,862
+
+── Infomap communities  (299 total, 150 with ≥5 HCW) ──
+   #  n_hcw  med_v  fld  Top terms                                         
+------------------------------------------------------------------------------
+   0    643   0.71    A  covid19, connectedness, stock, volatility, bitcoin
+   1    457   1.13    A  esg, corporate, performance, responsibility, gover
+   2    454   1.09    E  green, innovation, china, energy, finance
+   3    326   1.56    B  service, artificial, intelligence, customer, robot
+   4    266   1.09    B  digital, transformation, innovation, digitalizatio
+   5    233   1.19    B  board, diversity, gender, corporate, performance
+   6    168   1.13    B  supply, chain, resilience, covid19, chains
+   7    137   1.36    A  uncertainty, policy, economic, china, political
+   8    129   1.14    B  influencers, influencer, media, marketing, virtual
+   9    125   1.01    A  fintech, bank, financial, digital, china
+  10    116   1.02    B  innovation, open, knowledge, performance, sharing
+  11    111   1.09    B  industry, manufacturing, supply, chain, technologi
+  12    110   1.09    B  green, innovation, performance, environmental, kno
+  13    109   1.56    B  engagement, customer, brand, media, cocreation
+  14    104   2.63    A  climate, risk, change, risks, pricing
+  15    103   1.13    B  big, analytics, supply, chain, performance
+  16    103   3.05    B  emerging, institutional, business, political, mult
+  17     89   2.54    B  leadership, servant, authentic, ethical, behavior
+  18     88   2.70    B  crowdfunding, equity, entrepreneurial, success, pa
+  19     87   1.19    B  bibliometric, literature, reviews, systematic, fut
+  20     83   1.14    B  metaverse, reality, augmented, marketing, virtual
+  21     80   2.70    B  ecosystems, platform, ecosystem, digital, platform
+  22     78   1.09    B  plssem, modeling, equation, least, partial
+  23     78   1.14    B  mobile, food, delivery, online, intention
+  24     76   1.07    B  agenda, future, literature, consumer, systematic
+  25     76   1.36    B  resilience, covid19, crisis, smes, pandemic
+  26     76   1.09    B  blockchain, supply, chain, technology, management
+  27     75   4.11    A  disclosure, accounting, corporate, readability, fi
+  28     74   2.70    B  stakeholder, paradox, grand, management, challenge
+  29     73   9.02    E  expectations, inflation, household, monetary, poli
+  30     69   2.23    B  family, socioemotional, wealth, business, internat
+  31     67   1.17    B  circular, economy, supply, chain, sustainable
+  32     67   1.11    A  greenwashing, environmental, green, finance, finan
+  33     67   1.56    B  servitization, digital, business, digitalization, 
+  34     66   2.78    B  entrepreneurship, entrepreneurial, wellbeing, agen
+  35     65   1.36    B  entrepreneurial, ecosystems, ecosystem, entreprene
+  36     65   8.16    A  returns, stock, crosssection, pricing, asset
+  37     61   2.54    B  internationalization, global, born, smes, business
+  38     60   3.56    A  innovation, corporate, patent, foreign, china
+  39     59   1.26    B  business, innovation, covid19, sustainability, abs
+  40     58   6.74    E  trade, global, competition, uschina, war
+  41     55   4.64    B  entrepreneurial, qualitative, entrepreneurship, ve
+  42     54   4.50    A  covid19, pandemic, crisis, during, corporate
+  43     52   2.95    E  pollution, air, china, environmental, mortality
+  44     51   1.56    B  intelligence, artificial, human, management, syste
+  45     48   2.49    E  labor, automation, robots, productivity, employmen
+  46     44   7.13    A  institutional, ownership, common, corporate, inves
+  47     42   1.14    B  purchase, green, behavior, trust, consumers’
+  48     42   2.07    B  omnichannel, retailing, retail, offline, online
+  49     40   4.64    B  work, gig, artificial, intelligence, algorithmic
+  50     39   1.14    B  covid19, pandemic, during, buying, consumer
+  51     39   0.79    B  integrated, reporting, disclosure, quality, future
+  52     39   1.13    B  resource, human, green, management, environmental
+  53     38   1.14    B  live, streaming, ecommerce, commerce, perspective
+  54     37   1.13    E  forecasting, volatility, oil, crude, stock
+  55     37   6.12    E  monetary, policy, projections, fiscal, identificat
+  56     36   3.79    E  differenceindifferences, treatment, fixed, differe
+  57     36   0.85    B  entrepreneurial, education, intentions, entreprene
+  58     35   2.54    B  marketing, brand, authenticity, activism, equity
+  59     34   2.54    B  microfoundations, dynamic, future, thinking, capab
+  60     33   2.63    A  crash, price, stock, risk, china
+  61     31   1.19    B  goals, development, sustainable, sdg, disclosure
+  62     30   3.05    B  qualitative, configurational, theorizing, organiza
+  63     30   1.32    A  accounting, auditing, audit, intelligence, artific
+  64     29   4.12    B  ceo, humility, team, leader, management
+  65     29   2.37    E  populism, inequality, economic, places, cause
+  66     28   2.80    B  work, organizational, job, covid19, organizations
+  67     26   1.21    B  sharing, economy, airbnb, business, accommodation
+  68     25   3.36    A  tax, avoidance, corporate, observations, aggressiv
+  69     24  15.14    E  wage, inequality, labor, gap, germany
+  70     23   8.46    E  labor, share, power, decline, fall
+  71     23   1.84    B  responsibility, corporate, organizational, employe
+  72     22   2.37    E  entrepreneurship, economic, institutions, growth, 
+  73     22   6.40    E  shocks, networks, supply, covid19, production
+  74     22   1.37    B  supply, chain, chains, sustainability, performance
+  75     22   1.56    B  hiding, knowledge, creativity, antecedents, team
+  76     22   1.21    B  common, method, online, recommendations, variance
+  77     20   1.46    B  entrepreneurial, orientation, individual, opportun
+  78     20   1.58    B  coopetition, systematic, cooperation, innovation, 
+  79     20   1.68    B  work, crafting, job, design, outcomes
+  80     20   8.31    E  exchange, rate, interest, monetary, asset
+  81     19  12.50    E  misallocation, railroads, quantitative, economic, 
+  82     19   1.37    B  innovation, china, rampd, state, digital
+  83     18   0.75    A  inclusion, financial, islamic, economic, mena
+  84     18   1.60    B  endogeneity, structure, addressing, integration, p
+  85     17   1.13    B  innovation, performance, collaborative, creativity
+  86     17   1.05    B  generative, chatbots, affordances, paradoxes, conv
+  87     16   2.06    A  crises, macroprudential, database, housing, income
+  88     16   2.32    A  audit, expanded, matters, report, key
+  89     16   8.31    E  substitution, insurance, intertemporal, choices, o
+  90     16   1.13    B  engagement, literature, systematic, employee, synt
+  91     16   1.37    A  carbon, structure, decisions, capital, corporate
+  92     16   8.87    A  trading, retail, robinhood, investor, tracking
+  93     16   2.48    A  narcissism, ceo, mergers, acquisitions, overconfid
+  94     16   4.28    A  ceo, corporate, performance, stock, china
+  95     16   3.55    E  sanctions, gravity, agreements, trade, free
+  96     16   3.12    B  networks, threats, nonfungible, tokens, consumers
+  97     15   7.65    A  government, local, shadow, debt, china
+  98     15   1.66    A  innovation, policy, mixes, transitions, sustainabi
+  99     15   1.66    B  human, resource, management, sustainable, hrm
+ 100     15   3.12    B  consumer, sustainable, consumption, understanding,
+ 101     14   8.16    E  states, united, inequality, tax, income
+ 102     14   4.64    B  aspirations, learning, below, fast, slack
+ 103     14   1.19    A  china, investment, ownership, financialization, co
+ 104     14   1.21    B  job, support, demandsresources, employee, frontlin
+ 105     14   2.49    A  visits, site, corporate, investors, quasinatural
+ 106     13   1.61    B  channel, encroachment, information, sharing, retai
+ 107     13   5.00    B  attention‐based, view, attention, strategy, dynami
+ 108     12   1.60    B  b2b, sales, salesperson, media, selling
+ 109     12   3.30    B  sharing, platform, ondemand, peertopeer, service
+ 110     12   2.79    A  earnings, management, real, financial, distress
+ 111     12  15.32    E  intergenerational, opportunity, neighborhoods, mob
+ 112     12   1.13    E  trading, carbon, scheme, chinas, emission
+ 113     12  10.64    E  tax, grants, china, investment, incentives
+ 114     12   4.92    B  dismissal, ceo, focus, contemplating, 20002018
+ 115     11   1.66    E  regional, diversification, complexity, relatedness
+ 116     11   1.56    B  knowledge, innovation, innovations, capacity, netw
+ 117     10   0.79    B  competitive, performance, sustainable, advantage, 
+ 118     10   3.79    E  inference, variables, practice, weak, instrument
+ 119     10   1.34    B  hospitality, crisis, covid19, tourism, resignation
+ 120     10   3.13    E  institutions, culture, clan, corporation, superior
+ 121     10   4.59    A  audit, quality, pcaob, internal, assessments
+ 122     10   3.55    B  resourcebased, integration, strategic, macroorgani
+ 123      9   1.56    A  hometown, china, fdi, environment, labor
+ 124      9   0.78    E  openness, inequality, trade, nonadditive, cop28
+ 125      8   6.44    E  child, binscatter, eitc, margin, bunching
+ 126      8   5.55    E  economics, publishing, women, gender, referees
+ 127      8   1.04    E  geopolitical, energy, attention, renewable, countr
+ 128      8   3.14    E  central, currency, bank, digital, banks
+ 129      8   1.19    B  sustainability, image, corporate, chain, supply
+ 130      8   3.46    A  smoothing, ability, ceos, managerial, ceo
+ 131      7   8.46    E  norms, developing, countries, gender, misperceived
+ 132      7   4.64    B  reputation, media, organizational, energizing, emo
+ 133      7   8.16    A  equity, short‐termism, friendship, vesting, repurc
+ 134      7   8.16    A  fund, mutual, flows, commitment, bond
+ 135      7   0.21    B  bibliometric, trends, accounting, integrity, futur
+ 136      6  10.48    E  debt, public, hysteresis, remains, redesigning
+ 137      6   1.56    B  cocreation, loyalty, roles, empathy, influence
+ 138      6   6.94    A  sovereign, collateral, doom, sheets, deadly
+ 139      6  12.36    E  capital, europe, banks, credit, countercyclical
+ 140      6   0.71    B  africa, access, inequality, structural, financial
+ 141      6   2.61    B  resourcebased, field, view, hierarchies, elementar
+ 142      6   6.48    E  tax, compliance, deterrence, behavioralist, collec
+ 143      6   2.03    A  delegation, crossownership, contracts, rampd, mana
+ 144      6   8.16    A  intangible, collateral, patent, capital, glut
+ 145      6   2.75    A  concentration, cost, equity, capital, brought
+ 146      5   4.64    B  novelty, inverted, ‐shaped, scpuscp, frontier
+ 147      5   3.56    E  saving, literacy, reminders, goal, mind
+ 148      5   2.32    A  comment, letters, oversight, commission, riskfacto
+ 149      5   1.60    B  innovation, internationalization, orientation, ent
+Saved /home/lc/Projects/EconomicsBusiness/plots/enclave_hcw_communities.csv
+Saved /home/lc/Projects/EconomicsBusiness/plots/enclave_hcw_communities_members.csv
+
+── Source breakdown for communities with median_v < 1.5 ──
+
+  Community 0  n=643  med_v=0.71  [covid19, connectedness, stock, volatility, bitcoin]
+  Source                                                  v  n_hcw
+  ------------------------------------------------------------------
+  Finance research letters                             0.71    143
+  Energy Economics                                     1.13     91
+  International Review of Financial Analysis           0.82     74
+  Research in International Business and Finance       0.64     36
+  Economics Letters                                    0.59     30
+  International Review of Economics & Finance          0.51     24
+  Journal of International Financial Markets Institutions and Money   0.78     20
+  Technological Forecasting and Social Change          1.09     18
+  Journal of Behavioral and Experimental Finance       1.03     14
+  Emerging Markets Finance and Trade                   0.43     13
+  Journal of Environmental Management                  0.39     13
+  Financial Innovation                                 0.60     12
+  The North American Journal of Economics and Finance   0.56     11
+  Economic Analysis and Policy                         0.49     11
+  Economic Modelling                                   0.80      9
+  The Quarterly Review of Economics and Finance        0.56      9
+  Applied Economics                                    0.31      7
+  Global Finance Journal                               0.58      7
+  Journal of Banking & Finance                         1.56      7
+  Annals of Operations Research                        0.52      5
+
+  Community 1  n=457  med_v=1.13  [esg, corporate, performance, responsibility, governance]
+  Source                                                  v  n_hcw
+  ------------------------------------------------------------------
+  Finance research letters                             0.71     43
+  Journal of Business Ethics                           1.37     37
+  International Review of Financial Analysis           0.82     24
+  Business Strategy and the Environment                1.19     23
+  Corporate Social Responsibility and Environmental Management   0.79     23
+  Journal of Corporate Finance                         2.63     18
+  Journal of Banking & Finance                         1.56     14
+  Research in International Business and Finance       0.64     13
+  Strategic Management Journal                         5.00     13
+  Energy Economics                                     1.13     13
+  International Review of Economics & Finance          0.51     12
+  Journal of Financial Economics                       8.16     11
+  Journal of Business Research                         1.56      9
+  Economic Modelling                                   0.80      8
+  Pacific-Basin Finance Journal                        0.69      8
+  Journal of Environmental Management                  0.39      8
+  Journal of Accounting Research                       4.59      7
+  Review of Financial Studies                          7.13      7
+  Review of Accounting Studies                         4.11      7
+  Journal of International Financial Markets Institutions and Money   0.78      7
+
+  Community 2  n=454  med_v=1.09  [green, innovation, china, energy, finance]
+  Source                                                  v  n_hcw
+  ------------------------------------------------------------------
+  Energy Economics                                     1.13    130
+  Technological Forecasting and Social Change          1.09     62
+  Journal of Environmental Management                  0.39     44
+  Economic Analysis and Policy                         0.49     33
+  Finance research letters                             0.71     27
+  International Review of Financial Analysis           0.82     18
+  International Review of Economics & Finance          0.51     10
+  Ecological Economics                                 0.88      8
+  Journal of Environmental Economics and Management    1.71      8
+  Research in International Business and Finance       0.64      7
+  Business Strategy and the Environment                1.19      7
+  Economic Modelling                                   0.80      6
+  Journal of Development Economics                     2.10      6
+  Pacific-Basin Finance Journal                        0.69      6
+  Research Policy                                      2.36      5
+  Journal of Business Research                         1.56      5
+  Telecommunications Policy                            0.88      4
+  Emerging Markets Finance and Trade                   0.43      4
+  Corporate Social Responsibility and Environmental Management   0.79      3
+  Journal of Econometrics                              3.79      3
+
+  Community 4  n=266  med_v=1.09  [digital, transformation, innovation, digitalization, perform]
+  Source                                                  v  n_hcw
+  ------------------------------------------------------------------
+  Journal of Business Research                         1.56     41
+  Technological Forecasting and Social Change          1.09     38
+  Journal of Innovation & Knowledge                    0.68     17
+  Finance research letters                             0.71     15
+  Technovation                                         1.02     13
+  Review of Managerial Science                         0.77      8
+  Journal of Product Innovation Management             1.47      7
+  Entrepreneurship Theory and Practice                 3.36      5
+  International Review of Financial Analysis           0.82      5
+  The Journal of Strategic Information Systems         1.18      5
+  International Review of Economics & Finance          0.51      5
+  Strategic Entrepreneurship Journal                   2.85      4
+  Industrial Marketing Management                      1.60      4
+  International Journal of Operations & Production Management   1.38      3
+  Long Range Planning                                  1.37      3
+  Journal of Management Studies                        2.70      3
+  California Management Review                         2.07      3
+  Journal of Open Innovation Technology Market and Complexity   0.34      3
+  Research in International Business and Finance       0.64      3
+  Asia Pacific Management Review                       0.50      2
+
+  Community 5  n=233  med_v=1.19  [board, diversity, gender, corporate, performance]
+  Source                                                  v  n_hcw
+  ------------------------------------------------------------------
+  Business Strategy and the Environment                1.19     34
+  Corporate Social Responsibility and Environmental Management   0.79     20
+  Journal of Business Ethics                           1.37     17
+  Journal of Corporate Finance                         2.63     12
+  International Review of Financial Analysis           0.82     11
+  The British Accounting Review                        0.86      9
+  Journal of Business Research                         1.56      8
+  Corporate Governance An International Review         1.00      7
+  Corporate Governance                                 0.61      6
+  Strategic Management Journal                         5.00      6
+  British Journal of Management                        1.17      5
+  Academy of Management Journal                        4.64      5
+  Journal of Management                                3.55      4
+  Journal of Environmental Management                  0.39      4
+  Business & Society                                   1.59      4
+  The Leadership Quarterly                             3.04      4
+  Sustainability Accounting Management and Policy Journal   0.57      4
+  Journal of Banking & Finance                         1.56      3
+  The Journal of Finance                               9.58      3
+  International Journal of Finance & Economics         0.54      3
+
+  Community 6  n=168  med_v=1.13  [supply, chain, resilience, covid19, chains]
+  Source                                                  v  n_hcw
+  ------------------------------------------------------------------
+  International Journal of Production Economics        1.13     31
+  International Journal of Operations & Production Management   1.38     15
+  Supply Chain Management An International Journal     1.06     11
+  Annals of Operations Research                        0.52     10
+  Journal of Operations Management                     2.13      9
+  The International Journal of Logistics Management    0.74      9
+  International Journal of Physical Distribution & Logistics Management   0.87      7
+  Omega                                                1.00      6
+  Journal of Business Logistics                        1.66      6
+  Journal of Business Research                         1.56      6
+  Production Planning & Control                        1.07      5
+  Technological Forecasting and Social Change          1.09      4
+  IEEE Transactions on Engineering Management          0.54      4
+  International Journal of Logistics Research and Applications   0.61      3
+  Decision Sciences                                    1.32      3
+  Global Journal of Flexible Systems Management        0.51      3
+  Supply Chain Forum an International Journal          0.45      2
+  Operations Management Research                       0.44      2
+  Industrial Marketing Management                      1.60      2
+  Business Strategy and the Environment                1.19      2
+
+  Community 7  n=137  med_v=1.36  [uncertainty, policy, economic, china, political]
+  Source                                                  v  n_hcw
+  ------------------------------------------------------------------
+  Journal of Financial Economics                       8.16     10
+  Journal of Corporate Finance                         2.63      9
+  Finance research letters                             0.71      8
+  International Review of Financial Analysis           0.82      8
+  Economic Modelling                                   0.80      6
+  Energy Economics                                     1.13      6
+  American Economic Review                            15.32      5
+  Journal of Financial Stability                       1.36      5
+  Journal of Financial and Quantitative Analysis       2.22      5
+  Journal of Monetary Economics                        3.65      5
+  The Journal of Finance                               9.58      4
+  International Review of Economics & Finance          0.51      4
+  Pacific-Basin Finance Journal                        0.69      4
+  Review of Financial Studies                          7.13      4
+  China Economic Review                                0.75      3
+  Management Science                                   3.56      3
+  Journal of International Economics                   3.55      3
+  Journal of International Money and Finance           1.00      3
+  Accounting and Finance                               0.58      2
+  Journal of Political Economy                         8.46      2
+
+  Community 8  n=129  med_v=1.14  [influencers, influencer, media, marketing, virtual]
+  Source                                                  v  n_hcw
+  ------------------------------------------------------------------
+  Journal of Retailing and Consumer Services           1.14     35
+  Journal of Business Research                         1.56     17
+  Journal of Advertising                               2.07     11
+  Psychology and Marketing                             1.28     11
+  Journal of Marketing                                 8.43      8
+  Journal of Research in Interactive Marketing         0.99      6
+  International Journal of Advertising                 1.28      6
+  European Journal of Marketing                        1.13      3
+  Journal of Product & Brand Management                0.82      3
+  Business Horizons                                    1.05      3
+  Journal of Interactive Marketing                     3.72      3
+  Journal of Marketing Management                      1.08      3
+  Marketing Intelligence & Planning                    0.51      2
+  Journal of the Academy of Marketing Science          2.54      2
+  Electronic Commerce Research                         0.30      2
+  Electronic Commerce Research and Applications        0.45      2
+  Journal of Consumer Research                         3.12      2
+  International Journal of Consumer Studies            1.07      2
+  California Management Review                         2.07      1
+  Electronic Markets                                   0.79      1
+
+  Community 9  n=125  med_v=1.01  [fintech, bank, financial, digital, china]
+  Source                                                  v  n_hcw
+  ------------------------------------------------------------------
+  International Review of Financial Analysis           0.82     14
+  Review of Financial Studies                          7.13     13
+  The Journal of Finance                               9.58     10
+  Journal of Banking & Finance                         1.56      7
+  Finance research letters                             0.71      7
+  Pacific-Basin Finance Journal                        0.69      5
+  Journal of Financial Economics                       8.16      5
+  Research in International Business and Finance       0.64      5
+  Journal of Financial Intermediation                  1.89      4
+  Journal of International Financial Markets Institutions and Money   0.78      4
+  Financial Innovation                                 0.60      3
+  Journal of Corporate Finance                         2.63      3
+  American Economic Review                            15.32      2
+  Technological Forecasting and Social Change          1.09      2
+  Journal of International Money and Finance           1.00      2
+  European Journal of Finance                          0.70      2
+  Journal of Financial Stability                       1.36      2
+  International Review of Economics & Finance          0.51      2
+  Journal of Economics and Business                    0.58      2
+  European Economic Review                             1.64      1
+
+  Community 10  n=116  med_v=1.02  [innovation, open, knowledge, performance, sharing]
+  Source                                                  v  n_hcw
+  ------------------------------------------------------------------
+  Journal of Knowledge Management                      0.90     22
+  Journal of Business Research                         1.56     12
+  Technological Forecasting and Social Change          1.09     11
+  Research Policy                                      2.36     10
+  Technovation                                         1.02      9
+  IEEE Transactions on Engineering Management          0.54      5
+  Journal of Innovation & Knowledge                    0.68      4
+  California Management Review                         2.07      3
+  Strategic Management Journal                         5.00      3
+  European Journal of Innovation Management            0.54      3
+  Journal of Open Innovation Technology Market and Complexity   0.34      3
+  Management Decision                                  0.53      2
+  Journal of International Management                  1.09      2
+  Journal of Product Innovation Management             1.47      2
+  Industrial Marketing Management                      1.60      2
+  European Management Journal                          0.88      2
+  R and D Management                                   0.91      2
+  The Journal of Technology Transfer                   0.85      2
+  Review of Managerial Science                         0.77      2
+  American Economic Review                            15.32      1
+
+  Community 11  n=111  med_v=1.09  [industry, manufacturing, supply, chain, technologies]
+  Source                                                  v  n_hcw
+  ------------------------------------------------------------------
+  International Journal of Production Economics        1.13     22
+  Technological Forecasting and Social Change          1.09     19
+  Production Planning & Control                        1.07     12
+  Journal of Manufacturing Technology Management       0.68      8
+  Business Strategy and the Environment                1.19      7
+  International Journal of Operations & Production Management   1.38      5
+  Supply Chain Management An International Journal     1.06      3
+  Benchmarking An International Journal                0.43      3
+  Business Process Management Journal                  0.37      3
+  Annals of Operations Research                        0.52      2
+  The TQM Journal                                      0.54      2
+  Journal of Operations Management                     2.13      2
+  Research Policy                                      2.36      2
+  International Entrepreneurship and Management Journal   0.83      1
+  IEEE Transactions on Engineering Management          0.54      1
+  Industrial Management & Data Systems                 0.57      1
+  Business Horizons                                    1.05      1
+  European Management Journal                          0.88      1
+  Journal of Business Research                         1.56      1
+  International journal of organizational analysis     0.33      1
+
+  Community 12  n=110  med_v=1.09  [green, innovation, performance, environmental, knowledge]
+  Source                                                  v  n_hcw
+  ------------------------------------------------------------------
+  Business Strategy and the Environment                1.19     27
+  Technological Forecasting and Social Change          1.09     13
+  Journal of Business Research                         1.56      7
+  Journal of Innovation & Knowledge                    0.68      6
+  Journal of Environmental Management                  0.39      4
+  Corporate Social Responsibility and Environmental Management   0.79      4
+  Journal of Knowledge Management                      0.90      4
+  Management Decision                                  0.53      3
+  Journal of Business Ethics                           1.37      3
+  Finance research letters                             0.71      3
+  International Journal of Production Economics        1.13      3
+  Energy Economics                                     1.13      3
+  Research Policy                                      2.36      3
+  Service Industries Journal                           0.92      2
+  Journal of Open Innovation Technology Market and Complexity   0.34      2
+  International Journal of Contemporary Hospitality Management   1.34      2
+  Economic Analysis and Policy                         0.49      2
+  International Review of Economics & Finance          0.51      2
+  Journal of Intellectual Capital                      0.90      2
+  Accounting Research Journal                          0.53      1
+
+  Community 15  n=103  med_v=1.13  [big, analytics, supply, chain, performance]
+  Source                                                  v  n_hcw
+  ------------------------------------------------------------------
+  Journal of Business Research                         1.56     21
+  International Journal of Production Economics        1.13     11
+  Technological Forecasting and Social Change          1.09     10
+  Management Decision                                  0.53      4
+  International Journal of Operations & Production Management   1.38      3
+  The International Journal of Logistics Management    0.74      3
+  Journal of Retailing and Consumer Services           1.14      3
+  Industrial Marketing Management                      1.60      3
+  Annals of Operations Research                        0.52      3
+  British Journal of Management                        1.17      3
+  Benchmarking An International Journal                0.43      2
+  International Journal of Physical Distribution & Logistics Management   0.87      2
+  Journal of Product Innovation Management             1.47      2
+  Technovation                                         1.02      2
+  Global Journal of Flexible Systems Management        0.51      2
+  Business Process Management Journal                  0.37      2
+  Academy of Management Journal                        4.64      1
+  Business Strategy and the Environment                1.19      1
+  Electronic Markets                                   0.79      1
+  IEEE Transactions on Engineering Management          0.54      1
+
+  Community 19  n=87  med_v=1.19  [bibliometric, literature, reviews, systematic, future]
+  Source                                                  v  n_hcw
+  ------------------------------------------------------------------
+  Journal of Business Research                         1.56     19
+  Technological Forecasting and Social Change          1.09      6
+  Organizational Research Methods                      3.60      4
+  Review of Managerial Science                         0.77      4
+  Psychology and Marketing                             1.28      3
+  Journal of Small Business Management                 1.19      3
+  Journal of Management Studies                        2.70      3
+  Australasian Marketing Journal (AMJ)                 1.18      3
+  International Entrepreneurship and Management Journal   0.83      2
+  Research in International Business and Finance       0.64      2
+  Journal of International Marketing                   1.14      2
+  International Journal of Management Reviews          2.07      2
+  International Journal of Contemporary Hospitality Management   1.34      2
+  International Journal of Production Economics        1.13      2
+  Finance research letters                             0.71      1
+  Human Resource Development Review                    1.22      1
+  Electronic Commerce Research                         0.30      1
+  Cogent Business & Management                         0.17      1
+  Business Strategy and the Environment                1.19      1
+  Australian Journal of Management                     0.49      1
+
+  Community 20  n=83  med_v=1.14  [metaverse, reality, augmented, marketing, virtual]
+  Source                                                  v  n_hcw
+  ------------------------------------------------------------------
+  Journal of Retailing and Consumer Services           1.14     22
+  Journal of Business Research                         1.56      9
+  Psychology and Marketing                             1.28      5
+  International Journal of Contemporary Hospitality Management   1.34      4
+  Technological Forecasting and Social Change          1.09      4
+  Journal of Retailing                                 2.54      3
+  Asia Pacific Journal of Marketing and Logistics      0.43      3
+  Journal of the Academy of Marketing Science          2.54      3
+  Journal of Interactive Marketing                     3.72      2
+  Journal of Marketing Management                      1.08      2
+  Journal of Marketing                                 8.43      2
+  International Journal of Research in Marketing       2.01      2
+  Journal of Consumer Behaviour                        0.59      2
+  Journal of Consumer Research                         3.12      2
+  Business Horizons                                    1.05      1
+  Australasian Marketing Journal (AMJ)                 1.18      1
+  Journal of Global Fashion Marketing                  0.81      1
+  Journal of Business Strategy                         0.40      1
+  International Journal of Operations & Production Management   1.38      1
+  International Journal of Retail & Distribution Management   0.68      1
+
+  Community 22  n=78  med_v=1.09  [plssem, modeling, equation, least, partial]
+  Source                                                  v  n_hcw
+  ------------------------------------------------------------------
+  Journal of Business Research                         1.56      8
+  Industrial Management & Data Systems                 0.57      8
+  International Journal of Contemporary Hospitality Management   1.34      5
+  European Journal of Marketing                        1.13      4
+  Organizational Research Methods                      3.60      3
+  Journal of the Academy of Marketing Science          2.54      3
+  European Management Journal                          0.88      3
+  European Business Review                             0.68      2
+  Journal of Advertising                               2.07      2
+  International Marketing Review                       0.72      2
+  Journal of Retailing and Consumer Services           1.14      2
+  Journal of Marketing Analytics                       0.28      2
+  International Journal of Hospitality Management      1.21      2
+  Technological Forecasting and Social Change          1.09      2
+  International Journal of Bank Marketing              0.65      2
+  Australasian Marketing Journal (AMJ)                 1.18      1
+  Asia Pacific Journal of Management                   0.64      1
+  Asia Pacific Management Review                       0.50      1
+  Ecological Economics                                 0.88      1
+  Business Process Management Journal                  0.37      1
+
+  Community 23  n=78  med_v=1.14  [mobile, food, delivery, online, intention]
+  Source                                                  v  n_hcw
+  ------------------------------------------------------------------
+  Journal of Retailing and Consumer Services           1.14     33
+  International Journal of Hospitality Management      1.21     14
+  International Journal of Bank Marketing              0.65      5
+  Technological Forecasting and Social Change          1.09      3
+  Psychology and Marketing                             1.28      3
+  Journal of Enterprise Information Management         0.69      2
+  International Journal of Contemporary Hospitality Management   1.34      2
+  Journal of Business Research                         1.56      2
+  Australasian Marketing Journal (AMJ)                 1.18      2
+  Information Systems and e-Business Management        0.26      1
+  Electronic Commerce Research and Applications        0.45      1
+  Electronic Commerce Research                         0.30      1
+  Journal of Behavioral and Experimental Finance       1.03      1
+  Journal of Global Marketing                          0.65      1
+  Journal of Foodservice Business Research             0.36      1
+  International Journal of Retail & Distribution Management   0.68      1
+  Journal of Hospitality Marketing & Management        1.20      1
+  Journal of Product Innovation Management             1.47      1
+  Journal of Islamic marketing                         0.28      1
+  The TQM Journal                                      0.54      1
+
+  Community 24  n=76  med_v=1.07  [agenda, future, literature, consumer, systematic]
+  Source                                                  v  n_hcw
+  ------------------------------------------------------------------
+  International Journal of Consumer Studies            1.07     18
+  Journal of Business Research                         1.56     13
+  Journal of the Academy of Marketing Science          2.54      7
+  International Business Review                        1.56      5
+  Journal of Retailing and Consumer Services           1.14      3
+  International Marketing Review                       0.72      3
+  European Management Journal                          0.88      3
+  Journal of Product & Brand Management                0.82      3
+  Journal of Strategic Marketing                       0.82      2
+  Psychology and Marketing                             1.28      2
+  Asia Pacific Business Review                         0.34      1
+  Journal of Brand Management                          0.78      1
+  International Journal of Emerging Markets            0.36      1
+  International Journal of Contemporary Hospitality Management   1.34      1
+  International Journal of Bank Marketing              0.65      1
+  IEEE Transactions on Engineering Management          0.54      1
+  Business Strategy and the Environment                1.19      1
+  Journal of Consumer Affairs                          0.71      1
+  Journal of Business Economics                        0.38      1
+  Journal of Retailing                                 2.54      1
+
+  Community 25  n=76  med_v=1.36  [resilience, covid19, crisis, smes, pandemic]
+  Source                                                  v  n_hcw
+  ------------------------------------------------------------------
+  Journal of Business Research                         1.56      8
+  Small Business Economics                             1.36      6
+  Technological Forecasting and Social Change          1.09      5
+  Industrial Marketing Management                      1.60      4
+  International Small Business Journal Researching Entrepreneurship   1.18      4
+  Journal of Business Venturing Insights               1.50      4
+  International Journal of Hospitality Management      1.21      3
+  Academy of Management Annals                         7.58      2
+  International Journal of Management Reviews          2.07      2
+  Journal of Small Business Management                 1.19      2
+  Academy of Management Journal                        4.64      2
+  International Journal of Entrepreneurial Behaviour & Research   0.79      2
+  Journal of Small Business & Entrepreneurship         0.71      2
+  Journal of Management                                3.55      2
+  Strategic Management Journal                         5.00      2
+  Strategic Entrepreneurship Journal                   2.85      2
+  European Management Journal                          0.88      2
+  Entrepreneurship and Regional Development            0.88      2
+  Business Horizons                                    1.05      1
+  Applied Psychology                                   0.87      1
+
+  Community 26  n=76  med_v=1.09  [blockchain, supply, chain, technology, management]
+  Source                                                  v  n_hcw
+  ------------------------------------------------------------------
+  International Journal of Production Economics        1.13     10
+  Production and Operations Management                 1.61      9
+  Supply Chain Management An International Journal     1.06      6
+  Business Horizons                                    1.05      6
+  Technological Forecasting and Social Change          1.09      5
+  International Journal of Physical Distribution & Logistics Management   0.87      3
+  Manufacturing & Service Operations Management        3.03      3
+  Journal of Business Logistics                        1.66      3
+  Annals of Operations Research                        0.52      3
+  Production Planning & Control                        1.07      2
+  Industrial Management & Data Systems                 0.57      2
+  Financial Innovation                                 0.60      2
+  Business Process Management Journal                  0.37      2
+  Business Strategy and the Environment                1.19      2
+  The International Journal of Logistics Management    0.74      2
+  Management Science                                   3.56      2
+  Journal of Enterprise Information Management         0.69      1
+  Decision Sciences                                    1.32      1
+  Asia Pacific Journal of Marketing and Logistics      0.43      1
+  Journal of Business Venturing Insights               1.50      1
+
+  Community 31  n=67  med_v=1.17  [circular, economy, supply, chain, sustainable]
+  Source                                                  v  n_hcw
+  ------------------------------------------------------------------
+  Business Strategy and the Environment                1.19     21
+  International Journal of Production Economics        1.13      7
+  Journal of Business Research                         1.56      5
+  Production Planning & Control                        1.07      4
+  International Journal of Operations & Production Management   1.38      3
+  Omega                                                1.00      3
+  Technological Forecasting and Social Change          1.09      3
+  Ecological Economics                                 0.88      3
+  Business Horizons                                    1.05      2
+  Supply Chain Management An International Journal     1.06      2
+  Research Policy                                      2.36      2
+  Journal of Purchasing and Supply Management          1.15      2
+  Journal of Environmental Management                  0.39      2
+  Corporate Social Responsibility and Environmental Management   0.79      1
+  California Management Review                         2.07      1
+  British Journal of Management                        1.17      1
+  Innovation                                           0.53      1
+  Journal of Enterprise Information Management         0.69      1
+  Journal of Business Ethics                           1.37      1
+  Journal of Knowledge Management                      0.90      1
+
+  Community 32  n=67  med_v=1.11  [greenwashing, environmental, green, finance, financial]
+  Source                                                  v  n_hcw
+  ------------------------------------------------------------------
+  Energy Economics                                     1.13     12
+  Finance research letters                             0.71     10
+  International Review of Financial Analysis           0.82      9
+  Journal of Business Ethics                           1.37      5
+  Business Strategy and the Environment                1.19      3
+  Journal of Business Research                         1.56      3
+  Research in International Business and Finance       0.64      3
+  Corporate Social Responsibility and Environmental Management   0.79      2
+  Journal of Corporate Finance                         2.63      2
+  China Finance Review International                   1.09      1
+  International Business Review                        1.56      1
+  Financial Innovation                                 0.60      1
+  Economic Analysis and Policy                         0.49      1
+  Economic Research-Ekonomska Istraživanja             0.35      1
+  Corporate Governance                                 0.61      1
+  Journal of Advertising                               2.07      1
+  Journal of International Business Studies            3.05      1
+  Journal of Economic Surveys                          1.51      1
+  Journal of International Money and Finance           1.00      1
+  Journal of Retailing and Consumer Services           1.14      1
+
+  Community 35  n=65  med_v=1.36  [entrepreneurial, ecosystems, ecosystem, entrepreneurship, ac]
+  Source                                                  v  n_hcw
+  ------------------------------------------------------------------
+  Small Business Economics                             1.36     14
+  Entrepreneurship Theory and Practice                 3.36      5
+  The Journal of Technology Transfer                   0.85      5
+  Strategic Entrepreneurship Journal                   2.85      4
+  Regional Studies                                     0.95      3
+  International Small Business Journal Researching Entrepreneurship   1.18      3
+  Strategic Management Journal                         5.00      3
+  Research Policy                                      2.36      3
+  Review of Managerial Science                         0.77      2
+  Technovation                                         1.02      2
+  Journal of Business Research                         1.56      2
+  American Economic Review                            15.32      1
+  Academy of Management Perspectives                   2.41      1
+  Academy of Management Journal                        4.64      1
+  Journal of the International Council for Small Business   0.26      1
+  Journal of Labor Economics                           2.90      1
+  Journal of Financial Economics                       8.16      1
+  Journal of Economic Geography                        1.29      1
+  Journal of Business Venturing Insights               1.50      1
+  International Entrepreneurship and Management Journal   0.83      1
+
+  Community 39  n=59  med_v=1.26  [business, innovation, covid19, sustainability, absorptive]
+  Source                                                  v  n_hcw
+  ------------------------------------------------------------------
+  Long Range Planning                                  1.37      7
+  Business Strategy and the Environment                1.19      6
+  Journal of Business Research                         1.56      5
+  Technological Forecasting and Social Change          1.09      4
+  Strategic Entrepreneurship Journal                   2.85      4
+  Journal of Innovation & Knowledge                    0.68      3
+  Organization & Environment                           1.26      2
+  R and D Management                                   0.91      2
+  Review of Managerial Science                         0.77      2
+  International Journal of Entrepreneurial Behaviour & Research   0.79      2
+  Journal of Business Ethics                           1.37      2
+  Industrial Marketing Management                      1.60      2
+  Technovation                                         1.02      2
+  International Small Business Journal Researching Entrepreneurship   1.18      1
+  International Journal of Management Reviews          2.07      1
+  International Journal of Innovation Management       0.24      1
+  International Journal of Hospitality Management      1.21      1
+  International Business Review                        1.56      1
+  Academy of Management Journal                        4.64      1
+  California Management Review                         2.07      1
+
+  Community 47  n=42  med_v=1.14  [purchase, green, behavior, trust, consumers’]
+  Source                                                  v  n_hcw
+  ------------------------------------------------------------------
+  Journal of Retailing and Consumer Services           1.14     24
+  Journal of Business Research                         1.56      3
+  Journal of Business Ethics                           1.37      2
+  International Journal of Hospitality Management      1.21      2
+  Cogent Business & Management                         0.17      1
+  Ecological Economics                                 0.88      1
+  Asia Pacific Journal of Marketing and Logistics      0.43      1
+  European Journal of Marketing                        1.13      1
+  International Journal of Consumer Studies            1.07      1
+  Journal of Consumer Research                         3.12      1
+  Journal of Consumer Marketing                        0.48      1
+  Journal of Current Issues & Research in Advertising   1.00      1
+  Journal of Interactive Marketing                     3.72      1
+  Journal of Islamic marketing                         0.28      1
+  Journal of Research in Interactive Marketing         0.99      1
+
+  Community 50  n=39  med_v=1.14  [covid19, pandemic, during, buying, consumer]
+  Source                                                  v  n_hcw
+  ------------------------------------------------------------------
+  Journal of Retailing and Consumer Services           1.14     11
+  Journal of Business Research                         1.56      7
+  International Journal of Consumer Studies            1.07      7
+  Journal of service management                        1.87      4
+  Journal of Retailing                                 2.54      2
+  Journal of International Consumer Marketing          0.49      1
+  Journal of Innovation & Knowledge                    0.68      1
+  International Journal of Retail & Distribution Management   0.68      1
+  Journal of Marketing Research                        2.96      1
+  Journal of International Financial Markets Institutions and Money   0.78      1
+  Journal of the Academy of Marketing Science          2.54      1
+  Service Industries Journal                           0.92      1
+  The Journal of Human Resources                       2.25      1
+
+  Community 51  n=39  med_v=0.79  [integrated, reporting, disclosure, quality, future]
+  Source                                                  v  n_hcw
+  ------------------------------------------------------------------
+  Corporate Social Responsibility and Environmental Management   0.79      8
+  Meditari Accountancy Research                        0.65      6
+  Business Strategy and the Environment                1.19      4
+  Journal of Intellectual Capital                      0.90      3
+  European Accounting Review                           1.25      2
+  Accounting Forum                                     0.75      1
+  Accounting Auditing & Accountability Journal         1.34      1
+  Abacus                                               0.71      1
+  Accounting and Business Research                     1.33      1
+  Critical Perspectives on Accounting                  1.57      1
+  Accounting and Finance                               0.58      1
+  American Economic Review                            15.32      1
+  Journal of Accounting Literature                     0.15      1
+  International Journal of Management Reviews          2.07      1
+  Journal of applied corporate finance                 0.51      1
+  Journal of Accounting and Public Policy              1.15      1
+  Managerial Auditing Journal                          0.69      1
+  Review of Quantitative Finance and Accounting        0.49      1
+  Sustainability Accounting Management and Policy Journal   0.57      1
+  The British Accounting Review                        0.86      1
+
+  Community 52  n=39  med_v=1.13  [resource, human, green, management, environmental]
+  Source                                                  v  n_hcw
+  ------------------------------------------------------------------
+  Corporate Social Responsibility and Environmental Management   0.79      4
+  International Journal of Contemporary Hospitality Management   1.34      4
+  Business Strategy and the Environment                1.19      3
+  International Journal of Hospitality Management      1.21      3
+  Human Resource Management Journal                    1.66      2
+  Journal of Business Ethics                           1.37      2
+  Service Industries Journal                           0.92      2
+  Technological Forecasting and Social Change          1.09      2
+  International Journal of Manpower                    0.50      2
+  Journal of Hospitality and Tourism Insights          0.36      2
+  Cogent Business & Management                         0.17      1
+  Asia Pacific Journal of Human Resources              0.42      1
+  Asia Pacific Journal of Management                   0.64      1
+  Journal of Business Research                         1.56      1
+  International Journal of Production Economics        1.13      1
+  Human Resource Management                            1.40      1
+  Journal of Environmental Management                  0.39      1
+  Journal of Hospitality and Tourism Management        0.72      1
+  Journal of Hospitality Marketing & Management        1.20      1
+  Organization & Environment                           1.26      1
+
+  Community 53  n=38  med_v=1.14  [live, streaming, ecommerce, commerce, perspective]
+  Source                                                  v  n_hcw
+  ------------------------------------------------------------------
+  Journal of Retailing and Consumer Services           1.14     22
+  Electronic Commerce Research and Applications        0.45      4
+  Journal of Business Research                         1.56      4
+  Production and Operations Management                 1.61      2
+  Asia Pacific Journal of Marketing and Logistics      0.43      1
+  Journal of Marketing                                 8.43      1
+  Journal of Marketing Research                        2.96      1
+  Journal of Marketing Management                      1.08      1
+  Journal of Research in Interactive Marketing         0.99      1
+  Management Science                                   3.56      1
+
+  Community 54  n=37  med_v=1.13  [forecasting, volatility, oil, crude, stock]
+  Source                                                  v  n_hcw
+  ------------------------------------------------------------------
+  Energy Economics                                     1.13      8
+  International Journal of Forecasting                 1.45      4
+  Journal of Empirical Finance                         0.82      3
+  Journal of Econometrics                              3.79      3
+  Journal of Banking & Finance                         1.56      3
+  Journal of Financial Economics                       8.16      3
+  Journal of Business and Economic Statistics          1.60      2
+  Finance research letters                             0.71      2
+  Applied Economics                                    0.31      1
+  Empirical Economics                                  0.54      1
+  Journal of Financial and Quantitative Analysis       2.22      1
+  Journal of Forecasting                               0.49      1
+  Journal of International Financial Markets Institutions and Money   0.78      1
+  Journal of International Money and Finance           1.00      1
+  Review of Financial Studies                          7.13      1
+  Technological Forecasting and Social Change          1.09      1
+  The Review of Economics and Statistics               2.70      1
+
+  Community 57  n=36  med_v=0.85  [entrepreneurial, education, intentions, entrepreneurship, in]
+  Source                                                  v  n_hcw
+  ------------------------------------------------------------------
+  The International Journal of Management Education    0.57      6
+  Journal of Business Research                         1.56      4
+  Journal of Business Venturing                        2.70      4
+  European Research on Management and Business Economics   0.54      3
+  Technological Forecasting and Social Change          1.09      3
+  International Entrepreneurship and Management Journal   0.83      2
+  International Journal of Entrepreneurial Behaviour & Research   0.79      2
+  Small Business Economics                             1.36      2
+  The Journal of Technology Transfer                   0.85      2
+  European Management Journal                          0.88      1
+  Entrepreneurship Theory and Practice                 3.36      1
+  Eurasian Economic Review                             0.72      1
+  Academy of Management Learning and Education         1.39      1
+  British Journal of Management                        1.17      1
+  Revista de Economía Mundial                          0.18      1
+  Journal of Innovation & Knowledge                    0.68      1
+
+  Community 61  n=31  med_v=1.19  [goals, development, sustainable, sdg, disclosure]
+  Source                                                  v  n_hcw
+  ------------------------------------------------------------------
+  Business Strategy and the Environment                1.19      6
+  Corporate Social Responsibility and Environmental Management   0.79      4
+  Accounting Auditing & Accountability Journal         1.34      3
+  International Business Review                        1.56      2
+  Sustainability Accounting Management and Policy Journal   0.57      2
+  Journal of Management Studies                        2.70      2
+  Business & Society                                   1.59      1
+  Global Journal of Flexible Systems Management        0.51      1
+  European Accounting Review                           1.25      1
+  International Journal of Disclosure and Governance   0.28      1
+  Journal of Accounting in Emerging Economies          0.47      1
+  Journal of International Business Policy             2.37      1
+  Journal of Applied Accounting Research               0.50      1
+  Long Range Planning                                  1.37      1
+  Strategic Management Journal                         5.00      1
+
+  Community 63  n=30  med_v=1.32  [accounting, auditing, audit, intelligence, artificial]
+  Source                                                  v  n_hcw
+  ------------------------------------------------------------------
+  Accounting Horizons                                  1.32      5
+  Auditing A Journal of Practice & Theory              1.69      3
+  Review of Accounting Studies                         4.11      3
+  Contemporary Accounting Research                     2.32      3
+  Technological Forecasting and Social Change          1.09      2
+  Journal of Emerging Technologies in Accounting       0.80      2
+  Accounting Education                                 0.86      1
+  Critical Perspectives on Accounting                  1.57      1
+  Applied Economics Letters                            0.22      1
+  Australian Accounting Review                         0.87      1
+  Journal of Business Ethics                           1.37      1
+  Issues in Accounting Education                       1.12      1
+  International Journal of Accounting Information Systems   1.04      1
+  Journal of Information Systems                       0.72      1
+  Journal of Organizational Change Management          0.47      1
+  Journal of Open Innovation Technology Market and Complexity   0.34      1
+  Journal of financial reporting & accounting          0.32      1
+  The British Accounting Review                        0.86      1
+
+  Community 67  n=26  med_v=1.21  [sharing, economy, airbnb, business, accommodation]
+  Source                                                  v  n_hcw
+  ------------------------------------------------------------------
+  International Journal of Hospitality Management      1.21      7
+  Technological Forecasting and Social Change          1.09      3
+  Journal of Business Research                         1.56      2
+  Journal of Consumer Behaviour                        0.59      2
+  International Journal of Contemporary Hospitality Management   1.34      2
+  Journal of Marketing                                 8.43      2
+  Industrial Marketing Management                      1.60      1
+  European Management Journal                          0.88      1
+  Electronic Commerce Research and Applications        0.45      1
+  Ecological Economics                                 0.88      1
+  American Economic Review                            15.32      1
+  Journal of Interactive Marketing                     3.72      1
+  Journal of Marketing Research                        2.96      1
+  Journal of service management                        1.87      1
+
+  Community 74  n=22  med_v=1.37  [supply, chain, chains, sustainability, performance]
+  Source                                                  v  n_hcw
+  ------------------------------------------------------------------
+  Journal of Operations Management                     2.13      7
+  International Journal of Production Economics        1.13      4
+  Supply Chain Management An International Journal     1.06      2
+  Journal of Business Ethics                           1.37      2
+  International Journal of Operations & Production Management   1.38      2
+  Academy of Management Journal                        4.64      1
+  Business Strategy and the Environment                1.19      1
+  Journal of Manufacturing Technology Management       0.68      1
+  Operations Management Research                       0.44      1
+
+  Community 76  n=22  med_v=1.21  [common, method, online, recommendations, variance]
+  Source                                                  v  n_hcw
+  ------------------------------------------------------------------
+  International Journal of Hospitality Management      1.21      3
+  Journal of Business and Psychology                   0.88      3
+  Journal of Behavioral and Experimental Finance       1.03      2
+  Journal of Consumer Research                         3.12      2
+  Journal of Management                                3.55      2
+  Journal of the Academy of Marketing Science          2.54      2
+  Journal of Business Research                         1.56      1
+  American Economic Review                            15.32      1
+  Australian Journal of Management                     0.49      1
+  Organizational Research Methods                      3.60      1
+  Technological Forecasting and Social Change          1.09      1
+  The Accounting Review                                3.36      1
+  The International Journal of Management Education    0.57      1
+
+  Community 77  n=20  med_v=1.46  [entrepreneurial, orientation, individual, opportunity, inten]
+  Source                                                  v  n_hcw
+  ------------------------------------------------------------------
+  Journal of Business Research                         1.56      6
+  International Entrepreneurship and Management Journal   0.83      2
+  Entrepreneurship Theory and Practice                 3.36      2
+  International Small Business Journal Researching Entrepreneurship   1.18      2
+  Journal of Innovation & Knowledge                    0.68      2
+  Industrial Marketing Management                      1.60      1
+  Business Strategy and the Environment                1.19      1
+  Journal of Small Business Management                 1.19      1
+  Review of Managerial Science                         0.77      1
+  Small Business Economics                             1.36      1
+  Strategic Entrepreneurship Journal                   2.85      1
+
+  Community 82  n=19  med_v=1.37  [innovation, china, rampd, state, digital]
+  Source                                                  v  n_hcw
+  ------------------------------------------------------------------
+  Research Policy                                      2.36      3
+  Academy of Management Journal                        4.64      1
+  Administrative Science Quarterly                     4.84      1
+  Economics of Innovation and New Technology           0.67      1
+  Economic Analysis and Policy                         0.49      1
+  International Review of Financial Analysis           0.82      1
+  Journal of Business Ethics                           1.37      1
+  Journal of Comparative Economics                     1.21      1
+  Finance research letters                             0.71      1
+  Journal of Corporate Finance                         2.63      1
+  Journal of Development Economics                     2.10      1
+  Journal of Innovation & Knowledge                    0.68      1
+  Journal of International Business Studies            3.05      1
+  Strategic Management Journal                         5.00      1
+  Technological Forecasting and Social Change          1.09      1
+  Technovation                                         1.02      1
+  The North American Journal of Economics and Finance   0.56      1
+
+  Community 83  n=18  med_v=0.75  [inclusion, financial, islamic, economic, mena]
+  Source                                                  v  n_hcw
+  ------------------------------------------------------------------
+  International Review of Economics & Finance          0.51      2
+  Finance research letters                             0.71      2
+  Journal of Financial Stability                       1.36      2
+  Emerging Markets Review                              0.83      1
+  Forum for Social Economics                           0.13      1
+  Borsa Istanbul Review                                0.38      1
+  Journal of Financial Services Research               0.76      1
+  Journal of International Financial Markets Institutions and Money   0.78      1
+  Journal of Policy Modeling                           0.75      1
+  Journal of Science and Technology Policy Management   0.17      1
+  Regional Studies                                     0.95      1
+  Research Policy                                      2.36      1
+  Research in International Business and Finance       0.64      1
+  Technological Forecasting and Social Change          1.09      1
+
+  Community 85  n=17  med_v=1.13  [innovation, performance, collaborative, creativity, capabili]
+  Source                                                  v  n_hcw
+  ------------------------------------------------------------------
+  International Journal of Production Economics        1.13      4
+  Technovation                                         1.02      4
+  Industrial Marketing Management                      1.60      2
+  Research Policy                                      2.36      2
+  Journal of Business Research                         1.56      1
+  Journal of Management                                3.55      1
+  Journal of Business Venturing                        2.70      1
+  Journal of Product Innovation Management             1.47      1
+  Technological Forecasting and Social Change          1.09      1
+
+  Community 86  n=17  med_v=1.05  [generative, chatbots, affordances, paradoxes, conversational]
+  Source                                                  v  n_hcw
+  ------------------------------------------------------------------
+  Business Horizons                                    1.05     16
+  Journal of Product Innovation Management             1.47      1
+
+  Community 90  n=16  med_v=1.13  [engagement, literature, systematic, employee, synthesis]
+  Source                                                  v  n_hcw
+  ------------------------------------------------------------------
+  International Journal of Management Reviews          2.07      4
+  Journal of Organizational Effectiveness People and Performance   0.37      2
+  Career Development International                     0.68      1
+  British Journal of Management                        1.17      1
+  Human Resource Development Review                    1.22      1
+  International Journal of Physical Distribution & Logistics Management   0.87      1
+  Journal of Business Research                         1.56      1
+  Journal of Intellectual Capital                      0.90      1
+  Research Policy                                      2.36      1
+  Scandinavian Journal of Management                   0.58      1
+  Technological Forecasting and Social Change          1.09      1
+  The Journal of Technology Transfer                   0.85      1
+
+  Community 91  n=16  med_v=1.37  [carbon, structure, decisions, capital, corporate]
+  Source                                                  v  n_hcw
+  ------------------------------------------------------------------
+  International Review of Financial Analysis           0.82      4
+  Journal of Corporate Finance                         2.63      4
+  Accounting and Finance                               0.58      2
+  Contemporary Accounting Research                     2.32      1
+  Journal of Business Ethics                           1.37      1
+  Journal of Financial Economics                       8.16      1
+  Organization & Environment                           1.26      1
+  The Journal of Finance                               9.58      1
+
+  Community 103  n=14  med_v=1.19  [china, investment, ownership, financialization, connections]
+  Source                                                  v  n_hcw
+  ------------------------------------------------------------------
+  Journal of Financial Economics                       8.16      2
+  Finance research letters                             0.71      2
+  American Economic Review                            15.32      1
+  China Economic Review                                0.75      1
+  Econometrica                                        12.50      1
+  China Journal of Accounting Research                 0.70      1
+  International Review of Financial Analysis           0.82      1
+  International Review of Economics & Finance          0.51      1
+  Journal of Banking & Finance                         1.56      1
+  Journal of Corporate Finance                         2.63      1
+  Pacific-Basin Finance Journal                        0.69      1
+  The Journal of Finance                               9.58      1
+
+  Community 104  n=14  med_v=1.21  [job, support, demandsresources, employee, frontline]
+  Source                                                  v  n_hcw
+  ------------------------------------------------------------------
+  International Journal of Hospitality Management      1.21      3
+  Journal of Applied Psychology                        2.54      3
+  Human Resource Management Review                     1.78      1
+  Journal of Business and Psychology                   0.88      1
+  Journal of Management                                3.55      1
+  Journal of Retailing and Consumer Services           1.14      1
+  Personnel Review                                     0.63      1
+
+  Community 112  n=12  med_v=1.13  [trading, carbon, scheme, chinas, emission]
+  Source                                                  v  n_hcw
+  ------------------------------------------------------------------
+  Energy Economics                                     1.13      4
+  American Economic Journal Economic Policy            5.84      1
+  Cambridge Journal of Economics                       0.90      1
+  Finance research letters                             0.71      1
+  International Review of Economics & Finance          0.51      1
+  Journal of Banking & Finance                         1.56      1
+  Journal of Environmental Management                  0.39      1
+
+  Community 117  n=10  med_v=0.79  [competitive, performance, sustainable, advantage, financial]
+  Source                                                  v  n_hcw
+  ------------------------------------------------------------------
+  Corporate Social Responsibility and Environmental Management   0.79      4
+  Business Strategy and the Environment                1.19      1
+  Industrial Marketing Management                      1.60      1
+  International Journal of Entrepreneurship and Small Business   0.10      1
+  Journal of Business Ethics                           1.37      1
+  Journal of Business Research                         1.56      1
+  Journal of Open Innovation Technology Market and Complexity   0.34      1
+
+  Community 119  n=10  med_v=1.34  [hospitality, crisis, covid19, tourism, resignation]
+  Source                                                  v  n_hcw
+  ------------------------------------------------------------------
+  International Journal of Contemporary Hospitality Management   1.34      7
+  Journal of Hospitality Marketing & Management        1.20      2
+
+  Community 124  n=9  med_v=0.78  [openness, inequality, trade, nonadditive, cop28]
+  Source                                                  v  n_hcw
+  ------------------------------------------------------------------
+  American Economic Review                            15.32      1
+  Empirical Economics                                  0.54      1
+  Finance research letters                             0.71      1
+  Global Finance Journal                               0.58      1
+  Journal of Econometrics                              3.79      1
+  Journal of Environmental Management                  0.39      1
+  Journal of International Financial Markets Institutions and Money   0.78      1
+  Journal of Multinational Financial Management        0.80      1
+  Technological Forecasting and Social Change          1.09      1
+
+  Community 127  n=8  med_v=1.04  [geopolitical, energy, attention, renewable, countries]
+  Source                                                  v  n_hcw
+  ------------------------------------------------------------------
+  Energy Economics                                     1.13      3
+  Finance research letters                             0.71      1
+  Journal of Environmental Management                  0.39      1
+  Journal of International Money and Finance           1.00      1
+  Research in International Business and Finance       0.64      1
+  Technological Forecasting and Social Change          1.09      1
+
+  Community 129  n=8  med_v=1.19  [sustainability, image, corporate, chain, supply]
+  Source                                                  v  n_hcw
+  ------------------------------------------------------------------
+  Business Strategy and the Environment                1.19      3
+  International Journal of Emerging Markets            0.36      1
+  International Journal of Hospitality Management      1.21      1
+  International Journal of Operations & Production Management   1.38      1
+  International Journal of Production Economics        1.13      1
+  Journal of Business Research                         1.56      1
+
+  Community 135  n=7  med_v=0.21  [bibliometric, trends, accounting, integrity, future]
+  Source                                                  v  n_hcw
+  ------------------------------------------------------------------
+  Cogent Business & Management                         0.17      2
+  International Journal of Financial Studies           0.25      2
+  Technology Analysis and Strategic Management         0.32      1
+  Uncertain Supply Chain Management                    0.06      1
+
+  Community 140  n=6  med_v=0.71  [africa, access, inequality, structural, financial]
+  Source                                                  v  n_hcw
+  ------------------------------------------------------------------
+  Journal of African Business                          0.30      2
+  Technological Forecasting and Social Change          1.09      2
+  Research Policy                                      2.36      1
+  Transnational Corporation Review                     0.32      1
+
+── Top-10 E/B/A sources by v — HCW counts in top-10 communities ────────
+
+  Community 0  n=643  med_v=0.71  [covid19, connectedness, stock, volatility, bitcoin]
+  Source                                              fld  src_v  n_hcw
+  ----------------------------------------------------------------------
+  Journal of Financial Economics                        A   8.16      4
+  Review of Financial Studies                           A   7.13      3
+  American Economic Review                              E  15.32      2
+  The Journal of Finance                                A   9.58      2
+  Journal of Monetary Economics                         A   3.65      1
+  The Review of Asset Pricing Studies                   A   5.38      1
+  total top-25 HCW in community                                 13  (2.0% of community)
+
+  Community 1  n=457  med_v=1.13  [esg, corporate, performance, responsibility, governance]
+  Source                                              fld  src_v  n_hcw
+  ----------------------------------------------------------------------
+  Strategic Management Journal                          B   5.00     13
+  Journal of Financial Economics                        A   8.16     11
+  Journal of Accounting Research                        A   4.59      7
+  Review of Accounting Studies                          A   4.11      7
+  Review of Financial Studies                           A   7.13      7
+  The Journal of Finance                                A   9.58      6
+  Journal of Accounting and Economics                   A   5.41      5
+  Academy of Management Journal                         B   4.64      3
+  American Economic Review                              E  15.32      2
+  The Review of Corporate Finance Studies               A   4.08      2
+  Annual Review of Financial Economics                  A   3.48      1
+  Journal of Economic Literature                        E   8.46      1
+  Journal of Political Economy                          E   8.46      1
+  The Review of Economic Studies                        E   6.74      1
+  total top-25 HCW in community                                 67  (14.7% of community)
+
+  Community 2  n=454  med_v=1.09  [green, innovation, china, energy, finance]
+  Source                                              fld  src_v  n_hcw
+  ----------------------------------------------------------------------
+  Journal of Political Economy                          E   8.46      3
+  American Economic Review                              E  15.32      2
+  American Economic Journal Macroeconomics              E   6.40      1
+  Journal of Financial Economics                        A   8.16      1
+  Marketing Science                                     B   4.11      1
+  total top-25 HCW in community                                  8  (1.8% of community)
+
+  Community 3  n=326  med_v=1.56  [service, artificial, intelligence, customer, robots]
+  Source                                              fld  src_v  n_hcw
+  ----------------------------------------------------------------------
+  Journal of Marketing                                  B   8.43     23
+  Marketing Science                                     B   4.11      5
+  Journal of Interactive Marketing                      B   3.72      4
+  total top-25 HCW in community                                 32  (9.8% of community)
+
+  Community 4  n=266  med_v=1.09  [digital, transformation, innovation, digitalization, pe]
+  Source                                              fld  src_v  n_hcw
+  ----------------------------------------------------------------------
+  Journal of Economic Literature                        E   8.46      2
+  Academy of Management Journal                         B   4.64      1
+  Academy of Management Review                          B   4.72      1
+  American Economic Review                              E  15.32      1
+  total top-25 HCW in community                                  5  (1.9% of community)
+
+  Community 5  n=233  med_v=1.19  [board, diversity, gender, corporate, performance]
+  Source                                              fld  src_v  n_hcw
+  ----------------------------------------------------------------------
+  Strategic Management Journal                          B   5.00      6
+  Academy of Management Journal                         B   4.64      5
+  The Journal of Finance                                A   9.58      3
+  Academy of Management Annals                          B   7.58      2
+  Journal of Accounting Research                        A   4.59      2
+  Journal of Financial Economics                        A   8.16      2
+  Review of Financial Studies                           A   7.13      2
+  Academy of Management Review                          B   4.72      1
+  American Economic Review                              E  15.32      1
+  Journal of Accounting and Economics                   A   5.41      1
+  Review of Accounting Studies                          A   4.11      1
+  The Review of Economic Studies                        E   6.74      1
+  total top-25 HCW in community                                 27  (11.6% of community)
+
+  Community 6  n=168  med_v=1.13  [supply, chain, resilience, covid19, chains]
+    (no top-30 source HCW)
+
+  Community 7  n=137  med_v=1.36  [uncertainty, policy, economic, china, political]
+  Source                                              fld  src_v  n_hcw
+  ----------------------------------------------------------------------
+  Journal of Financial Economics                        A   8.16     10
+  American Economic Review                              E  15.32      5
+  Journal of Monetary Economics                         A   3.65      5
+  Review of Financial Studies                           A   7.13      4
+  The Journal of Finance                                A   9.58      4
+  Econometrica                                          E  12.50      2
+  Journal of Accounting and Economics                   A   5.41      2
+  Journal of Political Economy                          E   8.46      2
+  The Quarterly Journal of Economics                    E  15.14      2
+  American Economic Journal Macroeconomics              E   6.40      1
+  Journal of Economic Literature                        E   8.46      1
+  total top-25 HCW in community                                 38  (27.7% of community)
+
+  Community 8  n=129  med_v=1.14  [influencers, influencer, media, marketing, virtual]
+  Source                                              fld  src_v  n_hcw
+  ----------------------------------------------------------------------
+  Journal of Marketing                                  B   8.43      8
+  Journal of Interactive Marketing                      B   3.72      3
+  total top-25 HCW in community                                 11  (8.5% of community)
+
+  Community 9  n=125  med_v=1.01  [fintech, bank, financial, digital, china]
+  Source                                              fld  src_v  n_hcw
+  ----------------------------------------------------------------------
+  Review of Financial Studies                           A   7.13     13
+  The Journal of Finance                                A   9.58     10
+  Journal of Financial Economics                        A   8.16      5
+  American Economic Review                              E  15.32      2
+  Annual Review of Financial Economics                  A   3.48      1
+  Journal of Political Economy                          E   8.46      1
+  The Quarterly Journal of Economics                    E  15.14      1
+  The Review of Corporate Finance Studies               A   4.08      1
+  total top-25 HCW in community                                 34  (27.2% of community)
+Saved /home/lc/Projects/EconomicsBusiness/plots/enclave_hcw_communities.pdf
+Saved /home/lc/Projects/EconomicsBusiness/plots/enclave_hcw_communities_latex.pdf
+Saving figures…
+Saved /home/lc/Projects/EconomicsBusiness/plots/enclave_lowess.pdf
+Saved /home/lc/Projects/EconomicsBusiness/plots/enclave_lowess_latex.pdf
+Saved /home/lc/Projects/EconomicsBusiness/plots/enclave_v_vs_hcw.pdf
+Saved /home/lc/Projects/EconomicsBusiness/plots/enclave_v_vs_hcw_latex.pdf
+
+FINISHED!

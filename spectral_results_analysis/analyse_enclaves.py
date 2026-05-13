@@ -1,10 +1,14 @@
 """
 
-analyse_citation_cartels.py — Detect citation-cartel-like patterns in OAS.
+analyse_enclaves.py — Detect anti-ranking enclave patterns in OAS.
 
 For each OAS source, computes the fraction of its works that are year-adjusted
 top-centile by intra-corpus citation count (HCW = Highly Cited Work). Flags
 sources where this propensity is anomalously high relative to spectral influence v.
+
+The anti-ranking pattern: a close-knit community working in a field that lies
+persistently outside the mainstream accumulates HCW status through internal
+citation density, not through broad corpus influence.
 
 Steps:
   1. Year-specific HCW thresholds (99th pctile of n_intra per publication year).
@@ -12,11 +16,11 @@ Steps:
   3. LOWESS residuals on propensity ~ log10(v) to identify anomalies.
   4. Two-panel scatter figure: v vs n_hcw count (left), v vs propensity (right).
   5. Console: threshold table, residual table, flagged sources.
-  6. TF-IDF title terms for flagged low-v (cartel candidate) sources.
-  7. Mutual citation table among cartel candidates.
+  6. TF-IDF title terms for flagged low-v (enclave) sources.
+  7. Mutual citation table among enclave sources.
 
 Outputs:
-  plots/cartel_v_vs_hcw.png   — rank figure
+  plots/enclave_v_vs_hcw.png   — rank figure
   Console: all diagnostics
 """
 
@@ -50,7 +54,7 @@ YEAR_LO         = 2015
 YEAR_HI         = 2024
 HCW_PCT         = 99    # top-centile definition
 RESID_SD_THRESH = 2.0   # SD threshold for anomaly flag
-LOW_V_THRESH    = 1.5   # v cutoff for cartel candidate sub-filter
+LOW_V_THRESH    = 1.5   # v cutoff for enclave sub-filter
 TOP_N_TERMS     = 15    # TF-IDF terms per flagged source
 TOP_N_ANNOTATE  = 20    # max labels on propensity panel
 
@@ -201,8 +205,8 @@ def hcw_referer_stats(df_works: pd.DataFrame,
         work_idx, source_idx, source_name, publication_year, title,
         n_intra, v_host,
         n_referencers, v_median, v_p80, v_p90, v_p95, v_p99,
-        ratio_p95  (v_p95 / v_host — low values flag suspicious HCW)
-    Sorted by ratio_p95 ascending (most suspicious first).
+        ratio_p95  (v_p95 / v_host — low values flag anti-ranking HCW)
+    Sorted by ratio_p95 ascending (most enclave-like first).
     """
     hcw = df_works.loc[df_works['is_hcw'],
                        ['work_idx', 'source_idx', 'publication_year',
@@ -251,11 +255,11 @@ def hcw_referer_stats(df_works: pd.DataFrame,
 
 # ── 3. Figures ────────────────────────────────────────────────────────────────
 
-_HCW_COLOUR     = '#e07b00'              # orange for HCW count dots
-_CARTEL_COLOURS = ['#c0392b', '#2980b9', '#27ae60', '#8e44ad']  # per cluster
-_V_LO, _V_HI   = -2.5, 1.4
-_V_TICKS        = [-2, -1, 0, 1]
-_GRID_COLOUR    = '#dddddd'
+_HCW_COLOUR      = '#e07b00'              # orange for HCW count dots
+_ENCLAVE_COLOURS = ['#c0392b', '#2980b9', '#27ae60', '#8e44ad']  # per cluster
+_V_LO, _V_HI    = -2.5, 1.4
+_V_TICKS         = [-2, -1, 0, 1]
+_GRID_COLOUR     = '#dddddd'
 
 
 def _draw_rank_panel(ax, df: pd.DataFrame, title: str,
@@ -317,7 +321,7 @@ def _draw_rank_panel(ax, df: pd.DataFrame, title: str,
     if highlight_map:
         ids = df[id_col].values
         for cid in sorted(set(highlight_map.values())):
-            colour    = _CARTEL_COLOURS[cid % len(_CARTEL_COLOURS)]
+            colour    = _ENCLAVE_COLOURS[cid % len(_ENCLAVE_COLOURS)]
             in_cl     = np.array([highlight_map.get(int(x), -1) == cid for x in ids])
             plot_mask = in_cl & mask
             if plot_mask.any():
@@ -343,12 +347,12 @@ def plot_lowess(df: pd.DataFrame, out_path: Path) -> None:
     """
     Scatter of propensity vs log10(v) with LOWESS fit overlaid.
     Flagged sources (residual_sd >= RESID_SD_THRESH) shown in orange;
-    cartel candidates (flagged AND v < LOW_V_THRESH) in red with name labels.
+    enclave sources (flagged AND v < LOW_V_THRESH) in red with name labels.
     """
     log_v   = np.log10(np.clip(df['v'].values, 1e-4, None))
     prop    = df['propensity'].values
     flagged = df['residual_sd'] >= RESID_SD_THRESH
-    cartel  = flagged & (df['v'] < LOW_V_THRESH)
+    enclave = flagged & (df['v'] < LOW_V_THRESH)
 
     # LOWESS curve sampled on a fine grid for smooth line
     xy_sorted = lowess(prop, log_v, frac=0.30, return_sorted=True)
@@ -363,18 +367,18 @@ def plot_lowess(df: pd.DataFrame, out_path: Path) -> None:
     ax.scatter(log_v[~flagged], prop[~flagged],
                color='#999999', s=8, alpha=0.4, linewidths=0, zorder=2)
     # Flagged (above-fit, high-v)
-    ax.scatter(log_v[flagged & ~cartel], prop[flagged & ~cartel],
+    ax.scatter(log_v[flagged & ~enclave], prop[flagged & ~enclave],
                color=_HCW_COLOUR, s=20, alpha=0.7, linewidths=0, zorder=3)
-    # Cartel candidates
-    ax.scatter(log_v[cartel], prop[cartel],
-               color=_CARTEL_COLOURS[0], s=40, alpha=0.9, linewidths=0, zorder=4)
+    # Enclave sources
+    ax.scatter(log_v[enclave], prop[enclave],
+               color=_ENCLAVE_COLOURS[0], s=40, alpha=0.9, linewidths=0, zorder=4)
 
-    # Labels for cartel candidates
-    for _, r in df[cartel].iterrows():
+    # Labels for enclave sources
+    for _, r in df[enclave].iterrows():
         lv = np.log10(max(r['v'], 1e-4))
         ax.annotate(str(r['source_name']), xy=(lv, r['propensity']),
                     xytext=(4, 4), textcoords='offset points',
-                    fontsize=6, color=_CARTEL_COLOURS[0])
+                    fontsize=6, color=_ENCLAVE_COLOURS[0])
 
     # LOWESS fit line
     ax.plot(xy_sorted[:, 0], xy_sorted[:, 1],
@@ -405,7 +409,7 @@ def plot_lowess(df: pd.DataFrame, out_path: Path) -> None:
 
 def plot_rank_with_hcw(df_src: pd.DataFrame, df_inst: pd.DataFrame,
                        flagged_src_ids: list, out_path: Path,
-                       cartel_inst_map: dict | None = None) -> None:
+                       enclave_inst_map: dict | None = None) -> None:
     """
     1×2 figure: sources (left) and institutions (right).
     Each panel: rank vs log10(v) curve + HCW count dots.
@@ -422,11 +426,11 @@ def plot_rank_with_hcw(df_src: pd.DataFrame, df_inst: pd.DataFrame,
                      label_v=True,  label_hcw=False)
     _draw_rank_panel(axes[1], df_inst, 'Institutions', flagged_ids=None,
                      label_v=False, label_hcw=True,
-                     highlight_map=cartel_inst_map or {})
+                     highlight_map=enclave_inst_map or {})
 
     fig.subplots_adjust(left=0.07, right=0.93, top=0.90, bottom=0.10, wspace=0.35)
 
-    sup = fig.suptitle('HCW cartel analysis — rank vs log(v) and HCW count',
+    sup = fig.suptitle('Anti-ranking enclave analysis — rank vs log(v) and HCW count',
                        fontsize=9, y=0.99)
     fig.savefig(out_path, bbox_inches='tight')
     print(f'Saved {out_path}')
@@ -466,13 +470,13 @@ def top_tfidf_terms(fg_titles: list[str],
 def mutual_citation_table(df_works: pd.DataFrame, flagged_ids: list,
                           src_names: dict, out_path: Path | None = None) -> None:
     """
-    For each ordered pair of cartel-candidate sources (cited A, citer B),
+    For each ordered pair of enclave sources (cited A, citer B),
     count citations from works in source B to HCW works in source A.
     Reports mean references per HCW in A from B (intensity = n_cites / n_hcw(A)).
     If out_path given, saves a wide pivot CSV (rows=cited, cols=citer, values=intensity).
     """
     if len(flagged_ids) < 2:
-        print('\nFewer than 2 cartel candidates — skipping mutual citation table.')
+        print('\nFewer than 2 enclave sources — skipping mutual citation table.')
         return
 
     hcw_src = (
@@ -503,12 +507,12 @@ def mutual_citation_table(df_works: pd.DataFrame, flagged_ids: list,
     con.close()
 
     if mc.empty:
-        print('\nNo cross-citations found among cartel candidates.')
+        print('\nNo cross-citations found among enclave sources.')
         return
 
     n_hcw_by_src = hcw_src.groupby('source_idx')['work_idx'].count().to_dict()
 
-    print(f'\n── Mutual reference table  (cartel candidates, intensity = refs per HCW) ──')
+    print(f'\n── Mutual reference table  (enclave sources, intensity = refs per HCW) ──')
     print(f'{"Cited source":<42} {"Citer source":<42} {"n_refs":>8} {"intensity":>9}')
     print('-' * 106)
     for _, row in mc.head(50).iterrows():
@@ -582,12 +586,12 @@ def print_report(df: pd.DataFrame, df_works: pd.DataFrame) -> list:
     flagged = df[df['residual_sd'] >= RESID_SD_THRESH].sort_values(
         'residual_sd', ascending=False
     )
-    low_v   = flagged[flagged['v'] < LOW_V_THRESH]
+    enclave = flagged[flagged['v'] < LOW_V_THRESH]
 
     print(f'\n── Flagged sources  (residual_sd ≥ {RESID_SD_THRESH},  {len(flagged)} total) ──')
-    print(f'   Of which v < {LOW_V_THRESH} (cartel candidates): {len(low_v)}')
+    print(f'   Of which v < {LOW_V_THRESH} (enclave sources): {len(enclave)}')
     for _, r in flagged.iterrows():
-        tag = '  *** CARTEL CANDIDATE' if r['v'] < LOW_V_THRESH else ''
+        tag = '  *** ENCLAVE' if r['v'] < LOW_V_THRESH else ''
         sf  = str(r.get('subfield_name', '') or '')
         print(
             f"  {str(r['source_name']):<44}  v={r['v']:>5.2f}  "
@@ -595,13 +599,13 @@ def print_report(df: pd.DataFrame, df_works: pd.DataFrame) -> list:
             f"SD={r['residual_sd']:>+5.1f}  {r['field_eb']}  {sf}{tag}"
         )
 
-    # TF-IDF for each cartel candidate
-    if low_v.empty:
-        print('\nNo cartel candidates identified at this threshold.')
+    # TF-IDF for each enclave source
+    if enclave.empty:
+        print('\nNo enclave sources identified at this threshold.')
         return []
 
-    print(f'\n── TF-IDF title terms  (cartel candidates vs all-HCW background) ─────────')
-    for _, r in low_v.iterrows():
+    print(f'\n── TF-IDF title terms  (enclave sources vs all-HCW background) ─────────')
+    for _, r in enclave.iterrows():
         src_id = r['source_idx']
         fg = (
             df_works[df_works['is_hcw'] & (df_works['source_idx'] == src_id)]
@@ -617,7 +621,7 @@ def print_report(df: pd.DataFrame, df_works: pd.DataFrame) -> list:
         )
         print(f"  {', '.join(f'{t}({s:.3f})' for t, s in terms)}")
 
-    return low_v['source_idx'].tolist()
+    return enclave['source_idx'].tolist()
 
 
 # ── Institution map ───────────────────────────────────────────────────────────
@@ -625,8 +629,8 @@ def print_report(df: pd.DataFrame, df_works: pd.DataFrame) -> list:
 def institution_hcw_map(df_works: pd.DataFrame, flagged_ids: list,
                         df_inst_v: pd.DataFrame) -> None:
     """
-    For HCW works in cartel-candidate sources, show which institutions authored them.
-    Aggregates: n_hcw_works (distinct HCW co-authored), n_sources (distinct cartel
+    For HCW works in enclave sources, show which institutions authored them.
+    Aggregates: n_hcw_works (distinct HCW co-authored), n_sources (distinct enclave
     sources spanned). Joined with institution v from the baseline ranking.
     """
     hcw_flagged = (
@@ -634,7 +638,7 @@ def institution_hcw_map(df_works: pd.DataFrame, flagged_ids: list,
         [['work_idx', 'source_idx']].copy()
     )
     if hcw_flagged.empty:
-        print('\nNo HCW works in cartel candidates — skipping institution map.')
+        print('\nNo HCW works in enclave sources — skipping institution map.')
         return
 
     con = duckdb.connect(':memory:')
@@ -655,13 +659,13 @@ def institution_hcw_map(df_works: pd.DataFrame, flagged_ids: list,
     con.close()
 
     if df_inst.empty:
-        print('\nNo institution data found for cartel HCW.')
+        print('\nNo institution data found for enclave HCW.')
         return
 
     df_inst = df_inst.merge(df_inst_v, on='institution_idx', how='left')
     n_total = hcw_flagged['work_idx'].nunique()
 
-    print(f'\n── Institution map  (authors of cartel-candidate HCW,  {n_total:,} HCW total,  top 50) ──')
+    print(f'\n── Institution map  (authors of enclave HCW,  {n_total:,} HCW total,  top 50) ──')
     print(f'{"Institution":<52} {"v_inst":>7} {"n_hcw":>6} {"n_src":>6} {"pct":>6}')
     print('-' * 83)
     for _, r in df_inst.head(50).iterrows():
@@ -673,14 +677,255 @@ def institution_hcw_map(df_works: pd.DataFrame, flagged_ids: list,
         )
 
 
-# ── Cartel cluster → institution map ─────────────────────────────────────────
+# ── HCW community detection (Infomap on directed HCW-to-HCW citation graph) ──
 
-def cartel_institution_map(df_works: pd.DataFrame,
-                           flagged_ids: list,
-                           src_names: dict) -> dict:
+def cluster_hcw_infomap(df_works: pd.DataFrame,
+                        df_src_v: pd.DataFrame,
+                        df_sm: pd.DataFrame,
+                        out_csv: Path,
+                        out_fig: Path,
+                        min_community: int = 5) -> pd.DataFrame:
+    """
+    Build the directed HCW-to-HCW citation subgraph, run Infomap, label each
+    community with TF-IDF title terms and source-v statistics.
+
+    Returns a DataFrame with one row per community (size >= min_community):
+        community_id, n_hcw, median_v, dominant_field,
+        pct_E, pct_B, pct_A, pct_X, top_terms, example_titles
+    Saves out_csv and out_fig (scatter: median_v vs size, labelled by top term).
+    """
+    import igraph as ig
+
+    hcw = df_works[df_works['is_hcw']].copy()
+    hcw_set = hcw[['work_idx']].copy()
+
+    # ── edges: citations where both citer and cited are HCW ───────────────────
+    con = duckdb.connect(':memory:')
+    con.register('_hcw_set', hcw_set)
+    edges = con.execute(f"""
+        SELECT r.citer_idx AS src, r.cited_idx AS dst
+        FROM {REF_PATH} r
+        JOIN _hcw_set h1 ON h1.work_idx = r.citer_idx
+        JOIN _hcw_set h2 ON h2.work_idx = r.cited_idx
+    """).df()
+    con.close()
+
+    print(f'  HCW nodes: {len(hcw):,}   HCW→HCW edges: {len(edges):,}')
+
+    if edges.empty:
+        print('  No HCW-to-HCW edges found — skipping Infomap.')
+        return pd.DataFrame()
+
+    # ── build igraph ──────────────────────────────────────────────────────────
+    work_ids  = hcw['work_idx'].tolist()
+    id_to_idx = {w: i for i, w in enumerate(work_ids)}
+
+    g = ig.Graph(n=len(work_ids), directed=True)
+    g.vs['work_idx'] = work_ids
+
+    src_idx = edges['src'].map(id_to_idx).dropna().astype(int).tolist()
+    dst_idx = edges['dst'].map(id_to_idx).dropna().astype(int).tolist()
+    valid   = [(s, d) for s, d in zip(src_idx, dst_idx)]
+    g.add_edges(valid)
+
+    # ── Infomap ───────────────────────────────────────────────────────────────
+    import random as _random
+    ig.set_random_number_generator(_random.Random(42))
+    membership  = g.community_infomap()
+    raw_ids     = [membership.membership[id_to_idx[w]] for w in hcw['work_idx']]
+    # re-label by size rank (0 = largest) so IDs are stable across runs
+    size_rank   = {cid: rank for rank, (cid, _) in enumerate(
+        sorted(Counter(raw_ids).items(), key=lambda x: -x[1])
+    )}
+    hcw         = hcw.copy()
+    hcw['community_id'] = [size_rank[c] for c in raw_ids]
+
+    # ── merge source v and field ───────────────────────────────────────────────
+    hcw = hcw.merge(df_src_v, on='source_idx', how='left')
+    hcw = hcw.merge(df_sm[['source_idx', 'field_eb']], on='source_idx', how='left')
+
+    all_hcw_titles = hcw['title'].dropna().tolist()
+
+    # ── summarise per community ────────────────────────────────────────────────
+    rows = []
+    for cid, grp in hcw.groupby('community_id'):
+        if len(grp) < min_community:
+            continue
+        titles    = grp['title'].dropna().tolist()
+        terms     = top_tfidf_terms(titles, all_hcw_titles)
+        top_label = ', '.join(t for t, _ in terms[:5])
+
+        fc        = grp['field_eb'].value_counts(normalize=True)
+        dom_field = fc.idxmax() if not fc.empty else '?'
+
+        # top 3 HCW by n_intra as example titles
+        examples = (
+            grp.nlargest(3, 'n_intra')['title']
+            .dropna().tolist()
+        )
+
+        rows.append({
+            'community_id':   cid,
+            'n_hcw':          len(grp),
+            'median_v':       grp['v'].median(),
+            'dominant_field': dom_field,
+            'pct_E':          round(100 * fc.get('E', 0), 1),
+            'pct_B':          round(100 * fc.get('B', 0), 1),
+            'pct_A':          round(100 * fc.get('A', 0), 1),
+            'pct_X':          round(100 * fc.get('X', 0), 1),
+            'top_terms':      top_label,
+            'example_titles': ' | '.join(examples),
+        })
+
+    df_comm = (
+        pd.DataFrame(rows)
+        .sort_values('n_hcw', ascending=False)
+        .reset_index(drop=True)
+    )
+
+    # ── console report ────────────────────────────────────────────────────────
+    total_comm = len(set(membership.membership))
+    print(f'\n── Infomap communities  ({total_comm} total, {len(df_comm)} with ≥{min_community} HCW) ──')
+    print(f'{"#":>4} {"n_hcw":>6} {"med_v":>6} {"fld":>4}  {"Top terms":<50}')
+    print('-' * 78)
+    for _, r in df_comm.iterrows():
+        print(
+            f"{int(r['community_id']):>4} {int(r['n_hcw']):>6} "
+            f"{r['median_v']:>6.2f} {r['dominant_field']:>4}  "
+            f"{r['top_terms'][:50]}"
+        )
+
+    df_comm.to_csv(out_csv, index=False)
+    print(f'Saved {out_csv}')
+
+    # ── work-level members file ───────────────────────────────────────────────
+    hcw = hcw.merge(df_sm[['source_idx', 'source_name']], on='source_idx', how='left')
+    members_cols = ['community_id', 'work_idx', 'source_idx', 'source_name',
+                    'publication_year', 'title', 'v', 'field_eb', 'n_intra']
+    members_path = out_csv.with_name(out_csv.stem + '_members.csv')
+    hcw[members_cols].sort_values(['community_id', 'n_intra'], ascending=[True, False]) \
+                     .to_csv(members_path, index=False)
+    print(f'Saved {members_path}')
+
+    # ── source breakdown for low-v communities ────────────────────────────────
+    low_v_comms = df_comm[df_comm['median_v'] < LOW_V_THRESH]['community_id'].tolist()
+    if low_v_comms:
+        print(f'\n── Source breakdown for communities with median_v < {LOW_V_THRESH} ──')
+        for cid in low_v_comms:
+            grp = hcw[hcw['community_id'] == cid]
+            comm_row = df_comm[df_comm['community_id'] == cid].iloc[0]
+            src_counts = (
+                grp.groupby(['source_name', 'v'])
+                .agg(n_hcw=('work_idx', 'count'))
+                .reset_index()
+                .sort_values('n_hcw', ascending=False)
+            )
+            print(f'\n  Community {cid}  n={int(comm_row["n_hcw"])}  '
+                  f'med_v={comm_row["median_v"]:.2f}  [{comm_row["top_terms"][:60]}]')
+            print(f'  {"Source":<50} {"v":>6} {"n_hcw":>6}')
+            print(f'  ' + '-' * 66)
+            for _, r in src_counts.head(20).iterrows():
+                print(f'  {str(r["source_name"]):<50} {r["v"]:>6.2f} {int(r["n_hcw"]):>6}')
+
+    # ── top-10 E + top-10 B + top-10 A sources by v: HCW in top-10 communities
+    src_meta = (
+        hcw[['source_idx', 'source_name', 'v', 'field_eb']]
+        .drop_duplicates('source_idx')
+    )
+    top25_src = pd.concat([
+        src_meta[src_meta['field_eb'] == f].nlargest(10, 'v')
+        for f in ['E', 'B', 'A']
+    ]).drop_duplicates('source_idx')
+    top10_ids  = list(range(min(10, len(df_comm))))   # communities 0–9 (size-ranked)
+    bridge = (
+        hcw[
+            hcw['source_idx'].isin(top25_src['source_idx']) &
+            hcw['community_id'].isin(top10_ids)
+        ]
+        .groupby(['community_id', 'source_name', 'v', 'field_eb'])
+        .agg(n_hcw=('work_idx', 'count'))
+        .reset_index()
+        .sort_values(['community_id', 'n_hcw'], ascending=[True, False])
+    )
+    print(f'\n── Top-10 E/B/A sources by v — HCW counts in top-10 communities ────────')
+    for cid in top10_ids:
+        comm_row = df_comm[df_comm['community_id'] == cid]
+        if comm_row.empty:
+            continue
+        cr      = comm_row.iloc[0]
+        sub     = bridge[bridge['community_id'] == cid]
+        total   = int(cr['n_hcw'])
+        present = int(sub['n_hcw'].sum()) if not sub.empty else 0
+        print(f'\n  Community {cid}  n={total}  med_v={cr["median_v"]:.2f}'
+              f'  [{cr["top_terms"][:55]}]')
+        n_seed  = len(top25_src)
+        if sub.empty:
+            print(f'    (no top-{n_seed} source HCW)')
+        else:
+            print(f'  {"Source":<50} {"fld":>4} {"src_v":>6} {"n_hcw":>6}')
+            print(f'  ' + '-' * 70)
+            for _, r in sub.iterrows():
+                print(f'  {str(r["source_name"]):<50} {r["field_eb"]:>4} '
+                      f'{r["v"]:>6.2f} {int(r["n_hcw"]):>6}')
+            print(f'  {"total top-25 HCW in community":<50} {"":>6} {present:>6}'
+                  f'  ({100*present/total:.1f}% of community)')
+
+    # ── figure: median_v vs n_hcw, labelled by top term ───────────────────────
+    fig, ax = plt.subplots(figsize=(10, 6))
+    fig.patch.set_facecolor('white')
+    ax.set_facecolor('white')
+    ax.grid(True, color=_GRID_COLOUR, linewidth=0.7, zorder=0)
+    ax.set_axisbelow(True)
+
+    for _, r in df_comm.iterrows():
+        colour = FIELD_COLOURS.get(r['dominant_field'], '#888888')
+        ax.scatter(np.log10(max(r['median_v'], 1e-4)), r['n_hcw'],
+                   color=colour, s=60, alpha=0.8, zorder=3)
+        ax.annotate(r['top_terms'].split(',')[0].strip(),
+                    xy=(np.log10(max(r['median_v'], 1e-4)), r['n_hcw']),
+                    xytext=(4, 3), textcoords='offset points',
+                    fontsize=6, color='#333333')
+
+    ax.axvline(0, color='#bbbbbb', linewidth=0.8, linestyle='--')
+    ax.text(0.02, 0.98, '$v=1$', transform=ax.transAxes,
+            va='top', ha='left', fontsize=7, color='#aaaaaa')
+    ax.set_xlabel(r'Median source $\log_{10}(v)$ of community HCW', labelpad=4)
+    ax.set_ylabel('Community size  (n HCW)', labelpad=4)
+
+    legend_handles = [
+        plt.Line2D([0], [0], marker='o', color='w',
+                   markerfacecolor=FIELD_COLOURS[f], markersize=7, label=f)
+        for f in ['E', 'B', 'A', 'X']
+    ]
+    ax.legend(handles=legend_handles, title='Dominant field',
+              fontsize=7, title_fontsize=7, loc='upper right')
+
+    sup = fig.suptitle(
+        f'HCW communities (Infomap, directed)  —  '
+        f'{len(df_comm)} communities ≥{min_community} HCW',
+        fontsize=9, y=0.99,
+    )
+    fig.subplots_adjust(left=0.09, right=0.97, top=0.91, bottom=0.10)
+    fig.savefig(out_fig, bbox_inches='tight')
+    print(f'Saved {out_fig}')
+
+    sup.set_visible(False)
+    latex_path = out_fig.with_name(out_fig.stem + '_latex.pdf')
+    fig.savefig(latex_path, bbox_inches='tight')
+    print(f'Saved {latex_path}')
+    plt.close(fig)
+
+    return df_comm
+
+
+# ── Enclave cluster → institution map ─────────────────────────────────────────
+
+def enclave_institution_map(df_works: pd.DataFrame,
+                            flagged_ids: list,
+                            src_names: dict) -> dict:
     """
     Run union-find connected components on the mutual citation graph among
-    cartel-candidate sources to assign each source a cluster_id (0-based).
+    enclave sources to assign each source a cluster_id (0-based).
     Then map institutions that authored HCW in those sources to their cluster_id.
 
     Returns dict: institution_idx (int) → cluster_id (int).
@@ -734,13 +979,13 @@ def cartel_institution_map(df_works: pd.DataFrame,
             roots[r] = len(roots)
         src_cluster[s] = roots[r]
 
-    print('\n── Cartel clusters (connected components on mutual citation graph) ──────')
+    print('\n── Enclave clusters (connected components on mutual citation graph) ──────')
     for cid in sorted(set(src_cluster.values())):
         members = [src_names.get(s, str(s)) for s, c in src_cluster.items() if c == cid]
-        colour  = _CARTEL_COLOURS[cid % len(_CARTEL_COLOURS)]
+        colour  = _ENCLAVE_COLOURS[cid % len(_ENCLAVE_COLOURS)]
         print(f'  Cluster {cid}  ({colour}):  {", ".join(members)}')
 
-    # Map institutions to clusters via authorship of HCW in flagged sources
+    # Map institutions to clusters via authorship of HCW in enclave sources
     con = duckdb.connect(':memory:')
     con.register('_hcw_src', hcw_src)
     df_ia = con.execute(f"""
@@ -800,36 +1045,43 @@ def main():
 
     flagged_ids = print_report(df_src, df_works)
 
-    src_names       = df_sm.set_index('source_idx')['source_name'].to_dict()
-    cartel_inst_map = {}
+    src_names        = df_sm.set_index('source_idx')['source_name'].to_dict()
+    enclave_inst_map = {}
     if flagged_ids:
         mutual_citation_table(df_works, flagged_ids, src_names,
-                              out_path=p.plots / 'cartel_mrt.csv')
+                              out_path=p.plots / 'enclave_mrt.csv')
         institution_hcw_map(df_works, flagged_ids, df_inst_v)
-        cartel_inst_map = cartel_institution_map(df_works, flagged_ids, src_names)
+        enclave_inst_map = enclave_institution_map(df_works, flagged_ids, src_names)
 
     # Save combined propensity + flagged CSV
     csv_cols = ['source_name', 'subfield_name', 'field_eb', 'v',
                 'n_works', 'n_hcw', 'propensity',
                 'propensity_fitted', 'residual_sd']
     df_csv = df_src[csv_cols].copy()
-    df_csv['flagged']          = df_src['residual_sd'] >= RESID_SD_THRESH
-    df_csv['cartel_candidate'] = df_csv['flagged'] & (df_src['v'] < LOW_V_THRESH)
+    df_csv['flagged']        = df_src['residual_sd'] >= RESID_SD_THRESH
+    df_csv['enclave_source'] = df_csv['flagged'] & (df_src['v'] < LOW_V_THRESH)
     df_csv = df_csv.sort_values('residual_sd', ascending=False).reset_index(drop=True)
-    csv_path = p.plots / 'cartel_source_propensity.csv'
+    csv_path = p.plots / 'enclave_source_propensity.csv'
     df_csv.to_csv(csv_path, index=False)
     print(f'Saved {csv_path}')
 
     print('Computing HCW referer v-distributions…')
     df_hcw_ref = hcw_referer_stats(df_works, df_src_v, df_sm)
-    ref_csv = p.plots / 'cartel_hcw_referer_stats.csv'
+    ref_csv = p.plots / 'enclave_hcw_referer_stats.csv'
     df_hcw_ref.to_csv(ref_csv, index=False, float_format='%.4f')
     print(f'Saved {ref_csv}  ({len(df_hcw_ref):,} HCW)')
 
+    print('Clustering HCW via Infomap…')
+    cluster_hcw_infomap(
+        df_works, df_src_v, df_sm,
+        out_csv=p.plots / 'enclave_hcw_communities.csv',
+        out_fig=p.plots / 'enclave_hcw_communities.pdf',
+    )
+
     print('Saving figures…')
-    plot_lowess(df_src, p.plots / 'cartel_lowess.pdf')
+    plot_lowess(df_src, p.plots / 'enclave_lowess.pdf')
     plot_rank_with_hcw(df_src, df_inst, flagged_ids or [],
-                       p.plots / 'cartel_v_vs_hcw.pdf', cartel_inst_map)
+                       p.plots / 'enclave_v_vs_hcw.pdf', enclave_inst_map)
 
 
 if __name__ == '__main__':

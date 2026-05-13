@@ -5,16 +5,26 @@ Output: data/rankings_all_fields.csv
     unit_idx, unit_type, name, issn, field_eb, country_code, a_p
     v_EBAX, rank_EBAX, v_E, rank_E, v_B, rank_B, v_A, rank_A, v_X, rank_X
     v_eps1, rank_eps1
+    ext_balance
+
+Ranks are computed separately for sources and institutions within each run.
+rank_EBAX=1 for a source means the top-ranked source in that run; rank_EBAX=1
+for an institution means the top-ranked institution — they do not share a sequence.
+
+ext_balance = (in - out) / (in + out) for each unit's citation flow to/from the
+external sentinel in the eps=1 run. Range [-1, +1]: +1 = pure importer from
+outside OAS, -1 = pure exporter to outside OAS, NaN = no boundary flow.
 
 Units absent from a field-filtered run have NaN for that run's v/rank columns.
 a_p is taken from the baseline (F=EBAX) run.
-v_eps1 / rank_eps1 are from the baseline-eps (ε=1) run; sentinel row (unit_idx=1) excluded.
+v_eps1 / rank_eps1 are from the baseline-eps (ε=1) run; sentinel row excluded.
 """
 
 import sys
 from pathlib import Path
 
 import duckdb
+import numpy as np
 import pandas as pd
 
 sys.path.insert(0, str(Path(__file__).parent.parent))
@@ -27,6 +37,9 @@ RUNS = [
     ('F=A',      'A'),
     ('F=X',      'X'),
 ]
+
+EPS_EL_TABLE = 'el_20242024_EBAX_tauU20_tauS20_vartau_eps1'
+SENTINEL_IDX = 1
 
 paths    = load_config()
 all_runs = {r['label']: r for r in load_runs()}
@@ -61,7 +74,7 @@ for label, suffix in RUNS:
     )
     try:
         rk = db.execute(
-            f'SELECT unit_idx, unit_type, v, rank_v, a_p FROM {table}'
+            f'SELECT unit_idx, unit_type, v, a_p FROM {table}'
         ).fetchdf()
     except Exception as e:
         print(f'[{label}] table {table} not found — skipped ({e})')
@@ -72,10 +85,9 @@ for label, suffix in RUNS:
     if suffix == 'EBAX':
         a_p_base = rk[['unit_idx', 'unit_type', 'a_p']].copy()
 
-    run_dfs[suffix] = rk.rename(columns={
-        'v':      f'v_{suffix}',
-        'rank_v': f'rank_{suffix}',
-    }).drop(columns=['a_p'])
+    run_dfs[suffix] = rk[['unit_idx', 'unit_type', 'v']].rename(
+        columns={'v': f'v_{suffix}'}
+    )
 
 # ── ε=1 run (baseline-eps) ────────────────────────────────────────────────────
 
@@ -91,10 +103,10 @@ if 'baseline-eps' in all_runs:
     )
     try:
         eps_df = db.execute(
-            f'SELECT unit_idx, unit_type, v, rank_v '
-            f'FROM {eps_table} WHERE unit_idx != 1'
+            f'SELECT unit_idx, unit_type, v '
+            f'FROM {eps_table} WHERE unit_idx != {SENTINEL_IDX}'
         ).fetchdf()
-        eps_df = eps_df.rename(columns={'v': 'v_eps1', 'rank_v': 'rank_eps1'})
+        eps_df = eps_df.rename(columns={'v': 'v_eps1'})
         print(f'[baseline-eps]  {eps_table}  ({len(eps_df):,} rows)')
     except Exception as e:
         print(f'[baseline-eps] table {eps_table} not found — skipped ({e})')
@@ -109,10 +121,7 @@ if not run_dfs:
 # ── Merge into one wide table (outer join preserves all units) ────────────────
 
 ordered = [run_dfs[s] for _, s in RUNS if s in run_dfs]
-if not ordered:
-    raise RuntimeError('No run DataFrames to merge.')
-
-merged = ordered[0]
+merged  = ordered[0]
 for rk in ordered[1:]:
     merged = merged.merge(rk, on=['unit_idx', 'unit_type'], how='outer')
 
@@ -139,12 +148,123 @@ inst = merged[merged['unit_type'] == 'U'].merge(
     ci.rename(columns={'institution_idx': 'unit_idx', 'institution_name': 'name'}),
     on='unit_idx', how='left',
 )
-inst['unit_type'] = 'institution'
-inst['field_eb']  = ''
-inst['issn']      = ''
+inst['unit_type']    = 'institution'
+inst['field_eb']     = ''
+inst['issn']         = ''
 inst['country_code'] = inst['country_code'].fillna('')
 
 out = pd.concat([src, inst], ignore_index=True)
+out['name'] = out['name'].fillna('')
+
+# ── Ranks: separate sequences for sources and institutions within each run ────
+
+v_suffixes = [s for _, s in RUNS if s in run_dfs]
+if eps_df is not None:
+    v_suffixes.append('eps1')
+
+for sfx in v_suffixes:
+    v_col = f'v_{sfx}'
+    r_col = f'rank_{sfx}'
+    if v_col not in out.columns:
+        continue
+    out[r_col] = (
+        out.groupby('unit_type')[v_col]
+        .rank(method='min', ascending=False, na_option='bottom')
+        .astype('Int64')
+    )
+
+# ── External balance: (in - out) / (in + out) via eps1 edge list ─────────────
+
+el_db_path = paths.working / 'edge_lists.duckdb'
+ext_balance = pd.DataFrame(columns=['unit_idx', 'unit_type', 'ext_balance'])
+
+if el_db_path.exists():
+    try:
+        with duckdb.connect(str(el_db_path), read_only=True) as eldb:
+            tables = {t for t in eldb.execute("SHOW TABLES").fetchdf()['name']}
+            if EPS_EL_TABLE in tables:
+
+                # Source-level boundary flows (distinct work pairs)
+                src_out = eldb.execute(f"""
+                    SELECT citer_source_idx AS unit_idx, COUNT(*) AS n_out
+                    FROM (SELECT DISTINCT citer_work_idx, cited_work_idx,
+                                 citer_source_idx, cited_source_idx
+                          FROM {EPS_EL_TABLE})
+                    WHERE cited_source_idx  = {SENTINEL_IDX}
+                      AND citer_source_idx != {SENTINEL_IDX}
+                    GROUP BY citer_source_idx
+                """).fetchdf()
+
+                src_in = eldb.execute(f"""
+                    SELECT cited_source_idx AS unit_idx, COUNT(*) AS n_in
+                    FROM (SELECT DISTINCT citer_work_idx, cited_work_idx,
+                                 citer_source_idx, cited_source_idx
+                          FROM {EPS_EL_TABLE})
+                    WHERE citer_source_idx  = {SENTINEL_IDX}
+                      AND cited_source_idx != {SENTINEL_IDX}
+                    GROUP BY cited_source_idx
+                """).fetchdf()
+
+                src_bal = (
+                    src_out.merge(src_in, on='unit_idx', how='outer')
+                    .fillna(0)
+                )
+                src_bal['ext_balance'] = (
+                    (src_bal['n_in'] - src_bal['n_out'])
+                    / (src_bal['n_in'] + src_bal['n_out'])
+                )
+                src_bal['unit_type'] = 'source'
+
+                # Institution-level boundary flows (distinct work pairs)
+                inst_out = eldb.execute(f"""
+                    SELECT citer_inst_idx AS unit_idx, COUNT(*) AS n_out
+                    FROM (SELECT DISTINCT citer_work_idx, cited_work_idx,
+                                 citer_inst_idx, cited_inst_idx
+                          FROM {EPS_EL_TABLE})
+                    WHERE cited_inst_idx  = {SENTINEL_IDX}
+                      AND citer_inst_idx != {SENTINEL_IDX}
+                    GROUP BY citer_inst_idx
+                """).fetchdf()
+
+                inst_in = eldb.execute(f"""
+                    SELECT cited_inst_idx AS unit_idx, COUNT(*) AS n_in
+                    FROM (SELECT DISTINCT citer_work_idx, cited_work_idx,
+                                 citer_inst_idx, cited_inst_idx
+                          FROM {EPS_EL_TABLE})
+                    WHERE citer_inst_idx  = {SENTINEL_IDX}
+                      AND cited_inst_idx != {SENTINEL_IDX}
+                    GROUP BY cited_inst_idx
+                """).fetchdf()
+
+                inst_bal = (
+                    inst_out.merge(inst_in, on='unit_idx', how='outer')
+                    .fillna(0)
+                )
+                inst_bal['ext_balance'] = (
+                    (inst_bal['n_in'] - inst_bal['n_out'])
+                    / (inst_bal['n_in'] + inst_bal['n_out'])
+                )
+                inst_bal['unit_type'] = 'institution'
+
+                ext_balance = pd.concat(
+                    [src_bal[['unit_idx', 'unit_type', 'ext_balance']],
+                     inst_bal[['unit_idx', 'unit_type', 'ext_balance']]],
+                    ignore_index=True,
+                )
+                print(f'[ext_balance]  {EPS_EL_TABLE}  '
+                      f'({(ext_balance.unit_type=="source").sum():,} src, '
+                      f'{(ext_balance.unit_type=="institution").sum():,} inst)')
+            else:
+                print(f'[ext_balance]  {EPS_EL_TABLE} not found — skipped')
+    except Exception as e:
+        print(f'[ext_balance]  failed — {e}')
+else:
+    print(f'[ext_balance]  {el_db_path} not found — skipped')
+
+if not ext_balance.empty:
+    out = out.merge(ext_balance, on=['unit_idx', 'unit_type'], how='left')
+else:
+    out['ext_balance'] = np.nan
 
 # ── Column order and sort ─────────────────────────────────────────────────────
 
@@ -154,14 +274,14 @@ for _, suffix in RUNS:
         v_rank_cols += [f'v_{suffix}', f'rank_{suffix}']
 if eps_df is not None:
     v_rank_cols += ['v_eps1', 'rank_eps1']
+v_rank_cols.append('ext_balance')
 
-out = out[['unit_idx', 'unit_type', 'name', 'issn', 'field_eb', 'country_code', 'a_p']
-          + v_rank_cols]
-out['name'] = out['name'].fillna('')
+out = out[['unit_idx', 'unit_type', 'name', 'issn', 'field_eb',
+           'country_code', 'a_p'] + v_rank_cols]
 out = out.sort_values('rank_EBAX', na_position='last').reset_index(drop=True)
 
 out_path = Path(__file__).parent.parent / 'data' / 'rankings_all_fields.csv'
-out.to_csv(str(out_path), index=False)
+out.to_csv(str(out_path), index=False, float_format='%.6g')
 print(f'\n→ {out_path.name}  ({len(out):,} rows, '
       f'{(out.unit_type=="source").sum():,} src, '
       f'{(out.unit_type=="institution").sum():,} inst)')
