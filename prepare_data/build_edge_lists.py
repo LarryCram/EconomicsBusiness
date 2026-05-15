@@ -732,10 +732,13 @@ def main():
         print("\n=== Catalog ===")
         db.sql("SELECT * FROM _catalog ORDER BY run_code, F_x, tau_u").show()
 
-        # Sample baseline edge list
-        baseline_tname = table_name('20242024', 'EBAX', 20, 20)  # ref_units='' → _vartau
-        print(f"\n=== Baseline edge list sample ({baseline_tname}) ===")
-        db.sql(f"SELECT * FROM {baseline_tname} LIMIT 20").show()
+        # Sample baseline edge list (derive from params rather than hardcoding)
+        baseline_rows = [r for r in load_runs() if r['label'] == 'baseline']
+        if baseline_rows:
+            r = baseline_rows[0]
+            baseline_tname = table_name(r['run_code'], r['fx'], r['tau_u'], r['tau_s'])
+            print(f"\n=== Baseline edge list sample ({baseline_tname}) ===")
+            db.sql(f"SELECT * FROM {baseline_tname} LIMIT 20").show()
 
 
 if __name__ == '__main__':

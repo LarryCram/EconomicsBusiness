@@ -208,14 +208,16 @@ def main():
     # ── Print source comparison table ─────────────────────────────────────────
     rk_path = paths.working / 'rankings.duckdb'
     rk_db2  = duckdb.connect(str(rk_path), read_only=True)
-    df_spec_src = rk_db2.execute("""
+    rk_tname = (f"rk_{run_code}_EBAX_tauU{tau_u}_tauS{tau_s}"
+                f"_vartau_rho0_m0110_chi50_alpha100")
+    df_spec_src = rk_db2.execute(f"""
         SELECT unit_idx AS source_idx, v AS v_spec, rank_v AS spectral_rank
-        FROM rk_20242024_EBAX_tauU20_tauS20_vartau_rho0_m0110_chi50_alpha100
+        FROM {rk_tname}
         WHERE unit_type = 'S' ORDER BY rank_v
     """).fetchdf()
-    df_spec_inst = rk_db2.execute("""
+    df_spec_inst = rk_db2.execute(f"""
         SELECT unit_idx AS institution_idx, v AS v_spec, rank_v AS spectral_rank
-        FROM rk_20242024_EBAX_tauU20_tauS20_vartau_rho0_m0110_chi50_alpha100
+        FROM {rk_tname}
         WHERE unit_type = 'U' ORDER BY rank_v
     """).fetchdf()
     rk_db2.close()

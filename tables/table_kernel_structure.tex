@@ -1,24 +1,14 @@
-\begin{table}[htbp]
-
-    \centering
-    %\small
-    \caption{Row evenness $\bar{J}$ (Eq.~\ref{eq:J_bar}),
-      column evenness $J_{\text{col}}$ (Eq.~\ref{eq:J_col}), and
-      effective fan-out $\bar{K} = n_{\text{col}}^{\bar{J}}$
-      for the six stochastic kernels, baseline run.}
-    \label{tab:kernel_structure}
-    \begin{tabular}{lccc}
-    \toprule
-    Kernel & $\bar{J}$ & $J_{\text{col}}$ & $\bar{K}$ \\
-    \midrule
-    $C_{SS}$ & 0.50 & 0.92 & 33 \\
-    $C_{II}$ & 0.74 & 0.95 & 242 \\
-    $C_{SI}$ & 0.66 & 0.94 & 140 \\
-    $C_{IS}$ & 0.65 & 0.87 & 96 \\
-    \midrule
-    $M_S = C_{SI}C_{IS}$ & 0.84 & 0.87 & 362 \\
-    $M_I = C_{IS}C_{SI}$ & 0.90 & 0.93 & 842 \\
-    \bottomrule
-    \end{tabular}
-
-\end{table}
+\begin{tabular}{lccc}
+\toprule
+Kernel & $\bar{J}$ & $J_{\text{col}}$ & $\bar{K}$ \\
+\midrule
+$C_{SS}$ & 0.47 & 0.90 & 32 \\
+$C_{II}$ & 0.67 & 0.93 & 211 \\
+$C_{SI}$ & 0.60 & 0.92 & 122 \\
+$C_{IS}$ & 0.58 & 0.84 & 74 \\
+\midrule
+$M_S$ & 0.81 & 0.84 & 398 \\
+\midrule
+$M_I$ & 0.88 & 0.91 & 1175 \\
+\bottomrule
+\end{tabular}

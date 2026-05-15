@@ -18,9 +18,10 @@ import duckdb
 import numpy as np
 import matplotlib.pyplot as plt
 
-from util import load_config
+from util import load_config, load_runs
 
-BASELINE_TABLE = 'rk_20242024_EBAX_tauU20_tauS20_vartau_rho0_m0110_chi50_alpha100'
+_bl = next(r for r in load_runs() if r['label'] == 'baseline')
+BASELINE_TABLE = f"rk_{_bl['run_code']}_{_bl['fx']}_tauU{_bl['tau_u']}_tauS{_bl['tau_s']}_vartau_rho0_m0110_chi50_alpha100"
 EPS_TABLE      = BASELINE_TABLE + '_eps1'
 
 

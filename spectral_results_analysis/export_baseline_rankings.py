@@ -38,11 +38,13 @@ RUNS = [
     ('F=X',      'X'),
 ]
 
-EPS_EL_TABLE = 'el_20242024_EBAX_tauU20_tauS20_vartau_eps1'
 SENTINEL_IDX = 1
 
 paths    = load_config()
 all_runs = {r['label']: r for r in load_runs()}
+
+_bl = all_runs['baseline']
+EPS_EL_TABLE = f"el_{_bl['run_code']}_{_bl['fx']}_tauU{_bl['tau_u']}_tauS{_bl['tau_s']}_vartau_eps1"
 
 sm = pd.read_parquet(
     str(paths.parquet / 'source_master.parquet'),

@@ -29,14 +29,14 @@ For OAS\textsuperscript{*} sources we extract work and authorship data and exami
 \begin{figure}[!htb]
 	\centering
 	\includegraphics[width=0.8\textwidth]{../plots/fig_1_latex}
-	\caption{Institution and source retention curves. Selecting $\tau_S = \tau_I = 20$ retains 1688 sources and 2630 institutions, using works published between 2020 and 2024.
+	\caption{Institution and source retention curves. Selecting $\tau_S = 5$ and $\tau_I = 10$ retains 1652 sources and 3085 institutions, using works published between 2020 and 2024.
 	}
 	\label{fig:retention}
 \end{figure}
 
 Using sources and institutions that satisfy these thresholds, we extract works, authorships and references published between 2000 and 2024, retaining works typed as `article' or `review' and excluding works that are paratext, retracted, or without an authorship entity. Although most results relate to the recent 5-year window 2020-2024, the wider 2000--2024 time window supports a time-series analysis.
 
-Within the broad field of Economics and Business, many sources publish works in subfields $F$ within the set $\mathfrak{F}$. To relate OAS sources to subfields ${F}$ we capitalise on registry subfield labels (categories, groups, subjects, and topics in JQL, SJR, JCR, and OAS respectively). These labels are mapped by hand to the broad subfields $F=E$ (economics) or $F=B$ (business), or $F=X$ when the subfield is out of scope (e.g. Psychology, Education from JQL). Fields in Finance and in Accounting are mapped to $F=E$. The SSL ASJC codes contribute directly: code~2000 increments the E-count and code~1400 increments the B-count. Some sources publish sizeable amounts in both E and B; they are designated ambiguous, $F=A$. The five signals are counted, and each source classified as follows:
+Within the broad field of Economics and Business, many sources publish works in subfields $F$ within the set $\mathfrak{F}$. To relate OAS sources to subfields ${F}$ we capitalise on registry subfield labels (categories, groups, subjects, and topics in JQL, SJL, JCR, and OAS respectively). These labels are mapped by hand to the broad subfields $F=E$ (economics) or $F=B$ (business), or $F=X$ when the subfield is out of scope (e.g. Psychology, Education from JQL). Fields in Finance and in Accounting are mapped to $F=E$. The SSL ASJC codes contribute directly: code~2000 increments the E-count and code~1400 increments the B-count. Some sources publish sizeable amounts in both E and B; they are designated ambiguous, $F=A$. The five signals are counted, and each source classified as follows:
 \begin{itemize}
 	\setlength{\itemsep}{0pt}
 	\item `E' when its E-count is $\geq 3$ and its B-count is $< 3$ (economics-dominant);

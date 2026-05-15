@@ -1,20 +1,25 @@
 \begin{table}[htbp]
 \centering
-\caption{Matching of the three register-based sources to OpenAlex source identifiers. Overlaps count shared matched entries; OAS$^*$ is the union across all three registries.}
+\caption{Matching of the four register-based sources to OpenAlex source identifiers. Overlaps count shared matched entries; OAS$^*$ is the union across all four registries.}
 \label{tab:source_matching}
 \begin{tabular}{lrrrr}
 \toprule
 Register & Sources & Matched & Match rate & Unmatched \\
 \midrule
-JQL & 842 & 834 & 99.0\% & 8 \\
+JQL & 842 & 835 & 99.2\% & 7 \\
 MJL & 1,413 & 1,397 & 98.9\% & 16 \\
-SJL & 1,602 & 1,377 & 86.0\% & 225 \\
+SJL & 1,602 & 1,376 & 85.9\% & 226 \\
+SSL & 2,979 & 2,769 & 93.0\% & 210 \\
 \midrule
 \multicolumn{2}{l}{Overlap: $\mathrm{MJL} \cap \mathrm{SJL}$} & \multicolumn{3}{r}{743 sources} \\
-\multicolumn{2}{l}{Overlap: $\mathrm{MJL} \cap \mathrm{JQL}$} & \multicolumn{3}{r}{547 sources} \\
-\multicolumn{2}{l}{Overlap: $\mathrm{SJL} \cap \mathrm{JQL}$} & \multicolumn{3}{r}{401 sources} \\
-\multicolumn{2}{l}{Overlap: $\mathrm{MJL} \cap \mathrm{SJL} \cap \mathrm{JQL}$} & \multicolumn{3}{r}{374 sources} \\
-\multicolumn{2}{l}{$(\mathrm{JQL} \cup \mathrm{MJL} \cup \mathrm{SJL}) \cap \mathrm{OA}$\quad (OAS$^*$)} & \multicolumn{3}{r}{2,295 sources} \\
+\multicolumn{2}{l}{Overlap: $\mathrm{MJL} \cap \mathrm{JQL}$} & \multicolumn{3}{r}{549 sources} \\
+\multicolumn{2}{l}{Overlap: $\mathrm{SJL} \cap \mathrm{JQL}$} & \multicolumn{3}{r}{402 sources} \\
+\multicolumn{2}{l}{Overlap: $\mathrm{MJL} \cap \mathrm{SJL} \cap \mathrm{JQL}$} & \multicolumn{3}{r}{375 sources} \\
+\multicolumn{2}{l}{Overlap: $\mathrm{SSL} \cap \mathrm{JQL}$} & \multicolumn{3}{r}{598 sources} \\
+\multicolumn{2}{l}{Overlap: $\mathrm{SSL} \cap \mathrm{MJL}$} & \multicolumn{3}{r}{1,161 sources} \\
+\multicolumn{2}{l}{Overlap: $\mathrm{SSL} \cap \mathrm{SJL}$} & \multicolumn{3}{r}{1,019 sources} \\
+\multicolumn{2}{l}{Overlap: all four registries} & \multicolumn{3}{r}{367 sources} \\
+\multicolumn{2}{l}{$(\mathrm{JQL} \cup \mathrm{MJL} \cup \mathrm{SJL} \cup \mathrm{SSL}) \cap \mathrm{OA}$\quad (OAS$^*$)} & \multicolumn{3}{r}{3,534 sources} \\
 \bottomrule
 \end{tabular}
 \end{table}

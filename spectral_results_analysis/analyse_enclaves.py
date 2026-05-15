@@ -36,13 +36,14 @@ import matplotlib.pyplot as plt
 from statsmodels.nonparametric.smoothers_lowess import lowess
 
 sys.path.insert(0, str(Path(__file__).parent.parent))
-from util import load_config
+from util import load_config, load_runs
 
 _paths = load_config()
 
 # ── Constants ──────────────────────────────────────────────────────────────────
 
-RK_TABLE = 'rk_20242024_EBAX_tauU20_tauS20_vartau_rho0_m0110_chi50_alpha100'
+_bl = next(r for r in load_runs() if r['label'] == 'baseline')
+RK_TABLE = f"rk_{_bl['run_code']}_{_bl['fx']}_tauU{_bl['tau_u']}_tauS{_bl['tau_s']}_vartau_rho0_m0110_chi50_alpha100"
 
 WK_PATH  = f"'{_paths.parquet}/corpus_works.parquet'"
 REF_PATH = f"'{_paths.parquet}/corpus_references.parquet'"

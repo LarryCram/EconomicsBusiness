@@ -10,6 +10,9 @@ PYTHON="${PYTHON:-$(dirname "$0")/../.venv/bin/python}"
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 cd "$ROOT"
 
+echo "=== Export baseline rankings (all field filters) ==="
+"$PYTHON" spectral_results_analysis/export_baseline_rankings.py
+
 echo "=== Communities: source citation networks ==="
 "$PYTHON" spectral_results_analysis/source_communities.py
 
@@ -51,5 +54,20 @@ echo "=== Cross-mask influence gain ==="
 
 echo "=== Compare field modes ==="
 "$PYTHON" spectral_results_analysis/compare_field_modes.py
+
+echo "=== Table: kernel structure ==="
+"$PYTHON" spectral_results_analysis/table_kernel_structure.py
+
+echo "=== Fig: J_bar histogram ==="
+"$PYTHON" spectral_results_analysis/fig_jbar_hist.py
+
+echo "=== Diag: epsilon=1 pi comparison ==="
+"$PYTHON" spectral_results_analysis/diag_epsilon_pi.py
+
+echo "=== Analyse: enclave / anti-ranking sources ==="
+"$PYTHON" spectral_results_analysis/analyse_enclaves.py
+
+echo "=== Analyse: Meta A+ outliers ==="
+"$PYTHON" spectral_results_analysis/analyse_meta_outliers.py
 
 echo "=== Results pipeline complete ==="

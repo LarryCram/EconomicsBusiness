@@ -23,12 +23,13 @@ import duckdb
 import pandas as pd
 
 sys.path.insert(0, str(Path(__file__).parent.parent))
-from util import load_config
+from util import load_config, load_runs
 
 paths = load_config()
 
-RK_TNAME = 'rk_20242024_EBAX_tauU20_tauS20_vartau_rho0_m0110_chi50_alpha100'
-EL_TNAME = 'el_20242024_EBAX_tauU20_tauS20_vartau'
+_bl = next(r for r in load_runs() if r['label'] == 'baseline')
+RK_TNAME = f"rk_{_bl['run_code']}_{_bl['fx']}_tauU{_bl['tau_u']}_tauS{_bl['tau_s']}_vartau_rho0_m0110_chi50_alpha100"
+EL_TNAME = f"el_{_bl['run_code']}_{_bl['fx']}_tauU{_bl['tau_u']}_tauS{_bl['tau_s']}_vartau"
 
 # 10 Meta A+ journals furthest outside top-25 in EBAX spectral ranking
 OUTLIERS = [

@@ -751,7 +751,7 @@ def build_table3_data(db):
         'Citation counts (in-degree)':   {'y2000': cit_2000, 'y2024': cit_2024, 'all': cit_all},
     }
 
-    print(f"\n=== TABLE 3: CORPUS FEATURES (τ_U > {TAU_U}) ===")
+    print(f"\n=== TABLE 3: CORPUS FEATURES (τ_U > {TAU_U}) τ_S > {TAU_S}) ===")
     print(f"{'Quantity':<35} {'2000':>10} {'2024':>10} {'2000-24':>12}")
     for label, vals in data.items():
         print(f"{label:<35} {vals['y2000']:>10,} {vals['y2024']:>10,} {vals['all']:>12,}")
@@ -880,7 +880,7 @@ def build_table3_distributions(db):
         'Citations per work (in-degree)':   _row(cpw),
     }
 
-    print(f"\n=== TABLE 3: DISTRIBUTIONS (τ_U > {TAU_U}) ===")
+    print(f"\n=== TABLE 3: DISTRIBUTIONS (τ_U > {TAU_U}) τ_S > {TAU_S}) ===")
     print(f"{'Quantity':<40} {'2000 D_1':>8} {'D_9':>8} {'2024 D_1':>8} {'D_9':>8} {'All D_1':>8} {'D_9':>8}")
     for label, d in dists.items():
         print(f"{label:<40} {d['d1_2000']:>8.1f} {d['d9_2000']:>8.1f}"
