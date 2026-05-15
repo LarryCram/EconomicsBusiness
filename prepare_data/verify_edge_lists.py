@@ -106,11 +106,14 @@ def check_ri_matches_count(db, t):
     # R_i is computed before source-retention filtering, so it can exceed the
     # edge-list cited count (references to non-retained sources are excluded).
     # Flag only when R_i < edge-list count, which would indicate undercounting.
+    # Exclude sentinel-sourced cited rows (cited_source_idx=1, eps1 tables only):
+    # those supplement works are outside the intra-corpus reference count.
     n = db.sql(f"""
         SELECT COUNT(*) FROM (
             SELECT citer_work_idx,
-                   MAX(R_i)                     AS stored,
-                   COUNT(DISTINCT cited_work_idx) AS computed
+                   MAX(R_i) AS stored,
+                   COUNT(DISTINCT cited_work_idx)
+                       FILTER (WHERE cited_source_idx != 1) AS computed
             FROM {t}
             GROUP BY citer_work_idx
             HAVING stored < computed
@@ -162,6 +165,8 @@ def check_a_source_unique(db, t):
 
 @check("9. a_citer_inst = a_cited_inst for shared institutions")
 def check_a_inst_consistent(db, t):
+    # Exclude sentinel institution (idx=1, eps1 tables only): it intentionally
+    # carries different a values on each side (supp-citer vs supp-cited pool sizes).
     n = db.sql(f"""
         SELECT COUNT(*) FROM (
             SELECT inst_idx
@@ -172,6 +177,7 @@ def check_a_inst_consistent(db, t):
                 SELECT cited_inst_idx,              a_cited_inst
                 FROM {t}
             )
+            WHERE inst_idx != 1
             GROUP BY inst_idx
             HAVING ROUND(MIN(a), 6) != ROUND(MAX(a), 6)
         )

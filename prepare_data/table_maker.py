@@ -65,32 +65,34 @@ def build_table1_data(db):
     """
     Return data for Table 1: registry overview with field classification.
 
-    Rows: JQL (Harzing), MJL (WOS), SJL (ERA), OAS* (union).
+    Rows: JQL (Harzing), MJL (WOS), SJL (ERA), SSL (Scopus), OAS* (union).
     Columns per row: Sources, OA Match, Match %, E, B, A, X.
 
-    Source counts include duplicates: a source in both JQL and MJL is
+    Source counts include duplicates: a source in both JQL and SSL is
     counted once in each row.  E/B/A/X are taken from source_master (the
-    combined four-signal scoring) for OA-matched sources from that registry.
+    combined five-signal scoring) for OA-matched sources from that registry.
     """
     # Registry sizes — COUNT(*) so cross-registry duplicates count per registry
     sizes = db.sql(f"""
         SELECT
             COUNT(*) FILTER (WHERE harzing_journal_name IS NOT NULL) AS jql_total,
             COUNT(*) FILTER (WHERE wos_journal_name     IS NOT NULL) AS mql_total,
-            COUNT(*) FILTER (WHERE era_journal_name     IS NOT NULL) AS sjl_total
+            COUNT(*) FILTER (WHERE era_journal_name     IS NOT NULL) AS sjl_total,
+            COUNT(*) FILTER (WHERE scopus_journal_name  IS NOT NULL) AS ssl_total
         FROM '{PARQUET}/comprehensive_journal_list.parquet'
     """).fetchone()
-    jql_total, mql_total, sjl_total = sizes
+    jql_total, mql_total, sjl_total, ssl_total = sizes
 
     # OA matches per registry (OAS*)
     matched = db.sql(f"""
         SELECT
             COUNT(*) FILTER (WHERE harzing_journal_name IS NOT NULL) AS jql_matched,
             COUNT(*) FILTER (WHERE wos_journal_name     IS NOT NULL) AS mql_matched,
-            COUNT(*) FILTER (WHERE era_journal_name     IS NOT NULL) AS sjl_matched
+            COUNT(*) FILTER (WHERE era_journal_name     IS NOT NULL) AS sjl_matched,
+            COUNT(*) FILTER (WHERE scopus_journal_name  IS NOT NULL) AS ssl_matched
         FROM '{PARQUET}/oas_star.parquet'
     """).fetchone()
-    jql_matched, mql_matched, sjl_matched = matched
+    jql_matched, mql_matched, sjl_matched, ssl_matched = matched
 
     # E/B/A/X per registry from source_master
     eb_df = db.sql(f"""
@@ -99,6 +101,7 @@ def build_table1_data(db):
             COUNT(*) FILTER (WHERE harzing_journal_name IS NOT NULL) AS jql_n,
             COUNT(*) FILTER (WHERE wos_journal_name     IS NOT NULL) AS mql_n,
             COUNT(*) FILTER (WHERE era_journal_name     IS NOT NULL) AS sjl_n,
+            COUNT(*) FILTER (WHERE scopus_journal_name  IS NOT NULL) AS ssl_n,
             COUNT(*)                                                  AS oas_n
         FROM '{PARQUET}/source_master.parquet'
         GROUP BY field_eb
@@ -135,6 +138,9 @@ def build_table1_data(db):
         'SJL': {'total': sjl_total, 'matched': sjl_matched,
                 'E': _eb('sjl_n', 'E'), 'B': _eb('sjl_n', 'B'),
                 'A': _eb('sjl_n', 'A'), 'X': _eb('sjl_n', 'X')},
+        'SSL': {'total': ssl_total, 'matched': ssl_matched,
+                'E': _eb('ssl_n', 'E'), 'B': _eb('ssl_n', 'B'),
+                'A': _eb('ssl_n', 'A'), 'X': _eb('ssl_n', 'X')},
         'OAS*': {'total': oas_total, 'matched': None,
                  'E': _eb('oas_n', 'E'), 'B': _eb('oas_n', 'B'),
                  'A': _eb('oas_n', 'A'), 'X': _eb('oas_n', 'X')},
@@ -154,7 +160,7 @@ def build_table1_data(db):
 
 
 def write_latex_table1(data, out_path):
-    REGS = ['JQL', 'MJL', 'SJL']
+    REGS = ['JQL', 'MJL', 'SJL', 'SSL']
 
     L = []
     L.append(r"\begin{table}[htbp]")
@@ -162,10 +168,11 @@ def write_latex_table1(data, out_path):
     L.append(
         r"\caption{Registry sources and their OpenAlex matches, classified by field."
         r" JQL = Harzing Journal Quality List; MJL = Web of Science Master Journal List;"
-        r" SJL = ERA Subject Journal List (FoR codes 35 and 38)."
+        r" SJL = ERA Subject Journal List (FoR codes 35 and 38);"
+        r" SSL = Scopus Source List (ASJC codes 1400 and 2000)."
         r" A source appearing in multiple registries is counted in each."
-        r" E/B/A/X are assigned by the combined four-signal scoring."
-        r" OAS$^*$ is the union across all three registries matched to OpenAlex."
+        r" E/B/A/X are assigned by the combined five-signal scoring."
+        r" OAS$^*$ is the union across all four registries matched to OpenAlex."
         rf" OAS is OAS$^*$ restricted to sources with mean annual works $\geq\tau_S={TAU_S}$"
         rf" in the census window {TC0}--{TC1}.}}"
     )
@@ -216,40 +223,49 @@ def write_csv_table1(data, out_path):
 def build_table2_data(db):
     """Return (rows, overlaps) where:
         rows     = [(label, total, matched, unmatched), ...]  one per registry
-        overlaps = (mql_sjl, mql_jql, sjl_jql, all_three, total_oas_star)
+        overlaps = (mql_sjl, mql_jql, sjl_jql, all_three,
+                    ssl_jql, ssl_mql, ssl_sjl, all_four, total_oas_star)
     """
     # Pre-match registry sizes: DISTINCT names to collapse join-induced duplicates
     sizes = db.sql(f"""
         SELECT
             COUNT(DISTINCT harzing_journal_name) FILTER (WHERE harzing_journal_name IS NOT NULL) AS jql_total,
             COUNT(DISTINCT wos_journal_name)     FILTER (WHERE wos_journal_name     IS NOT NULL) AS mql_total,
-            COUNT(DISTINCT era_journal_name)     FILTER (WHERE era_journal_name     IS NOT NULL) AS sjl_total
+            COUNT(DISTINCT era_journal_name)     FILTER (WHERE era_journal_name     IS NOT NULL) AS sjl_total,
+            COUNT(DISTINCT scopus_journal_name)  FILTER (WHERE scopus_journal_name  IS NOT NULL) AS ssl_total
         FROM '{PARQUET}/comprehensive_journal_list.parquet'
     """).fetchone()
-    jql_total, mql_total, sjl_total = sizes
+    jql_total, mql_total, sjl_total, ssl_total = sizes
 
     # Matched: distinct registry journal names that found >=1 OA source
     matched = db.sql(f"""
         SELECT
             COUNT(DISTINCT harzing_journal_name) FILTER (WHERE harzing_journal_name IS NOT NULL) AS jql_matched,
             COUNT(DISTINCT wos_journal_name)     FILTER (WHERE wos_journal_name     IS NOT NULL) AS mql_matched,
-            COUNT(DISTINCT era_journal_name)     FILTER (WHERE era_journal_name     IS NOT NULL) AS sjl_matched
+            COUNT(DISTINCT era_journal_name)     FILTER (WHERE era_journal_name     IS NOT NULL) AS sjl_matched,
+            COUNT(DISTINCT scopus_journal_name)  FILTER (WHERE scopus_journal_name  IS NOT NULL) AS ssl_matched
         FROM '{PARQUET}/oas_star.parquet'
     """).fetchone()
-    jql_matched, mql_matched, sjl_matched = matched
+    jql_matched, mql_matched, sjl_matched, ssl_matched = matched
 
     # Pairwise overlaps and union: count OA sources (rows), not distinct registry names
     overlaps_raw = db.sql(f"""
         SELECT
-            COUNT(*) FILTER (WHERE wos_journal_name IS NOT NULL AND era_journal_name     IS NOT NULL)                       AS mql_sjl,
-            COUNT(*) FILTER (WHERE wos_journal_name IS NOT NULL AND harzing_journal_name IS NOT NULL)                       AS mql_jql,
-            COUNT(*) FILTER (WHERE era_journal_name IS NOT NULL AND harzing_journal_name IS NOT NULL)                       AS sjl_jql,
-            COUNT(*) FILTER (WHERE wos_journal_name IS NOT NULL AND era_journal_name IS NOT NULL
-                                                                AND harzing_journal_name IS NOT NULL)                       AS all_three,
-            COUNT(*)                                                                                                         AS total_oas_star
+            COUNT(*) FILTER (WHERE wos_journal_name    IS NOT NULL AND era_journal_name     IS NOT NULL) AS mql_sjl,
+            COUNT(*) FILTER (WHERE wos_journal_name    IS NOT NULL AND harzing_journal_name IS NOT NULL) AS mql_jql,
+            COUNT(*) FILTER (WHERE era_journal_name    IS NOT NULL AND harzing_journal_name IS NOT NULL) AS sjl_jql,
+            COUNT(*) FILTER (WHERE wos_journal_name    IS NOT NULL AND era_journal_name     IS NOT NULL
+                                                                   AND harzing_journal_name IS NOT NULL) AS all_three,
+            COUNT(*) FILTER (WHERE scopus_journal_name IS NOT NULL AND harzing_journal_name IS NOT NULL) AS ssl_jql,
+            COUNT(*) FILTER (WHERE scopus_journal_name IS NOT NULL AND wos_journal_name     IS NOT NULL) AS ssl_mql,
+            COUNT(*) FILTER (WHERE scopus_journal_name IS NOT NULL AND era_journal_name     IS NOT NULL) AS ssl_sjl,
+            COUNT(*) FILTER (WHERE scopus_journal_name IS NOT NULL AND wos_journal_name     IS NOT NULL
+                                                                   AND era_journal_name     IS NOT NULL
+                                                                   AND harzing_journal_name IS NOT NULL) AS all_four,
+            COUNT(*) AS total_oas_star
         FROM '{PARQUET}/oas_star.parquet'
     """).fetchone()
-    mql_sjl, mql_jql, sjl_jql, all_three, total_oas_star = overlaps_raw
+    mql_sjl, mql_jql, sjl_jql, all_three, ssl_jql, ssl_mql, ssl_sjl, all_four, total_oas_star = overlaps_raw
 
     # Post-filter OAS counts from source_master (after topic density filter)
     oas = db.sql(f"""
@@ -257,6 +273,7 @@ def build_table2_data(db):
             COUNT(DISTINCT harzing_journal_name) FILTER (WHERE harzing_journal_name IS NOT NULL) AS jql_oas,
             COUNT(DISTINCT wos_journal_name)     FILTER (WHERE wos_journal_name     IS NOT NULL) AS mql_oas,
             COUNT(DISTINCT era_journal_name)     FILTER (WHERE era_journal_name     IS NOT NULL) AS sjl_oas,
+            COUNT(DISTINCT scopus_journal_name)  FILTER (WHERE scopus_journal_name  IS NOT NULL) AS ssl_oas,
             COUNT(*) FILTER (WHERE wos_journal_name IS NOT NULL AND era_journal_name     IS NOT NULL) AS mql_sjl_oas,
             COUNT(*) FILTER (WHERE wos_journal_name IS NOT NULL AND harzing_journal_name IS NOT NULL) AS mql_jql_oas,
             COUNT(*) FILTER (WHERE era_journal_name IS NOT NULL AND harzing_journal_name IS NOT NULL) AS sjl_jql_oas,
@@ -265,16 +282,18 @@ def build_table2_data(db):
             COUNT(*) AS total_oas
         FROM '{PARQUET}/source_master.parquet'
     """).fetchone()
-    jql_oas, mql_oas, sjl_oas, mql_sjl_oas, mql_jql_oas, sjl_jql_oas, all_three_oas, total_oas = oas
+    jql_oas, mql_oas, sjl_oas, ssl_oas, mql_sjl_oas, mql_jql_oas, sjl_jql_oas, all_three_oas, total_oas = oas
 
     rows = [
         ('JQL', jql_total, jql_matched, jql_total - jql_matched),
         ('MJL', mql_total, mql_matched, mql_total - mql_matched),
         ('SJL', sjl_total, sjl_matched, sjl_total - sjl_matched),
+        ('SSL', ssl_total, ssl_matched, ssl_total - ssl_matched),
     ]
-    overlaps      = (mql_sjl,     mql_jql,     sjl_jql,     all_three,     total_oas_star)
-    overlaps_oas  = (mql_sjl_oas, mql_jql_oas, sjl_jql_oas, all_three_oas, total_oas)
-    oas_provenance = (jql_oas, mql_oas, sjl_oas)
+    overlaps     = (mql_sjl, mql_jql, sjl_jql, all_three,
+                    ssl_jql, ssl_mql, ssl_sjl, all_four, total_oas_star)
+    overlaps_oas = (mql_sjl_oas, mql_jql_oas, sjl_jql_oas, all_three_oas, total_oas)
+    oas_provenance = (jql_oas, mql_oas, sjl_oas, ssl_oas)
 
     # Console summary
     print("\n=== TABLE 2: SOURCE REGISTRY MATCHING ===")
@@ -286,10 +305,14 @@ def build_table2_data(db):
     print(f"  MJL \u2229 JQL          {mql_jql:>6,} sources")
     print(f"  SJL \u2229 JQL          {sjl_jql:>6,} sources")
     print(f"  MJL \u2229 SJL \u2229 JQL    {all_three:>6,} sources")
+    print(f"  SSL \u2229 JQL          {ssl_jql:>6,} sources")
+    print(f"  SSL \u2229 MJL          {ssl_mql:>6,} sources")
+    print(f"  SSL \u2229 SJL          {ssl_sjl:>6,} sources")
+    print(f"  All four         {all_four:>6,} sources")
     print(f"  Union (OAS*)     {total_oas_star:>6,} unique sources")
     print(f"\nPost-topic-filter OAS ({total_oas:,} sources):")
     print(f"  {'Register':<8} {'OAS sources':>12}")
-    for reg, n in zip(('JQL', 'MJL', 'SJL'), oas_provenance):
+    for reg, n in zip(('JQL', 'MJL', 'SJL', 'SSL'), oas_provenance):
         print(f"  {reg:<8} {n:>12,}")
     print(f"  MJL \u2229 SJL          {mql_sjl_oas:>6,} sources")
     print(f"  MJL \u2229 JQL          {mql_jql_oas:>6,} sources")
@@ -355,14 +378,14 @@ def _pct(matched, total):
 # ---------------------------------------------------------------------------
 
 def write_latex_table2(rows, overlaps, out_path):
-    mql_sjl, mql_jql, sjl_jql, all_three, total_oas_star = overlaps
+    mql_sjl, mql_jql, sjl_jql, all_three, ssl_jql, ssl_mql, ssl_sjl, all_four, total_oas_star = overlaps
 
     L = []
     L.append(r"\begin{table}[htbp]")
     L.append(r"\centering")
     L.append(
-        r"\caption{Matching of the three register-based sources to OpenAlex source identifiers."
-        r" Overlaps count shared matched entries; OAS$^*$ is the union across all three registries.}"
+        r"\caption{Matching of the four register-based sources to OpenAlex source identifiers."
+        r" Overlaps count shared matched entries; OAS$^*$ is the union across all four registries.}"
     )
     L.append(r"\label{tab:source_matching}")
     L.append(r"\begin{tabular}{lrrrr}")
@@ -373,11 +396,15 @@ def write_latex_table2(rows, overlaps, out_path):
         L.append(f"{reg} & {_i(total)} & {_i(matched)} & {_pct(matched, total)} & {_i(unmatched)} \\\\")
     L.append(r"\midrule")
     pairs = [
-        (r"Overlap: $\mathrm{MJL} \cap \mathrm{SJL}$",                                                          mql_sjl),
-        (r"Overlap: $\mathrm{MJL} \cap \mathrm{JQL}$",                                                          mql_jql),
-        (r"Overlap: $\mathrm{SJL} \cap \mathrm{JQL}$",                                                          sjl_jql),
-        (r"Overlap: $\mathrm{MJL} \cap \mathrm{SJL} \cap \mathrm{JQL}$",                                        all_three),
-        (r"$(\mathrm{JQL} \cup \mathrm{MJL} \cup \mathrm{SJL}) \cap \mathrm{OA}$\quad (OAS$^*$)", total_oas_star),
+        (r"Overlap: $\mathrm{MJL} \cap \mathrm{SJL}$",                                                                    mql_sjl),
+        (r"Overlap: $\mathrm{MJL} \cap \mathrm{JQL}$",                                                                    mql_jql),
+        (r"Overlap: $\mathrm{SJL} \cap \mathrm{JQL}$",                                                                    sjl_jql),
+        (r"Overlap: $\mathrm{MJL} \cap \mathrm{SJL} \cap \mathrm{JQL}$",                                                  all_three),
+        (r"Overlap: $\mathrm{SSL} \cap \mathrm{JQL}$",                                                                    ssl_jql),
+        (r"Overlap: $\mathrm{SSL} \cap \mathrm{MJL}$",                                                                    ssl_mql),
+        (r"Overlap: $\mathrm{SSL} \cap \mathrm{SJL}$",                                                                    ssl_sjl),
+        (r"Overlap: all four registries",                                                                                   all_four),
+        (r"$(\mathrm{JQL} \cup \mathrm{MJL} \cup \mathrm{SJL} \cup \mathrm{SSL}) \cap \mathrm{OA}$\quad (OAS$^*$)", total_oas_star),
     ]
     for label, count in pairs:
         L.append(
@@ -397,17 +424,21 @@ def write_latex_table2(rows, overlaps, out_path):
 # ---------------------------------------------------------------------------
 
 def write_csv_table2(rows, overlaps, out_path):
-    mql_sjl, mql_jql, sjl_jql, all_three, total_oas_star = overlaps
+    mql_sjl, mql_jql, sjl_jql, all_three, ssl_jql, ssl_mql, ssl_sjl, all_four, total_oas_star = overlaps
 
     top = pd.DataFrame(rows, columns=['Register', 'Sources', 'Matched', 'Unmatched'])
     top.insert(3, 'Match_rate', top['Matched'] / top['Sources'])
 
     bottom = pd.DataFrame([
-        ['MJL \u2229 SJL',         mql_sjl],
-        ['MJL \u2229 JQL',         mql_jql],
-        ['SJL \u2229 JQL',         sjl_jql],
-        ['MJL \u2229 SJL \u2229 JQL', all_three],
-        ['Union (long-list)',      total_oas_star],
+        ['MJL \u2229 SJL',                    mql_sjl],
+        ['MJL \u2229 JQL',                    mql_jql],
+        ['SJL \u2229 JQL',                    sjl_jql],
+        ['MJL \u2229 SJL \u2229 JQL',         all_three],
+        ['SSL \u2229 JQL',                    ssl_jql],
+        ['SSL \u2229 MJL',                    ssl_mql],
+        ['SSL \u2229 SJL',                    ssl_sjl],
+        ['All four registries',               all_four],
+        ['Union (long-list)',                 total_oas_star],
     ], columns=['Overlap', 'Sources'])
 
     with open(out_path, 'w') as f:
@@ -458,7 +489,7 @@ def export_title_match_candidates(db):
             candidate_name                                  AS oa_title,
             similarity                                      AS jaro_winkler,
             ref_name                                        AS registry_title,
-            era_journal_name, harzing_journal_name, wos_journal_name
+            era_journal_name, harzing_journal_name, wos_journal_name, scopus_journal_name
         FROM '{PARQUET}/unmatched_journals.parquet'
         WHERE likely_title_match = true
         ORDER BY similarity DESC
@@ -472,7 +503,7 @@ def export_title_match_candidates(db):
 def build_table_exclusions(db):
     """Combined table: all reasons for exclusion from OAS (both stages)."""
     unmatched_df = db.sql(f"""
-        SELECT ref_name, era_journal_name, harzing_journal_name, wos_journal_name,
+        SELECT ref_name, era_journal_name, harzing_journal_name, wos_journal_name, scopus_journal_name,
                candidate_name, similarity
         FROM '{PARQUET}/unmatched_journals.parquet'
     """).df()
@@ -530,7 +561,7 @@ def build_table_exclusions(db):
 
     # CSV with full detail for stage 1 no-match
     unmatched_df[['ref_name', 'era_journal_name', 'wos_journal_name', 'harzing_journal_name',
-                  'candidate_name', 'similarity', 'category']].to_csv(
+                  'scopus_journal_name', 'candidate_name', 'similarity', 'category']].to_csv(
         DATA / 'unmatched_classified.csv', index=False)
     print(f"Classified unmatched journals saved to data/unmatched_classified.csv")
 

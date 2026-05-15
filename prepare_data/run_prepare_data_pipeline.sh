@@ -11,7 +11,7 @@ ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 cd "$ROOT"
 
 echo "=== Stage 1: Assemble journal registry ==="
-"$PYTHON" prepare_data/journal_assembler_era_harzing_wos.py
+"$PYTHON" prepare_data/journal_assembler_era_harzing_wos_scopus.py
 
 echo "=== Stage 2: Filter and match to OpenAlex ==="
 "$PYTHON" prepare_data/journal_filter_match_oa.py
