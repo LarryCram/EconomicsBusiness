@@ -350,6 +350,11 @@ INPUT ./sections/04_results.tex
 INPUT ./sections/04_results.tex
 INPUT ./sections/04_results.tex
 INPUT sections/04_results.tex
+INPUT ../tables/table_parameters.tex
+INPUT ../tables/table_parameters.tex
+INPUT ../tables/table_parameters.tex
+INPUT ../tables/table_parameters.tex
+INPUT ../tables/table_parameters.tex
 INPUT ../plots/fig_3by_latex.pdf
 INPUT ../plots/fig_3by_latex.pdf
 INPUT ../plots/fig_3by_latex.pdf

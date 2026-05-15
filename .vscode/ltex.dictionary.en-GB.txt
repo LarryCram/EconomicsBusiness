@@ -13,3 +13,8 @@ Wilcoxon
 citer-cited
 ABDC
 OAJ
+SJL
+ASJC
+ISSNs
+paratext
+nonprofit
