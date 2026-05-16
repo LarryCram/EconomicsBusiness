@@ -1,2 +1,3 @@
 {"rule":"OXFORD_SPELLING_Z_NOT_S","sentence":"^\\QThe fan-out \\E(?:Dummy|Ina|Jimmy-)[0-9]+\\Qcol\\E(?:Dummy|Ina|Jimmy-)[0-9]+\\Q converts normalised row evenness to a count: the geometric mean number of distinct targets reached in one step over the Markov chain.\\E$"}
 {"rule":"OXFORD_SPELLING_Z_NOT_S","sentence":"^\\QThe fan-out \\E(?:Dummy|Ina|Jimmy-)[0-9]+\\Qcol\\E(?:Dummy|Ina|Jimmy-)[0-9]+\\Q converts normalised row evenness to a count: the geometric mean number of distinct targets reached in one step over the Markov chain.\\E$"}
+{"rule":"A_NNS","sentence":"^\\QNone of the A+/A journals are business (B) sources in our classification: 4 are ambiguous (A) and the remainder are economics (E).\\E$"}

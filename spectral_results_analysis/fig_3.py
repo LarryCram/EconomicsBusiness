@@ -54,7 +54,7 @@ SS_TABLE       = f'rk_{_run_code}_{_fx}_tauU{_tau_u}_tauS{_tau_s}_vartau_rho0_m1
 II_TABLE       = f'rk_{_run_code}_{_fx}_tauU{_tau_u}_tauS{_tau_s}_vartau_rho0_m0001_chi50_alpha100'
 EL_TABLE       = f'el_{_run_code}_{_fx}_tauU{_tau_u}_tauS{_tau_s}_vartau'
 
-V1_BAND = 0.05  # |log(v)| < 0.05  →  v in (e^-0.05, e^+0.05) ≈ (0.951, 1.051)
+V1_BAND = 0.0217  # |log10(v)| < 0.0217  →  v in (10^-0.0217, 10^+0.0217) ≈ (0.951, 1.051)
 
 # Field colours for fig_3c
 _FIELD_COLOR  = {'E': '#e41a1c', 'B': '#377eb8', 'A': '#ff7f00', 'X': '#999999'}
@@ -659,7 +659,7 @@ def build_unit_effects_table(series: dict, paths) -> None:
         ('v_ii',  'v_bip', 'min v_bip | v_ii≈1',   'max v_bip | v_ii≈1',  'Institutions', inst),
         ('v_bip', 'v_ii',  'min v_ii | v_bip≈1',   'max v_ii | v_bip≈1',  'Institutions', inst),
     ]:
-        band = data[np.abs(np.log(data[band_col])) < V1_BAND].copy()
+        band = data[np.abs(np.log10(data[band_col])) < V1_BAND].copy()
         if not band.empty:
             rows.append((utype, case_lo, band.loc[band[alt_col].idxmin()]))
             rows.append((utype, case_hi, band.loc[band[alt_col].idxmax()]))

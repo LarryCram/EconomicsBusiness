@@ -405,6 +405,11 @@ INPUT ./sections/05_discussion.tex
 INPUT ./sections/05_discussion.tex
 INPUT ./sections/05_discussion.tex
 INPUT sections/05_discussion.tex
+INPUT ../plots/enclave_referer_v.pdf
+INPUT ../plots/enclave_referer_v.pdf
+INPUT ../plots/enclave_referer_v.pdf
+INPUT ../plots/enclave_referer_v.pdf
+INPUT ../plots/enclave_referer_v.pdf
 INPUT ./sections/06_prospects.tex
 INPUT ./sections/06_prospects.tex
 INPUT ./sections/06_prospects.tex

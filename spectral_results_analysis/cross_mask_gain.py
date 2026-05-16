@@ -75,8 +75,8 @@ def _merge_bip_alt(df_bip: pd.DataFrame,
 
 def _ols_loglog(x: np.ndarray, y: np.ndarray) -> tuple[float, float]:
     """OLS slope and intercept of log y on log x."""
-    lx = np.log(x)
-    ly = np.log(y)
+    lx = np.log10(x)
+    ly = np.log10(y)
     slope, intercept = np.polyfit(lx, ly, 1)
     return float(slope), float(intercept)
 

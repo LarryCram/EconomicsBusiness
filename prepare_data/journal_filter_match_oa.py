@@ -162,10 +162,10 @@ def filter_and_match(db):
         --   harzing_field uses token lookup (split on ', '; E={{'Economics','F&A'}}, B=all others except extraneous);
         --   wos_categories and field_name each contribute 0/1 by keyword;
         --   scopus_asjc contributes 0/1: '2000'->econ, '1400'->bus.
-        --   'E'  econ_score >= 3 AND bus_score < 3   (economics-dominant)
-        --   'B'  bus_score  >= 3 AND econ_score < 3  (business-dominant)
-        --   'A'  econ_score >= 3 AND bus_score >= 3  (genuinely ambiguous: strong in both)
-        --   'X'  econ_score < 3  AND bus_score < 3   (weak signals in both)
+        --   'X'  econ_score + bus_score < 2           (clearly neither: combined signal < 2)
+        --   'A'  econ_score == bus_score             (tied: neither dominates; includes e=b=1)
+        --   'E'  econ_score > bus_score              (economics-dominant)
+        --   'B'  bus_score  > econ_score             (business-dominant)
         CREATE OR REPLACE TEMP TABLE source_master AS
         WITH ranked_topics AS (
             SELECT
@@ -203,10 +203,10 @@ def filter_and_match(db):
         )
         SELECT *,
             CASE
-                WHEN econ_score >= 3 AND bus_score  >= 3 THEN 'A'
-                WHEN econ_score >= 3                     THEN 'E'
-                WHEN bus_score  >= 3                     THEN 'B'
-                ELSE 'X'
+                WHEN econ_score + bus_score < 2          THEN 'X'
+                WHEN econ_score = bus_score              THEN 'A'
+                WHEN econ_score > bus_score              THEN 'E'
+                ELSE                                          'B'
             END AS field_eb
         FROM scored;
 

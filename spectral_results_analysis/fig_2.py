@@ -202,12 +202,12 @@ def _add_inset(ax, series, df_key):
             wide = df[df['baseline_rank'] <= INSET_XLIM[1] * 3]
             if len(wide) >= 5:
                 frac = max(0.5, 20 / max(len(wide), 20))
-                sm = lowess(np.log(wide['v'].values), wide['baseline_rank'].values,
+                sm = lowess(np.log10(wide['v'].values), wide['baseline_rank'].values,
                             frac=frac, return_sorted=True)
                 mask = ((sm[:, 0] >= INSET_XLIM[0]) &
                         (sm[:, 0] <= INSET_XLIM[1]))
                 if mask.sum() >= 2:
-                    axins.plot(sm[mask, 0], np.exp(sm[mask, 1]),
+                    axins.plot(sm[mask, 0], 10 ** sm[mask, 1],
                                color=colour, linewidth=1.8, alpha=1.0, zorder=3)
 
     axins.set_yscale('log')
@@ -263,9 +263,9 @@ def _draw_src_panel(ax, series: list, n_baseline: int, max_rank=None) -> None:
                 label=f'{label}  ({n_overlap:,}/{n_baseline:,})',
             )
             frac = max(0.2, 5 / max(len(d), 5))
-            sm = lowess(np.log(d['v'].values), d['baseline_rank'].values,
+            sm = lowess(np.log10(d['v'].values), d['baseline_rank'].values,
                         frac=frac, return_sorted=True)
-            ax.plot(sm[:, 0], np.exp(sm[:, 1]), color=colour,
+            ax.plot(sm[:, 0], 10 ** sm[:, 1], color=colour,
                     linewidth=2.8, alpha=1.0, zorder=3)
 
     _setup_log_yaxis(ax)
@@ -317,9 +317,9 @@ def _draw_inst_panel(ax, series: list, n_baseline: int, max_rank=None) -> None:
                 label=f'{label}  ({n_overlap:,}/{n_baseline:,})',
             )
             frac = max(0.2, 5 / max(len(d), 5))
-            sm = lowess(np.log(d['v'].values), d['baseline_rank'].values,
+            sm = lowess(np.log10(d['v'].values), d['baseline_rank'].values,
                         frac=frac, return_sorted=True)
-            ax.plot(sm[:, 0], np.exp(sm[:, 1]), color=colour,
+            ax.plot(sm[:, 0], 10 ** sm[:, 1], color=colour,
                     linewidth=2.8, alpha=1.0, zorder=3)
 
     _setup_log_yaxis(ax)

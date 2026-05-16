@@ -1,16 +1,15 @@
 \begin{table}[!bt]
   \centering
-  \caption{Glossary for models. The baseline is the bipartite resolvent ($\mathbf{m}=0110$) over
-    all subfields ($F=EBAX$), census and target windows both 2020--2024.}
+  \caption{Glossary.}
   \label{tab:parameters}
-  \renewcommand{\arraystretch}{1.25}
+  \renewcommand{\arraystretch}{1.00} %1.25}
   \begin{tabular}{@{}clcc@{}}
     \hline
-    \textbf{Parameter} & \textbf{Description} & \textbf{Baseline} \\
+    Parameter & Description & Baseline \\
     \hline
     \multicolumn{3}{@{}l}{\textit{Corpus construction}} \\[2pt]
     $\tau_S$ & Threshold works/source/year & 5 \\
-    $\tau_I$ & Threshold works/institution/year 10 \\
+    $\tau_I$ & Threshold works/institution/year & 10 \\
     $F$      & Fields: E (economics), B (business), A (ambiguous),
                X (none) & EBAX \\
     $t_c$    & Census window: publication years of referencing works & 2020--2024 \\
@@ -20,12 +19,12 @@
     $\omega$ & Institution weight flag: $\omega=0$ equal-shares; $\omega=1$ author-fractionation & 0 \\
     $\mathbf{m}$ & Block mask: $1000$-S only, $0001$-I only,
                $0110$=bipartite, $1111$=joint & 0110 \\
-    $\chi$   & Source--institution mixing weight: $\chi^*=N_I/(N_S+N_I)$ & 0.5 \\
+    $\chi$   & Source--institution mixing weight: $\chi=0.5$ or $\chi^*=N_I/(N_S+N_I)$ & 0.5 \\
     $\varepsilon$ & Sentinel flag: $\varepsilon=0$ - within-corpus only;
                $\varepsilon=1$ - include sentinel units & 0 \\[4pt]
     \multicolumn{3}{@{}l}{\textit{Resolvent}} \\[2pt]
     $\alpha$ & Damping parameter: $\alpha=1$ - Perron; $\alpha<1$ - Katz--Hubbell & 1 \\
-    $\mu$    & Prior with $\alpha<1$: uniform $\mu=1/N_p$ for $p\in\mathfrak{P}$ & --- \\
+    $\mu$    & Prior with $\alpha<1$: uniform $1/(N_S+N_I)$ or $\mu=1/2N_p$ for $p\in\mathfrak{P}$ & na \\
     \hline
   \end{tabular}
 \end{table}

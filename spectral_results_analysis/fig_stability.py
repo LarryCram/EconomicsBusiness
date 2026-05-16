@@ -69,7 +69,7 @@ def load_all_windows(db, runs_by_label: dict) -> pd.DataFrame:
         ).df()
         df['window'] = win_label
         df['t'] = t
-        df['log_v'] = np.log(df['v'])
+        df['log_v'] = np.log10(df['v'])
         frames.append(df)
     return pd.concat(frames, ignore_index=True)
 

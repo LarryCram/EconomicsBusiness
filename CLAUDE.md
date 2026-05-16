@@ -59,12 +59,12 @@ Rankings:      rk_{run_code}_{fx}_tauU{tau_u}_tauS{tau_s}_{vartau|fixtau}_rho{rh
 ## Field classification: field_eb
 Sources in `source_master.parquet/csv` carry a `field_eb` column (replaces old `field_subset`):
 
-- **'E'**: econ_score ≥ 3 AND bus_score < 3  (economics-dominant)
-- **'B'**: bus_score ≥ 3 AND econ_score < 3  (business-dominant)
-- **'A'**: econ_score ≥ 3 AND bus_score ≥ 3  (genuinely ambiguous — strong in both)
-- **'X'**: econ_score < 3 AND bus_score < 3   (weak signals in both)
+- **'X'**: econ_score + bus_score < 2          (clearly neither — combined signal < 2)
+- **'A'**: econ_score == bus_score             (tied — neither dominates; includes e=b=1)
+- **'E'**: econ_score > bus_score              (economics-dominant)
+- **'B'**: bus_score > econ_score              (business-dominant)
 
-`field_eb` is never NULL. Scores count how many of {era_field, harzing_field, wos_categories, field_name, scopus_asjc} contain econ/business keywords. Scopus contributes 1 to econ_score if ASJC 2000 present, 1 to bus_score if ASJC 1400 present. Threshold raised from 2 to 3 when Scopus was added as a fifth signal. F=EB corpus filter is `field_eb IN ('E','B','A')`. F=A is the full corpus (no filter). F=X is the neither-signal residual.
+`field_eb` is never NULL. Scores count how many of {era_field, harzing_field, wos_categories, field_name, scopus_asjc} contain econ/business keywords. Scopus contributes 1 to econ_score if ASJC 2000 present, 1 to bus_score if ASJC 1400 present. F=EB corpus filter is `field_eb IN ('E','B','A')`. F=A is the full corpus (no filter). F=X is the neither-signal residual.
 
 ## Paper
 Multi-file LaTeX in `spectral_ranking_latex/`. Master file is `main.tex`; sections are in `sections/`. Bibliography fed by Zotero (`MyLibrary.bib`). Committed to GitHub for backup.

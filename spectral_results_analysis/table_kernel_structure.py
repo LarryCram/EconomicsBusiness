@@ -42,8 +42,8 @@ def _j_col(cs: np.ndarray, n_cols: int) -> float:
         return float('nan')
     p = cs / total
     nz = p > 0
-    h = float(-np.dot(p[nz], np.log(p[nz])))
-    return h / np.log(n_cols)
+    h = float(-np.dot(p[nz], np.log10(p[nz])))
+    return h / np.log10(n_cols)
 
 
 def _row_perplexity(H) -> np.ndarray:
@@ -54,11 +54,11 @@ def _row_perplexity(H) -> np.ndarray:
     row_idx = np.repeat(np.arange(n, dtype=np.int64), np.diff(indptr))
     contrib = np.zeros_like(data)
     nz = data > 0
-    contrib[nz] = -data[nz] * np.log(data[nz])
+    contrib[nz] = -data[nz] * np.log10(data[nz])
     h = np.bincount(row_idx, weights=contrib, minlength=n).astype(float)
     active = np.asarray(H.sum(axis=1)).ravel() > 0
     m = np.full(n, np.nan)
-    m[active] = np.exp(h[active])
+    m[active] = 10 ** h[active]
     return m
 
 
@@ -71,9 +71,9 @@ def _kernel_stats(name: str, H) -> dict:
     # J_bar = mean row evenness = mean(log K_i) / log n_cols
     # K_bar = n_cols^J_bar = geometric mean of per-row perplexities
     if len(m_active) > 0 and n_cols > 1:
-        log_k_mean = float(np.mean(np.log(m_active)))
-        J_bar = log_k_mean / np.log(n_cols)
-        K_bar = float(np.exp(log_k_mean))   # = n_cols ** J_bar
+        log_k_mean = float(np.mean(np.log10(m_active)))
+        J_bar = log_k_mean / np.log10(n_cols)
+        K_bar = float(10 ** log_k_mean)   # = n_cols ** J_bar
     else:
         J_bar = K_bar = np.nan
     return {

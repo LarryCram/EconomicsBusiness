@@ -47,11 +47,11 @@ def _row_perplexity(H) -> np.ndarray:
     row_idx = np.repeat(np.arange(n, dtype=np.int64), np.diff(indptr))
     contrib = np.zeros_like(data)
     nz = data > 0
-    contrib[nz] = -data[nz] * np.log(data[nz])
+    contrib[nz] = -data[nz] * np.log10(data[nz])
     h = np.bincount(row_idx, weights=contrib, minlength=n).astype(float)
     active = np.asarray(H.sum(axis=1)).ravel() > 0
     m = np.full(n, np.nan)
-    m[active] = np.exp(h[active])
+    m[active] = 10 ** h[active]
     return m
 
 

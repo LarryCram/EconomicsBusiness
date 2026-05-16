@@ -18,3 +18,12 @@ ASJC
 ISSNs
 paratext
 nonprofit
+EBAX
+Hubbell
+refernence
+ficticious
+projectiion
+HCWs
+HCW
+transofrmation
+tf-idf

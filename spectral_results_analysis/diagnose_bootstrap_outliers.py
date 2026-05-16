@@ -75,7 +75,7 @@ def _find_outliers(v_boot_c, v_base, unit_ids, n=N_OUTLIERS):
                 unit_idx   = int(unit_ids[i]),
                 v_base     = float(v_base[i]),
                 ratio      = float(score[i]),
-                log2_ratio = float(np.log2(score[i])),
+                log10_ratio = float(np.log10(score[i])),
                 replicate  = int(b_arr[i]),
                 direction  = direction,
             ))
@@ -298,7 +298,7 @@ def main():
             arrow = '▲ Upward' if direction == 'up' else '▼ Downward'
             print(f'\n  {arrow} top {N_OUTLIERS}  (ratio = v_boot / v_base):')
             print(f'  {"unit_idx":>12}  {"name":<38}  {"v_base":>7}  '
-                  f'{"ratio":>6}  {"log2":>5}  {"error_type":<13}  {"rep":>4}')
+                  f'{"ratio":>6}  {"log10":>5}  {"error_type":<13}  {"rep":>4}')
             print('  ' + '─' * 94)
 
             for _, row in sub.iterrows():
@@ -308,7 +308,7 @@ def main():
                 et, _, et_b = _attribute_et(
                     col_i, direction, float(row['v_base']), et_boot_c)
                 print(f'  {uid:>12}  {name:<38}  {row["v_base"]:>7.3f}  '
-                      f'{row["ratio"]:>6.2f}  {row["log2_ratio"]:>+5.1f}  '
+                      f'{row["ratio"]:>6.2f}  {row["log10_ratio"]:>+5.1f}  '
                       f'{et:<13}  {et_b:>4}')
                 _stage2_summary(uid, unit_type, et_b, boot_base, db, n_corpus_works)
                 _stage3_summary(uid, unit_type, et_b, boot_base, db)

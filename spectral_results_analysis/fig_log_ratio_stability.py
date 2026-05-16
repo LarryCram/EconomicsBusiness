@@ -102,7 +102,7 @@ def load_window(db, run_code: str, label_0110: str, label_1000: str,
 
     df = df0.merge(df1, on='unit_idx', how='inner')
     df = df[(df['v_0110'] > 0) & (df['v_1000'] > 0)].copy()
-    df['log_ratio'] = np.log2(df['v_1000'] / df['v_0110'])
+    df['log_ratio'] = np.log10(df['v_1000'] / df['v_0110'])
     return df
 
 
@@ -211,10 +211,10 @@ def plot_stability(panel: pd.DataFrame, paths) -> None:
         ax.text(0.97, 0.97, f'n≈{n_sources}', transform=ax.transAxes,
                 fontsize=7, ha='right', va='top', color='#555555')
 
-    axes[0].set_ylabel('$\\log_2(v_{1000}/v_{0110})$', labelpad=4)
+    axes[0].set_ylabel('$\\log(v_{1000}/v_{0110})$', labelpad=4)
 
     sup = fig.suptitle(
-        '$\\log_2(v_{1000}/v_{0110})$ stability across 25 years  '
+        '$\\log(v_{1000}/v_{0110})$ stability across 25 years  '
         '(by A$_{SS}$ Leiden community)',
         fontsize=9, y=1.02,
     )
@@ -269,7 +269,7 @@ def plot_all_communities(panel: pd.DataFrame, paths) -> None:
     ax.set_xticks(range(len(windows)))
     ax.set_xticklabels(windows, fontsize=8)
     ax.set_xlabel('Time window', labelpad=4)
-    ax.set_ylabel('Median $\\log_2(v_{1000}/v_{0110})$  (IQR shaded)', labelpad=4)
+    ax.set_ylabel('Median $\\log(v_{1000}/v_{0110})$  (IQR shaded)', labelpad=4)
     ax.legend(fontsize=7.5, framealpha=0.85, loc='lower left', ncol=2)
 
     sup = fig.suptitle(

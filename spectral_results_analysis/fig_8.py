@@ -231,8 +231,8 @@ def plot8a(df: pd.DataFrame, paths) -> None:
 
         # Siegel robust fit in log-log space
         valid = sub[sub[col] > 0]
-        lx = np.log(valid['v'].values)
-        ly = np.log(valid[col].values)
+        lx = np.log10(valid['v'].values)
+        ly = np.log10(valid[col].values)
         m, b = siegelslopes(ly, lx)
         mad = np.median(np.abs(ly - (b + m * lx)))
         ax.plot(
@@ -309,8 +309,8 @@ def plot8b(df: pd.DataFrame, paths) -> None:
         )
 
         # Siegel robust fit in log-log space
-        lx = np.log(sub[AIS_COL].values)
-        ly = np.log(sub[col].values)
+        lx = np.log10(sub[AIS_COL].values)
+        ly = np.log10(sub[col].values)
         m, b = siegelslopes(ly, lx)
         mad = np.median(np.abs(ly - (b + m * lx)))
         ax.plot(

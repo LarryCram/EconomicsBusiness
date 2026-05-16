@@ -31,11 +31,11 @@ def _row_ji(H) -> np.ndarray:
     row_idx = np.repeat(np.arange(n_rows, dtype=np.int64), np.diff(indptr))
     contrib = np.zeros_like(data)
     nz = data > 0
-    contrib[nz] = -data[nz] * np.log(data[nz])
+    contrib[nz] = -data[nz] * np.log10(data[nz])
     h = np.bincount(row_idx, weights=contrib, minlength=n_rows).astype(float)
     active = np.asarray(H.sum(axis=1)).ravel() > 0
     ji = np.full(n_rows, np.nan)
-    ji[active] = h[active] / np.log(n_cols)
+    ji[active] = h[active] / np.log10(n_cols)
     return ji[active]
 
 
@@ -105,7 +105,7 @@ def plot(kernels: list, out_path: Path) -> None:
         # J_col from entropy of pj
         nz = pj_nz > 0
         jcol = float(-np.dot(pj_nz[nz] / pj_nz[nz].sum(),
-                             np.log(pj_nz[nz] / pj_nz[nz].sum())) / np.log(n_col))
+                             np.log10(pj_nz[nz] / pj_nz[nz].sum())) / np.log10(n_col))
         ax.text(0.96, 0.93, f'$J_{{\\rm col}}={jcol:.3f}$\nn={n_col:,}',
                 transform=ax.transAxes, va='top', ha='right', fontsize=8)
         if col == 0:

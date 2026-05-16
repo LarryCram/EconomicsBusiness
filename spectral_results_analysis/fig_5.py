@@ -515,7 +515,7 @@ def report_stability(series: dict) -> None:
             if n < 5:
                 continue
 
-            lr = np.log(mg['v_var'].values) - np.log(mg['v_base'].values)
+            lr = np.log10(mg['v_var'].values) - np.log10(mg['v_base'].values)
             med_lr = float(np.median(lr))
             sd_lr  = float(np.std(lr, ddof=1))
             _, wil_p = _stats.wilcoxon(lr, alternative='two-sided')

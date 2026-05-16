@@ -428,7 +428,7 @@ def report_boot_stability(
 
         # Log-ratio: (B, n) array
         with np.errstate(divide='ignore', invalid='ignore'):
-            lr = np.log(boot_2d / v_base[np.newaxis, :])   # (B, n)
+            lr = np.log10(boot_2d / v_base[np.newaxis, :])   # (B, n)
 
         lr_valid = lr[np.isfinite(lr)]
         med_lr = float(np.median(lr_valid))

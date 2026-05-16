@@ -51,7 +51,7 @@ def _row_entropy(H) -> tuple[np.ndarray, np.ndarray]:
 
     contrib = np.zeros_like(data)
     nz = data > 0
-    contrib[nz] = -data[nz] * np.log(data[nz])
+    contrib[nz] = -data[nz] * np.log10(data[nz])
 
     h = np.bincount(row_idx, weights=contrib, minlength=n).astype(float)
     row_sum = np.asarray(H.sum(axis=1)).ravel()
@@ -94,13 +94,13 @@ def _kernel_metrics(name: str, H, node_ids: np.ndarray) -> tuple[pd.DataFrame, d
     """Compute row-level and summary entropy metrics for one kernel."""
     n = H.shape[0]
     h, active = _row_entropy(H)
-    log_n = np.log(n) if n > 1 else 1.0
+    log_n = np.log10(n) if n > 1 else 1.0
 
     h_norm = np.zeros(n, dtype=float)
     if n > 1:
         h_norm = h / log_n
 
-    m_eff = np.exp(h)
+    m_eff = 10 ** h
     m_eff_frac = m_eff / max(n, 1)
 
     w_uniform = np.zeros(n, dtype=float)
