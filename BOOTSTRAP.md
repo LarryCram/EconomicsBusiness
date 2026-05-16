@@ -33,16 +33,22 @@ Use 10% for all x-type erors. Take ywc=0.75.
 ## Goal - sampling error
 
 Quantify sampling uncertainty in the baseline spectral ranking
-(m=0110, run_code=20242024, F=A, τ_U=20, τ_S=20, ρ=0, α=1.0) by
-repeatedly re-fitting v_s and v_u on 80%-with-replacement sub-samples
-of the citation edge list.  Target: B=1000 replicates; run B=5–20
-during development and timing tests.
+(m=0110, run_code=20242024, F=EBAX, τ_U=10, τ_S=5, ρ=0, α=1.0) by
+repeatedly re-fitting v_s and v_u on 80%-sub-samples of the citation
+edge list.  Target: B=1000 replicates; run B=5–20 during development and timing tests.
 
-Code lives in: `spectral_ranking_bootstrap/` (new top-level folder, alongside `spectral_ranking/`).
+NOTE: F=A, τ_U=20, τ_S=20 in the original spec is stale — the current baseline
+is F=EBAX, τ_U=10, τ_S=5 (from params.csv label='baseline'). The code reads from
+load_runs() so it picks up the correct values automatically.
+
+Two modes (--mode flag): 'work' (default, 80% citer works without replacement) or
+'edge' (80% edges with replacement). The paper's OA error simulation (bootstrap_oa_errors.py)
+is a separate script and is what appears in fig_7a.
+
+Code lives in: `spectral_ranking_bootstrap/` (alongside `spectral_ranking/`).
 
 Output:
 - `$WORKING/bootstrap/` — bootstrap v_s, v_u arrays (machine-specific SSD, not git-tracked)
-- `spectral_results_analysis/fig_7.py` → `plots/fig_7.pdf` / `plots/fig_7_latex.pdf`
 
 The baseline corpus is identified at runtime via `load_runs()` (label='baseline'):
 
@@ -50,11 +56,11 @@ The baseline corpus is identified at runtime via `load_runs()` (label='baseline'
 from util import load_runs
 _baseline = next(r for r in load_runs() if r['label'] == 'baseline')
 RUN_CODE  = _baseline['run_code']   # '20242024'
-TAU_U     = _baseline['tau_u']      # 20
-TAU_S     = _baseline['tau_s']      # 20
-EL_TABLE  = f'el_{RUN_CODE}_A_tauU{TAU_U}_tauS{TAU_S}'
-UNITS_TABLE = f'_units_{RUN_CODE}_A_tauU{TAU_U}_tauS{TAU_S}'
-RK_TABLE  = f'rk_{RUN_CODE}_A_tauU{TAU_U}_tauS{TAU_S}_rho0_m0110_chi50_alpha100'
+TAU_U     = _baseline['tau_u']      # 10
+TAU_S     = _baseline['tau_s']      # 5
+FX        = _baseline['fx']         # 'EBAX'
+EL_TABLE    = f'el_{RUN_CODE}_{FX}_tauU{TAU_U}_tauS{TAU_S}_vartau'
+UNITS_TABLE = f'_units_{RUN_CODE}_{FX}_tauU{TAU_U}_tauS{TAU_S}_vartau_m0110'
 ```
 
 ---
@@ -63,7 +69,7 @@ RK_TABLE  = f'rk_{RUN_CODE}_A_tauU{TAU_U}_tauS{TAU_S}_rho0_m0110_chi50_alpha100'
 
 ### Resampling unit
 
-The edge list table `el_20242024_A_tauU20_tauS20` has one row per
+The edge list table `el_20242024_EBAX_tauU10_tauS5_vartau` has one row per
 (citer_work × citer_inst × cited_work × cited_inst) attribution.
 `build_csr.py` deduplicates this before aggregating into block matrices:
 

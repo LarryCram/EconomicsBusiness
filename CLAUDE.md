@@ -72,18 +72,24 @@ Multi-file LaTeX in `spectral_ranking_latex/`. Master file is `main.tex`; sectio
 **Convention (critical):** $C_{ij}$ = attention from $i$ (citing, row) to $j$ (cited, column). Row sum = references given out. This is the transpose of economist's convention but consistent with most non-economics bibliometrics. Prefer "reference" over "citation" unless it is precise. Do not read any folder named `zarchive`, `archive`, or `ARCHIVE`.
 
 ## LaTeX audit
-`ERRORS.md` (project root) lists 8 known issues in the LaTeX source. Key ones:
-- `04_results_.tex` (conflicting baseline α=0.85) moved to `zarchive/` — `04_results.tex` is canonical
-- Text corruption in `01_introduction.tex` ("institutionszz", "butz") — needs manual repair
-- Many `[FILL]` placeholders in `04_results.tex` — to be populated from ranking runs
-- Section 3 does not yet describe `field_eb` (E/B/A/NULL) classification
+`ERRORS.md` (project root) lists 12 open issues. Key unresolved ones:
+- **field_eb mismatch**: Section 3 describes wrong thresholds (≥3) vs actual code (`econ_score + bus_score < 2` for X, dominance for E/B) — must rewrite
+- **ε sensitivity gap**: Section 4 promises ε sensitivity but has no result; `fig_5f_latex.pdf` exists but is never cited
+- **"exogenous sources" undefined**: Section 5 uses the term without definition; ext_balance analysis exists in code but not in paper
+- **Missing `\cite{}`**: `04_results.tex` line 177 has `{efronBootstrapMethodsAnother1992}` without `\cite{}`
+- **Enclave count**: "five enclaves" but six are listed; typo "intiguing"
+
+Previously resolved: text corruption fixed, [FILL] placeholders removed, 04_results_.tex moved to zarchive.
 
 ## Current paper status
 - `main.tex` compiles cleanly
 - Section 1 (introduction): complete
 - Section 2 (mathematical framework and computational summary): complete
-- Section 3 (source selection, scope filtering, corpus construction): complete
-- Sections 4–6 and Supplement: placeholder
+- Section 3 (corpus selection): complete but field_eb classification paragraph describes wrong thresholds
+- Section 4 (results): complete but ε sensitivity paragraph missing; \cite{efron} broken
+- Section 5 (discussion): substantial content present; "exogenous sources" undefined; Critique paragraph stub only
+- Section 6 (prospects): "[Placeholder.]" only
+- Section 7 (addenda): empty, commented out in main.tex
 
 ## Katz-Hubbell work-level ranking
 `spectral_ranking_works/rank_works_katz_hubbell.py` — run after baseline spectral ranking.

@@ -1,83 +1,134 @@
-# ERRORS.md — LaTeX audit against current software state
+# ERRORS.md — LaTeX and code audit (updated 2026-05-16)
 
-## 02_model_specification.tex (Section 2)
-- **Issue**: Convention statement about C_{ij} is present (correctly states "attention from i (citing, row) to j (cited, column)"), but section title is "Journal--institution citation networks" which is dated nomenclature—now "reference networks" is preferred.
-  **Suggestion**: Update section 2 title to clarify "reference networks" or keep citation/reference distinction explicit in opening paragraph.
-
-- **Issue**: Section 2 explains "attention" and "influence" concepts clearly, but uses both "citation matrix" and "reference matrix" interchangeably without reinforcing the convention stated in Introduction.
-  **Suggestion**: Standardize: cite CLAUDE.md convention in the paragraph introducing C_{ij}.
-
-## 03_processing.tex (Corpus section)
-- **Issue**: References Field 14 (Economics) and Field 20 (Business, Management) from OpenAlex but does not explain new field_eb classification (E/B/A/NULL) used elsewhere.
-  **Suggestion**: After describing the OpenAlex field topic filtering, add explicit note: "Sources are classified post-hoc using field_eb: E (econ-only), B (business-only), A (mixed E+B), NULL (neither)."
-
-- **Issue**: Table 3 caption says "Corpus features by year ($\tau_U > 20$)" but text says thresholds are $\tau_U = 20$ and $\tau_S = 20$ (not >).
-  **Suggestion**: Correct caption to "$\tau_U \geq 20$" or clarify threshold in table notes.
-
-- **Issue**: No explicit corpus size statement: the 2000--24 aggregates show ~1,610 sources and ~1,012 institutions, but CLAUDE.md states n_s=1091 and n_u=1732.
-  **Suggestion**: Check whether final corpus (after all filtering) has different sizes. If 1091/1732 are correct, update Table 3 or add a note clarifying which filtering stage each count refers to.
-
-## 04_results.tex (Results section — SHORT VERSION)
-- **Issue**: DUPLICATE FILE: there are two files `04_results.tex` (215 lines) and `04_results_.tex` (289 lines) with different baselines and content. main.tex includes only `04_results`.
-  **Suggestion**: Determine which is canonical. `04_results.tex` specifies baseline $\alpha=1$, $\mu=0$; `04_results_.tex` specifies $\alpha=0.85$, $\tau_U=10$. DELETE one and consolidate.
-
-- **Issue**: Line 9 defines baseline as "$\alpha=1, \mu=0$" (pure eigenvector) but this contradicts CLAUDE.md which says baseline is $\alpha=1.0$ with Katz resolvent and mentions sensitivity studies at other $\alpha$ values. The distinction matters.
-  **Suggestion**: Clarify: is pure eigenvector ($\mu=0$, $\alpha=1$) the paper baseline, or is it Katz-Hubbell with uniform $\mu$?
-
-- **Issue**: Line 10 says baseline block mask $\mathbf{m}=0110$ but table on line 82 also lists 0110. However, line 86 in table shows "Block mask: ... 1000, 0001, (0110), 1111" without explicit link to which is baseline.
-  **Suggestion**: Add parentheses or bold to clarify: "m = (0110) [baseline]" in table.
-
-- **Issue**: Extensive [FILL] placeholders on lines 114-115, 181-193, 209: "$N_s=[FILL]$", "$g^{SS}=[FILL]$", "$\chi^*=[FILL]$", etc.
-  **Suggestion**: Populate all [FILL] with actual values from data or code runs.
-
-- **Issue**: Figure captions reference figures fig_2, fig_3, fig_4 and specify parameters ($t_x=5, \tau_U=\tau_S=20, \alpha=1$) but Section 4 outline (line 6-17) mentions "Phase 1", "Phase 2", "Phase 4" without defining them.
-  **Suggestion**: Add subsection headers for Phase 1, 2, 4 or clarify what each phase comprises.
-
-- **Issue**: Prestige-per-work metric $v$ is introduced in Section 2 (eq. 219) but in Section 4 figure captions it is called "prestige per work" (line 100, 111) without cross-reference to equation or definition.
-  **Suggestion**: Add equation reference: "prestige per work $v$ (Eq. \ref{eq:vstar})".
-
-## 04_results_.tex (Results section — LONG VERSION, NOT INCLUDED IN MAIN)
-- **Issue**: This file is NOT included in main.tex but contains 289 lines of results, more detailed than 04_results.tex.
-  **Suggestion**: This appears to be a draft or alternative version. Clarify status: delete, merge, or move to Supplement.
-
-- **Issue**: Baseline differs from 04_results.tex: Table on line 15 sets $t_x \in \{1,...5,6\}$ (includes t_x=6) vs. 04_results.tex which shows 1-5. Table line 23 sets baseline $\alpha=0.85$ vs. 04_results.tex baseline $\alpha=1$.
-  **Suggestion**: Resolve version conflict. CLAUDE.md mentions time-series runs t1-t4 = t_x 1-4, and baseline parameters in params.csv show 20242024 (t_x=5) with alpha=1.0. Align with params.csv.
-
-- **Issue**: Extensive [FILL] placeholders throughout lines 21, 54-70, 83-194, 201-289.
-  **Suggestion**: Fill all placeholders or delete this version in favor of consolidated section.
-
-- **Issue**: Line 30 states baseline as "$\alpha=0.85$" but CLAUDE.md and 04_results.tex both use $\alpha=1.0$.
-  **Suggestion**: Correct to match 04_results.tex and params.csv.
-
-- **Issue**: Line 17 sets baseline $\tau_U=10$ but 03_processing.tex and 04_results.tex both use $\tau_U=\tau_S=20$. Table caption in Table 3 mentions $\tau_U > 20$.
-  **Suggestion**: Standardize thresholds across all sections; align with CLAUDE.md baseline.
-
-## 05_discussion.tex (Discussion section)
-- **Issue**: PLACEHOLDER: Entire section is four lines of "[Placeholder.]" with no content under face validity, content validity, criterion validity, or construct validity subsection headers.
-  **Suggestion**: CLAUDE.md explicitly notes "Sections 4–6 and Supplement: placeholder", so this is expected. Either populate or remove section heading and subsections.
-
-## 06_prospects.tex (Prospects section)
-- **Issue**: PLACEHOLDER: Section header only, one line "[Placeholder.]", no content.
-  **Suggestion**: CLAUDE.md notes this is a placeholder. Remove or populate.
-
-## 07_addenda.tex (Addenda section)
-- **Issue**: EMPTY: Section header only, no content at all (4 lines total).
-  **Suggestion**: CLAUDE.md notes sections 4-6 and Supplement are placeholders. Clarify: is Addenda meant to be the Supplement? Add content or remove.
-
-## Bibliography (MyLibrary.bib, sciomtcs.bib)
-- **Issue**: Not audited in detail. Spot-check: cited references like \cite{pinskiCitationInfluenceJournal1976}, \cite{vignaSpectralRanking2016}, \cite{palacios-huertaMeasurementIntellectualInfluence2004} should be verified as present.
-  **Suggestion**: Run bibtex or biblatex compile to catch undefined references.
+## Status legend
+- ✅ RESOLVED — confirmed fixed in current files
+- ⚠️ OPEN — still present
+- 🆕 NEW — found in this audit pass
 
 ---
 
-## Summary of Critical Issues
+## 01_introduction.tex
+- ✅ RESOLVED: Text corruption ("institutionszz", "butz") is gone — introduction is clean.
 
-1. **Duplicate results file**: 04_results.tex vs 04_results_.tex with conflicting baselines and parameters. DELETE one.
-2. **Baseline parameter mismatch**: 04_results.tex uses $\alpha=1, \tau_U=\tau_S=20$; 04_results_.tex uses $\alpha=0.85, \tau_U=10$. Reconcile with params.csv.
-3. **Text corruption**: Lines in 01_introduction.tex contain "institutionszz" and "butz" (lines 15).
-4. **Extensive [FILL] placeholders**: 04_results.tex has 9 instances; 04_results_.tex has ~40 instances. All must be populated before publication.
-5. **Placeholder sections**: 05_discussion.tex and 06_prospects.tex are entirely placeholder stubs.
-6. **Corpus size mismatch**: Table 3 shows ~1,610 sources / ~1,012 institutions (2000-24 aggregate) but CLAUDE.md states n_s=1091, n_u=1732. Clarify filtering stage.
-7. **Field classification**: Section 3 describes OpenAlex Fields 14 and 20 but does not link to field_eb (E/B/A/NULL) classification scheme documented in CLAUDE.md.
-8. **Convention clarity**: C_{ij} convention is correct but terminology inconsistently uses "citation" vs "reference" without always clarifying which.
+---
 
+## 02_model_specification.tex
+- ✅ No new issues found; math is consistent with katz_ranker.py implementation.
+- ⚠️ Section title "Mathematical framework: dual spectral ranking" — uses "dual"; could be clarified as "bipartite" or "joint" vs "dual" to match usage in abstract.
+
+---
+
+## 03_processing.tex (Corpus section)
+
+- 🆕 **CRITICAL — field_eb classification mismatch**: Section 3 describes:
+  - 'E' when E-count ≥ 3 and B-count < 3
+  - 'B' when B-count ≥ 3 and E-count < 3
+  - 'A' when both ≥ 3
+  - 'X' when both < 3
+
+  But the actual code (`prepare_data/journal_filter_match_oa.py`, lines 205–210) uses:
+  - 'X' when econ_score + bus_score < 2
+  - 'A' when econ_score == bus_score
+  - 'E' when econ_score > bus_score
+  - 'B' when bus_score > econ_score
+
+  CLAUDE.md accurately describes the code; the paper does not. Section 3 must be rewritten to match the actual classification system.
+
+- ⚠️ **Figure 1 caption inconsistency**: Caption says "Selecting τ_S = 5 and τ_I = 10 retains 1,807 sources and 3,357 institutions" but text says sources reduce "from 1,864 to 1,657" and institutions from "18,175 to 3,086". The two pairs of numbers (1,807/3,357 vs 1,657/3,086) are inconsistent for the same thresholds. One of these is stale; verify against current run and update both.
+
+- ⚠️ **Table 3 caption threshold**: Caption says "τ_U > 20" but text uses "τ_U = 20" (i.e., ≥ 20). Correct to "τ_U ≥ 20". (Note: baseline params.csv uses τ_U=10, τ_S=5; Table 3 likely shows a different sensitivity run.)
+
+- ⚠️ **Section 3 does not describe field_eb for institutions**: Describes source field_eb but references `build_institution_field_eb.py` for institutions only implicitly. Add a paragraph explaining the H_SI-based quota-rule for institutions.
+
+---
+
+## 04_results.tex (canonical — in sections/)
+
+- ✅ RESOLVED: All [FILL] placeholders removed; results filled with actual values.
+- ✅ RESOLVED: Baseline clearly stated as α=1, μ=0, ρ=0, ω=0, τ_I=10, τ_S=5, T5=[2020-2024], F=EBAX, m=0110. Matches params.csv.
+- 🆕 **Missing `\cite{}`**: Line 177 reads `non-parametric bootstrapping {efronBootstrapMethodsAnother1992}` — the `\cite{}` wrapper is missing. This will render as a literal brace expression, not a citation. Fix: `\cite{efronBootstrapMethodsAnother1992}`.
+- 🆕 **ε sensitivity promised but entirely absent**: Line 8 states "We also present a sensitivity analysis for the parameters ρ, χ, ω, **ε**, (α, μ), and t_c" — ε appears in the promise list alongside parameters that are each analysed in subsequent paragraphs. But ε has **no result paragraph, no figure, and no discussion anywhere in the section**. `fig_5f_latex.pdf` exists in `plots/` (generated by `fig_5.py`'s `plot5f()`) and shows ε=1 vs baseline, but is never referenced. Either add a paragraph describing the ε=1 sentinel result with `\ref{fig:fig5f}`, or remove ε from the promise list on line 8.
+- ⚠️ Figure captions reference `fig_3by_latex.pdf`, `fig_3bz_latex.pdf`, `fig_2c_latex.pdf`, `fig_6_latex.pdf`, `fig_stability_scatter_latex.pdf`, `fig_5_latex.pdf`, `fig_5d_latex.pdf`, `fig_7a_oa_errors_latex.pdf` — all confirmed present in `plots/`. ✅
+- ⚠️ `fig_stability_scatter_latex.pdf` caption parameters say "τ_I = τ_S = 20" (line 133-134) but baseline is τ_I=10, τ_S=5. If this figure is from a tau40 sensitivity run, caption should say so. Verify.
+
+---
+
+## 04_results_.tex (in zarchive — NOT included in main.tex)
+- ✅ RESOLVED: Moved to `spectral_ranking_latex/zarchive/`; only `sections/04_results.tex` is used.
+
+---
+
+## 05_discussion.tex
+
+- ✅ RESOLVED: Section now has substantial content (ABDC25 face-validity, Ritzberger comparison, E/B network structure, Vaccario fictitious-information critique, enclave analysis). Was previously "[Placeholder.]".
+
+- 🆕 **Enclave count error**: Line 18 says "We have identified five enclaves" but then lists SIX:
+  1. sustainability (633 HCW)
+  2. digital transformation & China (310 HCW)
+  3. COVID-19 & financial markets (203 HCW)
+  4. systematic literature reviews (226 HCW)
+  5. resource curse and development (147 HCW)
+  6. Bitcoin & policy uncertainty (106 HCW)
+  
+  Either change "five" to "six", or drop one of the six items.
+
+- 🆕 **Typo**: "intiguing" → "intriguing" (line 18).
+
+- 🆕 **"Exogenous sources" used undefined**: Line 10 says a journal "has v<1 with strong in-and-out coupling to exogenous sources" — the term "exogenous sources" has no prior definition in the paper. Section 2 uses "exogenous" only for μ (the prior), a different concept. The ext_balance analysis (sentinel ε=1 run, computed in `export_baseline_rankings.py`) characterises each unit's balance of references flowing into/out of the corpus boundary, which is precisely "exogenous coupling" — but this analysis is never presented in the paper. Either define the term and present the ext_balance result, or rephrase to avoid it.
+
+- 🆕 **Incomplete Critique paragraph**: `\paragraph{Critique}` appears at the end with only the comment `% Against 10 good reasons.` — no content. Either populate or remove the heading.
+
+- ⚠️ Section ends abruptly; content after the enclave figure is thin (one sentence under Critique, no methodological critique material).
+
+---
+
+## 06_prospects.tex
+- ⚠️ OPEN PLACEHOLDER: Still just "[Placeholder.]" — no content.
+
+---
+
+## 07_addenda.tex
+- ⚠️ OPEN EMPTY: No content; `\input{sections/07_addenda}` is commented out in main.tex.
+
+---
+
+## main.tex (abstract and preamble)
+
+- 🆕 **"prestige" in keywords**: Abstract keywords say "dual journal--institution prestige" — should use "influence" per CLAUDE.md convention (v and π are influence scores, not prestige).
+
+---
+
+## Bibliography (MyLibrary.bib, sciomtcs.bib)
+- ⚠️ Not fully audited. `{efronBootstrapMethodsAnother1992}` referenced in results; ensure it exists in bib file.
+
+---
+
+## Code: katz_ranker.py
+
+- 🆕 **"prestige" terminology in comments**: `RankResult` fields (lines 57-60) use "prestige scores" and "prestige per work"; module docstring (line 21) says "returns prestige scores and v"; `bipartite()` docstring (line 308) says "source prestige vector". Should be "influence" throughout per CLAUDE.md.
+- ✅ Algorithm correctness: `bipartite()`, `bipartite_resolvent()`, `power_iteration()`, `katz()`, `rank()` are all consistent with the math in Section 2. The sqrt(α) per-hop convention for bipartite is correctly implemented.
+- ✅ Sentinel/ε=1 handling: `is_sentinel_s` / `is_sentinel_u` mask logic in `rank()` is correct.
+
+---
+
+## Code: build_csr.py
+
+- ✅ Block assembly, ρ-weighting, de-duplication logic, and epsilon handling are correct.
+- Minor: `_t` timing dict at line 84 has comment "remove when no longer needed" — cosmetic.
+
+---
+
+## Summary of Critical Issues (ordered by severity)
+
+1. 🆕 **field_eb classification mismatch** (03_processing.tex): Paper describes wrong thresholds vs code. Must rewrite section 3 field_eb paragraph.
+2. 🆕 **ε sensitivity promised but absent** (04_results.tex line 8): ε listed in sensitivity analysis promise; no result paragraph, no figure reference (fig_5f exists but never cited). Add ε=1 result or remove from promise.
+3. 🆕 **"Exogenous sources" undefined** (05_discussion.tex line 10): Term used without definition; ext_balance analysis is computed but never presented. Define and present, or rephrase.
+4. 🆕 **Missing `\cite{}`** (04_results.tex line 177): `{efronBootstrapMethodsAnother1992}` will not render as a citation.
+5. 🆕 **Enclave count wrong** (05_discussion.tex): "five" should be "six".
+6. ⚠️ **Figure 1 caption vs text inconsistency** (03_processing.tex): 1,807/3,357 vs 1,657/3,086 for same thresholds.
+7. 🆕 **Typo "intiguing"** (05_discussion.tex): → "intriguing".
+8. 🆕 **"prestige" in abstract keywords** (main.tex): → "influence".
+9. 🆕 **"prestige" in katz_ranker.py**: RankResult comments and docstrings — cosmetic but inconsistent with paper.
+10. ⚠️ **Placeholder sections**: 06_prospects.tex still "[Placeholder.]"; 07_addenda.tex empty.
+11. ⚠️ **Incomplete Critique paragraph** (05_discussion.tex): heading with no content.
+12. ⚠️ **fig_stability_scatter caption τ values**: Says τ_I=τ_S=20 but baseline is 10/5 — verify which run this figure is from.
