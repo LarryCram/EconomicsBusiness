@@ -24,12 +24,12 @@ The \textit{Scopus Source List}~\cite[][SSL]{ScopusSources2026} (March 2026 edit
 
 Every journal in JQL, SJL, JCR, and SSL has at least one ISSN, and may have several. These registry ISSNs are joined independently to the February 2026 OpenAlex sources snapshot using its list of ISSNs as the matching key and selecting only the `journal' source-type. Around 60 additional matches are identified by exact title matching for OpenAlex sources that lack an ISSN. We denote the union of matched OpenAlex sources OAS\textsuperscript{*}.
 
-Once the OAS\textsuperscript{*} sources list is established, we conduct a preliminary extract of work and authorship data to identify any sources or institutions with very small number of works over the period 2020-2024. The retention curves (Fig.~\ref{fig:retention}) plot the decline in unit count as the thresholds ($\tau_S,~\tau_I$) for works published per year rises. For sources, we retain sources that publish $\tau_S \ge 10$ works/source/year, reducing the source count from 1,864 to 1,657. Institutions have a very long tail, and we adopt $\tau_I \ge 20$ works/institution/year, reducing the institution count from 18,175 to 3,086. Sources retained above the threshold $\tau_S$ form the set OAS, and institutions retained above the threshold $\tau_I$ form $\mathfrak{I}$. 
+Once the OAS\textsuperscript{*} sources list is established, we conduct a preliminary extract of work and authorship data to identify any sources or institutions with very small number of works over the period 2020-2024. The retention curves (Fig.~\ref{fig:retention}) plot the decline in unit count as the thresholds ($\tau_S,~\tau_I$) for works published per year rises. For sources, we retain sources that publish $\tau_S \ge 10$ works/source/year, reducing the source count from 1,864 to 1,498. Institutions have a very long tail, and we adopt $\tau_I \ge 20$ works/institution/year, reducing the institution count from 18,175 to 2,368. Many of the institutions removed at this point are fragments of larger institutions not blended by OpenAlex, or technical institutions with a small level of business scholarship. Sources retained above the threshold $\tau_S$ form the set OAS, and institutions retained above the threshold $\tau_I$ form $\mathfrak{I}$. 
 
 \begin{figure}[!htb]
 	\centering
 	\includegraphics[width=0.8\textwidth]{../plots/fig_1_latex}
-	\caption{Institution and source retention curves. Selecting $\tau_S = 5$ and $\tau_I = 10$ retains 1,807 sources and 3,357 institutions, using works published between 2020 and 2024.
+	\caption{Institution and source retention curves. Selecting $\tau_S = 10$ and $\tau_I = 20$ retains 1,498 sources and 2,368 institutions, using works published between 2020 and 2024.
 	}
 	\label{fig:retention}
 \end{figure}

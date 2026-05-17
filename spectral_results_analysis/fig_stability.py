@@ -128,12 +128,23 @@ def persistence_table(panel: pd.DataFrame) -> None:
         # Spearman on common set
         rho, pval = stats.spearmanr(both['v_t1'], both['v_t5'])
 
+        # 4-way breakdown matching the scatter plot legend colours
+        n_both_hi = int((both['hi_t1'] & both['hi_t5']).sum())
+        n_both_lo = int((~both['hi_t1'] & ~both['hi_t5']).sum())
+        n_riser   = int((~both['hi_t1'] & both['hi_t5']).sum())
+        n_faller  = int((both['hi_t1'] & ~both['hi_t5']).sum())
+
         print(f'\n  {label}  (n common to both windows: {n:,})')
         print(f'    v>1 in t1:  {n_hi_t1:,}  ({100*n_hi_t1/n:.1f}% of common set)')
         print(f'    v>1 in t5:  {n_hi_t5:,}  ({100*n_hi_t5/n:.1f}% of common set)')
         print(f'    Of v>1 in t5: {pct_persist:.1f}% were also v>1 in t1')
         print(f'    Of v>1 in t1: {pct_survive:.1f}% are still v>1 in t5')
         print(f'    Spearman ρ(v_t1, v_t5) = {rho:.3f}  (p={pval:.1e})')
+        print(f'    Scatter legend (v_t1 vs v_t5, common set n={n:,}):')
+        print(f'      v>1 in both windows  [blue]   : {n_both_hi:>4,}  ({100*n_both_hi/n:.1f}%)')
+        print(f'      v≤1 in both windows  [grey]   : {n_both_lo:>4,}  ({100*n_both_lo/n:.1f}%)')
+        print(f'      crossed v=1 upward   [green]  : {n_riser:>4,}  ({100*n_riser/n:.1f}%)')
+        print(f'      crossed v=1 downward [red]    : {n_faller:>4,}  ({100*n_faller/n:.1f}%)')
 
         # Full 5-window Spearman chain
         print(f'    Spearman ρ by consecutive window:')
@@ -456,6 +467,22 @@ def print_trajectory_report(traj: pd.DataFrame) -> None:
             for t, wl in win_labels.items():
                 n_cross = (risers['first_cross'] == t).sum()
                 print(f'    {wl}: {n_cross:>3,}')
+
+        # Trajectory plot legend: upward crossers only (v_t1≤1, v_t5>1)
+        # The trajectory plot filters to this subset and shows two series:
+        #   monotone rise [blue median line] and oscillating [orange median line]
+        crossers = sub[(sub['v_t1'] <= 1) & (sub['v_t5'] > 1)]
+        n_cross = len(crossers)
+        if n_cross > 0:
+            n_mon   = int((crossers['traj_class'] == 'monotone_rise').sum())
+            n_osc   = int((crossers['traj_class'] == 'oscillating').sum())
+            n_other = n_cross - n_mon - n_osc
+            print(f'\n  Trajectory plot legend — upward crossers (v≤1 in t1, v>1 in t5), {ulab}:')
+            print(f'    Total upward crossers:               {n_cross:>4,}')
+            print(f'    Monotone rise [blue median line]:    {n_mon:>4,}  ({100*n_mon/n_cross:.1f}%)')
+            print(f'    Oscillating   [orange median line]:  {n_osc:>4,}  ({100*n_osc/n_cross:.1f}%)')
+            if n_other:
+                print(f'    Other (stable_high etc.):            {n_other:>4,}  ({100*n_other/n_cross:.1f}%)')
 
 
 def _draw_trajectory_panel(ax, sub_traj: pd.DataFrame, title: str,

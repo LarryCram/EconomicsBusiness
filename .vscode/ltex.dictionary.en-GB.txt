@@ -30,3 +30,8 @@ tf-idf
 Perron
 Frobenius
 PF
+citer
+Soshiki
+Kagaku
+Wien
+Noreste

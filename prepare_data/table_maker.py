@@ -166,15 +166,8 @@ def write_latex_table1(data, out_path):
     L.append(r"\begin{table}[htbp]")
     L.append(r"\centering")
     L.append(
-        r"\caption{Registry sources and their OpenAlex matches, classified by field."
-        r" JQL = Harzing Journal Quality List; MJL = Web of Science Master Journal List;"
-        r" SJL = ERA Subject Journal List (FoR codes 35 and 38);"
-        r" SSL = Scopus Source List (ASJC codes 1400 and 2000)."
-        r" A source appearing in multiple registries is counted in each."
-        r" E/B/A/X are assigned by the combined five-signal scoring."
-        r" OAS$^*$ is the union across all four registries matched to OpenAlex."
-        rf" OAS is OAS$^*$ restricted to sources with mean annual works $\geq\tau_S={TAU_S}$"
-        rf" in the census window {TC0}--{TC1}.}}"
+        r"""\caption{Registry sources and their OpenAlex matches, classified by field. JQL:
+        Harzing Journal Quality List; MJL: Web of Science Master Journal List; SJL: ERA Subject Journal List; SSL: Scopus Source List. A source appearing in multiple registries is counted in each. E/B/A/X are assigned by the combined five-signal scoring. OAS$^*$ is the union across all four registries matched to OpenAlex. OAS$^*$ becomes OAS when journals not primarily in economics and business fields are removed (e.g. psychology, law, education, sociology).}"""
     )
     L.append(r"\label{tab:registry_overview}")
     L.append(r"\begin{tabular}{lrrrrrrrr}")

@@ -105,15 +105,15 @@ EPS_TABLE      = BASELINE_TABLE + '_eps1'
 
 # Visual style per overlay label (ordered: baseline drawn first)
 STYLE = {
-    'baseline':        dict(color='black',   marker=None, lw=1.4, alpha_vis=1.0,  zorder=5),
-    'τ=40':            dict(color='#e41a1c', marker='o',  lw=0.0, alpha_vis=0.50, zorder=4, s=12),
+    'baseline':        dict(color='black',   marker=None, lw=1.4, alpha_vis=1.0,  zorder=7),
+    'τ=40':            dict(color='#e41a1c', marker='o',  lw=0.0, alpha_vis=0.50, zorder=5, s=12),
     'ρ=1':             dict(color='#377eb8', marker='o',  lw=0.0, alpha_vis=0.50, zorder=3, s=12),
     'census=1yr':      dict(color='#4daf4a', marker='o',  lw=0.0, alpha_vis=0.50, zorder=4, s=12),
     'α=0.85, μ=1/N_p': dict(color='#377eb8', marker='o', lw=0.0, alpha_vis=0.55, zorder=3, s=12),
-    'H_SS/II, no self': dict(color='#4daf4a', marker='o', lw=0.0, alpha_vis=0.55, zorder=3, s=12),
-    'no self-ref':     dict(color='#e41a1c', marker='o', lw=0.0, alpha_vis=0.65, zorder=6, s=12),
-    'ω=1':             dict(color='#ff7f00', marker='o',  lw=0.0, alpha_vis=0.50, zorder=3, s=12),
-    'ε=1':             dict(color='#984ea3', marker='o',  lw=0.0, alpha_vis=0.55, zorder=4, s=12),
+    'H_SS/II, no self': dict(color='#4daf4a', marker='o', lw=0.0, alpha_vis=0.55, zorder=4, s=12),
+    'no self-ref':     dict(color='#e41a1c', marker='o', lw=0.0, alpha_vis=0.65, zorder=5, s=12),
+    'ω=1':             dict(color='#ff7f00', marker='o',  lw=0.0, alpha_vis=0.50, zorder=6, s=12),
+    'ε=1':             dict(color='#984ea3', marker='o',  lw=0.0, alpha_vis=0.55, zorder=2, s=12),
 }
 
 
