@@ -27,3 +27,6 @@ HCWs
 HCW
 transofrmation
 tf-idf
+Perron
+Frobenius
+PF

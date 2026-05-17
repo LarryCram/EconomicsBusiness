@@ -132,3 +132,120 @@
 10. ⚠️ **Placeholder sections**: 06_prospects.tex still "[Placeholder.]"; 07_addenda.tex empty.
 11. ⚠️ **Incomplete Critique paragraph** (05_discussion.tex): heading with no content.
 12. ⚠️ **fig_stability_scatter caption τ values**: Says τ_I=τ_S=20 but baseline is 10/5 — verify which run this figure is from.
+
+
+** EFFECT OF CHANGES TO \tau
+Now I have everything I need. Here is the full catalogue:
+
+Numbers in the rendered document
+Key: ✗ Wrong (stale τ) | ~ May have changed | ✓ τ-independent
+
+Section 3 — Corpus selection (03_processing.tex)
+Line	Value	Status	Note
+15	"26,241 journals" (SJL)	✓	External registry count
+27	τ_S ≥ 5	✗	Must read τ_S ≥ 10
+27	1,864 sources pre-filter	~	OAS* at τ=0; might shift slightly with corpus_institutions fix
+27	1,657 sources post-filter	✗	Needs recomputation at τ_S=10
+27	τ_I ≥ 10	✗	Must read τ_I ≥ 20
+27	18,175 institutions pre-filter	✗	Was 30,405 (unfiltered); after corpus_institutions type-filter fix ~23,375 at τ=0
+27	3,086 institutions post-filter	✗	Needs recomputation at τ_I=20
+32 (fig caption)	τ_S = 5 and τ_I = 10	✗	Both wrong; also caption is inconsistent with text
+32 (fig caption)	1,807 sources	✗	Also was inconsistent with text's 1,657 even before rerun
+32 (fig caption)	3,357 institutions	✗	Was from pre-type-filter elbow; now fixed
+42–45	"≥ 3", "< 3" (field classification)	✗	Pre-existing ERRORS.md issue — wrong thresholds vs actual code
+51	"top 30%", "top 10%", "5:8 ratio" (institution quota rule)	✓	Classification rule, not τ-dependent
+Table 1 — Registry overview (tables/table1_registry_overview.tex)
+Line	Value	Status	Note
+9	JQL: 850 / 836 / 98.4% / E203 B284 A27 X3	✓	Registry matching, τ-independent
+10	MJL: 1,433 / 1,397 / 97.5% / E479 B559 A74 X12	✓	τ-independent
+11	SJL: 1,624 / 1,381 / 85.0% / E370 B665 A63 X14	✓	τ-independent
+12	SSL: 2,983 / 2,770 / 92.9% / E660 B865 A154 X66	✓	τ-independent
+14	OAS*: 2,121 / E764 B1058 A203 X95	✓	Pre-filter union, τ-independent
+15	OAS: 1,693 / E613 B855 A154 X71	~	Caption already says τ_S=10 — this may already be correct for new baseline. Verify after rerun
+Table 2 — Source matching (tables/table2_source_matching.tex)
+All counts (JQL 842/835, MJL 1413/1396, SJL 1602/1377, SSL 2979/2769, all overlaps, OAS* 3,534) — ✓ τ-independent (registry matching only).
+
+Table 3 — Corpus features (tables/table3_corpus_features.tex)
+Line	Value	Status	Note
+3 (caption)	"τ_U > 20"	~	Caption threshold now matches new τ_I=20 baseline (previously a higher-τ variant table) — caption wording may need revision to "τ_I = 20"
+11	Works: 15,667 (yr 2000), 64,137 (yr 2024), 993,701 (2000–24)	~	Work counts depend on source filter τ_S; may shift
+12	Sources: 728 (2000), 1,629 (2024), 2,059 (2000–24)	~	Depends on τ_S
+13	Institutions: 924 (2000), 1,105 (2024), 1,106 (2000–24)	✗	At τ_U>20 (old); now rerun needed at new τ_I=20
+14–15	Reference/citation counts	~	Follow from source/institution filter
+19–22	Decile distributions	~	Follow from unit set
+Table — Kernel structure (tables/table_kernel_structure.tex)
+All six rows of J̄, J_col, K̄ — ✗ all change with new τ (fewer/different units alter the citation matrix structure):
+
+Kernel	J̄	J_col	K̄
+C_SS	0.47	0.90	32
+C_II	0.73	0.95	256
+C_SI	0.62	0.94	114
+C_IS	0.62	0.84	97
+M_S	0.81	0.84	389
+M_I	0.91	0.93	960
+Also in-text citations of these (04_results.tex:49): "J̄_II=0.74 vs J̄_SS=0.50; fan-out 7.3×; J_col,II=0.95 vs J_col,SS=0.92; M_S: J̄=0.84/0.50, J_col=0.87/0.92; M_I: J̄=0.90, J_col=0.93" — ✗ all stale.
+
+Table — Unit effects (tables/table_unit_effects.tex)
+All eight influence values (v_bip, v_SS/v_II, v̄_partner) for the four sources and four institutions listed — ✗ all change with new τ. The specific units named may not even survive τ_I=20.
+
+Section 4 — Results (04_results.tex)
+Line	Value	Status	Note
+8	Time windows [2000,2004]…[2020,2024]	✓	Structural, τ-independent
+12	"~25% sources, ~20% institutions near v=1"	~	Stable fraction by design; likely unchanged
+49	All kernel J̄, J_col values (see table above)	✗	Stale
+63	Modularity: 0.2 (source), 0.07 (inst), 0.002/0.0001 (bipartite)	~	May change with unit set
+79	Spearman ρ_S=0.663 (sources), 0.660 (inst), 2000–04 vs 2020–24	✗	Common unit set changes
+80	Consecutive-window ρ_S=0.905 (sources), 0.864 (inst)	✗	Changes
+106–107	"~25% of sources and 20% of institutions" above-average	~	Likely stable (structural)
+108–109	835 sources and 606 institutions in both windows	✗	Common set changes with τ
+109–110	83% sources, 94% institutions retain above-average status	✗	Changes
+114–116	101 monotone rises vs 29 oscillating (inst); 74 vs 80 (sources)	✗	Changes
+129–130 (fig caption)	n=835 sources, n=606 institutions	✗	Changes
+133 (fig caption)	τ_I=τ_S=20	~	Was a variant; now τ_I=20 is baseline but τ_S=10, so caption needs updating
+146 (fig caption)	"baseline (τ_I=10, τ_S=5, ρ=0, α=1, ε=0)"	✗	Wrong τ values
+147 (fig caption)	"τ=40 (N_S=663, N_I=1,125)"	~	tau40 params unchanged but counts shift with new corpus
+153	"around 40%" reduction at τ=40	~	Relative to new baseline; likely changes
+153	"0.04 sources, 0.07 in log v" (bulk shift at τ=40)	~	Changes
+153	"median rank shift 167 sources, 189 institutions" (τ=40)	✗	Changes
+155–156	"0.05 in log r", "s.d. log r = 0.2 (src), 0.1 (inst)" (ρ=1)	~	May change
+156	"median rank change 5%" (ρ=1)	~	May change
+158	"s.d. log(r) = 0.2 (src), 0.1 (inst)" (census1yr)	~	May change
+160	"s.d. log r = 0.04; median rank change 27 places" (ω)	~	May change
+164	"~20 units" above bulk (α=0.85)	~	May change
+166	"median source rank 82 to 79; influence rank 136 to 118" (self-ref)	✗	Changes
+179	"2%" year errors, "0.03%" source errors, "0.5%" inst errors, "1.0%" inst realloc, "2%" ref errors, "75%" within-source	✓	Bootstrap model parameters, not results
+181	"1000 replicates"	✓	Fixed
+191	"50% of replicates have one source with twofold+ change; 5:1 up:down"	✗	Bootstrap results change
+191	"15% of replicates, institution twofold change; 3:1 downward"	✗	Bootstrap results change
+Section 5 — Discussion (05_discussion.tex)
+Line	Value	Status	Note
+8	"219 A* journals" ABDC25	✓	External list
+8	"128 included in OAJ corpus"	~	Depends on τ_S=10 source filter
+8	"92 of 128 A* in top-128-v sources"	✗	Changes with new rankings
+8	"all but 9 ABDC25 A* with v>1"	✗	Changes
+10	"25 journals" (Ritzberger)	✓	External
+10	"22 have v>1, one has v<1"	✗	Changes with new rankings
+12	E-E mean refs 25, B-B 31, E-B/B-E 7	~	May shift slightly
+12	"~2.3 times more B-B pairs"	~	Structural, likely stable
+12	"rank 10 and 14" (top B-only in EBAX)	✗	Changes
+17	"8,675 HCWs" between 2014–2023	✓	Work-level count, τ-independent
+18	"five enclaves"	✗	Pre-existing error (six listed)
+18	Enclave HCW counts: 633, 310, 203, 226, 147, 106	~	May shift with unit filter changes
+Plots (qualitative check)
+Plot file	Status	Note
+fig_1_latex.pdf	✗	Elbow curves: τ axis labels wrong, institution curve unfiltered (now fixed in code — needs rerun)
+fig_3by_latex.pdf	✗	Rank curves change with new N_S, N_I
+fig_3bz_latex.pdf	✗	Scatter changes
+fig_2c_latex.pdf	~	Subfield structure likely qualitatively stable
+fig_6_latex.pdf	✗	Time-series v values change
+fig_stability_scatter_latex.pdf	✗	n=835/606 change; τ caption wrong
+fig_5_latex.pdf	✗	Baseline curve changes; caption τ values wrong
+fig_5d_latex.pdf	~	Katz-Hubbell variant, qualitative pattern stable
+fig_7a_oa_errors_latex.pdf	✗	Bootstrap not yet rerun
+enclave_referer_v.pdf	~	Enclave analysis; qualitatively likely stable
+Summary of priorities:
+
+Must fix immediately (wrong τ literals in text): 03:27, 03:32, 04:146
+Regenerate from new runs: fig_1, fig_3by, fig_3bz, fig_6, fig_stability, kernel table, unit_effects table, all inline stats in §4
+Verify after rerun: OAS count (table1 line 15 already says τ_S=10 — may be correct), table3 institution counts
+Pre-existing errors unrelated to τ: field_eb thresholds (03:42–45), "five enclaves" (05:18)

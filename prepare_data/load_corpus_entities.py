@@ -143,7 +143,8 @@ def load_institutions(db):
                            AS institution_idx,
                        display_name AS institution_name,
                        country_code,
-                       type
+                       type,
+                       ror
                 FROM '{OPENALEX}/institutions.parquet'
                 WHERE type IN ({type_list})
                   AND CAST(REGEXP_REPLACE(id, 'https://openalex.org/I', '') AS BIGINT)
@@ -153,6 +154,7 @@ def load_institutions(db):
                    im.institution_name,
                    im.country_code,
                    im.type,
+                   im.ror,
                    iw.works_count,
                    ROUND(iw.works_count / {CORPUS_YEARS}.0, 4) AS works_per_year
             FROM inst_works iw

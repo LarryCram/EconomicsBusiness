@@ -24,7 +24,7 @@ The \textit{Scopus Source List}~\cite[][SSL]{ScopusSources2026} (March 2026 edit
 
 Every journal in JQL, SJL, JCR, and SSL has at least one ISSN, and may have several. These registry ISSNs are joined independently to the February 2026 OpenAlex sources snapshot using its list of ISSNs as the matching key and selecting only the `journal' source-type. Around 60 additional matches are identified by exact title matching for OpenAlex sources that lack an ISSN. We denote the union of matched OpenAlex sources OAS\textsuperscript{*}.
 
-Once the OAS\textsuperscript{*} sources list is established, we conduct a preliminary extract of work and authorship data to identify any sources or institutions with very small number of works over the period 2020-2024. The retention curves (Fig.~\ref{fig:retention}) plot the decline in unit count as the thresholds ($\tau_S,~\tau_I$) for works published per year rises. For sources, we retain sources that publish $\tau_S \ge 5$ works/source/year, reducing the source count from 1,864 to 1,657. Institutions have a very long tail, and we adopt $\tau_I \ge 10$ works/institution/year to reduce the institution count from to 18,175 to 3,086. Sources retained above the threshold $\tau_S$ form the set OAS, and institutions retained under $\tau_I$ form $\mathfrak{I}$. 
+Once the OAS\textsuperscript{*} sources list is established, we conduct a preliminary extract of work and authorship data to identify any sources or institutions with very small number of works over the period 2020-2024. The retention curves (Fig.~\ref{fig:retention}) plot the decline in unit count as the thresholds ($\tau_S,~\tau_I$) for works published per year rises. For sources, we retain sources that publish $\tau_S \ge 10$ works/source/year, reducing the source count from 1,864 to 1,657. Institutions have a very long tail, and we adopt $\tau_I \ge 20$ works/institution/year, reducing the institution count from 18,175 to 3,086. Sources retained above the threshold $\tau_S$ form the set OAS, and institutions retained above the threshold $\tau_I$ form $\mathfrak{I}$. 
 
 \begin{figure}[!htb]
 	\centering
@@ -36,13 +36,13 @@ Once the OAS\textsuperscript{*} sources list is established, we conduct a prelim
 
 Selecting the sources and institutions that satisfy these thresholds, we extract works, authorships and reference lists published between 2000 and 2024, retaining works typed as article or review, and excluding works that are paratext, retracted, or without an authorship entity. We retain institutions from a work's authorship data for OpenAlex type is education, nonprofit, government, or other, excluding companies and funders. Although most results relate to the recent 5-year window 2020-2024, we choose the wider 2000--2024 time window to support our time-series analysis.
 
-Within the broad field of Economics and Business, many sources publish works in subfields $F$ within the set $\mathfrak{F}$. To relate OAS sources to subfields ${F}$ we capitalise on registry subfield labels (categories, groups, subjects, ASJC and topics in JQL, SJL, JCR, SSL, and OAS respectively). These labels are mapped by hand to the broad subfields $F=E$ (economics) or $F=B$ (business), or $F=X$ when the subfield is out of scope (e.g. Psychology, Education from JQL). Fields in Finance and in Accounting are mapped to $F=E$. Some sources publish sizeable amounts in both E and B; they are designated ambiguous, $F=A$. The five signals are counted, and each source classified as follows:
+Within the broad field of Economics and Business, many sources publish works in subfields $F$ within the set $\mathfrak{F}$. To relate OAS sources to subfields ${F}$ we capitalise on registry subfield labels (categories, groups, subjects, ASJC and topics in JQL, SJL, JCR, SSL, and OAS respectively). These labels are mapped by hand to the broad subfields $F=E$ (economics) or $F=B$ (business), or $F=X$ when the subfield is out of scope (e.g. Psychology, Education from JQL). Fields in Finance and in Accounting are mapped to $F=E$. Some sources publish sizeable amounts in both E and B; they are designated ambiguous, $F=A$. The five signals are counted, and each source classified according to this sequence:
 \begin{itemize}
 	\setlength{\itemsep}{0pt}
-	\item `E' when its E-count is $\geq 3$ and its B-count is $< 3$ (economics-dominant);
-	\item `B' when its B-count is $\geq 3$ and its E-count is $< 3$ (business-dominant);
-	\item `A' when both E-count and B-count are $\geq 3$ (genuinely ambiguous);
-	\item `X' when both E-count and B-count are $< 3$ (weak signal in both fields).
+	\item `X' when E-count + B-count $< 2$ (weak in both fields);
+	\item `A' E-count = B-count (ambiguous);
+	\item `E' E-count $ > $ B-count (economics-dominant);
+	\item `B' B-count $ > $ E-count (business-dominant).
 \end{itemize}
 Institutions generally publish in multiple subfields, so direct categorical
 classification is unsuitable. To indicate the balance of E and B for an institution

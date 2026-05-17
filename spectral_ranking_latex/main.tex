@@ -20,22 +20,11 @@
 \maketitle
 
 \begin{abstract}
-We develop a recirculating ordinal spectral ranking of journal and institution units that
-determines influence ranking scores via block citation matrices. There are 
-four bibliometrically distinct structures connecting journals ($J$) and institutions ($I$): 
-$J$ to $J$ (similar to the Clarivate Eigenvector score), 
-$I$ to $I$ (the institutional counterpart), $J+I$ to $J+I$ (full 2-unit citation matrix), 
-and $JI$ to $IJ$ (recirculating or bipartite). 
-Applied to a sample of the economics and commerce journal literature using OpenAlex data,
-the method produces stable, interpretable joint rankings whose
-sensitivity to model parameters is examined systematically. The recirculating model
-directly links journals and institutions to reinforce the hierarchy of influence. Journal rankings are stablised
-by the inclusion of institutions, and both journal and institution's ordinal rankings are relatively unchanged over 25 years.
-
+Bibliometric-based rankings usually treat journals and institutions differently, clouding the interdependent roles they have in the science system. We introduce a spectral ranking model that ranks journals and institutions together: including institutions establishes and stabilises journal rankings and vice versa. The model considers four ways that references connect journals ($J$) and institutions ($I$): $J$ to $J$ (analogous to the Clarivate Eigenvector score), $I$ to $I$ (its institutional counterpart), $J+I$ to $J+I$ (the full citation matrix), and $JI$ to $IJ$ (recirculating bipartite blocks). Stable, unique influence vectors for sources and institutions are derived by resolving suitably conditioned matrix representations of these structures. Applied to economics and business metadata drawn from OpenAlex, the recirculating method produces stable, interpretable joint rankings. We test how sensitive the model is to parameter choices and to metadata uncertainties and errors. The ordinal rankings of journals and institutions are found to be largely stable over 25 years. The results also shed light on the debate over the relative standing of economics and business journals. Finally, the study uncovers intriguing pockets of research --- enclaves --- in which hundreds of highly cited works appear in low-ranked journals and are produced at low-ranked institutions.
 
 \medskip\noindent
-\textbf{Keywords}: spectral ranking, dual journal--institution prestige, 
-Katz-Hubbell resolvent
+\textbf{Keywords}: spectral ranking, dual journal--institution influence, 
+Katz-Hubbell resolvent, ranking economics and business
 \end{abstract}
 
 \input{sections/01_introduction}

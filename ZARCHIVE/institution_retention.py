@@ -182,8 +182,8 @@ def fetch_elbow_data(db) -> pd.DataFrame:
                    COUNT(DISTINCT a.work_idx) AS works_count
             FROM '{PARQUET}/corpus_authorships.parquet' a
             JOIN '{PARQUET}/corpus_works.parquet' w USING (work_idx)
-            WHERE a.institution_idx IS NOT NULL
-              AND w.publication_year BETWEEN {_YEAR_MIN} AND {_YEAR_MAX}
+            JOIN '{PARQUET}/corpus_institutions.parquet' ci ON a.institution_idx = ci.institution_idx
+            WHERE w.publication_year BETWEEN {_YEAR_MIN} AND {_YEAR_MAX}
             GROUP BY a.institution_idx
         ),
         work_max_inst AS (

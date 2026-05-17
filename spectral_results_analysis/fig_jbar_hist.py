@@ -119,7 +119,6 @@ def plot(kernels: list, out_path: Path) -> None:
                         hspace=0.45, wspace=0.35)
     fig.savefig(out_path, bbox_inches='tight')
     print(f'Saved {out_path}')
-    plt.show()
 
 
 def main():

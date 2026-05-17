@@ -1,5 +1,5 @@
 % ---------------------------------------------------------------
-\section{Mathematical framework: dual spectral ranking}
+\section{Mathematical framework: joint spectral ranking}
 \label{sec:networks}
 % ---------------------------------------------------------------
 
@@ -11,6 +11,8 @@ $\mathfrak{R}=\{r(i,j):w_i\in\mathfrak{W}^c,\,w_j\in\mathfrak{W}^t\}$.
 In practice many institutions and some sources publishing only
 a few works per year can be dropped from the corpus. We specify 
 the threshold numbers of works per year that must be attained by institutions and sources ($\tau_I, \tau_S$), with $\mathfrak{I}\subseteq\mathfrak{I}'$ and $\mathfrak{S}\subseteq\mathfrak{S}'$ as the surviving sets. Works that lose all their authorships under the institution filter, or whose source is dropped by the source filter, are removed from the corpus. 
+
+References from census works in $\mathfrak{W}^c$ to works outside $\mathfrak{W}^t$, or from works outside $\mathfrak{W}^c$ to target works in $\mathfrak{W}^t$, may be discarded ($\varepsilon=0$). Alternatively, both can be represented by a pair of \emph{sentinel} units: a fictitious external source $s_0\notin\mathfrak{S}$ and a fictitious external institution $i_0\notin\mathfrak{I}$, each standing for the totality of works beyond the corpus ($\varepsilon=1$). The sentinels enter $\mathbf{C}$ as ordinary units and participate in the resolvent~\eqref{eq:spectral}, but their influence values are not reported. The fraction of unit $p$'s normalised reference weight directed at or received from $s_0$ or $i_0$ is its \emph{external balance}: a diagnostic for how strongly $p$'s output and input reach beyond the corpus boundary.
 
 Let $R_i=|\{j:(i, j)\in\mathfrak{R}\}|$ be the number of references from work
 $w_i$ that land in the filtered set $\mathfrak{R}$, and
@@ -104,7 +106,7 @@ ranking $\boldsymbol{\pi}^*$ \citep[see][for an overview]{vignaSpectralRanking20
 	\label{eq:eig}
 \end{equation}
 If $\mathbf{H}$ is primitive (irreducible and aperiodic) the ranking is unique by the
-Perron--Frobenius theorem. \cite{gellerCitationInfluenceMethodology1978} showed that
+Perron--Frobenius theorem. We call $\boldsymbol{\pi}^*$ the Perron--Frobenius (PF) eigenvector or ranking. \cite{gellerCitationInfluenceMethodology1978} showed that
 $\boldsymbol{\pi}^*$ is the stationary distribution of the
 Markov chain with transition matrix $\mathbf{H}$, and that it coincides
 with the \textit{influence weight} of \cite{pinskiCitationInfluenceJournal1976}
@@ -128,7 +130,7 @@ the standing of units independently of the reference matrix structure,
 \]
 We explore two priors, normalised so that $\mathbf{1}^\top\boldsymbol{\mu}=1$:
 $\mu_p = 1/N$ for every unit $p\in\mathfrak{P}$ (uniform prior) and $\mu_p=1/(2N_S)$ for sources and $\mu_p=1/(2N_I)$ for institutions (unit-weighted prior).
-Note that if $\alpha < 1$ and $\mu=0$ the resolvent $(\mathbf{I}-\alpha\mathbf{H}^\top)\boldsymbol{\pi}=\mathbf{0}$ admits only the trivial solution $\boldsymbol{\pi}=\mathbf{0}$ and is not useful as a ranking.
+Note that if $\alpha < 1$ and $\boldsymbol{\mu}=\boldsymbol{0}$ the resolvent $(\mathbf{I}-\alpha\mathbf{H}^\top)\boldsymbol{\pi}=\mathbf{0}$ admits only the trivial solution $\boldsymbol{\pi}=\mathbf{0}$ and is not useful as a ranking.
 
 Combining these approaches yields the general (Katz--Hubbell) resolvent equation
 \begin{equation}
@@ -142,11 +144,11 @@ Combining these approaches yields the general (Katz--Hubbell) resolvent equation
 	\label{eq:spectral}
 \end{equation}
 which recovers $\boldsymbol{\pi}^*$ in the limit $\alpha\to 1$ when
-$\mathbf{H}$ is primitive.
+$\mathbf{H}$ is primitive. We call $\boldsymbol{\pi}$ from Equation~\ref{eq:spectral} the Katz--Hubbell (KH) eigenvector or ranking.
 
 The parameters $\alpha$ and $\boldsymbol{\mu}$ have substantive interpretations as reference chain attenuation and exogenous standing, independently of reference structure. Additionally, when $\alpha<1$ and $\mu \ne 0$, there is a unique non-negative solution to \eqref{eq:spectral} even when $\mathbf{H}$ is imprimitive: $\alpha<1$ makes $(\mathbf{I}-\alpha\mathbf{H}^\top)$ invertible, and a nonzero $\boldsymbol{\mu}$ lifts the equation off the homogeneous system. If $\mathbf{C}$ were a binary adjacency matrix with the flat prior, this would be the PageRank spectral ranking \citep{brinAnatomyLargeScaleHypertextual1998}.
 
-As \cite{gellerCitationInfluenceMethodology1978} showed, $\boldsymbol{\pi}$ is the steady-state probability vector of the Markov matrix $\mathbf{H}$, so we refer to $\pi_p$ as the \emph{ranking probability} of unit $p$.
+As \cite{gellerCitationInfluenceMethodology1978} showed, $\boldsymbol{\pi}$ is the steady-state probability vector of the Markov matrix $\mathbf{H}$, and we may refer to $\pi_p$ as the \emph{ranking probability} of unit $p$.
 The \emph{influence} $v_p$ is computed as \citep{palacios-huertaMeasurementIntellectualInfluence2004},
 \begin{equation}
 	\mathbf{v}
@@ -191,16 +193,21 @@ Squaring $\mathbf{H}$ collapses two-step paths to separate unit types, giving on
 \]
 Both $\mathbf{M}_S$ and $\mathbf{M}_I$ are row semi-stochastic products of row semi-stochastic matrices.
 
-When the Katz method is applied, we adopt the convention that a single $SI$ or $IS$ step is damped by $\sqrt{\alpha}$, so the round-trip $S\to I\to S$ incurs attenuation $\sqrt{\alpha}\cdot\sqrt{\alpha}=\alpha$, matching the one-step attenuation in the unipartite modes. This ensures the spectral radius of $\alpha\mathbf{M}_S$ equals that of the corresponding unipartite operator and makes $\alpha$ comparable across masks.
-Applying this substitution to \eqref{eq:spectral},
-partitioning $\boldsymbol{\pi}=(\boldsymbol{\pi}_S,\boldsymbol{\pi}_I)$ and $\boldsymbol{\mu}=(\boldsymbol{\mu}_S,\boldsymbol{\mu}_I)$,
-and eliminating $\boldsymbol{\pi}_I$ yields the bipartite resolvent for sources,
-\begin{equation}
-  \bigl(\mathbf{I}-\alpha\mathbf{M}_S^\top\bigr)\boldsymbol{\pi}_S
-  \;=\;
-  (1-\sqrt{\alpha})\bigl(\boldsymbol{\mu}_S+\sqrt{\alpha}\,\mathbf{H}_{IS}^\top\boldsymbol{\mu}_I\bigr).
-  \label{eq:kh_source}
-\end{equation}
+If the Katz--Hubbell method is chosen ($\alpha \ne 1$), we adopt the convention that a single $SI$ or $IS$ step is damped by $\sqrt{\alpha}$, so the round-trip $S\to I\to S$ incurs attenuation $\sqrt{\alpha}\cdot\sqrt{\alpha}=\alpha$, matching the one-step attenuation in the unipartite modes. This ensures the spectral radius of $\alpha\mathbf{M}_S$ equals that of the corresponding unipartite operator and makes $\alpha$ comparable across masks.
+Applying this substitution to (6) and partitioning $\boldsymbol{\pi} = (\boldsymbol{\pi}_S, \boldsymbol{\pi}_I)$
+and $\boldsymbol{\mu} = (\boldsymbol{\mu}_S, \boldsymbol{\mu}_I)$, we obtain:\begin{eqnarray*}
+	\boldsymbol{\pi}_S - \sqrt{\alpha}\,\mathbf{H}_{IS}^{\top}\,\boldsymbol{\pi}_I & = & (1-\sqrt{\alpha})\,\boldsymbol{\mu}_S \\
+	\boldsymbol{\pi}_I - \sqrt{\alpha}\,\mathbf{H}_{SI}^{\top}\,\boldsymbol{\pi}_S & = & (1-\sqrt{\alpha})\,\boldsymbol{\mu}_I
+\end{eqnarray*}
+Replacing $\boldsymbol{\pi}_I$ in the first equation gives
+\[
+\boldsymbol{\pi}_S - \sqrt{\alpha}\,\mathbf{H}_{IS}^{\top}\Bigl[\,\sqrt{\alpha}\,\mathbf{H}_{SI}^{\top}\,\boldsymbol{\pi}_S + (1-\sqrt{\alpha})\,\boldsymbol{\mu}_I\Bigr] \;=\; (1-\sqrt{\alpha})\,\boldsymbol{\mu}_S .
+\]
+\noindent which, since
+\(\mathbf{H}_{IS}^{\top}\mathbf{H}_{SI}^{\top}  = \mathbf{M}_S^{\top}\),  yields the bipartite resolvent for sources:
+\[
+(\mathbf{I} - \alpha \mathbf{M}_S^{\top})\,\boldsymbol{\pi}_S = (1-\sqrt{\alpha})\Bigl(\boldsymbol{\mu}_S + \sqrt{\alpha}\,\mathbf{H}_{IS}^{\top}\,\boldsymbol{\mu}_I\Bigr) .
+\]
 When $\alpha<1$ and $\boldsymbol{\mu}\ne\mathbf{0}$, the right-hand side links institutions to sources via $\mathbf{H}_{IS}^\top$. The institution ranking is the matrix--vector product
 \begin{equation}
   \boldsymbol{\pi}_I
@@ -220,7 +227,7 @@ the resolvent
 $\boldsymbol{\pi}=\mathbf{\tilde{H}}^{\top}\boldsymbol{\pi}$
 is equivalent to \eqref{eq:spectral}. This is the general form of
 our numerical problem, though most results reported below use $\alpha=1$ and $\boldsymbol{\mu}=\mathbf{0}$, so $\mathbf{\tilde{H}}=\mathbf{H}$.
-We construct many realisations of $\mathbf{\tilde{H}}$ to test unit pairings, subfield restrictions, temporal changes, other parameter choices, and for bootstrap uncertainty estimation. Each realisation entails a unit--unit reference network with one giant strongly connected component (SCC) together with a few, typically singleton, components that are disjoint from the main network. We retain the SCC, and drop the disconnected components and any units whose row sum (dangling) or column sum (unreferenced) on the SCC is zero, alternating between component, row and column drops until the residual $\mathbf{\tilde{H}}$ is strictly row-stochastic. Primitivity is then verified numerically as described below.
+We construct many realisations of $\mathbf{\tilde{H}}$ to test unit pairings, subfield restrictions, temporal changes, other parameter choices, and for bootstrap uncertainty estimation. Each realisation entails a unit--unit reference network with one giant strongly connected component (SCC) together with a few, typically singleton, components that are disjoint from the main network. We retain the SCC, and drop all disconnected components. We then remove units whose row sum (dangling nodes) or column sum (unreferenced nodes) on the SCC is zero, alternating between component, row and column removals until the residual $\mathbf{\tilde{H}}$ is strictly row-stochastic. Primitivity is then verified numerically as described below.
 
 In our implementation $\mathbf{\tilde{H}}$ is a sparse matrix constructed from the filtered and weighted edge list $\mathcal{E}$ accumulated over $\mathfrak{R}$, stored in compressed sparse row (CSR) format. We use two numerical approaches, applied to different regimes:
 \begin{itemize}
