@@ -165,21 +165,67 @@ the floor level slightly but does not change the qualitative pattern and is not 
   \label{fig:fig5d}
 \end{figure}
 
-We now ask how uncertainties and errors in OpenAlex appear in spectral rankings. The sets of units used in our models are samples from a larger population of sources and institutions, so sampling error arises. In addition, like all bibliometric databases, OpenAlex includes a variety of mistakes and uncertainties, some relatively unimportant for this study (e.g. errors in language identification, ambiguities in names, misreported open access status). Others lead to uncertainties in the values of influence, and we aim to estimate their size. To do this we use non-parametric bootstrapping \cite{efronBootstrapMethodsAnother1992} to model sampling error, and stochastic simulation of four kinds of OpenAlex metadata statistical errors. Errors are introduced at the work level, and carried through all steps of the non-linear algorithm that yields baseline influence.  
+We now ask how uncertainties and errors in OpenAlex propagate into in the uncertainty of a spectral ranking. The sets of units used in our models are samples from a larger population of sources and
+institutions, so sampling error arises, which we model using non-parametric bootstrapping
+\citep{efronBootstrapMethodsAnother1992}. In addition, like all bibliometric databases,
+OpenAlex includes a variety of metadata error. We introduce four potentially potent examples 
+using simple models, and apply stochastic simulation to propagate their 
+effects into the spectral ranking. All errors are introduced at the work level and
+carried through the full non-linear influence pipeline.
 
-Sampling error is modelled by drawing samples with replacement from the full set of baseline works. Publication year uncertainties are widespread in bibliometric databases, affecting corpus membership on the citer and cited side. Not necessarily `wrong', they arise through different treatments of preprint date, early-access publication dates, print/electronic archival dates, and metadata errors. To explore uncertainty in OpenAlex publication years we examined gaps in the concordance between publication year and the (Volume, Issue, Page) sequence for sources having such metadata (many electronic sources do not include sequential descriptors). From this study we model publication year uncertainty for the [2020, 2024] baseline by randomly choosing a set of corpus works from the 4-year window [2016-2019] preceding the earliest target date, and inserting them into the same source with their publication year changed to lie in the census window. The number of works replaced per sample is 2\% of the number of works in the census window, $A$. While apparently rare, we found from the sequence study that works are sometimes allocated to erroneous sources (e.g. works from Soshiki Kagaku are attributed to Organization Science): we model this by randomly altering the source of 0.03\% of census works. Errors are also made in the assignment of works to institutions. An unpublished study by Andreas Pacher at TU Wien suggests that even though OpenAlex sets the standard for work-institution accuracy, the error level is nevertheless around 0.5\%. Our investigations have found obvious ambiguities including several hundred works miss-attributed between Brown University/John Brown University, Universidad del Noreste/Northeastern University, and Anderson University SC/Anderson School UCLA. We have removed these smaller institutions entirely for this study, without allocating their works to the larger. We model institution attribution errors as a random reallocation of 1.0\% of works' institutions by another within the corpus: the model could be improved by including institutional name textual similarity. Errors occur in reference lists when they are truncated or intermixed with other lists, or when an intended reference is miss-allocated by indexers to another work within the corpus. We model reference list errors by pointing 2\% of references to another work, 75\% within the same source and the remainder to another source.
+Table~\ref{tab:oa_errors} summarises the error types and their adopted rates.
+Publication year rates were calibrated from gaps in the concordance between recorded
+publication year and (Volume, Issue, Page) sequence for sources carrying sequential
+metadata. Source misallocation, while rare, is observed in practice (e.g.\ works from
+\textit{Soshiki Kagaku} attributed to \textit{Organization Science}).
+Institution attribution errors are informed by an unpublished study at TU Wien, which
+estimates the error level at around 0.5\%; our own investigations found several hundred
+works misattributed between Brown University and John Brown University, leading us to
+adopt 1.0\%. Reference list errors arise when lists are truncated, intermixed, or
+mis-indexed by the database; the adopted error is informed by our experience and \cite{rodriguesDetectingIncoherentCitation2025}.
 
-The stochastic simulation first constructs 1000 replicates of the corpus works adjusted for each kind of work variation: sampling, publication year, and source/institution allocation, saving differences from the baseline work set (Stage 1). It also constructs 1000 replicates of the work-level citer-cited table adjusted for reference list errors, saving differences from the baseline (Stage 2). Sampling works randomly from the four Stage 1 sets and reference connections from Stage 2, the algorithm applies the standard preprocessing and resolvent pipelines to generate 1000 replicates of the influence $\mathbf{v}$. To avoid the need to model author uncertainties, we adopt institutional fractionation to determine a work's institution weights.  
+\begin{table}[!htbp]
+  \centering
+  \small
+  \caption{Models of errors used in the stochastic simulation of spectral ranking uncertainty.
+           Errors are introduced at the work level and propagate through the pipeline using the baseline parameters. The rate is the proportion of the set (works or references) in question that is randomly affected in a replicate.}
+  \label{tab:oa_errors}
+  \begin{tabular}{lp{9cm}r}
+    \toprule
+    Error model       & Mechanism & Rate \\
+    \midrule
+    Sampling
+      & Works drawn with replacement from the baseline set.
+      & --- \\
+    Publication year
+      & Random work from the time window [2016--2019] is inserted into its source
+        with the publication year shifted into the census window.
+      & 2\% \\
+    Source misattribution
+      & Corpus work reallocated to a randomly chosen corpus source.
+      & 0.03\% \\
+    Institution misattribution
+      & Corpus work reallocated to a randomly chosen corpus institution.
+      & 1\% \\
+    Reference misattribution
+      & Corpus reference redirected to another work within the corpus
+        (75\% within the same source; 25\% to another source)
+      & 2\% \\
+    \bottomrule
+  \end{tabular}
+\end{table}
+
+The stochastic simulation first constructs 1000 replicates of the corpus works adjusted for each kind of work variation: sampling, publication year, and source/institution allocation, saving differences from the baseline work set (Stage 1). It also constructs 1000 replicates of the work-level citer-cited table adjusted for reference list errors, saving differences from the baseline (Stage 2). Combining one Stage 1 replicate (work-level errors) with one Stage 2 replicate (reference errors) at a time, the algorithm applies the standard preprocessing and resolvent pipelines to generate 1000 replicates of the influence $\mathbf{v}$. To avoid the need to model author uncertainties, we adopt institutional fractionation to determine a work's institution weights.  
 
 \begin{figure}[!htbp]
   \centering
   \includegraphics[width=0.8\textwidth]{../plots/fig_7a_oa_errors_latex.pdf}
   \caption{Stochastic simulation of 1000 replicates of OpenAlex uncertainties and errors on the 
-  spectral ranking of the baseline model. The black line is the baseline and the red line the replicate median showing only minor deviation. The replicates of each unit are plotted as grey points, with a blue dot on the upper and lower extremes, showing that extreme variations occasionally arise.}
+  spectral ranking of the baseline model. The black line is the baseline and the red line the replicate median showing only minor deviation. The replicates of each unit are plotted as grey points, with a blue dot on the upper and lower extremes, showing that extreme variations occasionally arise among the $>3$ million unit-samples presented here.}
   \label{fig:fig_7}
 \end{figure}
 
-Figure~\ref{fig:fig_7} summarises the 1000 replicates, highlighting the large deviations in $v$ and thus rank that may arise. Among sources with baseline $v \geqslant 1$, around 50\% of replicates have one source with a twofold or more increase or decrease in its $v$, with increases outnumbering decreases 5:1. This is often due to alteration of the publication year of well-referenced work that is inserted into a source with relatively few works, sharply raising its prominence in the citation matrix. Less common but also responsible for large increases is the reallocation of a reference from the source's works to a different work. In some replicates a source has a large decrement, generally due to the result of a model sampling error deleting a well-referenced work from a source with relatively few works. Around 15\% of replicates have an institution with a twofold or more change in $v$, with around 3:1 downward. Most of these changes are due to deleting corpus works that referenced the institution's works.
+Figure~\ref{fig:fig_7} summarises the 1000 replicates, highlighting the large deviations in $v$ and thus rank that occasionally arise. Among sources with baseline $v \geqslant 1$, around 50\% of replicates have one source with a twofold or more increase or decrease in its $v$, with increases outnumbering decreases 5:1. This is often due to alteration of the publication year of a well-referenced work that is inserted into a source that has relatively few works, sharply raising its prominence in the citation matrix. Less common but also responsible for large increases is the reallocation of a reference from the source's works to a different work. In some replicates a source has a large decrement, generally due to the result of the model deleting a well-referenced work from a source with relatively few works. Around 15\% of replicates have one institution with a twofold or more change in $v$, with around 3:1 downward. Most of these changes are due to deleting corpus works that referenced the institution's works.
 
-Our models of OpenAlex errors are plausible assumptions, not measured properties. The stochastic simulation functions as a sensitivity analysis, showing the implications for spectral rankings if the errors occur in this way and at this rate. The power-law distribution of citation frequencies for works, sources and units, combined with the presence of many units that just pass the productivity threshold, leads inevitably to rare large changes in the place of a unit in the ranking. Our experience in reviewing the influence values of units is consistent with this: surprising placements are usually explained by identifying an error or ambiguity in the metadata. This finding from our simulation is consistent with the empirical study presented by \citep{scheidstegerHowSimilarAre2025} which found low agreement between unit-level indicators derived from 
+Our models of OpenAlex errors are plausible assumptions, not measured properties. The stochastic simulation functions as a sensitivity analysis, showing the implications for spectral rankings if the errors occur in this way and at this rate. The power-law distribution of citation frequencies for works, sources and units, combined with the presence of many units that just pass the productivity threshold, leads inevitably to rare but large changes in the place of a unit in the ranking. Our experience in reviewing the influence values of units is consistent with this: surprising placements are usually explained by identifying an error or ambiguity in the metadata. This finding from our simulation is consistent with the empirical study presented by \citep{scheidstegerHowSimilarAre2025} which found low agreement between unit-level indicators derived from 
 different large bibliometric databases including OpenAlex. 

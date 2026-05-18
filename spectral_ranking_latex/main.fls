@@ -395,6 +395,9 @@ INPUT ../plots/fig_5d_latex.pdf
 INPUT ../plots/fig_5d_latex.pdf
 INPUT ../plots/fig_5d_latex.pdf
 INPUT ../plots/fig_5d_latex.pdf
+INPUT /usr/share/texlive/texmf-dist/fonts/tfm/public/cm/cmbx6.tfm
+INPUT /usr/share/texlive/texmf-dist/fonts/tfm/public/amsfonts/euler/eufm10.tfm
+INPUT /usr/share/texlive/texmf-dist/fonts/tfm/public/amsfonts/euler/eufm7.tfm
 INPUT ../plots/fig_7a_oa_errors_latex.pdf
 INPUT ../plots/fig_7a_oa_errors_latex.pdf
 INPUT ../plots/fig_7a_oa_errors_latex.pdf
