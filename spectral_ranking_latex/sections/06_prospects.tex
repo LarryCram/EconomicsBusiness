@@ -1,7 +1,40 @@
 %!TeX root = ../main.tex
-% ---------------------------------------------------------------% ---------------------------------------------------------------
+% ---------------------------------------------------------------
 \section{Prospects}
 \label{sec:prospects}
 % ---------------------------------------------------------------
 
-[Placeholder.]
+The paper establishes that ordinal spectral ranking of journals and institutions
+by recirculation is feasible, interpretable against expert rankings, and largely stable
+across a quarter-century of economics and business literature. Several threads
+invite further development.
+
+A useful extension could be work-level spectral ranking over the directed
+acyclic graph of work-work references. As noted in Section~\ref{sec:discussion},
+projecting works to units introduces fictitious information by conflating independent
+reference chains passing through a shared unit. Spectral methods applied directly to
+the work-level graph could avoid this conflation, but currently call on the Katz-Hubbell 
+(PageRank) resolvent. While $\alpha$ and $\mathbf{\mu}$ stabilise the solution they 
+distort the network, defeating the intent. High order eigenpairs would add information 
+that could help resolve the trade-off.
+
+The sentinel analysis ($\varepsilon=1$) identifies units whose reference flows are
+connected to works outside the corpus boundary. Broadening the network to a more 
+faithful representation will generally increase the presence of sub-structure in the network, 
+potentially clouding the interpretation of the wider ranking. A systematic
+characterisation of these boundary flows would complement unit-level influence scores
+and distinguish units whose standing is field-specific from those anchored across a
+broader literature. Again, high order eigenpairs could help delineate these tensions.
+
+The enclave phenomenon uncovers communities of highly cited works in low-influence
+units. As flagged in the Introduction, actor-network theory could be important for
+understanding the intent of researchers, editors and managers within these communities
+\citep{latourReassemblingSocialIntroduction2007}. Connecting enclave membership to
+authorship networks, career trajectories and funding structures is a natural follow-on
+study, as is investigating whether other fields also have enclaves.
+
+Finally, extending the corpus to additional disciplines and adapting the methodology
+for performance-based research funding schemes will require field-specific adjustments
+to the source registry and corpus pipeline, but the framework is otherwise directly
+applicable.
+

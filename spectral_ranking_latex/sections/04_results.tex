@@ -72,7 +72,6 @@ Figure~\ref{fig:fig_2c} illustrates the process by exhibiting influence distribu
   \label{fig:fig_2c}
 \end{figure}
 
-\paragraph{Temporal structure}
 Figure~\ref{fig:fig6} plots $v$ for all sources and institutions across
 the five time windows $t_x=1,\ldots,5$ (2000--2024), with the $x$-axis
 locked to the baseline rank. The running mean trend shows that the influence hierarchy is persistent over 25 years.  
@@ -140,16 +139,16 @@ In addition to the structural results presented above (units, subfields and time
   \label{fig:fig5}
 \end{figure}
 
-Raising the work-per-year threshold to $\tau_I{=}\tau_S{=}40$ reduces the corpus size to around 40\% for sources and 57\% for institutions. Despite this reduction, the influence scores of the surviving units track the baseline closely, with Spearman coefficients $>~0.97$. However, the higher threshold removes low-ranked units differentially, raising influence for high-$v$ units and lowering it by about $0.1$ for sources and $0.06$ in $\log{v}$ for the bulk of units. Consequently, the median absolute rank shift is large among the lower-influence population, 7.5\% for sources and 6.4\% for institutions that remain in the corpus. 
+Raising the work-per-year threshold to $\tau_I{=}\tau_S{=}40$ reduces the corpus size to around 40\% for sources and 57\% for institutions. Despite this reduction, the influence scores of the surviving units track the baseline closely, with Spearman coefficients $>~0.97$. However, the higher threshold removes low-ranked units differentially, raising influence for the most influential units and lowering it by about $0.1$ for sources and $0.06$ in $\log{v}$ for the bulk of units. Consequently, the median absolute rank shift is large among the lower-influence population, 7.5\% for sources and 6.4\% for institutions that remain in the corpus. 
 
 Removing the normalisation of reference list lengths ($\rho{=}1$)
-leads to a small overall reduction of average source influence, -0.07 in $\log{r=\Delta(v)/v}$, while introducing substantial changes in individual influence values, s.d. $\log{r} = 0.2$ for sources and s.d. $\log{r} = 0.1$ for institutions. These relatively large fractional variations occur across all units, leading to a median change in rank of 5\% for sources and institutions. 
+leads to a small overall reduction of average source influence, -0.07 in $|\log(v_{\rho}/v)|$, while introducing substantial changes in individual influence values, s.d. $\log{r} = 0.2$ for sources and s.d. $\log{r} = 0.1$ for institutions. These relatively large fractional variations occur across all units, leading to a median change in rank of 5\% for sources and institutions. 
 
 The overlapping census and target windows for the baseline model `over-counts' references that are close in publication date. When the census window is reduced to one year ($t_c=2024$), total reference counts reduce and many values of $v$ change  (s.d. $log(r) = 0.2 (\rm{sources}), 0.1 (\rm{institutions})$). Because the reduction in citer-cited pairs occurs uniformly over $\mathbf{H}$ the shape of $v^{S,I}$ is similar to $v^B$.
 
 Moving between institution weights based on author fractional counting and inform counting leads to very small changes in source $v$; for institutions $s.d. \log{r} = 0.04$ with no change in median value, and the median rank changes by less than 1.6\%.
 
-When the baseline is modified by including the sentinel units ($\varepsilon=1$) the presence of the single large source and sink for all corpus units reduces the size of normalised within-corpus exchanges, flattening and shuffling the distribution of $v$ for sources and institution. The median relative change in $\log(\Delta v/v)$ is 0.3 for source and 0.25 for institutions, and the median rank shift is around 10\%. We emphasise that the use of single sentinel units is only a coarse approximation to the flow of references to and from the corpus.
+When the baseline is modified by including the sentinel units ($\varepsilon=1$) the presence of the single large source and sink for all corpus units reduces the size of normalised within-corpus exchanges, flattening and shuffling the distribution of $v$ for sources and institution. The median $|\log(v_{\varepsilon}/v)|$ is 0.3 for sources and 0.25 for institutions, and the median rank shift is around 10\%. We emphasise that the use of single sentinel units is only a coarse approximation to the flow of references to and from the corpus.
 
 Modifying the baseline by including a damping parameter $\alpha=0.85$ with prior $\mu_p=1/N_p$ produces the marked changes shown in Figure~\ref{fig:fig5d}. With $\alpha<1$, the Katz--Hubbell eigenvector $\pi_p$ receives a contribution $(1{-}\alpha)\mu_p$ at every unit, setting a floor on $\pi_p$ compared with the Perron--Frobenius eigenvector with $\alpha=1$. Because influence $v_p \propto \pi_p/a_p$, units with few works $a_p$ are disproportionately lifted: the $\approx 20$ sources that stand well above the bulk have only 2--4 works in the baseline corpus. The floor operates in both bipartite and single-unit formulations.
 The choice of prior (uniform $1/N$ vs.\ unit-scaled $1/N_p$) shifts

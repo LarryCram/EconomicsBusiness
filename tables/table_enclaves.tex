@@ -1,0 +1,18 @@
+\begin{table}[!htbp]
+  \centering
+  \caption{Anti-ranking enclaves: topic clusters of highly cited works (HCW) with source $v < 1$ in low-influence units, identified by NMF clustering on HCW titles. Works is the count of HCW plus all corpus works citing those HCW (1-hop neighbourhood); CC is the number of weakly connected components in the induced citation subgraph. $\langle v \rangle_{\text{HCW}}$ and $\langle v \rangle_{\text{citing}}$ are the median source influence of the HCW and of their citing works respectively.}
+  \label{tab:enclaves}
+  \small
+  \begin{tabular}{lrrrrr}
+    \toprule
+    Enclave & $n_{\text{HCW}}$ & Works & CC & $\langle v \rangle_{\text{HCW}}$ & $\langle v \rangle_{\text{citing}}$ \\
+    \midrule
+    Sustainability & 666 & 39,654 & 1 & 0.749 & 0.693 \\
+    Systematic literature reviews & 332 & 17,478 & 1 & 0.701 & 0.665 \\
+    Digital transformation \& China & 304 & 13,140 & 1 & 0.694 & 0.735 \\
+    COVID-19 \& financial markets & 265 & 14,807 & 1 & 0.712 & 0.628 \\
+    Resource curse \& development & 160 & 8,744 & 2 & 0.728 & 0.621 \\
+    Bitcoin \& policy uncertainty & 70 & 4,492 & 1 & 0.801 & 0.668 \\
+    \bottomrule
+  \end{tabular}
+\end{table}

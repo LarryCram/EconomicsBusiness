@@ -36,3 +36,6 @@ Kagaku
 Wien
 Noreste
 mis-indexed
+Ritzberger
+eigenpairs
+Eigenfactor

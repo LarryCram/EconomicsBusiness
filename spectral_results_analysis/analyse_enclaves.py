@@ -321,6 +321,13 @@ def plot_referer_v(df: pd.DataFrame, out_path: Path) -> None:
             ax.set_ylabel('')
             ax.tick_params(labelleft=False)
 
+    handles, labels = axes[0].get_legend_handles_labels()
+    leg = axes[1].legend(handles, labels, title='Field', fontsize=8,
+                         title_fontsize=8, markerscale=3, loc='lower right',
+                         framealpha=0.85, handletextpad=0.4, borderpad=0.5)
+    for lh in leg.legend_handles:
+        lh.set_alpha(1.0)
+
     fig.subplots_adjust(left=0.09, right=0.97, top=0.90, bottom=0.12, wspace=0.12)
     fig.savefig(out_path, bbox_inches='tight')
     plt.close(fig)
@@ -609,6 +616,159 @@ def report_echo_chambers(df: pd.DataFrame,
             print(f'       {int(r["n_hcw"]):>4} HCW  {r["institution_name"]} ({v_str})')
 
 
+def check_enclave_connectivity(df: pd.DataFrame) -> pd.DataFrame:
+    """
+    For each enclave cluster, build the local citation network:
+      nodes = cluster HCW + all corpus works that cite those HCW
+      edges = all references where both endpoints are in the node set
+
+    Reports and returns: node count, directed edge count, density, connected components.
+    Returns DataFrame with columns: cluster, n_nodes, n_edges, density, n_comp.
+    """
+    enc = df.dropna(subset=['cluster']).copy()
+    clusters = sorted(enc['cluster'].unique())
+
+    def _union_find(nodes: set, edges) -> int:
+        parent = {n: n for n in nodes}
+
+        def find(x):
+            root = x
+            while parent[root] != root:
+                root = parent[root]
+            while parent[x] != root:
+                parent[x], x = root, parent[x]
+            return root
+
+        for a, b in edges:
+            ra, rb = find(a), find(b)
+            if ra != rb:
+                parent[ra] = rb
+        return len({find(n) for n in nodes})
+
+    print(f'\n{"═"*80}')
+    print(f'  ENCLAVE LOCAL NETWORK')
+    print(f'  Nodes = cluster HCW + all corpus works citing those HCW')
+    print(f'  Edges = all references between any two nodes in the set')
+    print(f'{"═"*80}')
+    print(f'\n  {"Cluster":<40}  {"Nodes":>7}  {"Edges":>8}  {"Density":>9}  {"Comp.":>6}')
+    print(f'  {"─"*40}  {"─"*7}  {"─"*8}  {"─"*9}  {"─"*6}')
+
+    records = []
+    for cl in clusters:
+        hcw_set = set(enc[enc['cluster'] == cl]['work_idx'].tolist())
+        hcw_df  = pd.DataFrame({'work_idx': list(hcw_set)})
+
+        con = duckdb.connect(':memory:')
+        con.register('_hcw', hcw_df)
+        citers_df = con.execute(f"""
+            SELECT DISTINCT r.citer_idx AS work_idx
+            FROM {REF_PATH} r
+            JOIN _hcw h ON h.work_idx = r.cited_idx
+        """).df()
+        con.close()
+
+        node_set = hcw_set | set(citers_df['work_idx'].tolist())
+        node_df  = pd.DataFrame({'work_idx': list(node_set)})
+
+        con = duckdb.connect(':memory:')
+        con.register('_nodes', node_df)
+        edges_df = con.execute(f"""
+            SELECT r.citer_idx, r.cited_idx
+            FROM {REF_PATH} r
+            JOIN _nodes n1 ON n1.work_idx = r.citer_idx
+            JOIN _nodes n2 ON n2.work_idx = r.cited_idx
+        """).df()
+        con.close()
+
+        n_nodes   = len(node_set)
+        n_edges   = len(edges_df)
+        max_edges = n_nodes * (n_nodes - 1)
+        density   = n_edges / max_edges if max_edges > 0 else 0.0
+        n_comp    = _union_find(node_set, zip(edges_df['citer_idx'], edges_df['cited_idx']))
+
+        print(f'  {cl:<40}  {n_nodes:>7,}  {n_edges:>8,}  {density:>9.2e}  {n_comp:>6,}')
+        records.append(dict(cluster=cl, n_nodes=n_nodes, n_edges=n_edges,
+                            density=density, n_comp=n_comp))
+
+    return pd.DataFrame(records)
+
+
+def make_enclave_table(df: pd.DataFrame, conn_stats: pd.DataFrame,
+                       out_path: Path) -> None:
+    """
+    Write a LaTeX booktabs table of enclave clusters to out_path.
+    Requires df to have 'cluster', 'source_v', 'median_citing_source_v' columns
+    and conn_stats (from check_enclave_connectivity) to have 'cluster', 'n_nodes',
+    'n_comp'. Rows sorted by n_hcw descending.
+    """
+    enc = df.dropna(subset=['cluster']).copy()
+    cs  = conn_stats.set_index('cluster')
+
+    rows = []
+    for cl in sorted(enc['cluster'].unique()):
+        cell         = enc[enc['cluster'] == cl]
+        n_hcw        = len(cell)
+        med_v_hcw    = cell[['source_v', 'mean_inst_v']].mean(axis=1).median()
+        med_v_citing = cell['median_citing_source_v'].dropna().median()
+        n_nodes      = int(cs.loc[cl, 'n_nodes']) if cl in cs.index else 0
+        n_comp       = int(cs.loc[cl, 'n_comp'])  if cl in cs.index else 0
+        rows.append(dict(cluster=cl, n_hcw=n_hcw, n_nodes=n_nodes, n_comp=n_comp,
+                         med_v_hcw=med_v_hcw, med_v_citing=med_v_citing))
+
+    rows.sort(key=lambda r: -r['n_hcw'])
+
+    def _esc(s: str) -> str:
+        return s.replace('&', r'\&')
+
+    header = (
+        r'    Enclave'
+        r' & $n_{\text{HCW}}$'
+        r' & Works'
+        r' & CC'
+        r' & $\langle v \rangle_{\text{HCW}}$'
+        r' & $\langle v \rangle_{\text{citing}}$ \\'
+    )
+    caption = (
+        r'  \caption{Anti-ranking enclaves: topic clusters of highly cited works (HCW) '
+        r'with source $v < 1$ in low-influence units, identified by NMF clustering on '
+        r'HCW titles. Works is the count of HCW plus all corpus works citing those HCW '
+        r'(1-hop neighbourhood); CC is the number of weakly connected components '
+        r'in the induced citation subgraph. '
+        r'$\langle v \rangle_{\text{HCW}}$ and $\langle v \rangle_{\text{citing}}$ '
+        r'are the median source influence of the HCW and of their citing works respectively.}'
+    )
+
+    lines = [
+        r'\begin{table}[!htbp]',
+        r'  \centering',
+        caption,
+        r'  \label{tab:enclaves}',
+        r'  \small',
+        r'  \begin{tabular}{lrrrrr}',
+        r'    \toprule',
+        header,
+        r'    \midrule',
+    ]
+    for r in rows:
+        lines.append(
+            f"    {_esc(r['cluster'])}"
+            f" & {r['n_hcw']:,}"
+            f" & {r['n_nodes']:,}"
+            f" & {r['n_comp']:,}"
+            f" & {r['med_v_hcw']:.3f}"
+            f" & {r['med_v_citing']:.3f} \\\\"
+        )
+    lines += [
+        r'    \bottomrule',
+        r'  \end{tabular}',
+        r'\end{table}',
+        '',
+    ]
+
+    out_path.write_text('\n'.join(lines), encoding='utf-8')
+    print(f'Saved enclave table → {out_path}')
+
+
 def print_table(df: pd.DataFrame, title: str) -> None:
     print(f'\n{"─" * 100}')
     print(f'  {title}')
@@ -683,6 +843,8 @@ def main() -> None:
     print('\nClustering enclave HCW by topic (NMF)…')
     df = cluster_echo_chambers(df)
     report_echo_chambers(df, src_v, inst_v)
+    conn_stats = check_enclave_connectivity(df)
+    make_enclave_table(df, conn_stats, _paths.tables / 'table_enclaves.tex')
 
     plot_referer_v(df, _paths.plots / 'enclave_referer_v.pdf')
 
