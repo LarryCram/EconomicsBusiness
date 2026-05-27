@@ -12,7 +12,7 @@ In practice many institutions and some sources publishing only
 a few works per year can be dropped from the corpus. We specify 
 the threshold numbers of works per year that must be attained by institutions and sources ($\tau_I, \tau_S$), with $\mathfrak{I}\subseteq\mathfrak{I}'$ and $\mathfrak{S}\subseteq\mathfrak{S}'$ as the surviving sets. Works that lose all their authorships under the institution filter, or whose source is dropped by the source filter, are removed from the corpus. 
 
-References from census works in $\mathfrak{W}^c$ to works outside $\mathfrak{W}^t$, or from works outside $\mathfrak{W}^c$ to target works in $\mathfrak{W}^t$, may be discarded ($\varepsilon=0$). Alternatively, both can be represented by a pair of \emph{sentinel} units: a fictitious external source $s_0\notin\mathfrak{S}$ and a fictitious external institution $i_0\notin\mathfrak{I}$, each standing for the totality of works beyond the corpus ($\varepsilon=1$). The sentinels enter $\mathbf{C}$ as ordinary units and participate in the resolvent~\eqref{eq:spectral}, but their influence values are not reported. The fraction of unit $p$'s normalised reference weight directed at or received from $s_0$ or $i_0$ is its \emph{external balance}: a diagnostic for how strongly $p$'s output and input reach beyond the corpus boundary.
+References from census works in $\mathfrak{W}^c$ to works outside $\mathfrak{W}^t$, or from works outside $\mathfrak{W}^c$ to target works in $\mathfrak{W}^t$, may be discarded. This is denoted by the flag $\varepsilon = 0$.  Alternatively, both can be represented by a pair of \emph{sentinel} units: a fictitious external source $s_0\notin\mathfrak{S}$ and a fictitious external institution $i_0\notin\mathfrak{I}$, each standing for the totality of works beyond the corpus. This is denoted by the flag $\varepsilon = 1$. The sentinels enter $\mathbf{C}$ as ordinary units and participate in the resolvent~\eqref{eq:spectral}, but their influence values are not reported. The fraction of unit $p$'s normalised reference weight directed at or received from $s_0$ or $i_0$ is its \emph{external balance}: a diagnostic for how strongly $p$'s output and input reach beyond the corpus boundary.
 
 Let $R_i=|\{j:(i, j)\in\mathfrak{R}\}|$ be the number of references from work
 $w_i$ that land in the filtered set $\mathfrak{R}$, and
@@ -112,7 +112,7 @@ Markov chain with transition matrix $\mathbf{H}$, and that it coincides
 with the \textit{influence weight} of \cite{pinskiCitationInfluenceJournal1976}
 scaled by the reference-count proportion $r_p / \sum_q r_q$.
 
-\cite{katzNewStatusIndex1953} proposed attenuating chains of reference-matrix weights
+\cite{katzNewStatusIndex1953} proposed attenuating chains of edge weights
 $c_{wx}\rightarrow c_{xy}\rightarrow c_{yz} \ldots$ of length $k$ by a factor $\alpha^k$, $\alpha\in(0,1)$, so that distant links count for less than proximate ones.
 Summing chains of all lengths and endowing every unit with a
 uniform initial score of $1$ yields the Katz resolvent equation
@@ -165,11 +165,11 @@ Here, the unit work count $a_p = |\{i:w_i\in p\}|$ where $p$ is a specific sourc
 and $\boldsymbol{\pi}$ denotes the solution to \eqref{eq:spectral}.
 The scalar $A$ normalises $\mathbf{v}$ so that its $a_p$-weighted mean equals one:
 $\mathbf{a}^{\top}\mathbf{v}/A=\mathbf{1}^{\top}\boldsymbol{\pi}=1$.
-A unit with $v_p=1$ has the corpus-average influence, and
+This normalisation provides interpretable values: a unit with $v_p=1$ has the corpus-average influence, and
 $v_p=2$ indicates twice the corpus-average influence.  The quantity $v$ is the counterpart of influence per publication \citep{pinski} and article influence score 
 \cite{bergstromEigenfactorMetricsFigure2008}.
 \cite{palacios-huertaMeasurementIntellectualInfluence2004} show that
-$\mathbf{v}$ is uniquely characterised by reasonable axioms, although \cite{serranoMeasurementIntellectualInfluence2004} offers an impossibility result by proposing a reasonable additional axiom that breaks the uniqueness.
+$\mathbf{v}$ is uniquely characterised by reasonable axioms, although \cite{serranoMeasurementIntellectualInfluence2004} provides an impossibility result via a reasonable additional axiom that breaks the uniqueness.
 
 With $\mathbf{m}=(0110)$, equation~\eqref{eq:C} yields block off-diagonal matrices $\mathbf{C}$ and $\mathbf{H}$ corresponding to a directed bipartite network between sources~($S$) and institutions~($I$). This mask characterises our parallel ranking problem and is used as the baseline model in Section~\ref{sec:results}.
 Partitioning rows and columns into the $S$ and $I$ blocks, $\mathbf{H}$ takes the form
@@ -208,7 +208,7 @@ Replacing $\boldsymbol{\pi}_I$ in the first equation gives
 \[
 (\mathbf{I} - \alpha \mathbf{M}_S^{\top})\,\boldsymbol{\pi}_S = (1-\sqrt{\alpha})\Bigl(\boldsymbol{\mu}_S + \sqrt{\alpha}\,\mathbf{H}_{IS}^{\top}\,\boldsymbol{\mu}_I\Bigr) .
 \]
-When $\alpha<1$ and $\boldsymbol{\mu}\ne\mathbf{0}$, the right-hand side links institutions to sources via $\mathbf{H}_{IS}^\top$. The institution ranking is the matrix--vector product
+When $\alpha<1$ and $\boldsymbol{\mu}\ne\mathbf{0}$, the right-hand side links institutions to sources via $\mathbf{H}_{IS}^\top$. The institution ranking follows directly as the matrix--vector product
 \begin{equation}
   \boldsymbol{\pi}_I
   \;=\;
@@ -232,7 +232,7 @@ We construct many realisations of $\mathbf{\tilde{H}}$ to test unit pairings, su
 In our implementation $\mathbf{\tilde{H}}$ is a sparse matrix constructed from the filtered and weighted edge list $\mathcal{E}$ accumulated over $\mathfrak{R}$, stored in compressed sparse row (CSR) format. We use two numerical approaches, applied to different regimes:
 \begin{itemize}
 	\setlength{\itemsep}{0pt}
-	\item For runs with $\alpha=1$, $\boldsymbol{\mu}=\mathbf{0}$ including the baseline and bootstrap, the dominant eigenpair of $\mathbf{\tilde{H}}^\top$ is computed with \texttt{scipy.sparse.linalg.eigs}, which also returns the next few eigenvalues and thereby verifies primitivity (a unique eigenvalue of modulus~1).
+	\item For runs with $\alpha=1$, $\boldsymbol{\mu}=\mathbf{0}$ including the baseline and bootstrap, the dominant eigenpair of $\mathbf{\tilde{H}}^\top$ is computed with \texttt{scipy.sparse.linalg.eigs}, which also returns the next few eigenvalues and thereby tests primitivity (a unique eigenvalue of modulus~1, which is found to be always true in our investigations).
 	\item For runs with $\alpha<1$, the power iteration
 		\begin{equation}
 			\boldsymbol{\pi}^{(k+1)}
