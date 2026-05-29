@@ -21,6 +21,7 @@ import duckdb
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
+import matplotlib.patheffects as pe
 import seaborn as sns
 from scipy.stats import spearmanr
 
@@ -45,7 +46,7 @@ _fix_runs = sorted(
 _LOG_LO, _LOG_HI = -2.35, 1.35
 _LOG_TICKS = [-1, 0, 1]
 
-_COLOURS      = ['#e41a1c', '#377eb8', '#4daf4a', '#ff7f00']
+_COLOURS      = ['#ff7f00', '#4daf4a', '#377eb8', '#e41a1c']
 BASELINE_COLOUR = 'black'
 
 _MU_SUFFIX = {'': '', 'uniform': '_muUniform', 'unit_scaled': '_muUnitScaled'}
@@ -143,8 +144,8 @@ def fetch_data(db) -> tuple:
 
 def _running_mean_log_adaptive(v_series: np.ndarray, ranks: np.ndarray,
                                n_baseline: int,
-                               w_lo: float = 0.01,
-                               w_hi: float = 0.10) -> np.ndarray:
+                               w_lo: float = 0.02,
+                               w_hi: float = 0.20) -> np.ndarray:
     """
     Centered running geometric mean with rank-adaptive window width.
 
@@ -165,13 +166,9 @@ def _running_mean_log_adaptive(v_series: np.ndarray, ranks: np.ndarray,
 
 def _draw_scatter_panel(ax, df_s_base, df_i_base, pairs,
                         unit_idx: int, n_baseline: int,
-                        panel_title: str, mode: str,
+                        panel_title: str,
                         x_max: int | None = None) -> None:
-    """
-    unit_idx : 0 = sources, 1 = institutions.
-    mode     : 'tau' = τ-per-window series; 'fix' = fixed-universe series.
-    Baseline curve always shown.
-    """
+    """unit_idx: 0 = sources, 1 = institutions. Plots fixed-universe series only."""
     df_b = df_s_base if unit_idx == 0 else df_i_base
     lv_b = np.log10(np.clip(df_b['v'].values, 1e-10, None))
     ax.plot(df_b['baseline_rank'].values, lv_b,
@@ -180,32 +177,25 @@ def _draw_scatter_panel(ax, df_s_base, df_i_base, pairs,
 
     any_series = False
     for period, colour, df_s_tau, df_i_tau, df_s_fix, df_i_fix in pairs:
-        if mode == 'tau':
-            df = df_s_tau if unit_idx == 0 else df_i_tau
-            marker, ls = 'x', '--'
-        else:
-            df = df_s_fix if unit_idx == 0 else df_i_fix
-            if df is None:
-                continue
-            marker, ls = '+', '-'
-
-        if df.empty:
+        df = df_s_fix if unit_idx == 0 else df_i_fix
+        if df is None or df.empty:
             continue
         any_series = True
         n = len(df)
         lv = np.log10(np.clip(df['v'].values, 1e-10, None))
 
         ax.scatter(df['baseline_rank'].values, lv,
-                   color=colour, marker=marker, s=12, linewidths=0.7,
-                   alpha=0.28, zorder=2,
+                   color=colour, marker='o', s=6, linewidths=1.0,
+                   alpha=0.4, zorder=2,
                    label=f'{period}  ({n:,}/{n_baseline:,})')
         ax.plot(df['baseline_rank'].values,
                 _running_mean_log_adaptive(df['v'].values,
                                            df['baseline_rank'].values,
                                            n_baseline),
-                color=colour, linewidth=1.3, linestyle=ls, alpha=0.85, zorder=3)
+                color=colour, linewidth=2.0, linestyle='-', alpha=1.0, zorder=3,
+                path_effects=[pe.withStroke(linewidth=4, foreground='white')])
 
-    if not any_series and mode == 'fix':
+    if not any_series:
         ax.text(0.5, 0.5, 'Fixed-universe runs\nnot yet available',
                 ha='center', va='center', transform=ax.transAxes,
                 fontsize=9, color='grey')
@@ -218,11 +208,12 @@ def _draw_scatter_panel(ax, df_s_base, df_i_base, pairs,
             ha='right', va='bottom', fontsize=7.5, color='#999999')
     ax.set_xlim(1, x_lim)
     ax.set_xlabel('Baseline rank', labelpad=4)
-    ax.set_title(panel_title, fontsize=10, pad=6)
+    ax.set_title(panel_title, fontsize=11, pad=6)
     handles, labels = ax.get_legend_handles_labels()
     # baseline (black line) was added first — move it to the bottom
     ax.legend(handles[1:] + handles[:1], labels[1:] + labels[:1],
-              fontsize=6.0, framealpha=0.85, loc='upper right', ncol=1)
+              fontsize=10, framealpha=0.85, loc='upper right', ncol=1,
+              markerscale=1.6)
 
 
 # ─── Network concentration diagnostics ───────────────────────────────────────
@@ -412,18 +403,23 @@ def print_v_gt1_table(db_rk, db_el, runs: list) -> None:
 
 def plot6(src_rank_map, inst_rank_map, df_s_base, df_i_base, pairs) -> None:
     paths = load_config()
-    sns.set_theme(style='whitegrid', font_scale=0.95)
+    sns.set_theme(style='whitegrid', font_scale=1.05)
+    plt.rcParams.update({
+        'axes.linewidth':    1.2,
+        'xtick.major.width': 1.2, 'ytick.major.width': 1.2,
+        'xtick.major.size':  5,   'ytick.major.size':  5,
+    })
 
     n_base_s = len(src_rank_map)
     n_base_i = len(inst_rank_map)
 
-    fig, axes = plt.subplots(1, 2, figsize=(14, 5), sharey=True)
-    fig.subplots_adjust(wspace=0.02)
+    fig, axes = plt.subplots(1, 2, figsize=(10, 5), sharey=True)
+    fig.subplots_adjust(wspace=0.05)
 
     _draw_scatter_panel(axes[0], df_s_base, df_i_base, pairs,
-                        0, n_base_s, 'Sources', mode='fix')
+                        0, n_base_s, 'Sources')
     _draw_scatter_panel(axes[1], df_s_base, df_i_base, pairs,
-                        1, n_base_i, 'Institutions', mode='fix')
+                        1, n_base_i, 'Institutions')
 
     axes[0].set_ylabel(r'$\log(v)$', labelpad=4)
     axes[1].set_ylabel('')

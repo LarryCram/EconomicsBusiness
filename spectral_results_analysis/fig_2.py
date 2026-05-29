@@ -511,10 +511,10 @@ def _2c_draw_panel(ax, data, xlabel, ylabel, title):
         y  = np.log10(np.clip(df['v_single'].values, 1e-10, None))
         ax.scatter(x, y,
                    c=_2C_FX_COLOR[fx], marker=_2C_FX_MARKER[fx],
-                   s=12, alpha=0.50, linewidths=0.3, zorder=3,
+                   s=12, alpha=0.5, linewidths=1.0, zorder=3,
                    label=f'{_2C_FX_LABEL[fx]}  (n={len(df):,})')
     handles, labels = ax.get_legend_handles_labels()
-    ax.legend(handles, labels, fontsize=8, framealpha=0.85, loc='upper left', markerscale=1.6)
+    ax.legend(handles, labels, fontsize=10, framealpha=0.85, loc='upper left', markerscale=1.6)
     ax.set_title(title, fontsize=11, pad=6)
 
 
@@ -530,7 +530,7 @@ def plot2c(db) -> None:
                          'xtick.major.width': 1.2, 'ytick.major.width': 1.2,
                          'xtick.major.size':  5,   'ytick.major.size':  5})
 
-    fig, (ax_s, ax_i) = plt.subplots(1, 2, figsize=(11, 5))
+    fig, (ax_s, ax_i) = plt.subplots(1, 2, figsize=(10, 5))
     fig.subplots_adjust(wspace=0.05)
 
     _2c_draw_panel(ax_s, data['S'],

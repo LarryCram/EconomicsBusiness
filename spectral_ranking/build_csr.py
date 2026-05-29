@@ -59,7 +59,7 @@ class CSRData:
 
 def build_csr(db, run_code: str, fx: str, tau_u: int, tau_s: int, rho: int, m: tuple,
               ref_units: str = '', direct_inst: bool = False,
-              epsilon: int = 0) -> CSRData:
+              epsilon: int = 0, no_self_cite: bool = False) -> CSRData:
     """
     Build raw CSR blocks for corpus (run_code, fx, tau_u, tau_s) with ρ weighting.
 
@@ -75,6 +75,10 @@ def build_csr(db, run_code: str, fx: str, tau_u: int, tau_s: int, rho: int, m: t
     ref_units : non-empty string for fixtau corpora.
     direct_inst : False → author-fractional ω (inst_weight / cited_inst_weight);
                   True  → direct 1/N_inst ω (direct_inst_weight / direct_cited_inst_weight).
+    no_self_cite : if True, exclude edges where citer_source_idx == cited_source_idx
+                   AND citer_inst_idx == cited_inst_idx before building any block.
+                   Parallels zeroing the diagonal of C_SS (sources) and C_II (institutions)
+                   in the single-mode Eigenvalue method.
 
     Returns
     -------
@@ -137,6 +141,10 @@ def build_csr(db, run_code: str, fx: str, tau_u: int, tau_s: int, rho: int, m: t
 
     iw_col  = 'direct_inst_weight'       if direct_inst else 'inst_weight'
     ciw_col = 'direct_cited_inst_weight' if direct_inst else 'cited_inst_weight'
+    self_filter = (
+        "WHERE citer_source_idx != cited_source_idx"
+        "  AND citer_inst_idx   != cited_inst_idx"
+    ) if no_self_cite else ""
     db.execute(f"""
         CREATE OR REPLACE TEMP TABLE _tmp_el AS
         SELECT citer_work_idx, citer_source_idx, citer_inst_idx,
@@ -145,6 +153,7 @@ def build_csr(db, run_code: str, fx: str, tau_u: int, tau_s: int, rho: int, m: t
                {ciw_col} AS cited_inst_weight,
                {rho_col} AS rho_w
         FROM {tname}
+        {self_filter}
     """)
     _t['tmp_el'] = time.perf_counter() - t0
 

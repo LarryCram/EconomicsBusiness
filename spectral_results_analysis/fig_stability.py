@@ -255,7 +255,7 @@ def _draw_scatter_panel(ax, both: pd.DataFrame, label_ids: set,
     for col, (c, lbl) in COLOURS.items():
         mask = both[col].values
         ax.scatter(lv_t1[mask], lv_t5[mask],
-                   c=c, s=12, alpha=0.6, linewidths=0,
+                   c=c, s=12, alpha=0.5, linewidths=1.0,
                    label=f'{lbl} (n={mask.sum():,})', zorder=2)
 
     ax.axhline(0, color='#999999', linewidth=0.7, linestyle='--', zorder=0)
@@ -282,8 +282,8 @@ def _draw_scatter_panel(ax, both: pd.DataFrame, label_ids: set,
         ax.set_ylabel(r'$\log(v)$  (2020–24)', labelpad=4)
     else:
         ax.tick_params(labelleft=False)
-    ax.set_title(title, fontsize=9, pad=5)
-    ax.legend(fontsize=7, framealpha=0.85, loc='upper left')
+    ax.set_title(title, fontsize=11, pad=6)
+    ax.legend(fontsize=10, framealpha=0.85, loc='lower right', markerscale=1.6)
 
 
 def plot_v_scatter(panel: pd.DataFrame, movers: pd.DataFrame,
@@ -298,9 +298,14 @@ def plot_v_scatter(panel: pd.DataFrame, movers: pd.DataFrame,
 
     shared_lims = [_LOG_LO, _LOG_HI]
 
-    sns.set_theme(style='whitegrid', font_scale=0.95)
-    fig, axes = plt.subplots(1, 2, figsize=(12, 6), sharey=True)
-    fig.subplots_adjust(wspace=0.02)
+    sns.set_theme(style='whitegrid', font_scale=1.05)
+    plt.rcParams.update({
+        'axes.linewidth':    1.2,
+        'xtick.major.width': 1.2, 'ytick.major.width': 1.2,
+        'xtick.major.size':  5,   'ytick.major.size':  5,
+    })
+    fig, axes = plt.subplots(1, 2, figsize=(10, 5), sharey=True)
+    fig.subplots_adjust(wspace=0.05)
 
     _draw_scatter_panel(axes[0], both_s, lids_s, names, shared_lims,
                         'Sources', show_ylabel=True, show_labels=False)
@@ -327,9 +332,14 @@ def plot_v_scatter(panel: pd.DataFrame, movers: pd.DataFrame,
 def plot_movers(movers: pd.DataFrame, names: dict, paths,
                 top_n: int = 15) -> None:
     """Slope ranked bar chart for top/bottom movers, sources and institutions."""
-    sns.set_theme(style='whitegrid', font_scale=0.95)
-    fig, axes = plt.subplots(1, 2, figsize=(13, 5))
-    fig.subplots_adjust(wspace=0.38)
+    sns.set_theme(style='whitegrid', font_scale=1.05)
+    plt.rcParams.update({
+        'axes.linewidth':    1.2,
+        'xtick.major.width': 1.2, 'ytick.major.width': 1.2,
+        'xtick.major.size':  5,   'ytick.major.size':  5,
+    })
+    fig, axes = plt.subplots(1, 2, figsize=(10, 5))
+    fig.subplots_adjust(wspace=0.05)
 
     for ax, utype, ulab in [(axes[0], 'S', 'Sources'),
                              (axes[1], 'U', 'Institutions')]:
@@ -349,7 +359,7 @@ def plot_movers(movers: pd.DataFrame, names: dict, paths,
         ax.axvline(0, color='black', linewidth=0.7)
         ax.set_xlabel('Trend slope $b$  (Δlog $v$ per window)', labelpad=4)
         ax.set_title(f'{ulab}  (n in all 5 windows: {len(sub):,})',
-                     fontsize=9, pad=5)
+                     fontsize=11, pad=6)
 
     sup = fig.suptitle(
         'Systematic movers: log($v$) trend slope over 25 years  '
@@ -523,8 +533,8 @@ def _draw_trajectory_panel(ax, sub_traj: pd.DataFrame, title: str,
     ax.set_xlabel('Time window', labelpad=4)
     if show_ylabel:
         ax.set_ylabel('$v$  (log scale)', labelpad=4)
-    ax.set_title(title, fontsize=9, pad=5)
-    ax.legend(fontsize=7.5, framealpha=0.85, loc='upper left')
+    ax.set_title(title, fontsize=11, pad=6)
+    ax.legend(fontsize=10, framealpha=0.85, loc='lower right', markerscale=1.6)
 
 
 def plot_trajectories(traj: pd.DataFrame, paths) -> None:
@@ -534,9 +544,14 @@ def plot_trajectories(traj: pd.DataFrame, paths) -> None:
     """
     ts = [1, 2, 3, 4, 5]
 
-    sns.set_theme(style='whitegrid', font_scale=0.95)
-    fig, axes = plt.subplots(1, 2, figsize=(12, 5), sharey=True)
-    fig.subplots_adjust(wspace=0.06)
+    sns.set_theme(style='whitegrid', font_scale=1.05)
+    plt.rcParams.update({
+        'axes.linewidth':    1.2,
+        'xtick.major.width': 1.2, 'ytick.major.width': 1.2,
+        'xtick.major.size':  5,   'ytick.major.size':  5,
+    })
+    fig, axes = plt.subplots(1, 2, figsize=(10, 5), sharey=True)
+    fig.subplots_adjust(wspace=0.05)
 
     for ax, utype, title, show_y in [
         (axes[0], 'S', 'Sources', True),

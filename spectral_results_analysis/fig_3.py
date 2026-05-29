@@ -89,6 +89,13 @@ def wmean_v(df: pd.DataFrame) -> float:
     return float(np.average(df['v'].values, weights=df['a_p'].values))
 
 
+def _frac_above1(df: pd.DataFrame) -> float:
+    """Fraction of units with v >= 1 (crossing point)."""
+    if df.empty:
+        return float('nan')
+    return float((df['v'] >= 1).sum()) / len(df)
+
+
 def resolve_chi_star_table(db) -> str | None:
     """
     Look up the full-joint χ* run from _catalog.
@@ -156,10 +163,15 @@ def fetch_data(db) -> tuple:
     def report(label, df_s, df_i):
         both = pd.concat([df_s, df_i]) if not df_s.empty and not df_i.empty else pd.DataFrame()
         joint = f'  wmean_v_joint={wmean_v(both):.4f}' if not both.empty else ''
+        fs = _frac_above1(df_s)
+        fi = _frac_above1(df_i)
+        frac_s = f'{fs:.3f}' if not np.isnan(fs) else '  n/a'
+        frac_i = f'{fi:.3f}' if not np.isnan(fi) else '  n/a'
         print(f'  {label:<22}  '
               f'N_s={len(df_s):>5,}  N_u={len(df_i):>5,}  '
               f'wmean_v_S={wmean_v(df_s):.4f}  wmean_v_I={wmean_v(df_i):.4f}'
-              f'{joint}')
+              f'{joint}  '
+              f'frac_S(v≥1)={frac_s}  frac_I(v≥1)={frac_i}')
 
     series = {
         'm=0110': {
@@ -207,7 +219,9 @@ def _draw_panel(ax, series: dict, unit_key: str, panel_labels: list,
                 n_baseline: int, panel_title: str,
                 log_linear_y: bool = False,
                 label_map: dict | None = None,
-                marker_map: dict | None = None) -> None:
+                marker_map: dict | None = None,
+                legend_fontsize: int = 9,
+                legend_markerscale: float | None = None) -> None:
     for label in panel_labels:
         if label not in series:
             continue
@@ -266,7 +280,10 @@ def _draw_panel(ax, series: dict, unit_key: str, panel_labels: list,
     ax.set_xlim(1, n_baseline)
     ax.set_xlabel('Baseline rank  (m=0110)', labelpad=4)
     ax.set_title(panel_title, fontsize=11, pad=6)
-    ax.legend(fontsize=9, framealpha=0.85, loc='upper right')
+    legend_kw = dict(fontsize=legend_fontsize, framealpha=0.85, loc='upper right')
+    if legend_markerscale is not None:
+        legend_kw['markerscale'] = legend_markerscale
+    ax.legend(**legend_kw)
 
 
 def filter_non_x(series: dict, src_rank_map: dict,
@@ -781,14 +798,14 @@ def _draw_log_field(ax, series: dict, unit_key: str, alt_mode: str,
             continue
         ax.scatter(_lv(sub['v_bip'].values), _lv(sub['v_alt'].values),
                    c=_FIELD_COLOR[fld], marker=_FIELD_MARKER[fld],
-                   s=12, alpha=0.55, linewidths=0.3, zorder=3,
+                   s=12, alpha=0.5, linewidths=1.0, zorder=3,
                    label=f'{fld}  (n={len(sub):,})')
 
     handles, labels = ax.get_legend_handles_labels()
     key = {lbl.split()[0]: i for i, lbl in enumerate(labels)}
     idx = [key[f] for f in _LEGEND_ORDER if f in key]
     ax.legend([handles[i] for i in idx], [labels[i] for i in idx],
-              fontsize=8, framealpha=0.85, loc='upper left', markerscale=1.6)
+              fontsize=10, framealpha=0.85, loc='upper left', markerscale=1.6)
     ax.text(0.97, 0.03, f'n={len(df):,}', transform=ax.transAxes,
             fontsize=8, ha='right', va='bottom', color='#555555')
 
@@ -802,8 +819,8 @@ def plot3by(src_rank_map: dict, inst_rank_map: dict, series: dict) -> None:
     paths = load_config()
     _pub_theme()
 
-    fig, (ax_s, ax_i) = plt.subplots(1, 2, figsize=(10, 4.5), sharey=True)
-    fig.subplots_adjust(wspace=0.02)
+    fig, (ax_s, ax_i) = plt.subplots(1, 2, figsize=(10, 5), sharey=True)
+    fig.subplots_adjust(wspace=0.05)
 
     _draw_panel(ax_s, series, 'S', S_LABELS,
                 n_baseline=len(src_rank_map), panel_title='Sources',
@@ -811,7 +828,8 @@ def plot3by(src_rank_map: dict, inst_rank_map: dict, series: dict) -> None:
                 label_map={'m=0110': r'$v_S^B$',
                            'm=1000': r'$v_S^S$',
                            'm=1111': r'$v_S^J$'},
-                marker_map={'m=1000': 'o', 'm=1111': 'D'})
+                marker_map={'m=1000': 'o', 'm=1111': 'D'},
+                legend_fontsize=10, legend_markerscale=1.6)
     ax_s.set_xlabel(r'$v_S^B$ rank', labelpad=4)
     ax_s.set_ylabel(r'$\log(v)$', labelpad=4)
     ax_s.set_xlim(0, len(src_rank_map))
@@ -823,7 +841,8 @@ def plot3by(src_rank_map: dict, inst_rank_map: dict, series: dict) -> None:
                 label_map={'m=0110': r'$v_I^B$',
                            'm=0001': r'$v_I^I$',
                            'm=1111': r'$v_I^J$'},
-                marker_map={'m=0001': 'o', 'm=1111': 'D'})
+                marker_map={'m=0001': 'o', 'm=1111': 'D'},
+                legend_fontsize=10, legend_markerscale=1.6)
     ax_i.set_xlabel(r'$v_I^B$ rank', labelpad=4)
     ax_i.set_ylabel('')
     ax_i.tick_params(labelleft=False)
@@ -849,7 +868,7 @@ def plot3bz(src_rank_map: dict, inst_rank_map: dict, series: dict) -> None:
     src_labels, inst_labels = _load_field_labels(paths)
 
     # equal-aspect axes need a wider figure; log range is 3.7 units each axis
-    fig, (ax_s, ax_i) = plt.subplots(1, 2, figsize=(11, 5))
+    fig, (ax_s, ax_i) = plt.subplots(1, 2, figsize=(10, 5))
     fig.subplots_adjust(wspace=0.05)
 
     _draw_log_field(

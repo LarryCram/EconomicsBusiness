@@ -21,10 +21,10 @@ Seven overlays:
   α=0.85, μ=1/N_p   : Katz–Hubbell, unit-scaled prior — μ_p = 1/N_S for
                       sources, 1/N_U for institutions; τ=20, ρ=0.
 
-  no self-ref       : zero diagonal of M_S=H_SI@H_IS and M_I=H_IS@H_SI,
-                      removing the self-loop through own institutional
-                      affiliation.  Imprimitive so uses α=0.85, μ=1/N_p.
-                      Shown on fig_5d alongside the other α=0.85 cases.
+  no self-ref       : remove edge-list rows where citer_source==cited_source
+                      AND citer_inst==cited_inst before building H_SI/H_IS.
+                      Parallels zeroing diag(C_SS) and diag(C_II) in the
+                      single-mode Eigenvalue method.  Uses α=0.85, μ=1/N_p.
 
   ω=1               : direct 1/N_inst institution weights instead of
                       author-fractional; τ=20, ρ=0, α=1.
@@ -101,19 +101,21 @@ _tau_u         = _baseline['tau_u']
 _tau_s         = _baseline['tau_s']
 
 BASELINE_TABLE = f"rk_{_run_code}_{_baseline['fx']}_tauU{_tau_u}_tauS{_tau_s}_vartau_rho0_m0110_chi50_alpha100"
-EPS_TABLE      = BASELINE_TABLE + '_eps1'
 
 # Visual style per overlay label (ordered: baseline drawn first)
 STYLE = {
     'baseline':        dict(color='black',   marker=None, lw=1.4, alpha_vis=1.0,  zorder=7),
-    'τ=40':            dict(color='#e41a1c', marker='o',  lw=0.0, alpha_vis=0.50, zorder=5, s=12),
-    'ρ=1':             dict(color='#377eb8', marker='o',  lw=0.0, alpha_vis=0.50, zorder=3, s=12),
-    'census=1yr':      dict(color='#4daf4a', marker='o',  lw=0.0, alpha_vis=0.50, zorder=4, s=12),
-    'α=0.85, μ=1/N_p': dict(color='#377eb8', marker='o', lw=0.0, alpha_vis=0.55, zorder=3, s=12),
-    'H_SS/II, no self': dict(color='#4daf4a', marker='o', lw=0.0, alpha_vis=0.55, zorder=4, s=12),
-    'no self-ref':     dict(color='#e41a1c', marker='o', lw=0.0, alpha_vis=0.65, zorder=5, s=12),
-    'ω=1':             dict(color='#ff7f00', marker='o',  lw=0.0, alpha_vis=0.50, zorder=6, s=12),
-    'ε=1':             dict(color='#984ea3', marker='o',  lw=0.0, alpha_vis=0.55, zorder=2, s=12),
+    'τ=40':            dict(color='#e41a1c', marker='o',  lw=1.0, alpha_vis=1.0, zorder=5, s=3),
+    'ρ=1':             dict(color='#377eb8', marker='o',  lw=1.0, alpha_vis=1.0, zorder=3, s=3),
+    'census=1yr':      dict(color='#4daf4a', marker='o',  lw=1.0, alpha_vis=1.0, zorder=4, s=3),
+    'α=0.85, μ=1/N_p': dict(color='#e41a1c', marker='o', lw=1.0, alpha_vis=1.0, zorder=4, s=3),
+    'α=0.85, μ=1/N':   dict(color='#e41a1c', marker='o', lw=1.0, alpha_vis=1.0, zorder=2, s=3),
+    'H_SS/II':          dict(color='#4daf4a', marker='o', lw=1.0, alpha_vis=1.0, zorder=3, s=3),
+    'H_SS/II, no self': dict(color='#4daf4a', marker='o', lw=1.0, alpha_vis=1.0, zorder=3, s=3),
+    'no self-ref':        dict(color='#377eb8', marker='o', lw=1.0, alpha_vis=1.0, zorder=5, s=3),
+    'no self-ref, μ=1/N': dict(color='#4daf4a', marker='o', lw=1.0, alpha_vis=1.0, zorder=4, s=3),
+    'ω=1':             dict(color='#ff7f00', marker='o',  lw=1.0, alpha_vis=1.0, zorder=6, s=3),
+    'ε=1':             dict(color='#984ea3', marker='o',  lw=1.0, alpha_vis=1.0, zorder=2, s=3),
 }
 
 
@@ -156,20 +158,25 @@ def _compute_bipartite_v(
     mu: np.ndarray | None = None,
     direct_inst: bool = False,
     zero_diag: bool = False,
+    epsilon: int = 0,
+    no_self_cite: bool = False,
 ) -> tuple:
     """
     Compute bipartite v_s, v_u directly from edge_lists.duckdb.
 
-    zero_diag=True zeros the diagonal of M_S=H_SI@H_IS and M_I=H_IS@H_SI
-    before re-normalising, removing the self-loop where a unit reaches itself
-    via its own institutional affiliation.  Makes both kernels imprimitive so
-    requires alpha < 1 with a prior mu.
+    no_self_cite=True removes edges where citer_source_idx == cited_source_idx
+    AND citer_inst_idx == cited_inst_idx before building H_SI and H_IS.
+    This parallels zeroing the diagonal of C_SS (sources) and C_II (institutions)
+    in the single-mode Eigenvalue method.  Requires alpha < 1 with a prior mu.
+
+    epsilon=1 uses the _eps1 edge list and excludes sentinel rows (unit_idx=1).
 
     Returns (df_s, df_u) with columns [unit_idx, v], or (None, None)
     if the required edge-list or units table is absent.
     """
-    tname = f'el_{run_code}_{fx}_tauU{tau_u}_tauS{tau_s}_vartau'
-    uname = f'_units_{run_code}_{fx}_tauU{tau_u}_tauS{tau_s}_vartau_m0110'
+    eps_sfx = '_eps1' if epsilon else ''
+    tname = f'el_{run_code}_{fx}_tauU{tau_u}_tauS{tau_s}_vartau{eps_sfx}'
+    uname = f'_units_{run_code}_{fx}_tauU{tau_u}_tauS{tau_s}_vartau_m0110{eps_sfx}'
     tables = {r[0] for r in el_db.execute('SHOW TABLES').fetchall()}
     missing = [t for t in (tname, uname) if t not in tables]
     if missing:
@@ -177,7 +184,8 @@ def _compute_bipartite_v(
         return None, None
 
     csr = build_csr(el_db, run_code, fx, tau_u, tau_s, rho, (0, 1, 1, 0),
-                    direct_inst=direct_inst)
+                    direct_inst=direct_inst, epsilon=epsilon,
+                    no_self_cite=no_self_cite)
     H_SI, _ = _row_normalise(csr.C_SI)
     H_IS, _ = _row_normalise(csr.C_IS)
 
@@ -198,18 +206,35 @@ def _compute_bipartite_v(
               f'iters_s={iters_s}  norm_s={norm_s:.2e}  '
               f'iters_u={iters_u}  norm_u={norm_u:.2e}')
     else:
-        pi_s, pi_u, _, _, iters, norm = bipartite(H_SI, H_IS, alpha=alpha, mu=mu)
+        # Pass sqrt(alpha) so round-trip damping on M_S = H_SI@H_IS equals alpha.
+        alpha_hop = np.sqrt(alpha) if alpha < 1.0 else alpha
+        pi_s, pi_u, _, _, iters, norm = bipartite(H_SI, H_IS, alpha=alpha_hop, mu=mu)
         print(f'    n_s={csr.n_s:,}  n_u={csr.n_u:,}  iters={iters}  norm={norm:.2e}')
 
-    # Joint-normalise matching rank() convention
+    # Joint-normalise matching katz_ranker.rank() bipartite branch.
+    # For ε=1: exclude sentinel from A and pi_real so the a-weighted mean
+    # of v over real units equals 1, matching the baseline scale.
     pi_s = pi_s / 2.0
     pi_u = pi_u / 2.0
-    A = csr.a_s.sum() + csr.a_u.sum()
-    v_s = A * pi_s / csr.a_s
-    v_u = A * pi_u / csr.a_u
+
+    if epsilon and csr.is_sentinel_s is not None:
+        is_s    = csr.is_sentinel_s
+        is_u    = csr.is_sentinel_u
+        A       = csr.a_s[~is_s].sum() + csr.a_u[~is_u].sum()
+        pi_real = pi_s[~is_s].sum()    + pi_u[~is_u].sum()
+    else:
+        A       = csr.a_s.sum() + csr.a_u.sum()
+        pi_real = 1.0
+
+    v_s = A * pi_s / (pi_real * csr.a_s)
+    v_u = A * pi_u / (pi_real * csr.a_u)
 
     df_s = pd.DataFrame({'unit_idx': csr.source_ids.astype(int), 'v': v_s})
     df_u = pd.DataFrame({'unit_idx': csr.inst_ids.astype(int),   'v': v_u})
+
+    if epsilon:
+        df_s = df_s[df_s['unit_idx'] != 1]
+        df_u = df_u[df_u['unit_idx'] != 1]
 
     return df_s, df_u
 
@@ -218,9 +243,15 @@ def _compute_diag_single_v(
     el_db,
     run_code: str, fx: str, tau_u: int, tau_s: int,
     alpha: float,
+    zero_diag: bool = True,
 ) -> tuple:
     """
-    Compute v_S from H_SS (zero diagonal) and v_U from H_II (zero diagonal).
+    Compute v_S from H_SS and v_U from H_II independently.
+
+    zero_diag=True  : zero the diagonal of C_SS and C_II before normalising
+                      (removes source and institution self-citations; parallels
+                      the single-mode Eigenvalue method).
+    zero_diag=False : use C_SS and C_II as-is (self-citations included).
 
     Uses m=1000 unit set for sources and m=0001 unit set for institutions.
     Prior: μ = 1/N_p (uniform within each unit type).
@@ -236,18 +267,22 @@ def _compute_diag_single_v(
         print(f'  WARNING: unit tables not found: {missing} — skipping')
         return None, None
 
-    # ── Sources: H_SS with zero diagonal ─────────────────────────────────────
+    # ── Sources: H_SS ─────────────────────────────────────────────────────────
     csr_ss = build_csr(el_db, run_code, fx, tau_u, tau_s, 0, (1, 0, 0, 0))
-    C_SS = csr_ss.C_SS.tocsr(); C_SS.setdiag(0); C_SS.eliminate_zeros()
+    C_SS = csr_ss.C_SS.tocsr()
+    if zero_diag:
+        C_SS.setdiag(0); C_SS.eliminate_zeros()
     H_SS, _ = _row_normalise(C_SS)
     mu_s = np.full(csr_ss.n_s, 1.0 / csr_ss.n_s)
     pi_s, _, _, iters_s, norm_s = power_iteration(H_SS, alpha, mu=mu_s)
     v_s = float(csr_ss.a_s.sum()) * pi_s / csr_ss.a_s
     df_s = pd.DataFrame({'unit_idx': csr_ss.source_ids.astype(int), 'v': v_s})
 
-    # ── Institutions: H_II with zero diagonal ─────────────────────────────────
+    # ── Institutions: H_II ────────────────────────────────────────────────────
     csr_ii = build_csr(el_db, run_code, fx, tau_u, tau_s, 0, (0, 0, 0, 1))
-    C_II = csr_ii.C_II.tocsr(); C_II.setdiag(0); C_II.eliminate_zeros()
+    C_II = csr_ii.C_II.tocsr()
+    if zero_diag:
+        C_II.setdiag(0); C_II.eliminate_zeros()
     H_II, _ = _row_normalise(C_II)
     mu_u = np.full(csr_ii.n_u, 1.0 / csr_ii.n_u)
     pi_u, _, _, iters_u, norm_u = power_iteration(H_II, alpha, mu=mu_u)
@@ -341,6 +376,29 @@ def fetch_data(rk_db, el_db) -> tuple:
             'I': project(df_u, inst_rank_map),
         }
 
+    # μ=1/N — uniform (1/(N_S+N_U) for all units)
+    print('  α=0.85, μ=1/N (uniform) ...')
+    mu_uniform = np.full(N_s + N_u, 1.0 / (N_s + N_u))
+    df_s, df_u = _compute_bipartite_v(
+        el_db, _run_code, _baseline['fx'], _tau_u, _tau_s, 0, 0.85, mu=mu_uniform
+    )
+    if df_s is not None:
+        series['α=0.85, μ=1/N'] = {
+            'S': project(df_s, src_rank_map),
+            'I': project(df_u, inst_rank_map),
+        }
+
+    # H_SS/II with self-cites: C_SS/C_II as-is; α=0.85, μ=1/N_p
+    print('  H_SS/II (self-cites included, α=0.85, μ=1/N_p) ...')
+    df_s, df_u = _compute_diag_single_v(
+        el_db, _run_code, _baseline['fx'], _tau_u, _tau_s, 0.85, zero_diag=False,
+    )
+    if df_s is not None:
+        series['H_SS/II'] = {
+            'S': project(df_s, src_rank_map),
+            'I': project(df_u, inst_rank_map),
+        }
+
     # H_SS/II no self-ref: zero diagonal of C_SS and C_II; α=0.85, μ=1/N_p
     print('  H_SS/II, no self-ref (zero diag, α=0.85, μ=1/N_p) ...')
     df_s, df_u = _compute_diag_single_v(
@@ -352,14 +410,26 @@ def fetch_data(rk_db, el_db) -> tuple:
             'I': project(df_u, inst_rank_map),
         }
 
-    # no self-ref: zero diagonal of M_S and M_I; α=0.85, μ=1/N_p (unit-scaled)
-    print('  no self-ref (zero diag M_S/M_I, α=0.85, μ=1/N_p) ...')
+    # no self-ref: remove source/inst self-cite edges; α=0.85, μ=1/N_p
+    print('  no self-ref (edge-filtered self-cites, α=0.85, μ=1/N_p) ...')
     df_s, df_u = _compute_bipartite_v(
         el_db, _run_code, _baseline['fx'], _tau_u, _tau_s, 0, 0.85,
-        mu=mu_unit, zero_diag=True,
+        mu=mu_unit, no_self_cite=True,
     )
     if df_s is not None:
         series['no self-ref'] = {
+            'S': project(df_s, src_rank_map),
+            'I': project(df_u, inst_rank_map),
+        }
+
+    # no self-ref, μ=1/N: same edge filter, uniform prior
+    print('  no self-ref, μ=1/N (edge-filtered self-cites, α=0.85, μ=1/N) ...')
+    df_s, df_u = _compute_bipartite_v(
+        el_db, _run_code, _baseline['fx'], _tau_u, _tau_s, 0, 0.85,
+        mu=mu_uniform, no_self_cite=True,
+    )
+    if df_s is not None:
+        series['no self-ref, μ=1/N'] = {
             'S': project(df_s, src_rank_map),
             'I': project(df_u, inst_rank_map),
         }
@@ -378,7 +448,9 @@ def fetch_data(rk_db, el_db) -> tuple:
 
     # ── ε=1: sentinel nodes for cross-boundary references ─────────────────────
     print('  ε=1 (sentinel boundary) ...')
-    df_s, df_u = _load_stored_variant(rk_db, EPS_TABLE)
+    df_s, df_u = _compute_bipartite_v(
+        el_db, _run_code, _baseline['fx'], _tau_u, _tau_s, 0, 1.0, epsilon=1
+    )
     if df_s is not None:
         series['ε=1'] = {
             'S': project(df_s, src_rank_map),
@@ -434,9 +506,9 @@ def _draw_panel(ax, series: dict, unit_key: str,
     ax.set_xlabel('Baseline rank', labelpad=4)
     if ylabel:
         ax.set_ylabel(ylabel, labelpad=4)
-    ax.set_title(panel_title, fontsize=10, pad=6)
+    ax.set_title(panel_title, fontsize=11, pad=6)
     if show_legend:
-        ax.legend(fontsize=7.5, framealpha=0.85, loc='lower left')
+        ax.legend(fontsize=10, framealpha=0.85, loc='lower left', markerscale=1.6)
 
 
 def plot5(src_rank_map: dict, inst_rank_map: dict, series: dict) -> None:
@@ -446,8 +518,8 @@ def plot5(src_rank_map: dict, inst_rank_map: dict, series: dict) -> None:
     _SHOW = ['baseline', 'τ=40', 'ρ=1', 'census=1yr', 'ω=1', 'ε=1']
     sub = {k: series[k] for k in _SHOW if k in series}
 
-    fig, axes = plt.subplots(1, 2, figsize=(12, 5), sharey=True)
-    fig.subplots_adjust(wspace=0.04)
+    fig, axes = plt.subplots(1, 2, figsize=(10, 5), sharey=True)
+    fig.subplots_adjust(wspace=0.05)
 
     _draw_panel(axes[0], sub, 'S', len(src_rank_map),
                 'Sources', ylabel=r'$\log(v)$', show_legend=True)
@@ -581,8 +653,8 @@ def _plot5_single(src_rank_map: dict, inst_rank_map: dict,
     sub = {k: series[k] for k in ['baseline'] + keys if k in series}
 
     _pub_theme()
-    fig, axes = plt.subplots(1, 2, figsize=(12, 5), sharey=True)
-    fig.subplots_adjust(wspace=0.04)
+    fig, axes = plt.subplots(1, 2, figsize=(10, 5), sharey=True)
+    fig.subplots_adjust(wspace=0.05)
 
     _draw_panel(axes[0], sub, 'S', len(src_rank_map),  'Sources',
                 ylabel=r'$\log(v)$', show_legend=True)
@@ -617,9 +689,9 @@ def plot5c(src_rank_map, inst_rank_map, series):
 
 def plot5d(src_rank_map, inst_rank_map, series):
     _plot5_single(src_rank_map, inst_rank_map, series,
-                  keys=['α=0.85, μ=1/N_p', 'H_SS/II, no self', 'no self-ref'],
+                  keys=['α=0.85, μ=1/N_p', 'H_SS/II'],
                   stem='fig_5d',
-                  title='Parameter sensitivity: Katz–Hubbell α=0.85 — bipartite vs single-kernel, no self-reference  (x-axis locked to baseline)')
+                  title='Parameter sensitivity: α=0.85, μ=1/N_p — bipartite H_SI/H_IS vs single-mode H_SS/H_II  (x-axis locked to baseline)')
 
 
 def plot5e(src_rank_map, inst_rank_map, series):
