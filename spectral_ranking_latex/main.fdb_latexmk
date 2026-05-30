@@ -1,21 +1,21 @@
 # Fdb version 4
-["bibtex main"] 1780048587.61808 "main.aux" "main.bbl" "main" 1780050837.73981 0
-  "./MyLibrary.bib" 1779867226.02453 8379334 aa62b7fe8333b9ea280a76c6c02a4900 ""
-  "./sciomtcs.bib" 1775033720.93194 38814 e32becf37c07e9c5a5ecec51c1c262af ""
+["bibtex main"] 1780137194.86153 "main.aux" "main.bbl" "main" 1780137423.77735 0
+  "./MyLibrary.bib" 1780120426.86407 8379334 aa62b7fe8333b9ea280a76c6c02a4900 ""
+  "./sciomtcs.bib" 1780127689.50517 38817 99b2fd561b2950c5d963e7b598da419a ""
   "./spbasic.bst" 1775033720.93255 33250 b27924137faccbc3d13ebae5a7538c63 ""
-  "main.aux" 1780050837.54792 22772 5ff22a90c5871392c7a422d8f58fe42a "pdflatex"
+  "main.aux" 1780137423.5695 23195 d668b9f57f6f9c40475c5b414342d4eb "pdflatex"
   (generated)
   "main.bbl"
   "main.blg"
   (rewritten before read)
-["pdflatex"] 1780050837.13388 "/home/lc/Projects/EconomicsBusiness/spectral_ranking_latex/main.tex" "main.pdf" "main" 1780050837.73994 0
+["pdflatex"] 1780137423.17298 "/home/lc/Projects/EconomicsBusiness/spectral_ranking_latex/main.tex" "main.pdf" "main" 1780137423.77748 0
   "../plots/enclave_referer_v.pdf" 1779079000.14524 257886 75a4b34a570cd6cea24d6ce5c10bad5b ""
   "../plots/fig_1_latex.pdf" 1779865829.52519 19291 2eaa300ae4b35db0fb5fa5a775ac28d5 ""
   "../plots/fig_2c_latex.pdf" 1780023456.23881 155095 8d7825b7e474ff8211bab9a83b90a6b0 ""
   "../plots/fig_3by_latex.pdf" 1780023446.91711 84309 1b176eb41d173d5aebed45f4a02a2dde ""
   "../plots/fig_3bz_latex.pdf" 1780023447.19956 69797 86bca634b6d1899d74a151093d3404cb ""
-  "../plots/fig_5_latex.pdf" 1780050835.68683 162611 f078ed4a6d4b80f00fe877922316ed60 ""
-  "../plots/fig_5d_latex.pdf" 1780050836.585 88164 a2a4e512a5a03468d0d68a99571d6cff ""
+  "../plots/fig_5_latex.pdf" 1780052722.19145 162608 4f0b0a96c98a14e1044a6185b8090cc6 ""
+  "../plots/fig_5d_latex.pdf" 1780052723.09562 88249 98a6d14bced12e1492c3c7612f43cc07 ""
   "../plots/fig_6_latex.pdf" 1780028465.81553 194846 6ecb2bd0eb5a24aed32a417222242629 ""
   "../plots/fig_7a_oa_errors_latex.pdf" 1780028716.29944 217042 5d475356a170f09614c4e6da3e7a013c ""
   "../plots/fig_stability_scatter_latex.pdf" 1780028799.70759 40862 e7264c5423138bfcbd55605348a5e855 ""
@@ -85,7 +85,6 @@
   "/usr/share/texlive/texmf-dist/fonts/type1/public/amsfonts/cm/cmti10.pfb" 1248133631 37944 359e864bd06cde3b1cf57bb20757fb06 ""
   "/usr/share/texlive/texmf-dist/fonts/type1/public/amsfonts/cm/cmtt10.pfb" 1248133631 31099 c85edf1dd5b9e826d67c9c7293b6786c ""
   "/usr/share/texlive/texmf-dist/fonts/type1/public/amsfonts/euler/eufm10.pfb" 1336858727 21098 d4aee7c0aac232caac5688b586b9363c ""
-  "/usr/share/texlive/texmf-dist/fonts/type1/public/amsfonts/symbols/msam10.pfb" 1248133631 31764 459c573c03a4949a528c2cc7f557e217 ""
   "/usr/share/texlive/texmf-dist/fonts/type1/public/amsfonts/symbols/msbm10.pfb" 1248133631 34694 ad62b13721ee8eda1dcc8993c8bd7041 ""
   "/usr/share/texlive/texmf-dist/tex/context/base/mkii/supp-pdf.mkii" 1461363279 71627 94eb9990bed73c364d7f53f960cc8c5b ""
   "/usr/share/texlive/texmf-dist/tex/generic/atbegshi/atbegshi.sty" 1575674566 24708 5584a51a7101caf7e6bbf1fc27d8f7b1 ""
@@ -222,15 +221,15 @@
   "/usr/share/texmf/web2c/texmf.cnf" 1707919699 40399 f2c302f7d2af602abb742093540a5834 ""
   "/var/lib/texmf/fonts/map/pdftex/updmap/pdftex.map" 1758930663.93464 5472669 54eaf61a88b6b7896ebd0dac973cb29c ""
   "/var/lib/texmf/web2c/pdftex/pdflatex.fmt" 1758930695 8214160 ef3c407b721d45435b6686ffb1511d5a ""
-  "main.aux" 1780050837.54792 22772 5ff22a90c5871392c7a422d8f58fe42a "pdflatex"
-  "main.bbl" 1780048587.74618 15140 4c6cdc1ca45edc2d442e50947985c641 "bibtex main"
-  "main.out" 1780050837.54892 773 4c2f6d48574da4a924bde93c2b24d047 "pdflatex"
+  "main.aux" 1780137423.5695 23195 d668b9f57f6f9c40475c5b414342d4eb "pdflatex"
+  "main.bbl" 1780137194.98298 15140 4c6cdc1ca45edc2d442e50947985c641 "bibtex main"
+  "main.out" 1780137423.5695 773 4c2f6d48574da4a924bde93c2b24d047 "pdflatex"
   "main.tex" 1779867322.67856 2983 ecd44252f20b56364e508b5111bfa2eb ""
   "sections/01_introduction.tex" 1779867879.62324 6859 a321943b87ef16cee36fe2725a0dc1b3 ""
   "sections/02_model_specification.tex" 1779869320.06583 18432 33ea5a48c2199c20cc387be87c92b62e ""
   "sections/03_processing.tex" 1779875384.60359 6243 d54c527b9e6a5ed733267a5222ad57da ""
-  "sections/04_results.tex" 1780048738.7503 22573 afac6abfeab7bc1ff28f0fc0272bed64 ""
-  "sections/05_discussion.tex" 1779866479.15455 10266 ecd495263f052715ef7f2a8ebb4b061d ""
+  "sections/04_results.tex" 1780136535.93722 23794 f34d3c5f41bfd99d1f269942e7019335 ""
+  "sections/05_discussion.tex" 1780137423.00551 10347 b422b447d5f0106b5e257f158124ffcf ""
   "sections/06_prospects.tex" 1779866479.15459 2459 8ca29b4007db28c741c668da46d7fb89 ""
   (generated)
   "main.aux"

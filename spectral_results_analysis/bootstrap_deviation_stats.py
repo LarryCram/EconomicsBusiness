@@ -15,7 +15,7 @@ import pandas as pd
 sys.path.insert(0, str(Path(__file__).parent.parent))
 from util import load_config, load_runs
 
-V_BASE_MIN = 1.0
+V_BASE_MIN = 0.0 #1.0
 THRESHOLDS = [2, 4, 8, 16]
 
 _bl = next(r for r in load_runs() if r['label'] == 'baseline')
