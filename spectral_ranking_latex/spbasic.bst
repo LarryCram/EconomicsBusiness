@@ -445,7 +445,11 @@ FUNCTION {format.eprint}
 FUNCTION {format.url}
 { url empty$
     { "" }
-    { "\urlprefix\url{" url * "}" * }
+    { doi empty$
+        { "\urlprefix\url{" url * "}" * }
+        { "" }
+      if$
+    }
   if$
 }
 

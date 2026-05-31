@@ -1,14 +1,13 @@
 # Fdb version 4
-["bibtex main"] 1780137194.86153 "main.aux" "main.bbl" "main" 1780137423.77735 0
-  "./MyLibrary.bib" 1780120426.86407 8379334 aa62b7fe8333b9ea280a76c6c02a4900 ""
-  "./sciomtcs.bib" 1780127689.50517 38817 99b2fd561b2950c5d963e7b598da419a ""
-  "./spbasic.bst" 1775033720.93255 33250 b27924137faccbc3d13ebae5a7538c63 ""
-  "main.aux" 1780137423.5695 23195 d668b9f57f6f9c40475c5b414342d4eb "pdflatex"
+["bibtex main"] 1780225747.67643 "main.aux" "main.bbl" "main" 1780225748.34821 0
+  "./MyLibrary.bib" 1780225733.76806 8423773 445b4f7e94947cef9900ab7abe9f44fe ""
+  "./spbasic.bst" 1780225520.14021 33302 35ac3fab79f1cec44ebd6fdf11c82d97 ""
+  "main.aux" 1780225748.2 23991 080dc92fd1a62a0f9112b4640edb746f "pdflatex"
   (generated)
   "main.bbl"
   "main.blg"
   (rewritten before read)
-["pdflatex"] 1780137423.17298 "/home/lc/Projects/EconomicsBusiness/spectral_ranking_latex/main.tex" "main.pdf" "main" 1780137423.77748 0
+["pdflatex"] 1780225747.80525 "/home/lc/Projects/EconomicsBusiness/spectral_ranking_latex/main.tex" "main.pdf" "main" 1780225748.34834 0
   "../plots/enclave_referer_v.pdf" 1779079000.14524 257886 75a4b34a570cd6cea24d6ce5c10bad5b ""
   "../plots/fig_1_latex.pdf" 1779865829.52519 19291 2eaa300ae4b35db0fb5fa5a775ac28d5 ""
   "../plots/fig_2c_latex.pdf" 1780023456.23881 155095 8d7825b7e474ff8211bab9a83b90a6b0 ""
@@ -23,7 +22,7 @@
   "../tables/table_kernel_structure.tex" 1779866479.1562 651 b9d2a4ebdfbda02c2896d1ad09043904 ""
   "../tables/table_parameters.tex" 1780021168.05693 1595 7c63052fc659872433345586675e4c7d ""
   "/etc/texmf/web2c/texmf.cnf" 1758930642.66815 475 c0e671620eb5563b2130f56340a5fde8 ""
-  "/home/lc/Projects/EconomicsBusiness/spectral_ranking_latex/main.tex" 1779867322.67856 2983 ecd44252f20b56364e508b5111bfa2eb ""
+  "/home/lc/Projects/EconomicsBusiness/spectral_ranking_latex/main.tex" 1780225424.52196 2986 e0439302b276f20a4e4b4fc68c85c66b ""
   "/usr/share/texlive/texmf-dist/fonts/map/fontname/texfonts.map" 1577235249 3524 cb3e574dea2d1052e39280babc910dc8 ""
   "/usr/share/texlive/texmf-dist/fonts/tfm/jknappen/ec/tcrm1095.tfm" 1136768653 1536 02c06700a42be0f5a28664c7273f82e7 ""
   "/usr/share/texlive/texmf-dist/fonts/tfm/public/amsfonts/cmextra/cmbsy6.tfm" 1246382020 1124 14ccf5552bc7f77ca02a8a402bea8bfb ""
@@ -221,16 +220,16 @@
   "/usr/share/texmf/web2c/texmf.cnf" 1707919699 40399 f2c302f7d2af602abb742093540a5834 ""
   "/var/lib/texmf/fonts/map/pdftex/updmap/pdftex.map" 1758930663.93464 5472669 54eaf61a88b6b7896ebd0dac973cb29c ""
   "/var/lib/texmf/web2c/pdftex/pdflatex.fmt" 1758930695 8214160 ef3c407b721d45435b6686ffb1511d5a ""
-  "main.aux" 1780137423.5695 23195 d668b9f57f6f9c40475c5b414342d4eb "pdflatex"
-  "main.bbl" 1780137194.98298 15140 4c6cdc1ca45edc2d442e50947985c641 "bibtex main"
-  "main.out" 1780137423.5695 773 4c2f6d48574da4a924bde93c2b24d047 "pdflatex"
-  "main.tex" 1779867322.67856 2983 ecd44252f20b56364e508b5111bfa2eb ""
-  "sections/01_introduction.tex" 1779867879.62324 6859 a321943b87ef16cee36fe2725a0dc1b3 ""
-  "sections/02_model_specification.tex" 1779869320.06583 18432 33ea5a48c2199c20cc387be87c92b62e ""
-  "sections/03_processing.tex" 1779875384.60359 6243 d54c527b9e6a5ed733267a5222ad57da ""
+  "main.aux" 1780225748.2 23991 080dc92fd1a62a0f9112b4640edb746f "pdflatex"
+  "main.bbl" 1780225747.80188 16740 22852ebf1b26cef8116f0a7310925e7d "bibtex main"
+  "main.out" 1780225748.201 773 4c2f6d48574da4a924bde93c2b24d047 "pdflatex"
+  "main.tex" 1780225424.52196 2986 e0439302b276f20a4e4b4fc68c85c66b ""
+  "sections/01_introduction.tex" 1780225192.6529 7891 8382b5528aa38ec156320f768e934de3 ""
+  "sections/02_model_specification.tex" 1780225229.41703 18460 d08c009bd417e4e83734c31e318b07e3 ""
+  "sections/03_processing.tex" 1780224870.17365 6143 201797cca19bcf249e710950257194b5 ""
   "sections/04_results.tex" 1780136535.93722 23794 f34d3c5f41bfd99d1f269942e7019335 ""
-  "sections/05_discussion.tex" 1780137423.00551 10347 b422b447d5f0106b5e257f158124ffcf ""
-  "sections/06_prospects.tex" 1779866479.15459 2459 8ca29b4007db28c741c668da46d7fb89 ""
+  "sections/05_discussion.tex" 1780213451.6968 10832 38dc0abf2aabdb9ecfc2a395f597d060 ""
+  "sections/06_prospects.tex" 1780222750.14822 2478 74348160645c9625b1e57e4ce169806c ""
   (generated)
   "main.aux"
   "main.log"
