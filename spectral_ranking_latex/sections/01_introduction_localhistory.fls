@@ -1,0 +1,9 @@
+PWD /home/lc/Projects/EconomicsBusiness/spectral_ranking_latex/sections
+INPUT /etc/texmf/web2c/texmf.cnf
+INPUT /usr/share/texmf/web2c/texmf.cnf
+INPUT /usr/share/texlive/texmf-dist/web2c/texmf.cnf
+INPUT /var/lib/texmf/web2c/pdftex/pdflatex.fmt
+INPUT /home/lc/Projects/EconomicsBusiness/spectral_ranking_latex/sections/01_introduction_localhistory.tex
+OUTPUT 01_introduction_localhistory.log
+INPUT /usr/share/texlive/texmf-dist/fonts/map/fontname/texfonts.map
+INPUT /usr/share/texlive/texmf-dist/fonts/tfm/public/cm/cmbx10.tfm
