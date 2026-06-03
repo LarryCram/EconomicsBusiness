@@ -67,8 +67,9 @@ from spectral_ranking_bootstrap.bootstrap_baseline import _bipartite_core
 
 YEAR_LO      = 2020
 YEAR_HI      = 2024
-YEAR_PRE_LO  = 2016    # start of pre-window replacement pool
+YEAR_PRE_LO  = 2016    # start of pre-window replacement pool (original model)
 YEAR_PRE_HI  = 2019    # end   of pre-window replacement pool
+YEAR_PRE_LO_V2 = 2015  # start of pre-window pool for year-v2 model
 # Per-type OA error rates (empirically estimated)
 P_ERROR_YEAR = 0.020   # 2%   in-window works replaced by pre-window draws
 P_ERROR_SRC  = 0.0003  # 0.03% work-to-journal misassignment
@@ -880,15 +881,284 @@ def build_rankings(paths, B: int = 32, seed: int = 42,
     print(f'Output: {stage4_dir}', flush=True)
 
 
+# ── Year-v2 model ─────────────────────────────────────────────────────────────
+#
+# Pool: all corpus works with YEAR_PRE_LO_V2 ≤ py ≤ YEAR_HI (2015-2024).
+# Each replicate draws 2% of the pool at random.
+#   In-window draw  (2020-2024): DELETE the work from the corpus.
+#   Pre-window draw (2015-2019): INSERT it with pub_year reassigned to 2020,
+#                                keeping original source_idx, inst_idx, etc.
+# Saved to stage2_year_v2.parquet; rankings in stage4_year_v2/.
+
+
+def build_year_v2_pool(paths) -> pd.DataFrame:
+    """
+    Build the 2015-2024 work pool for the year-v2 model.
+
+    Saves stage1_year_v2_pool.parquet and returns it.
+    Columns: work_idx, pub_year, source_idx, inst_idx (Int64), inst_weight,
+             country_code.  One row per (work, institution); works with no
+             institution appear once with inst_idx=NA, inst_weight=1.0.
+    """
+    out_dir  = paths.working / STAGE_DIR
+    out_path = out_dir / 'stage1_year_v2_pool.parquet'
+
+    print(f'Year-v2: building pool {YEAR_PRE_LO_V2}–{YEAR_HI} ...', flush=True)
+    works = pd.read_parquet(
+        str(paths.parquet / 'corpus_works.parquet'),
+        columns=['work_idx', 'publication_year', 'source_idx'],
+    )
+    works = works[works['publication_year'].between(YEAR_PRE_LO_V2, YEAR_HI)].copy()
+    works = works.rename(columns={'publication_year': 'pub_year'})
+    works['pub_year']    = works['pub_year'].astype(np.int16)
+    works['source_idx']  = works['source_idx'].astype(np.int64)
+
+    auth = pd.read_parquet(
+        str(paths.parquet / 'corpus_authorships.parquet'),
+        columns=['work_idx', 'institution_idx', 'country_code'],
+    )
+    auth = auth[auth['work_idx'].isin(works['work_idx'])].copy()
+    auth = auth.drop_duplicates(['work_idx', 'institution_idx'])
+    auth = auth.dropna(subset=['institution_idx'])
+    n_inst = auth.groupby('work_idx').size().rename('n_inst')
+    auth   = auth.join(n_inst, on='work_idx')
+    auth['inst_weight'] = (1.0 / auth['n_inst']).astype(np.float32)
+    auth = auth.drop(columns='n_inst').rename(columns={'institution_idx': 'inst_idx'})
+    auth['inst_idx'] = auth['inst_idx'].astype(np.int64)
+
+    pool = works.merge(
+        auth[['work_idx', 'inst_idx', 'inst_weight', 'country_code']],
+        on='work_idx', how='left',
+    )
+    no_inst = pool['inst_idx'].isna()
+    pool.loc[no_inst, 'inst_weight'] = np.float32(1.0)
+    pool['inst_idx'] = pool['inst_idx'].astype('Int64')
+
+    pool.to_parquet(str(out_path), index=False)
+    n_works = pool['work_idx'].nunique()
+    in_win  = pool[pool['pub_year'].between(YEAR_LO, YEAR_HI)]['work_idx'].nunique()
+    pre_win = n_works - in_win
+    print(f'  Pool: {n_works:,} unique works  '
+          f'(in-window {in_win:,}, pre-window {pre_win:,})', flush=True)
+    print(f'  Saved: {out_path}', flush=True)
+    return pool
+
+
+def build_year_v2_replicates(pool: pd.DataFrame, paths,
+                              B: int = 1000, seed: int = 42) -> None:
+    """
+    Generate B year-v2 replicates and save deltas.
+
+    For each replicate, selects 2% of unique works in the 2015-2024 pool.
+      In-window  (2020-2024): mark for deletion  (error_type='del').
+      Pre-window (2015-2019): insert into corpus with pub_year=2020
+                              keeping original source/inst (error_type='ins').
+
+    Saves stage2_year_v2.parquet with columns:
+        replicate_id  int32
+        work_idx      int64
+        pub_year      int16
+        source_idx    int64
+        inst_idx      Int64
+        inst_weight   float32
+        country_code  object
+        error_type    str     ('del' | 'ins')
+    """
+    out_dir  = paths.working / STAGE_DIR
+    out_path = out_dir / 'stage2_year_v2.parquet'
+
+    all_work_ids = pool['work_idx'].unique().astype(np.int64)
+    n_pool       = len(all_work_ids)
+    py_ser       = pool.drop_duplicates('work_idx').set_index('work_idx')['pub_year']
+
+    print(f'Year-v2: generating {B} replicates '
+          f'(pool={n_pool:,}, rate={P_ERROR_YEAR:.1%}) ...', flush=True)
+
+    all_parts: list[pd.DataFrame] = []
+    t0 = time.perf_counter()
+
+    for b in range(B):
+        rng = np.random.default_rng(seed + b)
+        u   = rng.random(n_pool)
+        sel = all_work_ids[u < P_ERROR_YEAR]
+        if len(sel) == 0:
+            continue
+
+        sel_py = py_ser.loc[sel].values.astype(np.int16)
+        in_win_mask  = (sel_py >= YEAR_LO) & (sel_py <= YEAR_HI)
+        pre_win_mask = (sel_py >= YEAR_PRE_LO_V2) & (sel_py < YEAR_LO)
+
+        parts = []
+
+        # Deletions — just the work_idx is needed; other columns are placeholders
+        if in_win_mask.any():
+            del_ids = sel[in_win_mask]
+            del_df  = pool[pool['work_idx'].isin(del_ids)][
+                ['work_idx', 'pub_year', 'source_idx', 'inst_idx',
+                 'inst_weight', 'country_code']
+            ].copy()
+            del_df['error_type'] = 'del'
+            parts.append(del_df)
+
+        # Insertions — use first (work, inst) row per pre-window work; set py=2020
+        if pre_win_mask.any():
+            ins_ids = sel[pre_win_mask]
+            ins_df  = pool[pool['work_idx'].isin(ins_ids)][
+                ['work_idx', 'pub_year', 'source_idx', 'inst_idx',
+                 'inst_weight', 'country_code']
+            ].copy()
+            ins_df['pub_year']   = np.int16(YEAR_LO)
+            ins_df['error_type'] = 'ins'
+            parts.append(ins_df)
+
+        if not parts:
+            continue
+
+        delta = pd.concat(parts, ignore_index=True)
+        delta.insert(0, 'replicate_id', np.int32(b))
+        all_parts.append(delta)
+
+        if (b + 1) % 100 == 0:
+            print(f'  {b+1}/{B}  {time.perf_counter()-t0:.1f}s', flush=True)
+
+    out_df = pd.concat(all_parts, ignore_index=True) if all_parts else pd.DataFrame()
+    out_df.to_parquet(str(out_path), index=False)
+    print(f'  Saved: {out_path}  ({len(out_df):,} delta rows)', flush=True)
+
+
+def apply_year_v2_delta(base: pd.DataFrame, delta: pd.DataFrame) -> pd.DataFrame:
+    """
+    Apply one year-v2 replicate delta to base_works.
+
+    Rows with error_type='del' are removed from base (work_idx dropped).
+    Rows with error_type='ins' are appended (pub_year already set to 2020).
+    """
+    if delta is None or len(delta) == 0:
+        return base
+    delta = delta.drop(columns=['replicate_id'], errors='ignore')
+    del_ids = set(delta.loc[delta['error_type'] == 'del', 'work_idx'].tolist())
+    ins_df  = delta[delta['error_type'] == 'ins'].drop(columns=['error_type'])
+    result  = base[~base['work_idx'].isin(del_ids)]
+    if len(ins_df):
+        result = pd.concat([result, ins_df], ignore_index=True)
+    return result
+
+
+def build_year_v2_rankings(paths, B: int = 1000, seed: int = 42) -> None:
+    """
+    Stage 4 for the year-v2 model.
+
+    Loads stage2_year_v2.parquet, applies each replicate's delta via
+    apply_year_v2_delta, runs the bipartite spectral ranking, and saves
+    outputs to stage4_year_v2/.
+    """
+    import duckdb
+
+    out_dir    = paths.working / STAGE_DIR
+    stage4_dir = out_dir / 'stage4_year_v2'
+    stage4_dir.mkdir(parents=True, exist_ok=True)
+
+    bl          = next(r for r in load_runs() if r['label'] == 'baseline')
+    run_code    = bl['run_code'];  tau_u = bl['tau_u'];  tau_s = bl['tau_s']
+    fx          = bl['fx']
+    el_table    = f'el_{run_code}_{fx}_tauU{tau_u}_tauS{tau_s}_vartau'
+    units_table = f'_units_{run_code}_{fx}_tauU{tau_u}_tauS{tau_s}_vartau_m0110'
+
+    db = duckdb.connect(str(paths.working / 'edge_lists.duckdb'), read_only=True)
+    units_df = db.execute(
+        f'SELECT unit_idx, unit_type, a_p FROM "{units_table}" ORDER BY unit_type, unit_idx'
+    ).fetchdf()
+    r_bar = db.execute(
+        f'SELECT AVG(rval) FROM '
+        f'(SELECT DISTINCT citer_work_idx, CAST(R_i AS DOUBLE) AS rval FROM {el_table})'
+    ).fetchone()[0]
+    db.close()
+
+    src_df  = units_df[units_df['unit_type'] == 'S'].reset_index(drop=True)
+    inst_df = units_df[units_df['unit_type'] == 'U'].reset_index(drop=True)
+    source_ids = src_df['unit_idx'].to_numpy(dtype=np.int64)
+    inst_ids   = inst_df['unit_idx'].to_numpy(dtype=np.int64)
+    a_s        = src_df['a_p'].to_numpy(dtype=np.float64)
+    a_u        = inst_df['a_p'].to_numpy(dtype=np.float64)
+    n_s        = len(source_ids);  n_u = len(inst_ids)
+    A_full     = float(a_s.sum() + a_u.sum())
+    src_index  = pd.Index(source_ids)
+    inst_index = pd.Index(inst_ids)
+    print(f'Units: n_s={n_s}, n_u={n_u},  r_bar={r_bar:.4f}', flush=True)
+
+    base_works = pd.read_parquet(str(out_dir / 'stage1_base_works.parquet'))
+    base_refs_df  = pd.read_parquet(str(out_dir / 'stage3_base_refs.parquet'))
+    base_refs_arr = base_refs_df[
+        ['citer_work_idx', 'cited_work_idx', 'cited_source_idx']
+    ].to_numpy(dtype=np.int64)
+
+    year_v2_deltas_df = pd.read_parquet(str(out_dir / 'stage2_year_v2.parquet'))
+    year_v2_deltas = {
+        int(rid): grp for rid, grp in year_v2_deltas_df.groupby('replicate_id')
+    }
+
+    v_s_boot       = np.full((B, n_s), np.nan, dtype=np.float32)
+    v_u_boot       = np.full((B, n_u), np.nan, dtype=np.float32)
+    lam_ratio_boot = np.full(B, np.nan, dtype=np.float32)
+    rep_times: list[float] = []
+
+    print(f'Stage 4 year-v2: running {B} replicates ...', flush=True)
+    t0 = time.perf_counter()
+
+    for b in range(B):
+        t_rep   = time.perf_counter()
+        works_b = apply_year_v2_delta(base_works, year_v2_deltas.get(b))
+        works_yr = works_b[works_b['pub_year'].between(YEAR_LO, YEAR_HI)]
+
+        C_SI, C_IS = _build_matrices(
+            base_refs_arr, works_yr, src_index, inst_index, r_bar, n_s, n_u
+        )
+        if C_SI.nnz == 0 or C_IS.nnz == 0:
+            continue
+
+        v_s_b, v_u_b, lam1, lam2, n_sc, n_uc, n_it = \
+            _rank_one(C_SI, C_IS, n_s, n_u, a_s, a_u, A_full)
+
+        v_s_boot[b]       = v_s_b
+        v_u_boot[b]       = v_u_b
+        lam_ratio_boot[b] = float(lam2 / lam1) if lam1 > 0 else np.nan
+
+        elapsed = time.perf_counter() - t_rep
+        rep_times.append(elapsed)
+        if (b + 1) % 10 == 0 or b == 0:
+            avg = np.mean(rep_times[-10:])
+            eta = (B - b - 1) * avg
+            print(f'  rep {b+1:4d}/{B}  {elapsed:.2f}s  '
+                  f'core=({n_sc},{n_uc})  ETA {eta/60:.1f}min', flush=True)
+
+    np.save(str(stage4_dir / 'v_s_boot.npy'),       v_s_boot)
+    np.save(str(stage4_dir / 'v_u_boot.npy'),       v_u_boot)
+    np.save(str(stage4_dir / 'lam_ratio_boot.npy'), lam_ratio_boot)
+
+    meta = dict(
+        n=B, seed=seed, error_filter='year_v2', n_s=n_s, n_u=n_u,
+        source_ids=source_ids.tolist(), inst_ids=inst_ids.tolist(),
+        run_code=run_code, units_table=units_table,
+        completed=B,
+    )
+    (stage4_dir / 'meta.json').write_text(json.dumps(meta, indent=2))
+
+    total = time.perf_counter() - t0
+    avg   = float(np.mean(rep_times)) if rep_times else 0.0
+    print(f'\nDone. {B} replicates  {total/60:.1f}min  avg={avg:.2f}s/rep', flush=True)
+    print(f'Output: {stage4_dir}', flush=True)
+
+
 # ── CLI ────────────────────────────────────────────────────────────────────────
 
 def main():
     parser = argparse.ArgumentParser(
         description='4-stage metadata error bootstrap for the bipartite spectral ranking.'
     )
-    parser.add_argument('--stage', default='all',
-                        choices=['1', '2', '3', '4', 'all'],
-                        help='Which stage(s) to run (default: all)')
+    parser.add_argument('--stage', default='year_v2', #'all',
+                        choices=['1', '2', '3', '4', 'all', 'year_v2'],
+                        help='Which stage(s) to run (default: all); '
+                             'year_v2 runs only the new year-uncertainty model')
     parser.add_argument('--n',    type=int, default=1000, help='Replicates (stages 2-4)')
     parser.add_argument('--seed', type=int, default=42,  help='Base random seed')
     args = parser.parse_args()
@@ -900,6 +1170,14 @@ def main():
     seed  = args.seed
     run_stages = ({'1', '2', '3', '4'} if args.stage == 'all'
                   else {args.stage})
+
+    if args.stage == 'year_v2':
+        out_dir = paths.working / STAGE_DIR
+        out_dir.mkdir(parents=True, exist_ok=True)
+        pool = build_year_v2_pool(paths)
+        build_year_v2_replicates(pool, paths, B=B, seed=seed)
+        build_year_v2_rankings(paths, B=B, seed=seed)
+        return
 
     bl          = next(r for r in load_runs() if r['label'] == 'baseline')
     el_table    = (f"el_{bl['run_code']}_{bl['fx']}"

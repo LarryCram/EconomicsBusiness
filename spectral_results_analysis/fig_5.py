@@ -475,6 +475,7 @@ def _draw_panel(ax, series: dict, unit_key: str,
         n_overlap = len(df)
         is_baseline = style['marker'] is None
         yv = _lv(df['v'].values)
+        display_label = ('H_SS' if unit_key == 'S' else 'H_II') if label == 'H_SS/II' else label
 
         if is_baseline:
             ax.plot(
@@ -496,7 +497,7 @@ def _draw_panel(ax, series: dict, unit_key: str,
                 linewidths=style['lw'],
                 alpha=style['alpha_vis'],
                 zorder=style['zorder'],
-                label=f'{label}  ({n_overlap:,}/{n_baseline:,})',
+                label=f'{display_label}  ({n_overlap:,}/{n_baseline:,})',
             )
 
     ax.set_ylim(_LOG_LO, _LOG_HI)
