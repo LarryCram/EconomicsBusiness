@@ -1,13 +1,13 @@
 # Fdb version 4
-["bibtex main"] 1780570078.40754 "main.aux" "main.bbl" "main" 1780570128.3086 0
+["bibtex main"] 1780570435.93203 "main.aux" "main.bbl" "main" 1780570436.642 0
   "./MyLibrary.bib" 1780539758.15184 8447852 a469dfecd5211bb45fe893fd19b1cc7d ""
   "./spbasic.bst" 1780225520.14021 33302 35ac3fab79f1cec44ebd6fdf11c82d97 ""
-  "main.aux" 1780570128.11936 25143 0ea9af024517bcb94e6b70606b4aaf34 "pdflatex"
+  "main.aux" 1780570436.49006 25195 7a39c8b79383bdf86e8a4fc514be6fcb "pdflatex"
   (generated)
   "main.bbl"
   "main.blg"
   (rewritten before read)
-["pdflatex"] 1780570127.64536 "/home/lc/Projects/EconomicsBusiness/spectral_ranking_latex/main.tex" "main.pdf" "main" 1780570128.30876 0
+["pdflatex"] 1780570436.06636 "/home/lc/Projects/EconomicsBusiness/spectral_ranking_latex/main.tex" "main.pdf" "main" 1780570436.64215 0
   "../plots/enclave_referer_v.pdf" 1779079000.14524 257886 75a4b34a570cd6cea24d6ce5c10bad5b ""
   "../plots/fig_2c_latex.pdf" 1780023456.23881 155095 8d7825b7e474ff8211bab9a83b90a6b0 ""
   "../plots/fig_3by_latex.pdf" 1780023446.91711 84309 1b176eb41d173d5aebed45f4a02a2dde ""
@@ -218,13 +218,13 @@
   "/usr/share/texmf/web2c/texmf.cnf" 1707919699 40399 f2c302f7d2af602abb742093540a5834 ""
   "/var/lib/texmf/fonts/map/pdftex/updmap/pdftex.map" 1758930663.93464 5472669 54eaf61a88b6b7896ebd0dac973cb29c ""
   "/var/lib/texmf/web2c/pdftex/pdflatex.fmt" 1758930695 8214160 ef3c407b721d45435b6686ffb1511d5a ""
-  "main.aux" 1780570128.11936 25143 0ea9af024517bcb94e6b70606b4aaf34 "pdflatex"
-  "main.bbl" 1780570078.55887 18896 40def00ba878ec8d62f036679f0ca6b3 "bibtex main"
-  "main.out" 1780570128.12036 773 4c2f6d48574da4a924bde93c2b24d047 "pdflatex"
+  "main.aux" 1780570436.49006 25195 7a39c8b79383bdf86e8a4fc514be6fcb "pdflatex"
+  "main.bbl" 1780570436.06307 18896 40def00ba878ec8d62f036679f0ca6b3 "bibtex main"
+  "main.out" 1780570436.49106 773 4c2f6d48574da4a924bde93c2b24d047 "pdflatex"
   "main.tex" 1780535527.70393 2973 f776376b016270329c76526e28542bd7 ""
   "sections/01_introduction.tex" 1780535272.41015 7962 4308c454b3314255bd42408ba447c0ab ""
   "sections/02_model_specification.tex" 1780540797.03041 18610 946e8dfe6efe6e7e7e99d7562f59c198 ""
-  "sections/03_processing.tex" 1780569730.17633 7615 98420a48ab6fd35debbed06064d2b295 ""
+  "sections/03_processing.tex" 1780570435.20474 7641 5b67fee7f71133b72f076c30764fdcf0 ""
   "sections/04_results.tex" 1780570127.48042 27597 b703ca18f78c245f81c6e1bb51f93b22 ""
   "sections/05_discussion.tex" 1780473637.51472 11160 388710c6f5535c8746c92df452b539a3 ""
   "sections/06_prospects.tex" 1780535156.56396 2511 d24c11a527c787e37724f5a9f894e54f ""
