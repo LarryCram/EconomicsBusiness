@@ -7,9 +7,38 @@
 
 A glossary of the terms used in the model is exhibited in Table~\ref{tab:parameters}. There are three structural arrangements: (1) blocks, picked by the unit mask $m$ and encoded as $1000 \rightarrow S$ (sources only), $0001 \rightarrow I$ (institutions only), $0110 \rightarrow B$ (bipartite) and $1111 \rightarrow J$ (joint), (2) subfields, picked from $\mathfrak{F}$ (E, B, A, X), and (3) census and target time windows, overlapped ($t_c=t_t$) and picked from the sets \[\{T_t: t = 1 \ldots 5\} = \{[2000, 2004], [2005, 2009], [2010, 2014], [2015,2019], [2020,2024]\}.\] These fully overlapping windows accumulate relatively more references to recent works. We also present a sensitivity analysis for the parameters $\rho,~\chi,~\omega,~\epsilon,~(\alpha,~\mu),~\rm{and}~ t_c$, together with a bootstrap study of uncertainties. Results focus on $\mathbf{v}_S$ and $\mathbf{v}_I$, the source and institution influence vectors, derived from the ranking probability by Equation \ref{eq:vstar}. An instance of the model is designated using a subscript for the unit and superscripts as required to designate structural arrangements and parameters. For example, $\mathbf{v}_I^{S,E,T_5}$ is the institution influence vector for the $S$ ($m=1000$) block, $F=E$ (Economics), and census and target time windows 2020-2024. Throughout this work, logarithms are base 10.
 
-\input{../tables/table_parameters}
+\begin{table}[!bt]
+  \centering
+  \caption{Glossary.}
+  \label{tab:parameters}
+  \renewcommand{\arraystretch}{1.00} %1.25}
+  \begin{tabular}{@{}clcc@{}}
+    \hline
+    Parameter & Description & Baseline \\
+    \hline
+    \multicolumn{3}{@{}l}{\textit{Corpus construction}} \\[2pt]
+    $\tau_S$ & Threshold works/source/year & 10 \\
+    $\tau_I$ & Threshold works/institution/year & 20 \\
+    $F$      & Fields: E (economics), B (business), A (ambiguous),
+               X (none) & EBAX \\
+    $t_c$    & Census window: publication years of referencing works & 2020--2024 \\
+    $t_t$    & Target window: publication years of referenced works & 2020--2024 \\[4pt]
+    \multicolumn{3}{@{}l}{\textit{Reference matrix assembly}} \\[2pt]
+    $\rho$   & Reference-list weights: $\rho=0$, normalise by $\bar{R}/R_i$; $\rho=1$, raw counts & 0 \\
+    $\omega$ & Institution weight flag: $\omega=0$ equal-shares; $\omega=1$ author-fractionation & 0 \\
+    $\mathbf{m}$ & Block mask: $1000$-S only, $0001$-I only,
+               $1111$=joint, $0110$=bipartite & 0110 \\
+    $\chi$   & Source--institution mixing weight: $\chi=0.5$ or $\chi^*=N_I/(N_S+N_I)$ & 0.5 \\
+    $\varepsilon$ & Sentinel flag: $\varepsilon=0$ - within-corpus only;
+               $\varepsilon=1$ - include sentinel units & 0 \\[4pt]
+    \multicolumn{3}{@{}l}{\textit{Resolvent}} \\[2pt]
+    $\alpha$ & Damping parameter: $\alpha=1$ - Perron--Frobenius; $\alpha<1$ - Katz--Hubbell & 1 \\
+    $\mu$    & Prior with $\alpha<1$: uniform $1/(N_S+N_I)$ or $\mu=1/2N_S, 1/2N_I$ & n.a. \\
+    \hline
+  \end{tabular}
+\end{table}
 
-Figure~\ref{fig:fig_3by} compares influence values across the four unit masks. The $x$-direction is the cardinal rank of sources (left) and institutions (right) in the baseline (i.e. bipartite resolvent with $S \rightarrow I \rightarrow S,~\alpha=1,~\mu=0,~\rho=0,~\varepsilon=0,~\omega=0,~T_5 = [2020-2024]$ and $F=EBAX,~\rm{all~subfields}$). The solid black curve traces the corresponding influence value $v$ in the $y$-direction. Units near $v=1$ have average influence, corresponding to rank position $\approx~15\%$ for sources and $\approx~25\%$ for institutions. For most sources and institutions, $v$ lies between  1 and 0.1. Overlaid on the bipartite source curve are $v_S^S$ (red $\times$, $S \rightarrow S$) and $v_S^J$ (green $\times$, joint $S+I \rightarrow S+I$). A point on the $x$-axis is the same unit in every case. For institutions, we show $v_I^I$ ($I \rightarrow I$) and $v_I^J$ (joint). Figure~\ref{fig:fig_3bz} is another view of these results, directly comparing bipartite $v^B$ and single-unit $v^{S,I}$ influence, colouring points by subfield (see below).
+Figure~\ref{fig:fig_3by} compares influence values across the four unit masks. The $x$-direction is the ordinal rank of sources (left) and institutions (right) in the baseline (i.e. bipartite resolvent with $S \rightarrow I \rightarrow S,~\alpha=1,~\mu=0,~\rho=0,~\varepsilon=0,~\omega=0,~T_5 = [2020-2024]$ and $F=EBAX,~\rm{all~subfields}$). The solid black curve traces the corresponding influence value $v$ in the $y$-direction. Units near $v=1$ have average influence, corresponding to rank position $\approx~15\%$ for sources and $\approx~25\%$ for institutions. For most sources and institutions, $v$ lies between  1 and 0.1. Overlaid on the bipartite source curve are $v_S^S$ (red $\times$, $S \rightarrow S$) and $v_S^J$ (green $\times$, joint $S+I \rightarrow S+I$). A point on the $x$-axis is the same unit in every case. For institutions, we show $v_I^I$ ($I \rightarrow I$) and $v_I^J$ (joint). Figure~\ref{fig:fig_3bz} is another view of these results, directly comparing bipartite $v^B$ and single-unit $v^{S,I}$ influence, colouring points by subfield (see below).
 
 \begin{figure}[!hbt]
   \centering
@@ -19,7 +48,7 @@ Figure~\ref{fig:fig_3by} compares influence values across the four unit masks. T
     Black line: $v^B$ (bipartite, baseline);
     red circles: $v_S^S$ / $v_I^I$ (within-block);
     green diamonds: $v^J$ (joint $S+I$).
-    $x$-axis is the cardinal rank for the baseline.}
+    $x$-axis is the ordinal rank for the baseline.}
   \label{fig:fig_3by}
 \end{figure}
 

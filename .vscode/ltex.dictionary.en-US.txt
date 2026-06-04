@@ -105,3 +105,4 @@ characterisation
 Brinkin
 Bibliometric-based
 misattribution
+normalise

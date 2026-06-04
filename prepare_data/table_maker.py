@@ -65,12 +65,18 @@ def build_table1_data(db):
     """
     Return data for Table 1: registry overview with field classification.
 
-    Rows: JQL (Harzing), MJL (WOS), SJL (ERA), SSL (Scopus), OAS* (union).
+    Rows: JQL (Harzing), MJL (WOS), SJL (ERA), SSL (Scopus),
+          OAS** (raw union), OAS* (density-filtered), OAS (τ_S-filtered).
     Columns per row: Sources, OA Match, Match %, E, B, A, X.
 
     Source counts include duplicates: a source in both JQL and SSL is
     counted once in each row.  E/B/A/X are taken from source_master (the
     combined five-signal scoring) for OA-matched sources from that registry.
+
+    OAS** field_eb uses source_master's 5-signal score where available; for
+    sources dropped by the topic density filter a 4-signal fallback is computed
+    from registry fields (era_for_codes, harzing_field, wos_categories, scopus_asjc)
+    without the OpenAlex topic field signal.
     """
     # Registry sizes — COUNT(*) so cross-registry duplicates count per registry
     sizes = db.sql(f"""
@@ -94,17 +100,52 @@ def build_table1_data(db):
     """).fetchone()
     jql_matched, mql_matched, sjl_matched, ssl_matched = matched
 
-    # E/B/A/X per registry from source_master
+    # E/B/A/X for OAS** and each registry: all oas_star sources with field_eb from
+    # source_master where available; 4-signal registry fallback for density-dropped sources.
+    # This makes registry E/B/A/X consistent with the OA Match count (both from oas_star).
     eb_df = db.sql(f"""
+        WITH scored AS (
+            SELECT os.source_idx,
+                   os.harzing_journal_name,
+                   os.wos_journal_name,
+                   os.era_journal_name,
+                   os.scopus_journal_name,
+                   (COALESCE(len(list_filter(os.era_for_codes, x -> LEFT(x,2)='38')), 0)
+                    + CASE WHEN len(list_filter(string_split(COALESCE(os.harzing_field,''), ', '),
+                                   x -> x IN ('Economics','F&A'))) > 0 THEN 1 ELSE 0 END
+                    + CASE WHEN regexp_matches(LOWER(array_to_string(os.wos_categories,' ')),
+                                              'econom|financ|banking') THEN 1 ELSE 0 END
+                    + CASE WHEN list_contains(os.scopus_asjc, '2000') THEN 1 ELSE 0 END
+                   ) AS econ4,
+                   (COALESCE(len(list_filter(os.era_for_codes, x -> LEFT(x,2)='35')), 0)
+                    + CASE WHEN len(list_filter(string_split(COALESCE(os.harzing_field,''), ', '),
+                                   x -> x IN ('Bus Hist','Comm','Entrep','Gen & Strat','IB',
+                                              'Innovation','Marketing','MIS,KM','OS/OB,HRM/IR',
+                                              'OR,MS,POM','PSM','Tourism'))) > 0 THEN 1 ELSE 0 END
+                    + CASE WHEN regexp_matches(LOWER(array_to_string(os.wos_categories,' ')),
+                                              'business|commerc|management|tourism|transport') THEN 1 ELSE 0 END
+                    + CASE WHEN list_contains(os.scopus_asjc, '1400') THEN 1 ELSE 0 END
+                   ) AS bus4,
+                   sm.field_eb AS sm_field_eb
+            FROM '{PARQUET}/oas_star.parquet' os
+            LEFT JOIN '{PARQUET}/source_master.parquet' sm USING (source_idx)
+        )
         SELECT
-            field_eb,
+            COALESCE(sm_field_eb,
+                CASE
+                    WHEN econ4 + bus4 < 2 THEN 'X'
+                    WHEN econ4 = bus4     THEN 'A'
+                    WHEN econ4 > bus4     THEN 'E'
+                    ELSE                       'B'
+                END
+            ) AS field_eb,
             COUNT(*) FILTER (WHERE harzing_journal_name IS NOT NULL) AS jql_n,
             COUNT(*) FILTER (WHERE wos_journal_name     IS NOT NULL) AS mql_n,
             COUNT(*) FILTER (WHERE era_journal_name     IS NOT NULL) AS sjl_n,
             COUNT(*) FILTER (WHERE scopus_journal_name  IS NOT NULL) AS ssl_n,
-            COUNT(*)                                                  AS oas_n
-        FROM '{PARQUET}/source_master.parquet'
-        GROUP BY field_eb
+            COUNT(*)                                                  AS oas2_n
+        FROM scored
+        GROUP BY 1
     """).df()
 
     eb = {row['field_eb']: row for _, row in eb_df.iterrows()}
@@ -112,11 +153,19 @@ def build_table1_data(db):
     def _eb(col, label):
         return int(eb.get(label, {}).get(col, 0))
 
-    oas_total = int(eb_df['oas_n'].sum())
+    oas2_total = int(eb_df['oas2_n'].sum())
 
-    # OAS: OAS* sources that pass the τ_S census filter (baseline window)
-    # One row per source; then aggregate counts by field_eb in Python.
-    oas_tau_df = db.sql(f"""
+    # OAS* (density-filtered): source_master counts
+    oas_star_df = db.sql(f"""
+        SELECT field_eb, COUNT(*) AS n
+        FROM '{PARQUET}/source_master.parquet'
+        GROUP BY field_eb
+    """).df()
+    oas_star_eb    = {row['field_eb']: int(row['n']) for _, row in oas_star_df.iterrows()}
+    oas_star_total = int(oas_star_df['n'].sum())
+
+    # OAS (τ_S-filtered): source_master sources that pass the census filter
+    oas_df = db.sql(f"""
         SELECT sm.source_idx, sm.field_eb
         FROM '{PARQUET}/source_master.parquet' sm
         JOIN '{PARQUET}/corpus_works.parquet' cw
@@ -125,28 +174,31 @@ def build_table1_data(db):
         GROUP BY sm.source_idx, sm.field_eb
         HAVING COUNT(DISTINCT cw.work_idx) / {CENSUS_YEARS}.0 >= {TAU_S}
     """).df()
-    oas_tau_eb    = oas_tau_df.groupby('field_eb').size().to_dict()
-    oas_tau_total = len(oas_tau_df)
+    oas_eb    = oas_df.groupby('field_eb').size().to_dict()
+    oas_total = len(oas_df)
 
     data = {
-        'JQL': {'total': jql_total, 'matched': jql_matched,
-                'E': _eb('jql_n', 'E'), 'B': _eb('jql_n', 'B'),
-                'A': _eb('jql_n', 'A'), 'X': _eb('jql_n', 'X')},
-        'MJL': {'total': mql_total, 'matched': mql_matched,
-                'E': _eb('mql_n', 'E'), 'B': _eb('mql_n', 'B'),
-                'A': _eb('mql_n', 'A'), 'X': _eb('mql_n', 'X')},
-        'SJL': {'total': sjl_total, 'matched': sjl_matched,
-                'E': _eb('sjl_n', 'E'), 'B': _eb('sjl_n', 'B'),
-                'A': _eb('sjl_n', 'A'), 'X': _eb('sjl_n', 'X')},
-        'SSL': {'total': ssl_total, 'matched': ssl_matched,
-                'E': _eb('ssl_n', 'E'), 'B': _eb('ssl_n', 'B'),
-                'A': _eb('ssl_n', 'A'), 'X': _eb('ssl_n', 'X')},
-        'OAS*': {'total': oas_total, 'matched': None,
-                 'E': _eb('oas_n', 'E'), 'B': _eb('oas_n', 'B'),
-                 'A': _eb('oas_n', 'A'), 'X': _eb('oas_n', 'X')},
-        'OAS': {'total': oas_tau_total, 'matched': None,
-                'E': int(oas_tau_eb.get('E', 0)), 'B': int(oas_tau_eb.get('B', 0)),
-                'A': int(oas_tau_eb.get('A', 0)), 'X': int(oas_tau_eb.get('X', 0))},
+        'JQL':   {'total': jql_total, 'matched': jql_matched,
+                  'E': _eb('jql_n', 'E'), 'B': _eb('jql_n', 'B'),
+                  'A': _eb('jql_n', 'A'), 'X': _eb('jql_n', 'X')},
+        'MJL':   {'total': mql_total, 'matched': mql_matched,
+                  'E': _eb('mql_n', 'E'), 'B': _eb('mql_n', 'B'),
+                  'A': _eb('mql_n', 'A'), 'X': _eb('mql_n', 'X')},
+        'SJL':   {'total': sjl_total, 'matched': sjl_matched,
+                  'E': _eb('sjl_n', 'E'), 'B': _eb('sjl_n', 'B'),
+                  'A': _eb('sjl_n', 'A'), 'X': _eb('sjl_n', 'X')},
+        'SSL':   {'total': ssl_total, 'matched': ssl_matched,
+                  'E': _eb('ssl_n', 'E'), 'B': _eb('ssl_n', 'B'),
+                  'A': _eb('ssl_n', 'A'), 'X': _eb('ssl_n', 'X')},
+        'OAS**': {'total': oas2_total, 'matched': None,
+                  'E': _eb('oas2_n', 'E'), 'B': _eb('oas2_n', 'B'),
+                  'A': _eb('oas2_n', 'A'), 'X': _eb('oas2_n', 'X')},
+        'OAS*':  {'total': oas_star_total, 'matched': None,
+                  'E': oas_star_eb.get('E', 0), 'B': oas_star_eb.get('B', 0),
+                  'A': oas_star_eb.get('A', 0), 'X': oas_star_eb.get('X', 0)},
+        'OAS':   {'total': oas_total, 'matched': None,
+                  'E': int(oas_eb.get('E', 0)), 'B': int(oas_eb.get('B', 0)),
+                  'A': int(oas_eb.get('A', 0)), 'X': int(oas_eb.get('X', 0))},
     }
 
     print("\n=== TABLE 1: REGISTRY OVERVIEW ===")
@@ -166,13 +218,13 @@ def write_latex_table1(data, out_path):
     L.append(r"\begin{table}[htbp]")
     L.append(r"\centering")
     L.append(
-        r"""\caption{Registry sources and their OpenAlex matches, classified by field. JQL:
-        Harzing Journal Quality List; MJL: Web of Science Master Journal List; SJL: ERA Subject Journal List; SSL: Scopus Source List. A source appearing in multiple registries is counted in each. E/B/A/X are assigned by the combined five-signal scoring. OAS$^*$ is the union across all four registries matched to OpenAlex. OAS$^*$ becomes OAS when journals not primarily in economics and business fields are removed (e.g. psychology, law, education, sociology).}"""
+        r"""\caption{Registry and OpenAlex sources classified by field. JQL:
+        Harzing Journal Quality List; MJL: Web of Science Master Journal List; SJL: ERA Subject Journal List; SSL: Scopus Source List. A source appearing in multiple registries is counted in each. E/B/A/X are assigned by the combined five-signal scoring. OAS$^{**}$ is the union of all registry sources matched to OpenAlex. OAS$^{*}$ drops sources whose OpenAlex topic content is less than 40\% economics or business. OAS drops sources publishing below $\tau_S$.}"""
     )
     L.append(r"\label{tab:registry_overview}")
     L.append(r"\begin{tabular}{lrrrrrrrr}")
     L.append(r"\toprule")
-    L.append(r"Register & Sources & OA Match & Match\% & E & B & A & X \\")
+    L.append(r"Registry & Sources & OA Match & Match\% & E & B & A & X \\")
     L.append(r"\midrule")
     for reg in REGS:
         d = data[reg]
@@ -181,9 +233,14 @@ def write_latex_table1(data, out_path):
             f" & {_i(d['E'])} & {_i(d['B'])} & {_i(d['A'])} & {_i(d['X'])} \\\\"
         )
     L.append(r"\midrule")
+    d = data['OAS**']
+    L.append(
+        f"OAS$^{{**}}$ & {_i(d['total'])} & --- & ---"
+        f" & {_i(d['E'])} & {_i(d['B'])} & {_i(d['A'])} & {_i(d['X'])} \\\\"
+    )
     d = data['OAS*']
     L.append(
-        f"OAS$^*$ & {_i(d['total'])} & --- & ---"
+        f"OAS$^{{*}}$ & {_i(d['total'])} & --- & ---"
         f" & {_i(d['E'])} & {_i(d['B'])} & {_i(d['A'])} & {_i(d['X'])} \\\\"
     )
     d = data['OAS']
@@ -293,7 +350,7 @@ def build_table2_data(db):
     print(f"{'Register':<8} {'Sources':>9} {'Matched':>9} {'Rate':>7} {'Unmatched':>10}")
     for reg, total, matched, unmatched in rows:
         print(f"{reg:<8} {total:>9,} {matched:>9,} {matched/total*100:>6.1f}% {unmatched:>10,}")
-    print(f"\nPairwise overlaps of matched OAS* (long-list, pre-topic filter):")
+    print(f"\nPairwise overlaps of matched OAS** (raw union, pre-density filter):")
     print(f"  MJL \u2229 SJL          {mql_sjl:>6,} sources")
     print(f"  MJL \u2229 JQL          {mql_jql:>6,} sources")
     print(f"  SJL \u2229 JQL          {sjl_jql:>6,} sources")
@@ -302,7 +359,7 @@ def build_table2_data(db):
     print(f"  SSL \u2229 MJL          {ssl_mql:>6,} sources")
     print(f"  SSL \u2229 SJL          {ssl_sjl:>6,} sources")
     print(f"  All four         {all_four:>6,} sources")
-    print(f"  Union (OAS*)     {total_oas_star:>6,} unique sources")
+    print(f"  Union (OAS**)    {total_oas_star:>6,} unique sources")
     print(f"\nPost-topic-filter OAS ({total_oas:,} sources):")
     print(f"  {'Register':<8} {'OAS sources':>12}")
     for reg, n in zip(('JQL', 'MJL', 'SJL', 'SSL'), oas_provenance):
@@ -378,7 +435,7 @@ def write_latex_table2(rows, overlaps, out_path):
     L.append(r"\centering")
     L.append(
         r"\caption{Matching of the four register-based sources to OpenAlex source identifiers."
-        r" Overlaps count shared matched entries; OAS$^*$ is the union across all four registries.}"
+        r" Overlaps count shared matched entries; OAS$^{**}$ is the union across all four registries.}"
     )
     L.append(r"\label{tab:source_matching}")
     L.append(r"\begin{tabular}{lrrrr}")
@@ -397,7 +454,7 @@ def write_latex_table2(rows, overlaps, out_path):
         (r"Overlap: $\mathrm{SSL} \cap \mathrm{MJL}$",                                                                    ssl_mql),
         (r"Overlap: $\mathrm{SSL} \cap \mathrm{SJL}$",                                                                    ssl_sjl),
         (r"Overlap: all four registries",                                                                                   all_four),
-        (r"$(\mathrm{JQL} \cup \mathrm{MJL} \cup \mathrm{SJL} \cup \mathrm{SSL}) \cap \mathrm{OA}$\quad (OAS$^*$)", total_oas_star),
+        (r"$(\mathrm{JQL} \cup \mathrm{MJL} \cup \mathrm{SJL} \cup \mathrm{SSL}) \cap \mathrm{OA}$\quad (OAS$^{**}$)", total_oas_star),
     ]
     for label, count in pairs:
         L.append(

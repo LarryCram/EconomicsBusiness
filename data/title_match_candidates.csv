@@ -1,6 +1,6 @@
 oa_source_idx,oa_title,jaro_winkler,registry_title,era_journal_name,harzing_journal_name,wos_journal_name,scopus_journal_name
 4306533858,Universidad y Sociedad,1.0,Universidad y Sociedad,,,,Universidad y Sociedad
-191007255,International Review of Environmental and Resource Economics,1.0,International Review of Environmental and Resource Economics,,,International Review of Environmental and Resource Economics,International Review of Environmental and Resource Economics
+4210219166,Management and Accounting Review,1.0,Management and Accounting Review,,,,Management and Accounting Review
 4210212338,Turizam,1.0,Turizam,,,,Turizam
 2764413441,Journal for Labour Market Research,1.0,Journal for Labour Market Research,,,,Journal for Labour Market Research
 2738395297,Journal of ETA Maritime Science,1.0,Journal of Eta Maritime Science,,,Journal of Eta Maritime Science,
@@ -15,7 +15,7 @@ oa_source_idx,oa_title,jaro_winkler,registry_title,era_journal_name,harzing_jour
 2764734414,Middle East Journal of Business,1.0,Middle East Journal of Business,Middle East Journal of Business,,,
 2765042083,Latin american journal of economics,1.0,Latin American Journal of Economics,Latin American Journal of Economics,,,Cuadernos de Economia - Latin American Journal of Economics
 4210189436,Communication Research and Practice,1.0,Communication Research and Practice,,,,Communication Research and Practice
-4210219166,Management and Accounting Review,1.0,Management and Accounting Review,,,,Management and Accounting Review
+4210185306,Recherches en Sciences de Gestion,1.0,Recherches en Sciences de Gestion,,,,Recherches en Sciences de Gestion
 4210230096,Journal of Accounting and Finance,1.0,Journal of Accounting and Finance,Journal of Accounting and Finance,,,
 2736975137,Journal of Indonesian Economy and Business,1.0,Journal of Indonesian Economy and Business,Journal of Indonesian Economy and Business,,,Journal of Indonesian Economy and Business
 2764472725,International journal of management and business research,1.0,International Journal of Management and Business Research,International Journal of Management and Business Research,,,
@@ -45,7 +45,7 @@ oa_source_idx,oa_title,jaro_winkler,registry_title,era_journal_name,harzing_jour
 2764470529,Journal of Insurance Issues,1.0,Journal of Insurance Issues,,,Journal of Insurance Issues,
 4306503808,Australian Computer Journal,1.0,Australian Computer Journal,,,,Australian Computer Journal
 2737566693,Journal of Social Ontology,1.0,Journal of Social Ontology,,,,Journal of Social Ontology
-59628311,Behavioral and Brain Sciences,1.0,Behavioral and Brain Sciences,,Behavioral and Brain Sciences,,
+191007255,International Review of Environmental and Resource Economics,1.0,International Review of Environmental and Resource Economics,,,International Review of Environmental and Resource Economics,International Review of Environmental and Resource Economics
 4394735610,ABAC Journal,1.0,ABAC Journal,,,,ABAC Journal
 4210208328,Built Environment Journal,1.0,Built Environment Journal,,,,Built Environment Journal
 4210202791,Humanistic Management Journal,1.0,Humanistic Management Journal,,,,Humanistic Management Journal
@@ -59,4 +59,4 @@ oa_source_idx,oa_title,jaro_winkler,registry_title,era_journal_name,harzing_jour
 4306528643,Rivista di storia economica,1.0,Rivista di Storia Economica,,,,Rivista di Storia Economica
 208089930,Sociologie du Travail,1.0,Sociologie du Travail,Sociologie du Travail,,,
 119620556,Research and Practice in Technology Enhanced Learning,1.0,Research and Practice in Technology Enhanced Learning,,,,Research and Practice in Technology Enhanced Learning
-4210185306,Recherches en Sciences de Gestion,1.0,Recherches en Sciences de Gestion,,,,Recherches en Sciences de Gestion
+59628311,Behavioral and Brain Sciences,1.0,Behavioral and Brain Sciences,,Behavioral and Brain Sciences,,
