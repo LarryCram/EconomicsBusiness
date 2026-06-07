@@ -5,9 +5,9 @@
 % ---------------------------------------------------------------
 
 
-A glossary of the terms used in the model is exhibited in Table~\ref{tab:parameters}. There are three structural arrangements: (1) blocks, picked by the unit mask $m$ and encoded as $1000 \rightarrow S$ (sources only), $0001 \rightarrow I$ (institutions only), $0110 \rightarrow B$ (bipartite) and $1111 \rightarrow J$ (joint), (2) subfields, picked from $\mathfrak{F}$ ($E, B, A, X$), and (3) census and target time windows, overlapped ($t_c=t_t$) and picked from the sets \[\{T_t: t = 1 \ldots 5\} = \{[2000, 2004], [2005, 2009], [2010, 2014], [2015,2019], [2020,2024]\}.\] These fully overlapping windows accumulate relatively more references to recent works. We also present a sensitivity analysis for the parameters $\rho,~\chi,~\omega,~\epsilon,~(\alpha,~\mu),~\rm{and}~t_c$, together with a bootstrap study of uncertainties. Results focus on $\mathbf{v}_S$ and $\mathbf{v}_I$, the source and institution influence vectors, derived from the ranking probability by Equation \ref{eq:vstar}. An instance of the model is designated using a subscript for the unit and superscripts as required to designate structural arrangements and parameters. For example, $\mathbf{v}_I^{S,E,T_5}$ is the institution influence vector for the $S$ ($m=1000$) block, $F=E$ (Economics), and census and target time windows 2020-2024. Throughout this work, logarithms are base 10.
+A glossary of the terms used in the model is exhibited in Table~\ref{tab:parameters}. There are three structural arrangements: (1) blocks, picked by the unit mask $m$ and encoded as $1000 \rightarrow S$ (sources only), $0001 \rightarrow I$ (institutions only), $0110 \rightarrow B$ (bipartite) and $1111 \rightarrow J$ (joint), (2) subfields, picked from $\mathfrak{F}$ ($E, B, A, X$), and (3) census and target time windows, overlapped ($t_c=t_t$) and picked from the sets \[\{T_t: t = 1 \ldots 5\} = \{[2000, 2004], [2005, 2009], [2010, 2014], [2015,2019], [2020,2024]\}.\] These fully overlapping windows `overcount' references to recent works in each window. We also present a sensitivity analysis for the parameters $\rho,~\chi,~\omega,~\epsilon,~(\alpha,~\mu),~\rm{and}~t_c$, a bootstrap study of work-induced ranking instability, and a Monte Carlo study of metadata errors. Results focus on $\mathbf{v}_S$ and $\mathbf{v}_I$, the source and institution influence vectors, derived from the ranking probability by Equation \ref{eq:vstar}. An instance of the model is designated using a subscript for the unit and superscripts as required to designate structural arrangements and parameters. For example, $\mathbf{v}_I^{S,E,T_5}$ is the institution influence vector for the $S$ ($m=1000$) block, $F=E$ (Economics), and census and target time windows 2020-2024. Throughout this work, logarithms are base 10.
 
-Figure~\ref{fig:fig_3by} compares influence values across the four unit masks. The $x$-direction is the ordinal rank of sources (left) and institutions (right) in the baseline (i.e. bipartite resolvent with $S \rightarrow I \rightarrow S,~\varepsilon=0,~\rho=0,~\omega=0,~\chi=0.5,~\alpha=1,~\mu=0,~T_5 = [2020-2024]$ and $F=EBAX,~\rm{all~subfields}$). The solid black curve traces the corresponding influence value $v$ in the $y$-direction. Units near $v=1$ have average influence, corresponding to rank position $\approx$15\% for sources and $\approx$25\% for institutions. For most sources and institutions, $v$ lies between  1 and 0.1. Overlaid on the bipartite source curve are $v_S^S$ (red: $S \rightarrow S$) and $v_S^J$ (green: joint $S+I \rightarrow S+I$). A point on the $x$-axis is the same unit in every case. For institutions, we show $v_I^I$ ($I \rightarrow I$) and $v_I^J$ (joint). Figure~\ref{fig:fig_3bz} is another view of these results, directly comparing bipartite $v^B$ and single-unit $v^{S,I}$ influence, and colouring points by subfield (see below).
+Figure~\ref{fig:fig_3by} compares influence values across the four unit masks. The $x$-direction is the ordinal rank of sources (left) and institutions (right) in the baseline (i.e. bipartite resolvent with $S \rightarrow I \rightarrow S,~\varepsilon=0,~\rho=0,~\omega=0,~\chi=0.5,~\alpha=1,~\mu=0,~T_5 = [2020-2024]$ and $F=EBAX,~\rm{all~subfields}$). The solid black curve traces the corresponding influence value $v$ in the $y$-direction. Units near $v=1$ lie near the work-count weighted average influence per work, corresponding to rank position $\approx$15\% for sources and $\approx$25\% for institutions. For most sources and institutions, $v$ lies between  1 and 0.1. Overlaid on the bipartite source curve are $v_S^S$ (red: $S \rightarrow S$) and $v_S^J$ (green: joint $S+I \rightarrow S+I$). A point on the $x$-axis is the same unit in every case. For institutions, we show $v_I^I$ ($I \rightarrow I$) and $v_I^J$ (joint). Figure~\ref{fig:fig_3bz} is another view of these results, directly comparing bipartite $v^B$ and single-unit $v^{S,I}$ influence, and colouring points by subfield (see below).
 
 \begin{figure}[!hbt]
   \centering
@@ -26,7 +26,7 @@ Notable features are the small proportion of high-$v$ units, the tightness of th
   x_i = -\sum_j X_{ij}\log X_{ij},
   \label{eq:row_evenness}
 \end{equation}
-with $J_i\in[0,1]$. If a row distributes references uniformly $J=1$, while concentration of references to one column gives $J=0$. The mean over all rows,
+with $J_i\in[0,1]$. If a row distributes references uniformly $J=1$, while concentration of references to one column over the row gives $J=0$. The mean over all rows,
 \begin{equation}
   \bar{J} = \frac{1}{n_{\text{row}}}\sum_i J_i,
   \label{eq:J_bar}
@@ -40,10 +40,31 @@ A similar measure $J_{\text{col}}$ applies to the mean column sums $p_j = \sum_i
 measures its variability, with $J_{\text{col}}=1$ when units receive equal reference in-flow and $J_{\text{col}}\to 0$ when references flow only to a few units. Note that $p_j$ is a version of the journal impact factor (JIF). 
 
 
-\input{../tables/table_kernel_structure}
+\begin{table}[htbp]
+\centering
+\caption{Shannon evenness and fan-out for the six citation kernels and the baseline model.
+  $\bar{J}$: mean row evenness; $J_{\text{col}}$: column evenness of the
+  marginal distribution; $\bar{K} = (n_{\text{col}})^{\bar{J}}$: geometric
+  mean fan-out (distinct targets per step).}
+\label{tab:kernel_structure}
+\begin{tabular}{lccc}
+\toprule
+Kernel & $\bar{J}$ & $J_{\text{col}}$ & $\bar{K}$ \\
+\midrule
+$C_{SS}$ & 0.47 & 0.90 & 32 \\
+$C_{II}$ & 0.73 & 0.95 & 256 \\
+$C_{SI}$ & 0.62 & 0.94 & 114 \\
+$C_{IS}$ & 0.62 & 0.84 & 97 \\
+\midrule
+$M_S$ & 0.81 & 0.84 & 389 \\
+\midrule
+$M_I$ & 0.91 & 0.93 & 960 \\
+\bottomrule
+\end{tabular}
+\end{table}
 
 
-Table~\ref{tab:kernel_structure} quantifies how, in one step, institutions spread outgoing references more broadly than sources ($\bar{J}_{II}=0.73$ vs $\bar{J}_{SS}=0.47$; fan-out $7.9\times$ larger), while receiving incoming references only slightly more broadly than sources ($J_{col, II}=0.95$ vs $J_{col, SS}=0.90$). In two-step kernels, $\mathbf{M}_S$ spreads references more evenly than $C_{SS}$ ($\bar{J}:$ 0.81 c.f. 0.47) while also narrowing the spread of incoming references ($J_{\text{col}}$: 0.83 c.f. 0.90). The bipartite round-trip spreads attention/influence broadly while rewarding the most-cited sources, raising $v$ for high-ranked sources as shown in Figs~\ref{fig:fig_3by} and \ref{fig:fig_3bz}: normalisation of influence then reduces $v$ for lower ranked sources. For institutions, $\mathbf{M}_I$ is more balanced ($\bar{J}=0.90$, $J_{\text{col}}=0.93$): bipartite paths make little difference compared with institution-only paths, although $v_I^I$ is slightly less than $v_I^B$ for the highest ranks. The joint resolvent covering the full citation matrix yields $v$ between the bipartite and single-unit value.
+Table~\ref{tab:kernel_structure} quantifies how, in one step, institutions spread outgoing references more broadly than sources ($\bar{J}_{II}=0.73$ vs $\bar{J}_{SS}=0.47$; fan-out $7.9\times$ larger), while receiving incoming references only slightly more broadly than sources ($J_{col, II}=0.95$ vs $J_{col, SS}=0.90$). In two-step kernels, $\mathbf{M}_S$ spreads references more evenly than $C_{SS}$ ($\bar{J}:$ 0.81 c.f. 0.47) while also narrowing the spread of incoming references ($J_{\text{col}}$: 0.83 c.f. 0.90). The bipartite round-trip spreads attention/influence broadly while rewarding the most-cited sources, raising $v$ for high-ranked sources as shown in Figs~\ref{fig:fig_3by} and \ref{fig:fig_3bz}: normalisation of influence then reduces $v$ for lower ranked sources. For institutions, $\mathbf{M}_I$ is more balanced ($\bar{J}=0.90$, $J_{\text{col}}=0.93$): bipartite paths make little difference compared with institution-only paths, although $v_I^I$ is slightly less than $v_I^B$ for the highest ranks. The joint block model covering the full citation matrix yields $v$ between the bipartite and single-unit value.
 
 \begin{figure}[!htb]
   \centering

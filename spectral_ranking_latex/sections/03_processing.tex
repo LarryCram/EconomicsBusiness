@@ -2,7 +2,7 @@
 % ---------------------------------------------------------------% ---------------------------------------------------------------
 \section{Corpus selection}
 \label{sec:sources}
-OpenAlex \citep{priemOpenAlexFullyopenIndex2022, alperinAnalysisSuitabilityOpenAlex2024a} provides our bibliometric data. Corpus selection starts with a list of eligible sources having three features: evidence from one of our journal registries that the source substantially 
+OpenAlex \citep{priemOpenAlexFullyopenIndex2022, alperinAnalysisSuitabilityOpenAlex2024a} provides our bibliometric data. We select the fields of economics and business due to their traditions of evaluative ranking of journals and institutions \citep[e.g.][]{liebowitzAssessingRelativeImpacts1984, boricPossibilitiesRankingBusiness2024}. Corpus selection starts with a list of eligible sources having three features: evidence from one of our journal registries that the source substantially 
 publishes economics or business research, an OpenAlex source identifier for corpus extraction, and a sufficient number of published works per year.
 
 The journal registries are as follows. Harzing's \textit{71st Edition of the Journal Quality List}~\cite[][JQL]{harzingJournalQualityList2024} assembles
@@ -23,13 +23,13 @@ The \textit{Scopus Source List}~\cite[][SSL]{ScopusSources2026} (March 2026 edit
 
 Every journal in JQL, SJL, JCR, and SSL has at least one ISSN, and may have several. These registry ISSNs are joined independently to the February 2026 OpenAlex sources snapshot using its list of ISSNs as the matching key and selecting only the `journal' source-type. Around 60 additional matches are identified by exact title matching for OpenAlex sources that lack an ISSN. We denote the union of matched OpenAlex sources OAS\textsuperscript{**}. Some of these sources publish mainly in fields such as sociology, psychology, technology, education or law. Using the OpenAlex topic/field entity, we drop sources with less than 40\% of their OpenAlex assigned field count in \textit{Economics, Econometrics, and Finance} or \textit{Business, Management and Accounting}. We denote the remaining sources OAS\textsuperscript{*}.
 
-Once the OAS\textsuperscript{*} sources list is established, we conduct a preliminary extract of work and authorship data to identify sources or institutions with few works over the period 2020-2024. Sorting sources by their works count, the relation between total dropped works and sources leads us to retain sources that publish on average $\tau_S \ge 10$ works/source/year. Sources retained above the threshold $\tau_S$ form the set OAS$^*$. Following the same steps for institutions, we truncate the long tail of low-output institutions by adopting a threshold of $\tau_I \ge 20$ works/institution/year. Many of the institutions removed at this point are fragments of larger institutions not blended by OpenAlex, or technology-focussed institutions with a small level of business scholarship. 
+Once the OAS\textsuperscript{*} sources list is established, we conduct a preliminary extract of work and authorship data to identify sources or institutions with few works over the period 2020-2024. Sorting sources by their works count, the relation between total dropped works and sources leads us to retain sources that publish on average $\tau_S \ge 10$ works/source/year. Sources retained above the threshold $\tau_S$ form the set OAS. Following the same steps for institutions, we truncate the long tail of low-output institutions by adopting a threshold of $\tau_I \ge 20$ works/institution/year. Many of the institutions removed at this point are fragments of larger institutions not blended by OpenAlex, or technology-focussed institutions with a small output of business scholarship. 
 
 Selecting sources and institutions that satisfy these thresholds, we extract works, authorships and reference lists published between 2000 and 2024, retaining works typed as article or review, and excluding works that are paratext, retracted, or without an authorship entity. We retain institutions from a work's authorship metadata if the OpenAlex institution type is education, nonprofit, government, or other, while excluding companies and funders. Although most results relate to the recent 5-year window 2020-2024, we choose the wider 2000--2024 time window to support our time-series and error analyses.
 
 \begin{table}[!htbp]
 \centering
-\caption{Registry and OpenAlex sources classified by field. The upper section counts each appearance in a registry and field. JQL: Harzing Journal Quality List; MJL: Web of Science Master Journal List; SJL: ERA Subject Journal List; SSL: Scopus Source List. E/B/A/X are assigned by the combined five-signal scoring. OAS$^{**}$ is the union of all registry sources matched to OpenAlex. OAS$^{*}$ drops sources whose OpenAlex topic content is less than 40\% economics or business. OAS drops sources publishing at a rate below $\tau_S$.}
+\caption{Registry and OpenAlex sources classified by field $E/B/A/X$. The upper section counts each appearance in a registry and field. JQL: Harzing Journal Quality List; MJL: Web of Science Master Journal List; SJL: ERA Subject Journal List; SSL: Scopus Source List. OAS$^{**}$ is the union of all registry sources matched to OpenAlex. OAS$^{*}$ drops sources whose OpenAlex topic content is less than 40\% economics or business. OAS drops sources publishing at a rate below $\tau_S$.}
 \label{tab:registry_overview}
 \begin{tabular}{lrrrrrrrr}
 \toprule
@@ -57,11 +57,10 @@ Within the broad field of Economics and Business, many sources publish works in 
 \end{itemize}
 Table~\ref{tab:registry_overview} summarises the number of matched sources in the registries by field, and indicates the effects of removing sources predominantly outside economics and business, or publishing few works in 2020-2024. 
 
-Institutions often host business and economics, so direct categorical
-classification is unsuitable. To indicate the balance of $E$ and $B$ for an institution
-we use the stochastic reference matrix $H_{SI}$ to relate an institution to already-classified sources. For each source~$s$, $H_{SI}[s,u]$ is the fraction of $s$'s reference weight directed at
-institution~$u$, counted without regard to the total output of the source. 
-The sum over sources, $f_{Fu}$, is the fraction of institution~$u$'s incoming reference weight from $F$-classified sources. These fractions are sorted and institutions assigned field labels by a quota rule: top 30\% by $f_{Xu}$ receive $X$; from the remainder, top 10\% by $f_{Au}$ receive $A$; the rest are split $E$:$B$ at a 5:8 ratio reflecting the source ratio, with $E$ preferred when $f_{Eu}\geq f_{Bu}$. Classification of institutions by subfield is no more than a weak tendency.
+Institutions often host both business and economics, and direct categorical classification is problematic. 
+To indicate the balance of $E$ and $B$ for an institution
+we use the stochastic reference matrix $H_{SI}$ to relate an institution to already-classified sources. For each source~$s$, $H_{SI}[s,u]$ is the fraction of $s$'s reference weight directed at institution~$u$. 
+The sum over sources in field $F$, $f_{Fu}$, is the fraction of institution~$u$'s incoming reference weight from $F$-classified sources. These fractions are sorted and institutions assigned field labels by a quota rule matched to the field-distribution of sources: top 30\% by $f_{Xu}$ receive $X$; from the remainder, top 10\% by $f_{Au}$ receive $A$; the rest are split $E$:$B$ at a 5:8 ratio reflecting the source ratio, with $E$ preferred when $f_{Eu}\geq f_{Bu}$. Classification of institutions by subfield describes no more than tendency.
 
 
 \begin{table}[!bt]

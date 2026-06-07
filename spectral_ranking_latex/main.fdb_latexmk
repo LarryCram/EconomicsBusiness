@@ -1,13 +1,13 @@
 # Fdb version 4
-["bibtex main"] 1780795008.62821 "main.aux" "main.bbl" "main" 1780795181.99921 0
-  "./MyLibrary.bib" 1780795019.89156 8449313 730c3bfccd8d75aab588f7b73f00e4aa ""
+["bibtex main"] 1780827981.7095 "main.aux" "main.bbl" "main" 1780827982.46109 0
+  "./MyLibrary.bib" 1780820138.66124 8451832 fb81766d354197d268f4e12ac3c9376d ""
   "./spbasic.bst" 1780225520.14021 33302 35ac3fab79f1cec44ebd6fdf11c82d97 ""
-  "main.aux" 1780795181.84333 25582 3925292e08bb68120b0cd4626a32e495 "pdflatex"
+  "main.aux" 1780827982.29472 25819 c65833db4f40b83c1968d7adf4bd4941 "pdflatex"
   (generated)
   "main.bbl"
   "main.blg"
   (rewritten before read)
-["pdflatex"] 1780795181.43663 "/home/lc/Projects/EconomicsBusiness/spectral_ranking_latex/main.tex" "main.pdf" "main" 1780795181.99937 0
+["pdflatex"] 1780827981.85218 "/home/lc/Projects/EconomicsBusiness/spectral_ranking_latex/main.tex" "main.pdf" "main" 1780827982.46123 0
   "../plots/enclave_referer_v.pdf" 1779079000.14524 257886 75a4b34a570cd6cea24d6ce5c10bad5b ""
   "../plots/fig_2c_latex.pdf" 1780023456.23881 155095 8d7825b7e474ff8211bab9a83b90a6b0 ""
   "../plots/fig_3by_latex.pdf" 1780023446.91711 84309 1b176eb41d173d5aebed45f4a02a2dde ""
@@ -18,7 +18,6 @@
   "../plots/fig_boot_envelope_resample_latex.pdf" 1780455674.64274 93924 136506a3e932a7f0d3bed0f9cf2385f8 ""
   "../plots/fig_boot_ratio_facet_latex.pdf" 1780455673.79014 250020 0f4eb418b0b00af68a08a97c4874f961 ""
   "../plots/fig_stability_scatter_latex.pdf" 1780028799.70759 40862 e7264c5423138bfcbd55605348a5e855 ""
-  "../tables/table_kernel_structure.tex" 1780627204.56915 653 0d425a011d79e0ef10add58873c6dc6b ""
   "/etc/texmf/web2c/texmf.cnf" 1758930642.66815 475 c0e671620eb5563b2130f56340a5fde8 ""
   "/home/lc/Projects/EconomicsBusiness/spectral_ranking_latex/main.tex" 1780792200.31878 2964 09629b4843b258217ed388385a81b850 ""
   "/usr/share/texlive/texmf-dist/fonts/map/fontname/texfonts.map" 1577235249 3524 cb3e574dea2d1052e39280babc910dc8 ""
@@ -218,15 +217,15 @@
   "/usr/share/texmf/web2c/texmf.cnf" 1707919699 40399 f2c302f7d2af602abb742093540a5834 ""
   "/var/lib/texmf/fonts/map/pdftex/updmap/pdftex.map" 1758930663.93464 5472669 54eaf61a88b6b7896ebd0dac973cb29c ""
   "/var/lib/texmf/web2c/pdftex/pdflatex.fmt" 1758930695 8214160 ef3c407b721d45435b6686ffb1511d5a ""
-  "main.aux" 1780795181.84333 25582 3925292e08bb68120b0cd4626a32e495 "pdflatex"
-  "main.bbl" 1780795008.77258 18699 ad244d97eb44129bddf10aaf5e867f78 "bibtex main"
-  "main.out" 1780795181.84433 1218 355d3297da9717b11c5ea7d95e4bcc0d "pdflatex"
+  "main.aux" 1780827982.29472 25819 c65833db4f40b83c1968d7adf4bd4941 "pdflatex"
+  "main.bbl" 1780827981.84833 19219 8909b95caeb25575ed4d16ffeb702e49 "bibtex main"
+  "main.out" 1780827982.29472 1218 355d3297da9717b11c5ea7d95e4bcc0d "pdflatex"
   "main.tex" 1780792200.31878 2964 09629b4843b258217ed388385a81b850 ""
   "sections/01_introduction.tex" 1780792617.64769 8135 3d3d9b6a4aec4c0aed9038d97c474741 ""
-  "sections/02_model_specification.tex" 1780795181.2886 18891 061b84a1b6e5fc9c933bba03c1279d27 ""
-  "sections/03_processing.tex" 1780625820.97602 9104 cac1d55c615a775976af93e1abc54701 ""
-  "sections/04_results.tex" 1780644242.53923 30914 65ff287c64f7b005609954a249f22eff ""
-  "sections/05_discussion.tex" 1780646757.74712 7118 41ba65afb62877c6a87fc3b2477e731f ""
+  "sections/02_model_specification.tex" 1780807060.98228 18995 3ad83b1d20339dfd3747413688604a0d ""
+  "sections/03_processing.tex" 1780815443.32523 9277 6851fd93ac073168068bb7bf6028aa8b ""
+  "sections/04_results.tex" 1780827980.13514 31651 f318a478ad1534b678c19d5d433df48c ""
+  "sections/05_discussion.tex" 1780827940.07292 7118 41ba65afb62877c6a87fc3b2477e731f ""
   "sections/06_prospects.tex" 1780646947.39949 2549 9b5c56341cfab9a098313393b966dd3d ""
   "sections/07_addenda.tex" 1780485092.66431 1123 f3be370d6bf442bbaab26fce2054718c ""
   (generated)
