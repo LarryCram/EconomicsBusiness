@@ -192,13 +192,26 @@ def compute_mode_scc(db, run_code: str, fx: str, tau_u: int, tau_s: int,
             inst_index, inst_index, (n_u, n_u),
         ) if m_II and n_u > 0 else csr_matrix((n_u, n_u))
 
+        # Drop units with zero combined in-degree or out-degree before SCC.
+        src_out = (np.asarray(C_SS.sum(axis=1)).ravel()
+                   + np.asarray(C_SI.sum(axis=1)).ravel())
+        src_in  = (np.asarray(C_SS.sum(axis=0)).ravel()
+                   + np.asarray(C_IS.sum(axis=0)).ravel())
+        inst_out = (np.asarray(C_IS.sum(axis=1)).ravel()
+                    + np.asarray(C_II.sum(axis=1)).ravel())
+        inst_in  = (np.asarray(C_SI.sum(axis=0)).ravel()
+                    + np.asarray(C_II.sum(axis=0)).ravel())
+
+        drop_zero_src  = src_ids[(src_out  == 0) | (src_in  == 0)] if n_s > 0 else np.array([], dtype=np.int64)
+        drop_zero_inst = inst_ids[(inst_out == 0) | (inst_in == 0)] if n_u > 0 else np.array([], dtype=np.int64)
+
         # Assemble combined matrix for SCC
         if needs_inst and n_u > 0:
             C_combined = sp_bmat([[C_SS, C_SI], [C_IS, C_II]], format='csr')
             _, labels = connected_components(C_combined, directed=True, connection='strong')
             giant = Counter(labels).most_common(1)[0][0]
-            drop_src  = src_ids[labels[:n_s] != giant]
-            drop_inst = inst_ids[labels[n_s:] != giant]
+            drop_src  = np.union1d(src_ids[labels[:n_s] != giant], drop_zero_src)
+            drop_inst = np.union1d(inst_ids[labels[n_s:] != giant], drop_zero_inst)
         else:
             # Source-only or institution-only
             C_combined = C_SS if n_s > 0 else C_II
@@ -207,11 +220,11 @@ def compute_mode_scc(db, run_code: str, fx: str, tau_u: int, tau_s: int,
             _, labels = connected_components(C_combined, directed=True, connection='strong')
             giant = Counter(labels).most_common(1)[0][0]
             if n_s > 0:
-                drop_src  = src_ids[labels != giant]
+                drop_src  = np.union1d(src_ids[labels != giant], drop_zero_src)
                 drop_inst = np.array([], dtype=np.int64)
             else:
                 drop_src  = np.array([], dtype=np.int64)
-                drop_inst = inst_ids[labels != giant]
+                drop_inst = np.union1d(inst_ids[labels != giant], drop_zero_inst)
 
         # Sentinels (idx==1) are never dropped regardless of SCC membership.
         drop_src  = drop_src[drop_src != 1]

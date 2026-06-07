@@ -5,16 +5,16 @@
 
 We begin by selecting $N_S$ sources $\mathfrak{S}$ in a set of fields, disciplines or categories $\mathfrak{F}$. Then we select $N_w$ works $\mathfrak{W}$ published in $\mathfrak{S}$ within the census
 window years $t_c = [t^c_0, t^c_1]$ or target years $t_t = [t^t_0, t^t_1]$. Author affiliations in $\mathfrak{W}$ establish a set of institutions $\mathfrak{I}'$ and
-authors $\mathfrak{A}'$. From the reference lists of the set of census works $\mathfrak{W}^c$ we identify the set of target works $\mathfrak{W}^t$ and form the filtered reference set
+authors $\mathfrak{A}'$. From the reference lists of the set of census works $\mathfrak{W}^c$ we identify the set of target works $\mathfrak{W}^t$ and form the filtered corpus reference set
 $\mathfrak{R}=\{r(i,j):w_i\in\mathfrak{W}^c,\,w_j\in\mathfrak{W}^t\}$.
 
 In practice many institutions and some sources publishing only
 a few works per year can be dropped from the corpus. We specify 
-the threshold numbers of works per year that must be attained by institutions and sources ($\tau_I, \tau_S$), with $\mathfrak{I}\subseteq\mathfrak{I}'$ and $\mathfrak{S}\subseteq\mathfrak{S}'$ as the surviving sets. Works that lose all their authorships under the institution filter, or whose source is dropped by the source filter, are removed from the corpus. 
+the threshold numbers of works per year that must be attained by institutions ($\tau_I$) and sources ($\tau_S$), with $\mathfrak{I}\subseteq\mathfrak{I}'$ and $\mathfrak{S}\subseteq\mathfrak{S}'$ as the surviving sets. Works that lose all their authorships under the institution filter, or whose source is dropped by the source filter, are removed from the corpus. 
 
-References from census works in $\mathfrak{W}^c$ to works outside $\mathfrak{W}^t$, or from works outside $\mathfrak{W}^c$ to target works in $\mathfrak{W}^t$, may be discarded. This is denoted by the flag $\varepsilon = 0$.  Alternatively, these exogenous works can be represented as members of a pair of \emph{sentinel} units: a fictitious external source $s_0\notin\mathfrak{S}$ and a fictitious external institution $i_0\notin\mathfrak{I}$, each hosting the totality of works beyond the corpus. This is denoted by the flag $\varepsilon = 1$. The sentinels enter the citation matrix and the eigenvector computation (see below) but their influence values are not reported. The fraction of unit $p$'s normalised reference weight directed at or received from $s_0$ or $i_0$ is its \emph{external balance}: a diagnostic for how strongly $p$'s output and input reach beyond the corpus boundary.
+The corpus reference set $\mathfrak{R}$ does not include references from census works in $\mathfrak{W}^c$ to works outside $\mathfrak{W}^t$, or from works outside $\mathfrak{W}^c$ to target works in $\mathfrak{W}^t$. These exogenous connections can be discarded, as signified by the binary mask $\varepsilon=0$. Alternatively, the connections can be represented by links to members of a pair of \emph{sentinel} units: a fictitious external source $s_0\notin\mathfrak{S}$ and a fictitious external institution $i_0\notin\mathfrak{I}$, each hosting the totality of works beyond the corpus. This is denoted by the flag $\varepsilon = 1$. The sentinels enter the citation matrix and the eigenvector computation (see below) but their influence values are not reported. The fraction of a unit's normalised reference weight directed at or received from $s_0$ or $i_0$ is its \emph{external balance}, indicating how strongly the work's references and citations reach beyond the corpus boundary.
 
-Let $\mathfrak{R} = {(i,j) : w_i \in \mathfrak{W}^c, w_j \in \mathfrak{W}^t}$ be the set of within-corpus reference pairs. $R_i = |{j : (i,j)\in\mathfrak{R}}|$ is the number of such references from work $w_i$, and $\bar{R} = |\mathfrak{R}|/N_w$ the mean of $R_i$ over $\mathfrak{W}$. Since within-corpus reference lists have different lengths, we consider two cases for weighting them, selected by a binary mask $\rho$:
+Let $R_i = |{j : (i,j)\in\mathfrak{R}}|$ be the number of corpus references from work $w_i$, and $\bar{R} = |\mathfrak{R}|/N_w$ the mean of $R_i$ over $\mathfrak{W}$. Since within-corpus reference lists have different lengths, we consider two cases for weighting them, selected by a binary mask $\rho$:
 \begin{equation}
 	\rho_i \;=\;
 	\begin{cases}
@@ -28,14 +28,17 @@ the prominence; under fractional reference counting every work's filtered refere
 equally \citep{zittModifyingJournalImpact2008}.
 
 A work has a retained source and one or more institutions. For journal ranking it is straightforward to link the work to its journal. When sources and institutions are considered together, fractionation of institutions and the fractionation between journal and institutions must be considered. 
-There are two common models for fractionating a work's institutions (i.e. the \textit{institution weight}), signified by the binary mask $\omega$:
+There are two common models for fractionating a work's institutions (i.e. the \textit{institution weight}), selected by the binary mask $\omega$:
 \begin{equation}
   \omega_{ix} \;=\;
   \begin{cases}
-  \displaystyle\sum_{\ell:\,x\in\mathcal{I}_{i\ell}}
-  \frac{1}{a_i}\,\frac{1}{x_{i\ell}}, & \text{(author-fractional, $\omega=1$)} \\[10pt]
-  \dfrac{1}{n_i}, & \text{(institution-fractional, $\omega=0$).}
-  \end{cases}
+
+    \dfrac{1}{n_i}, & \text{(institution-fractional, $\omega=0$).} \\[10pt]
+
+	\displaystyle\sum_{\ell:\,x\in\mathcal{I}_{i\ell}}
+    \frac{1}{a_i}\,\frac{1}{x_{i\ell}}, & \text{(author-fractional, $\omega=1$)} 
+ 
+	\end{cases}
   \label{eq:omega}
 \end{equation}
 Here, $\mathcal{I}_{i\ell}$ is the set of institutions of author $\ell$ of work $w_i$, $x_{i\ell}=|\mathcal{I}_{i\ell}|$ is its cardinality, $a_i$ is the author count of work $w_i$, and $n_i = |\bigcup_\ell \mathcal{I}_{i\ell}|$ is the number of distinct institutions of work $w_i$. Authorships with no institution are automatically excluded, so $x_{i\ell}\ge 1$, and under author-fractional counting $\sum_x\omega_{ix}=1$ \citep{waltmanFieldnormalizedCitationImpact2015}. Institution pruning below the annual output threshold $\tau_I$ precedes fractional counting; this choice boosts a work's remaining institutions but diminishes the work's total contribution when some institutions are dropped.
@@ -84,7 +87,7 @@ is bibliometrically meaningful for source-only $(1000)$, institution-only $(0001
 bipartite $(0110)$, and joint-full $(1111)$ combined blocks.
 The institution-source fractionation $\chi$ weights the bipartite and joint masks.
 
-Let $r_p=\sum_q C_{pq}$ be the sum of fractionated references given by unit $p$
+Let $r_p=\sum_q C_{pq}$ be the row sum of fractionated references given by unit $p$
 and $\mathbf{D}_r=\mathrm{diag}(r_p)$ the corresponding diagonal matrix.
 Row-normalising $\mathbf{C}$ gives the row semi-stochastic matrix
 $\mathbf{H}=\mathbf{D}_r^{-1}\mathbf{C}$, ensuring that, when $\rho = 0$, differences in reference intensity across units are removed. They are reintroduced later
@@ -108,7 +111,7 @@ Markov chain with transition matrix $\mathbf{H}$, and that it coincides
 with the \textit{influence weight} of \cite{pinskiCitationInfluenceJournal1976}
 scaled by the reference-count proportion $r_p / \sum_q r_q$.
 
-Working with a binary choice matrix whose products count the length of chains, \cite{katzNewStatusIndex1953} proposed attenuating chains of length $k$ by a factor $\alpha^k$, $\alpha\in(0,1)$, so that distant links count for less than proximate ones. The same procedure applies to chains between distant units as products of the citation matrix. 
+Working with a binary choice matrix whose products count the length of chains, \cite{katzNewStatusIndex1953} proposed attenuating chains of length $k$ by a factor $\alpha^k$, $\alpha\in(0,1)$, so that distant links count for less than proximate ones. The same procedure applies to chains between distant units as products of the citation matrix. . In its original historical formulation, Katz set the boundary condition \citep{vignaSpectralRanking2016} to the uniform vector $\mathbf{1}$, leaving the eigenvector unnormalised.
 Summing chains of all lengths and endowing every unit with a
 uniform initial score of $1$ yields the Katz resolvent equation
 \[
@@ -123,8 +126,7 @@ the standing of units independently of the reference matrix structure,
 \[
 	(\mathbf{I} - \alpha\mathbf{H}^\top)\boldsymbol{\pi}_\text{Hubbell} = \boldsymbol{\mu}.
 \]
-We explore two priors, normalised so that $\mathbf{1}^\top\boldsymbol{\mu}=1$:
-$\mu_p = 1/N$ for every unit $p\in\mathfrak{P}$ (uniform prior) and $\mu_p=1/(2N_S)$ for sources and $\mu_p=1/(2N_I)$ for institutions (unit-weighted prior). Because Hubbell adopts an `input-output' viewpoint, $\mathbf{1}^\top\boldsymbol{\pi}_{\text{Hubbell}} = (1-\alpha)^{-1}$. 
+We explore two priors, normalised so that $\mathbf{1}^\top\boldsymbol{\mu}=1$:  for every unit $p\in\mathfrak{P}$ either $\mu_p = 1/(N_S+N_I)$ (uniform prior) or $\mu_p=1/(2N_S)$ for sources and $\mu_p=1/(2N_I)$ for institutions (unit-weighted prior). Because Hubbell adopts an `input-output' viewpoint, $\mathbf{1}^\top\boldsymbol{\pi}_{\text{Hubbell}} = (1-\alpha)^{-1}$. 
 Note that if $\alpha < 1$ and $\boldsymbol{\mu}=\boldsymbol{0}$ the resolvent $(\mathbf{I}-\alpha\mathbf{H}^\top)\boldsymbol{\pi}=\mathbf{0}$ admits only the trivial solution $\boldsymbol{\pi}=\mathbf{0}$ and is not useful as a ranking.
 
 Combining these approaches and scaling the exogenous prior by the attenuation rate $(1-\alpha)$ yields the general (Katz--Hubbell) resolvent equation
@@ -156,13 +158,12 @@ The \emph{influence} $v_p$ is computed as \citep{palacios-huertaMeasurementIntel
 	\label{eq:vstar}
 \end{equation}
 i.e.\ $v_p = (A/a_p)\,\pi_p$. 
-Here, the unit work count $a_p = |\{i:w_i\in p\}|$ where $p$ is a specific source or institution,
-and $\boldsymbol{\pi}$ denotes the solution to \eqref{eq:spectral}.
+Here, the unit work count $a_p = |\{i:w_i\in p\}|$ where $p$ is a specific source or institution, $A$ is the total number of works, and $\boldsymbol{\pi}$ denotes the solution to \eqref{eq:spectral}.
 The scalar $A$ normalises $\mathbf{v}$ so that its $a_p$-weighted mean equals one:
 $\mathbf{a}^{\top}\mathbf{v}/A=\mathbf{1}^{\top}\boldsymbol{\pi}=1$.
-This normalisation provides interpretable cardinal values: a unit with $v_p=1$ has the corpus-average influence, and
+This normalisation provides interpretable cardinal values \citep{stevensTheoryScalesMeasurement1946a}: a unit with $v_p=1$ has the corpus-average influence, and
 $v_p=2$ indicates twice the corpus-average influence.  The quantity $v$ is the counterpart of influence per publication \citep{pinskiCitationInfluenceJournal1976} and article influence score 
-\cite{bergstromEigenfactorMetricsFigure2008}.
+\citep{bergstromEigenfactorMetricsFigure2008}.
 \cite{palacios-huertaMeasurementIntellectualInfluence2004} show that
 $\mathbf{v}$ is uniquely characterised by reasonable axioms, although \cite{serranoMeasurementIntellectualInfluence2004} provides an impossibility result via a reasonable additional axiom that breaks the uniqueness.
 
@@ -203,7 +204,7 @@ Replacing $\boldsymbol{\pi}_I$ in the first equation gives
 \[
 (\mathbf{I} - \alpha \mathbf{M}_S^{\top})\,\boldsymbol{\pi}_S = (1-\sqrt{\alpha})\Bigl(\boldsymbol{\mu}_S + \sqrt{\alpha}\,\mathbf{H}_{IS}^{\top}\,\boldsymbol{\mu}_I\Bigr) .
 \]
-When $\alpha<1$ and $\boldsymbol{\mu}\ne\mathbf{0}$, the right-hand side links institutions to sources via $\mathbf{H}_{IS}^\top$. The institution ranking follows directly as the matrix--vector product
+When $\alpha<1$ and $\boldsymbol{\mu}\ne\mathbf{0}$, the right-hand side links the institution and source priors via $\mathbf{H}_{IS}^\top$. The institution ranking follows directly as the matrix--vector product
 \begin{equation}
   \boldsymbol{\pi}_I
   \;=\;

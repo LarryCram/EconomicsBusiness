@@ -88,7 +88,7 @@ def _make_mu(mu_type: str, n_s: int, n_u: int) -> 'np.ndarray | None':
     Construct prior vector for Katz–Hubbell iteration.
 
     'uniform'     — μ_p = 1/(N_S+N_U) for all units  (Katz uniform prior)
-    'unit_scaled' — μ_p = 1/N_S for sources, 1/N_U for institutions
+    'unit_scaled' — μ_p = 1/(2N_S) for sources, 1/(2N_I) for institutions (sums to 1)
     ''            — None (Perron / alpha=1 path)
     """
     if not mu_type:
@@ -98,8 +98,8 @@ def _make_mu(mu_type: str, n_s: int, n_u: int) -> 'np.ndarray | None':
         return np.full(N, 1.0 / N, dtype=np.float64)
     elif mu_type == 'unit_scaled':
         return np.concatenate([
-            np.full(n_s, 1.0 / n_s, dtype=np.float64),
-            np.full(n_u, 1.0 / n_u, dtype=np.float64),
+            np.full(n_s, 0.5 / n_s, dtype=np.float64),
+            np.full(n_u, 0.5 / n_u, dtype=np.float64),
         ])
     else:
         raise ValueError(

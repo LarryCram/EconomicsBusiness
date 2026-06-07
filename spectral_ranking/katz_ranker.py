@@ -345,7 +345,7 @@ def bipartite(
         raise ValueError(
             "bipartite(): mu must be provided when alpha < 1. "
             "Use mu_type='uniform' (μ = 1/N for all N_s+N_u units) or "
-            "'unit_scaled' (μ = 1/N_S for sources, 1/N_U for institutions)."
+            "'unit_scaled' (μ = 1/(2N_S) for sources, 1/(2N_I) for institutions, sums to 1)."
         )
 
     # One-mode projection: M_S = H_SI @ H_IS  (N_s × N_s)
@@ -476,7 +476,7 @@ def rank(csr_data, m: tuple, chi: float, alpha: float,
         alpha < 1.  Ignored (must be None) when alpha = 1.
         Two standard choices (constructed by run_rankings._make_mu):
           'uniform'     — μ_p = 1/(N_S+N_U)  for all units  (Katz)
-          'unit_scaled' — μ_p = 1/N_S for sources, 1/N_U for institutions
+          'unit_scaled' — μ_p = 1/(2N_S) for sources, 1/(2N_I) for institutions
 
     Returns
     -------

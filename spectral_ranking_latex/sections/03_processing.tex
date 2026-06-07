@@ -27,10 +27,9 @@ Once the OAS\textsuperscript{*} sources list is established, we conduct a prelim
 
 Selecting sources and institutions that satisfy these thresholds, we extract works, authorships and reference lists published between 2000 and 2024, retaining works typed as article or review, and excluding works that are paratext, retracted, or without an authorship entity. We retain institutions from a work's authorship metadata if the OpenAlex institution type is education, nonprofit, government, or other, while excluding companies and funders. Although most results relate to the recent 5-year window 2020-2024, we choose the wider 2000--2024 time window to support our time-series and error analyses.
 
-
 \begin{table}[!htbp]
 \centering
-\caption{CHECK CHECK CHECK numbers Registry and OpenAlex sources classified by field. The upper section shows counts by registry and field. JQL: Harzing Journal Quality List; MJL: Web of Science Master Journal List; SJL: ERA Subject Journal List; SSL: Scopus Source List. A source appearing in multiple registries is counted in each. E/B/A/X are assigned by the combined five-signal scoring. OAS$^{**}$ is the union of all registry sources matched to OpenAlex. OAS$^{*}$ drops sources whose OpenAlex topic content is less than 40\% economics or business. OAS drops sources publishing below $\tau_S$.}
+\caption{Registry and OpenAlex sources classified by field. The upper section counts each appearance in a registry and field. JQL: Harzing Journal Quality List; MJL: Web of Science Master Journal List; SJL: ERA Subject Journal List; SSL: Scopus Source List. E/B/A/X are assigned by the combined five-signal scoring. OAS$^{**}$ is the union of all registry sources matched to OpenAlex. OAS$^{*}$ drops sources whose OpenAlex topic content is less than 40\% economics or business. OAS drops sources publishing at a rate below $\tau_S$.}
 \label{tab:registry_overview}
 \begin{tabular}{lrrrrrrrr}
 \toprule
@@ -58,10 +57,41 @@ Within the broad field of Economics and Business, many sources publish works in 
 \end{itemize}
 Table~\ref{tab:registry_overview} summarises the number of matched sources in the registries by field, and indicates the effects of removing sources predominantly outside economics and business, or publishing few works in 2020-2024. 
 
-Institutions generally publish in multiple subfields, so direct categorical
+Institutions often host business and economics, so direct categorical
 classification is unsuitable. To indicate the balance of $E$ and $B$ for an institution
 we use the stochastic reference matrix $H_{SI}$ to relate an institution to already-classified sources. For each source~$s$, $H_{SI}[s,u]$ is the fraction of $s$'s reference weight directed at
 institution~$u$, counted without regard to the total output of the source. 
-The sum over sources, $f_{Fu}$, is the fraction of institution~$u$'s incoming reference weight from $F$-classified sources. These fractions are sorted and institutions assigned field labels by a quota rule: top 30\% by $f_{Xu}$ receive $X$; from the remainder, top 10\% by $f_{Au}$ receive $A$; the rest are split $E$:$B$ at a 5:8 ratio reflecting the source ratio, with $E$ preferred when $f_{Eu}\geq f_{Bu}$. Classification of institutions by subfield is no more than a weak tendency since institutions often host both economics and business.
+The sum over sources, $f_{Fu}$, is the fraction of institution~$u$'s incoming reference weight from $F$-classified sources. These fractions are sorted and institutions assigned field labels by a quota rule: top 30\% by $f_{Xu}$ receive $X$; from the remainder, top 10\% by $f_{Au}$ receive $A$; the rest are split $E$:$B$ at a 5:8 ratio reflecting the source ratio, with $E$ preferred when $f_{Eu}\geq f_{Bu}$. Classification of institutions by subfield is no more than a weak tendency.
 
+
+\begin{table}[!bt]
+  \centering
+  \caption{Glossary.}
+  \label{tab:parameters}
+  \renewcommand{\arraystretch}{1.00} %1.25}
+  \begin{tabular}{@{}clcc@{}}
+    \hline
+    Parameter & Description & Baseline \\
+    \hline
+    \multicolumn{3}{@{}l}{\textit{Corpus construction}} \\[2pt]
+    $\tau_S$ & Threshold works/source/year & 10 \\
+    $\tau_I$ & Threshold works/institution/year & 20 \\
+    $F$      & Fields: $E$ (economics), $B$ (business), $A$ (ambiguous),
+               $X$ (none) & $EBAX$ \\
+    $t_c$    & Census window: publication years of referencing works & 2020--2024 \\
+    $t_t$    & Target window: publication years of referenced works & 2020--2024 \\[4pt]
+    \multicolumn{3}{@{}l}{\textit{Reference matrix assembly}} \\[2pt]
+    $\rho$   & Reference-list weights: $\rho=0$, normalise by $\bar{R}/R_i$; $\rho=1$, raw counts & 0 \\
+    $\omega$ & Institution weight flag: $\omega=0$ equal-shares; $\omega=1$ author-fractionation & 0 \\
+    $\mathbf{m}$ & Block mask: $1000$-S only, $0001$-I only,
+               $1111$=joint, $0110$=bipartite & 0110 \\
+    $\chi$   & Source--institution mixing weight: $\chi=0.5$ or $\chi^*=N_I/(N_S+N_I)$ & 0.5 \\
+    $\varepsilon$ & Sentinel flag: $\varepsilon=0$ - within-corpus only;
+               $\varepsilon=1$ - include sentinel units & 0 \\[4pt]
+    \multicolumn{3}{@{}l}{\textit{Resolvent}} \\[2pt]
+    $\alpha$ & Damping parameter: $\alpha=1$ - Perron--Frobenius; $\alpha<1$ - Katz--Hubbell & 1 \\
+    $\mu$    & Prior with $\alpha<1$: uniform $1/(N_S+N_I)$ or $\mu=1/2N_S, 1/2N_I$ & n.a. \\
+    \hline
+  \end{tabular}
+\end{table}
 

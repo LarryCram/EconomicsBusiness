@@ -550,6 +550,21 @@ def filter_singletons(db, run_code: str, fx: str, tau_u: int, tau_s: int,
             f"SELECT citer_inst_idx, cited_inst_idx, COUNT(*) FROM {tname} GROUP BY 1,2",
             inst_index, inst_index, (n_u, n_u))
 
+        # Drop units with zero combined in-degree or out-degree before SCC.
+        # These are guaranteed non-SCC members, but checking explicitly avoids
+        # inflating singleton-SCC counts in the label histogram.
+        src_out = (np.asarray(C_SS.sum(axis=1)).ravel()
+                   + np.asarray(C_SI.sum(axis=1)).ravel())
+        src_in  = (np.asarray(C_SS.sum(axis=0)).ravel()
+                   + np.asarray(C_IS.sum(axis=0)).ravel())
+        inst_out = (np.asarray(C_IS.sum(axis=1)).ravel()
+                    + np.asarray(C_II.sum(axis=1)).ravel())
+        inst_in  = (np.asarray(C_SI.sum(axis=0)).ravel()
+                    + np.asarray(C_II.sum(axis=0)).ravel())
+
+        drop_zero_src  = src_ids[(src_out  == 0) | (src_in  == 0)]
+        drop_zero_inst = inst_ids[(inst_out == 0) | (inst_in == 0)]
+
         # Single SCC on the full node set: sources 0..n_s-1, institutions n_s..n_s+n_u-1.
         # Using C_full (all four blocks) means connectivity through any path —
         # SS, SI, IS, II — is respected.  A source with no SS edges but SI/IS
@@ -559,8 +574,8 @@ def filter_singletons(db, run_code: str, fx: str, tau_u: int, tau_s: int,
         C_full = sp_bmat([[C_SS, C_SI], [C_IS, C_II]], format='csr')
         _, labels_full = connected_components(C_full, directed=True, connection='strong')
         giant_full = Counter(labels_full).most_common(1)[0][0]
-        drop_src  = src_ids[labels_full[:n_s] != giant_full]
-        drop_inst = inst_ids[labels_full[n_s:] != giant_full]
+        drop_src  = np.union1d(src_ids[labels_full[:n_s] != giant_full], drop_zero_src)
+        drop_inst = np.union1d(inst_ids[labels_full[n_s:] != giant_full], drop_zero_inst)
 
         # Sentinels (idx==1) are never dropped regardless of SCC membership.
         drop_src  = drop_src[drop_src != 1]

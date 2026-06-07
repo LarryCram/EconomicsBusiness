@@ -106,3 +106,6 @@ Brinkin
 Bibliometric-based
 misattribution
 normalise
+HRank
+Franceschet
+unnormalised
