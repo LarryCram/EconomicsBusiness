@@ -110,5 +110,8 @@ Known confirmed errors in corpus (wrong institution absorbing papers from a famo
 
 Detection algorithm: flag corpus institutions whose `display_name_alternatives` contains the exact `display_name` of another corpus institution with >2× the works. Catches alias-based errors; name-similarity errors (John Brown) require manual inspection of suspicious spectral ranks with low KH median ranks.
 
+## Anomalous institution rankings (not errors)
+- **University of Puerto Rico System** (inst_idx=200399037) — ranks 8th in combined EB II (v≈4.78). **Not an OA error.** High rank is a single-researcher effect: Justin Paul (researcher) holds a genuine UPR affiliation and is an extremely prolific, highly-cited SLR methodology author. His papers drive the anomalous h-index (333) and citation count (975k) for this institution. Flag in institution ranking interpretation but do not exclude from corpus.
+
 ## Machines
 Two home Linux machines plus HPC. Code and LaTeX sync via GitHub. Data moves via portable SSD.

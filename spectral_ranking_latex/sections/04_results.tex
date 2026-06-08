@@ -7,7 +7,7 @@
 
 A glossary of the terms used in the model is exhibited in Table~\ref{tab:parameters}. There are three structural arrangements: (1) blocks, picked by the unit mask $m$ and encoded as $1000 \rightarrow S$ (sources only), $0001 \rightarrow I$ (institutions only), $0110 \rightarrow B$ (bipartite) and $1111 \rightarrow J$ (joint), (2) subfields, picked from $\mathfrak{F}$ ($E, B, A, X$), and (3) census and target time windows, overlapped ($t_c=t_t$) and picked from the sets \[\{T_t: t = 1 \ldots 5\} = \{[2000, 2004], [2005, 2009], [2010, 2014], [2015,2019], [2020,2024]\}.\] These fully overlapping windows `overcount' references to recent works in each window. We also present a sensitivity analysis for the parameters $\rho,~\chi,~\omega,~\epsilon,~(\alpha,~\mu),~\rm{and}~t_c$, a bootstrap study of work-induced ranking instability, and a Monte Carlo study of metadata errors. Results focus on $\mathbf{v}_S$ and $\mathbf{v}_I$, the source and institution influence vectors, derived from the ranking probability by Equation \ref{eq:vstar}. An instance of the model is designated using a subscript for the unit and superscripts as required to designate structural arrangements and parameters. For example, $\mathbf{v}_I^{S,E,T_5}$ is the institution influence vector for the $S$ ($m=1000$) block, $F=E$ (Economics), and census and target time windows 2020-2024. Throughout this work, logarithms are base 10.
 
-Figure~\ref{fig:fig_3by} compares influence values across the four unit masks. The $x$-direction is the ordinal rank of sources (left) and institutions (right) in the baseline (i.e. bipartite resolvent with $S \rightarrow I \rightarrow S,~\varepsilon=0,~\rho=0,~\omega=0,~\chi=0.5,~\alpha=1,~\mu=0,~T_5 = [2020-2024]$ and $F=EBAX,~\rm{all~subfields}$). The solid black curve traces the corresponding influence value $v$ in the $y$-direction. Units near $v=1$ lie near the work-count weighted average influence per work, corresponding to rank position $\approx$15\% for sources and $\approx$25\% for institutions. For most sources and institutions, $v$ lies between  1 and 0.1. Overlaid on the bipartite source curve are $v_S^S$ (red: $S \rightarrow S$) and $v_S^J$ (green: joint $S+I \rightarrow S+I$). A point on the $x$-axis is the same unit in every case. For institutions, we show $v_I^I$ ($I \rightarrow I$) and $v_I^J$ (joint). Figure~\ref{fig:fig_3bz} is another view of these results, directly comparing bipartite $v^B$ and single-unit $v^{S,I}$ influence, and colouring points by subfield (see below).
+Figure~\ref{fig:fig_3by} compares influence values across the four unit masks. The $x$-direction is the ordinal rank of sources (left) and institutions (right) in the baseline (i.e. bipartite resolvent with $S \rightarrow I \rightarrow S,~\varepsilon=0,~\rho=0,~\omega=0,~\chi=0.5,~\alpha=1,~\mu=0,~T_5 = [2020-2024]$ and $F=EBAX,~\rm{all~subfields}$). The solid black curve traces the corresponding baseline influence value $v$ in the $y$-direction. Units near $v=1$ lie near the work-count weighted average influence per work, corresponding to rank position $\approx$15\% for sources and $\approx$25\% for institutions. For most sources and institutions, $v$ lies between  1 and 0.1. Overlaid on the bipartite source curve are $v_S^S$ (red: $S \rightarrow S$) and $v_S^J$ (green: joint $S+I \rightarrow S+I$). A point on the $x$-axis is the same unit in every case. For institutions, we show $v_I^I$ ($I \rightarrow I$) and $v_I^J$ (joint). 
 
 \begin{figure}[!hbt]
   \centering
@@ -31,14 +31,13 @@ with $J_i\in[0,1]$. If a row distributes references uniformly $J=1$, while conce
   \bar{J} = \frac{1}{n_{\text{row}}}\sum_i J_i,
   \label{eq:J_bar}
 \end{equation}
-is relatively large when outward references are dispersed evenly across the whole corpus. The fan-out $\bar{K} = (n_{\text{col}})^{\bar{J}}$ converts normalised row evenness to a count: the geometric mean number of distinct targets reached in one step over the Markov matrix.
+is relatively large when outward references are dispersed evenly across the whole corpus. The fan-out $\bar{K} = (n_{\text{col}})^{\bar{J}}$ converts normalised row evenness to a count: the geometric mean number of effective targets reached in one step over the Markov matrix.
 A similar measure $J_{\text{col}}$ applies to the mean column sums $p_j = \sum_iX_{ij} / n_{\text{row}}$. Because X is row-stochastic, $p_j$ is a valid marginal distribution and
 \begin{equation}
   J_{\text{col}} = \frac{-\sum_j p_j \log p_j}{\log n_{\text{col}}},
   \label{eq:J_col}
 \end{equation}
 measures its variability, with $J_{\text{col}}=1$ when units receive equal reference in-flow and $J_{\text{col}}\to 0$ when references flow only to a few units. Note that $p_j$ is a version of the journal impact factor (JIF). 
-
 
 \begin{table}[htbp]
 \centering
@@ -63,32 +62,39 @@ $M_I$ & 0.91 & 0.93 & 960 \\
 \end{tabular}
 \end{table}
 
-
 Table~\ref{tab:kernel_structure} quantifies how, in one step, institutions spread outgoing references more broadly than sources ($\bar{J}_{II}=0.73$ vs $\bar{J}_{SS}=0.47$; fan-out $7.9\times$ larger), while receiving incoming references only slightly more broadly than sources ($J_{col, II}=0.95$ vs $J_{col, SS}=0.90$). In two-step kernels, $\mathbf{M}_S$ spreads references more evenly than $C_{SS}$ ($\bar{J}:$ 0.81 c.f. 0.47) while also narrowing the spread of incoming references ($J_{\text{col}}$: 0.83 c.f. 0.90). The bipartite round-trip spreads attention/influence broadly while rewarding the most-cited sources, raising $v$ for high-ranked sources as shown in Figs~\ref{fig:fig_3by} and \ref{fig:fig_3bz}: normalisation of influence then reduces $v$ for lower ranked sources. For institutions, $\mathbf{M}_I$ is more balanced ($\bar{J}=0.90$, $J_{\text{col}}=0.93$): bipartite paths make little difference compared with institution-only paths, although $v_I^I$ is slightly less than $v_I^B$ for the highest ranks. The joint block model covering the full citation matrix yields $v$ between the bipartite and single-unit value.
 
+\subsection{Business and Economics}
+
+With this understanding of the role of unit masking, we now explore the effects of subfields. For clarity, in this subsection we restrict consideration to $E$ and $B$ units only (no $A$ or $X$), including the baseline model.  To focus on the effects of subfields, we first set aside bipartite ranking. Figure~\ref{fig:combined_vs_separate} compares source-only ($m=1000$) and institution-only ($m=0001$) ranking for $E$-only and $B$-only subfields ($y$-axis) with the combined fields $E+B$ ($x$-axis).
 \begin{figure}[!htb]
   \centering
-  \includegraphics[width=0.8\textwidth]{../plots/fig_3bz_latex.pdf}
-  \caption{Bipartite vs within-unit influence for the full corpus: economics and business sources delineate separately when ranked together.
-    Sources (left): $\log v_S^S$ vs $\log v_S^B$.
-    Institutions (right): $\log v_I^I$ vs $\log v_I^B$.
-    Points coloured by subfield (E, B, A, X).}
-  \label{fig:fig_3bz}
+  \includegraphics[width=\textwidth]{../plots/fig_3eb_latex.pdf}
+  \caption{Combined vs.\ separate field single-unit rankings for sources (left)
+    and institutions (right).
+    The $x$-axis is the combined $F{=}EB$ spectral ranking ($m{=}1000$ for sources,
+    $m{=}0001$ for institutions); the $y$-axis is the ranking computed within each
+    field separately ($F{=}E$ or $F{=}B$, same mode).
+    Points above the diagonal gain influence when the field is isolated;
+    points below lose it.
+    Source $F_E$ journals shift downward (median $\Delta\log v = -0.16$) while
+    $F_B$ journals shift upward (median $+0.19$), reflecting the asymmetric
+    cross-field citation flow in which top $B$ sources cite top $E$ sources at
+    five times the reciprocal rate.
+    Institution rankings are near-neutral for both fields
+    (medians $+0.01$ and $+0.04$ respectively), confirming that the $E$/$B$
+    structural asymmetry is a source-level phenomenon.}
+  \label{fig:combined_vs_separate}
 \end{figure}
+To interpret this figure, we focus on the top $10$ sources for $E$ which extend in the $x$ direction, $v_S^{EB, S} \gtrapprox 10$, and the top $10$ for $B$ which extend in the $y$ direction, $v_S^{B, S} \gtrapprox 10$. Among these two groups, the per-pair average of the baseline citation matrix elements (over the relevant $10$ sources) is the directed density: $d_{EE}=71$, $d_{BB}=41$, $d_{BE}=4$ and $d_{EB}=0.8$. 
 
-With this understanding of the role of unit masking, we now explore the effects of subfields. Figure~\ref{fig:fig_3bz} shows that subfields stand out in unit influence values, \textit{when subfields are not used in the ranking}. The prominent effect is the differential response of $E$ and $B$ sources to the bipartite ranking compared with the single unit ranking. Specifically, $E$-sources receive an influence boost due to greater unit concentration as described above, compared with $B$-sources. The separation exemplifies the observation of \cite{pinskiCitationInfluenceJournal1976} and \cite{waltmanSourceNormalizedIndicators2013} that spectral ranking is sensitive to the presence of subfields: not only are there different responses, but these responses may themselves alter the rankings and influence scores.  
+% The top panels of Figure~\ref{fig:fig_field_joint_risk} show how $E$ and $B$ subfields stand apart, especially for sources, when ranked using $SS$ and $II$ masks (1000/0001: $y$-axis) compared with the $EB$ baseline bipartite ranking (0110: $x-axis$) \textit{when subfields are ranked together}. When a mix of $E$ and $B$ sources is used to construct a source citation matrix \citep{bollenJournalStatus2006, bergstromEigenfactorMetricsFigure2008}, spectral ranking gives $E$ sources higher influence vales. It might be concluded that the field of economics has greater influence than the field of business.  
 
-Figure~\ref{fig:fig_2c} illustrates the process by exhibiting influence distributions when unit sets are truncated to lie within the $E$ or $B$ subfields. Rather than the subfield separation seen in Figure~\ref{fig:fig_3by}, subfields are mingled over similar distributions. Both $B$ and $E$ sources attain similar values of high influence, with influence for $B$-sources rising by around 10-20\% and $E$-sources falling by a comparable amount compared with ranking over the combined subfields. The different behaviour between combined and separated subfields is apparent in the second eigenvector of the combined corpus (not shown), where the two subfields are cleanly separated by sign. Subfield separation occurs in the combined case despite the relatively low modularity of the full corpus, 0.2 for the source-only network, 0.07 for institutions, and 0.002/0.0001 for the two forms ($S \rightarrow I$ and $I \rightarrow S$) of the bipartite network.
+% Specifically, $E$-sources receive an influence boost due to greater unit concentration as described above, compared with $B$-sources. The separation exemplifies the observation of \cite{pinskiCitationInfluenceJournal1976} and \cite{waltmanSourceNormalizedIndicators2013} that spectral ranking is sensitive to the presence of subfields: not only are there different responses, but these responses may themselves alter the rankings and influence scores.  
 
-\begin{figure}[!htb]
-  \centering
-  \includegraphics[width=0.8\textwidth]{../plots/fig_2c_latex.pdf}
-  \caption{Bipartite vs within-unit influence, evaluated separately for each subfield.
-    Sources (left): $\log v_S^S$ vs $\log v_S^B$.
-    Institutions (right): $\log v_I^I$ vs $\log v_I^B$.
-    Points coloured by subfield (E, B, A, X).}
-  \label{fig:fig_2c}
-\end{figure}
+% Figure~\ref{fig:fig_field_joint_risk} illustrates the process by exhibiting influence distributions when unit sets are truncated to lie within the $E$ or $B$ subfields. Rather than the subfield separation seen in Figure~\ref{fig:fig_3by}, subfields are mingled over similar distributions. Both $B$ and $E$ sources attain similar values of high influence, with influence for $B$-sources rising by around 10-20\% and $E$-sources falling by a comparable amount compared with ranking over the combined subfields. The different behaviour between combined and separated subfields is apparent in the second eigenvector of the combined corpus (not shown), where the two subfields are cleanly separated by sign. Subfield separation occurs in the combined case despite the relatively low modularity of the full corpus, 0.2 for the source-only network, 0.07 for institutions, and 0.002/0.0001 for the two forms ($S \rightarrow I$ and $I \rightarrow S$) of the bipartite network.
+
+\subsection{Time dependence}
 
 The variation of unit influence over 25 years is illustrated in Figure~\ref{fig:fig6}, which plots $v$ for all sources and institutions across the five time windows $t_x=1,\ldots,5$ (2000--2024). The trend of the running means reveals an influence hierarchy that broadly persists.  
 The Spearman correlation between $v$ in 2000--04 and $v$ in 2020--24 is approximately $\rho=0.7$ for sources and institutions in the common sets. The consecutive-window values are higher, implying that the scatter in Figure~\ref{fig:fig6} arises from long-run drift rather than short-run
@@ -160,7 +166,7 @@ In addition to the structural results presented above (units, subfields and time
 Raising the work-per-year threshold to $\tau_I{=}\tau_S{=}40$ reduces the corpus size to around 40\% for sources and 57\% for institutions. Despite this reduction, the influence scores of the surviving units track the baseline closely, with Spearman coefficients $>~0.97$. However, the higher threshold removes low-ranked units differentially, raising influence for the most influential units and lowering it by about $0.1$ in $\log{v}$ for sources ($0.06$ for institutions) over the bulk of units. Consequently, the median absolute rank shift is large among the lower-influence population, 7.5\% for sources and 6.4\% for institutions that remain in the corpus. 
 
 Removing the normalisation of reference list lengths ($\rho{=}1$)
-leads to a small overall reduction of average source influence, $-0.07$ in $\log(v)$, while introducing substantial changes in individual influence values, s.d. 0.2$ for sources and s.d. 0.1$ for institutions. These relatively large fractional variations occur across all units, leading to a median change in rank of 5\% for sources and institutions. 
+leads to a small overall reduction of average source influence, $-0.07$ in $\log(v)$, while introducing substantial changes in individual influence values, s.d.\ $0.2$ for sources and s.d.\ $0.1$ for institutions. These relatively large fractional variations occur across all units, leading to a median change in rank of 5\% for sources and institutions. 
 
 The overlapping census and target windows for the baseline model `over-count' references that are close in publication date. When the census window is reduced to one year ($t_c=2024$), total reference counts reduce and many values of $v$ change  (s.d. 0.2: sources, 0.1: institutions). Because the reduction in citer-cited pairs occurs uniformly over $\mathbf{H}$ the shape of $v^{S,I}$ is similar to $v^B$.
 

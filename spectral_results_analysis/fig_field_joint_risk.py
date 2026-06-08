@@ -2,15 +2,15 @@
 fig_field_joint_risk.py — Field-sensitivity of unit rankings across mask and corpus.
 
 3-row × 2-col figure (Sources left, Institutions right).
-x-axis: ordinal bipartite rank (locked to baseline m=0110, F=EBAX).
-y-axis: log10(v_alt) − log10(v_baseline)  (offset from bipartite full-corpus).
+x-axis: EB bipartite rank (m=0110, F=EB — E+B units only).
+y-axis: log10(v_alt) − log10(v_EB_bip)  (offset from EB bipartite baseline).
 Points coloured by field_eb: E (red) and B (blue) only.
 100-unit sliding-window running mean overlaid per field.
 
 Rows:
-  (a) E+B together, single-unit ranking   — m=1000 (sources) / m=0001 (institutions), F=EBAX
-  (b) E/B separately, single-unit ranking  — F=E or F=B, m=1000 (sources) / m=0001 (institutions)
-  (c) E/B separately, bipartite ranking    — F=E or F=B, m=0110 (bipartite)
+  (a) E+B, single unit  — F=EB (no A/X), m=1000 (sources) / m=0001 (institutions)
+  (b) E||B, single unit — F=E or F=B separately, m=1000 (sources) / m=0001 (institutions)
+  (c) E||B, bipartite   — F=E and F=B separately, m=0110
 
 Outputs:
   plots/fig_field_joint_risk.pdf / _latex.pdf
@@ -42,7 +42,6 @@ def _tname(fx, m, rho=0, chi=50, alpha=100):
     return (f'rk_{_rc}_{fx}_tauU{_tau_u}_tauS{_tau_s}_vartau'
             f'_rho{rho}_m{m}_chi{chi}_alpha{alpha}')
 
-BASELINE_TABLE = _tname('EBAX', '0110')
 # (a) E+B corpus (no A/X), single-unit
 SS_EB = _tname('EB', '1000')
 II_EB = _tname('EB', '0001')
@@ -51,7 +50,10 @@ SS_E = _tname('E', '1000')
 SS_B = _tname('B', '1000')
 II_E = _tname('E', '0001')
 II_B = _tname('B', '0001')
-# (c) E+B together, bipartite
+# (c) E||B separately, bipartite
+BIP_E  = _tname('E',  '0110')
+BIP_B  = _tname('B',  '0110')
+# baseline
 BIP_EB = _tname('EB', '0110')
 
 # ── Visual spec ─────────────────────────────────────────────────────────────────
@@ -95,15 +97,16 @@ def _lv(v):
     return np.log10(np.clip(v, 1e-10, None))
 
 
+
 def _draw_strip(ax, df_base: pd.DataFrame, data_series: list,
                 n_src: int, legend_title: str, ylabel: bool,
-                bottom_row: bool) -> list:
+                bottom_row: bool, show_denom: bool = False) -> list:
     ax.axhline(0, color='black', linewidth=0.9, linestyle='--', zorder=5)
     ax.set_xlim(0, n_src)
     ax.set_ylim(Y_LO, Y_HI)
     ax.set_yticks(Y_TICKS)
     if bottom_row:
-        ax.set_xlabel('Bipartite rank  (baseline)', labelpad=4)
+        ax.set_xlabel('EB bipartite rank', labelpad=4)
     else:
         ax.tick_params(labelbottom=False)
     if ylabel:
@@ -111,21 +114,29 @@ def _draw_strip(ax, df_base: pd.DataFrame, data_series: list,
     else:
         ax.tick_params(labelleft=False)
 
+    # Pre-merge all series so we can compute the denominator before labelling
+    prepared = []
     for df_v, field in data_series:
-        c = FIELD_COLOR.get(field, '#888888')
         merged = (df_base[['unit_idx', 'baseline_rank', 'v_base']]
                   .merge(df_v.rename(columns={'v': 'v_alt'}),
                          on='unit_idx', how='inner'))
         merged = merged[(merged['v_base'] > 0) & (merged['v_alt'] > 0)].copy()
+        prepared.append((merged, field))
+
+    total_n = sum(len(m) for m, _ in prepared) if show_denom else None
+
+    for merged, field in prepared:
+        c = FIELD_COLOR.get(field, '#888888')
         if merged.empty:
             continue
         merged.sort_values('baseline_rank', inplace=True)
         delta = _lv(merged['v_alt'].values) - _lv(merged['v_base'].values)
         x = merged['baseline_rank'].values
-
+        n_label = (f'n={len(merged):,}/{total_n:,}' if show_denom
+                   else f'n={len(merged):,}')
         ax.scatter(x, delta, color=c, s=PT_SIZE, alpha=PT_ALPHA,
                    linewidths=0, zorder=2,
-                   label=f'$F_{{{field}}}$  (n={len(merged):,})')
+                   label=f'$F_{{{field}}}$  ({n_label})')
 
         x_sm, y_sm = _rolling_mean(x.astype(float), delta)
         valid = ~np.isnan(y_sm)
@@ -193,18 +204,22 @@ def main():
             if t not in tables:
                 raise RuntimeError(f'Table {t} not found in rankings.duckdb')
 
-        for t in [BASELINE_TABLE, SS_EB, II_EB,
-                  SS_E, SS_B, II_E, II_B, BIP_EB]:
+        for t in [SS_EB, II_EB, SS_E, SS_B, II_E, II_B,
+                  BIP_E, BIP_B, BIP_EB]:
             need(t)
 
-        v_base_s  = _load_v(db, BASELINE_TABLE, 'S')
-        v_base_i  = _load_v(db, BASELINE_TABLE, 'U')
-        v_ss_eb   = _load_v(db, SS_EB,  'S')
-        v_ii_eb   = _load_v(db, II_EB,  'U')
-        v_ss_e    = _load_v(db, SS_E,   'S')
-        v_ss_b    = _load_v(db, SS_B,   'S')
-        v_ii_e    = _load_v(db, II_E,   'U')
-        v_ii_b    = _load_v(db, II_B,   'U')
+        v_base_s  = _load_v(db, BIP_EB, 'S')
+        v_base_i  = _load_v(db, BIP_EB, 'U')
+        v_ss_eb    = _load_v(db, SS_EB,  'S')
+        v_ii_eb    = _load_v(db, II_EB,  'U')
+        v_ss_e     = _load_v(db, SS_E,   'S')
+        v_ss_b     = _load_v(db, SS_B,   'S')
+        v_ii_e     = _load_v(db, II_E,   'U')
+        v_ii_b     = _load_v(db, II_B,   'U')
+        v_bip_e_s  = _load_v(db, BIP_E,  'S')
+        v_bip_e_i  = _load_v(db, BIP_E,  'U')
+        v_bip_b_s  = _load_v(db, BIP_B,  'S')
+        v_bip_b_i  = _load_v(db, BIP_B,  'U')
         v_bip_eb_s = _load_v(db, BIP_EB, 'S')
         v_bip_eb_i = _load_v(db, BIP_EB, 'U')
 
@@ -225,15 +240,19 @@ def main():
     n_i = len(base_i)
     print(f'Baseline: {n_s} sources, {n_i} institutions')
 
-    # Filter base to E and B only (for colouring in panel (a))
-    def _split_eb(base):
-        return {
-            'E': base[base['field_eb'] == 'E'],
-            'B': base[base['field_eb'] == 'B'],
-        }
+    # EB-filtered baseline: E and B units only, re-ranked 1..n preserving EBAX ordering
+    def _mk_base_eb(base):
+        df = (base[base['field_eb'].isin(['E', 'B'])]
+              .sort_values('baseline_rank')
+              .copy())
+        df['baseline_rank'] = np.arange(1, len(df) + 1)
+        return df[['unit_idx', 'baseline_rank', 'v_base', 'field_eb']]
 
-    base_s_eb = _split_eb(base_s)
-    base_i_eb = _split_eb(base_i)
+    base_s_eb = _mk_base_eb(base_s)
+    base_i_eb = _mk_base_eb(base_i)
+    n_s_eb = len(base_s_eb)
+    n_i_eb = len(base_i_eb)
+    print(f'EB subset: {n_s_eb} sources, {n_i_eb} institutions')
 
     # ── Assemble panel data ────────────────────────────────────────────────
     #
@@ -256,16 +275,14 @@ def main():
     pb_s = [(v_ss_e, 'E'), (v_ss_b, 'B')]
     pb_i = [(v_ii_e, 'E'), (v_ii_b, 'B')]
 
-    # Panel (c): E+B together, bipartite (EB corpus, m=0110)
-    pc_s = [(_split_by_field(v_bip_eb_s, base_s, 'E'), 'E'),
-            (_split_by_field(v_bip_eb_s, base_s, 'B'), 'B')]
-    pc_i = [(_split_by_field(v_bip_eb_i, base_i, 'E'), 'E'),
-            (_split_by_field(v_bip_eb_i, base_i, 'B'), 'B')]
+    # Panel (c): E||B separately, bipartite
+    pc_s = [(v_bip_e_s, 'E'), (v_bip_b_s, 'B')]
+    pc_i = [(v_bip_e_i, 'E'), (v_bip_b_i, 'B')]
 
     PANEL_ROWS = [
-        ('E+B, single unit', pa_s, pa_i),
-        ('E||B, single unit', pb_s, pb_i),
-        ('E+B, bipartite',   pc_s, pc_i),
+        ('E+B, single unit', pa_s, pa_i, n_s_eb, n_i_eb, True),
+        ('E||B, single unit', pb_s, pb_i, n_s_eb, n_i_eb, False),
+        ('E||B, bipartite',  pc_s, pc_i, n_s_eb, n_i_eb, False),
     ]
 
     # ── Summary stats ───────────────────────────────────────────────────────
@@ -284,8 +301,8 @@ def main():
 
     _collect_deltas(base_s, pa_s, 'Source-only')
     _collect_deltas(base_i, pa_i, 'Inst-only')
-    _collect_deltas(base_s, pc_s, 'EB-bipartite-S')
-    _collect_deltas(base_i, pc_i, 'EB-bipartite-I')
+    _collect_deltas(base_s, pc_s, 'E||B-bipartite-S')
+    _collect_deltas(base_i, pc_i, 'E||B-bipartite-I')
 
     # ── Plot ────────────────────────────────────────────────────────────────
     _pub_theme()
@@ -300,14 +317,14 @@ def main():
     axes[0, 0].set_title('Sources',      fontsize=_lsz, pad=5)
     axes[0, 1].set_title('Institutions', fontsize=_lsz, pad=5)
 
-    for row_i, (legend_title, src_series, inst_series) in enumerate(PANEL_ROWS):
+    for row_i, (legend_title, src_series, inst_series, n_s_panel, n_i_panel, denom) in enumerate(PANEL_ROWS):
         is_bottom = (row_i == n_rows - 1)
-        _draw_strip(axes[row_i, 0], base_s, src_series,
-                    n_src=n_s, legend_title=legend_title,
-                    ylabel=True, bottom_row=is_bottom)
-        _draw_strip(axes[row_i, 1], base_i, inst_series,
-                    n_src=n_i, legend_title=legend_title,
-                    ylabel=False, bottom_row=is_bottom)
+        _draw_strip(axes[row_i, 0], base_s_eb, src_series,
+                    n_src=n_s_panel, legend_title=legend_title,
+                    ylabel=True, bottom_row=is_bottom, show_denom=denom)
+        _draw_strip(axes[row_i, 1], base_i_eb, inst_series,
+                    n_src=n_i_panel, legend_title=legend_title,
+                    ylabel=False, bottom_row=is_bottom, show_denom=denom)
 
     # Shared y-label (already set per strip for left column)
     # Add bottom-strip x-tick visibility fix
