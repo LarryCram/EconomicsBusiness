@@ -348,11 +348,11 @@ INPUT ../plots/fig_3by_latex.pdf
 INPUT ../plots/fig_3by_latex.pdf
 INPUT ../plots/fig_3by_latex.pdf
 INPUT /usr/share/texlive/texmf-dist/fonts/tfm/public/cm/cmbx12.tfm
-INPUT ../plots/fig_3eb_latex.pdf
-INPUT ../plots/fig_3eb_latex.pdf
-INPUT ../plots/fig_3eb_latex.pdf
-INPUT ../plots/fig_3eb_latex.pdf
-INPUT ../plots/fig_3eb_latex.pdf
+INPUT ../plots/counterfactual_zs10_zi0_latex.pdf
+INPUT ../plots/counterfactual_zs10_zi0_latex.pdf
+INPUT ../plots/counterfactual_zs10_zi0_latex.pdf
+INPUT ../plots/counterfactual_zs10_zi0_latex.pdf
+INPUT ../plots/counterfactual_zs10_zi0_latex.pdf
 INPUT ../plots/fig_6_latex.pdf
 INPUT ../plots/fig_6_latex.pdf
 INPUT ../plots/fig_6_latex.pdf
