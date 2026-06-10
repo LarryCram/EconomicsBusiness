@@ -25,6 +25,7 @@ import duckdb
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
+import matplotlib.patches as mpatches
 import seaborn as sns
 
 sys.path.insert(0, str(Path(__file__).parent))          # spectral_ranking/
@@ -43,7 +44,7 @@ _DEFAULT_Z_I = 0
 E_COLOR  = '#e41a1c'
 B_COLOR  = '#377eb8'
 CF_COLOR = '#4daf4a'  # green for counterfactual E
-_V_LO, _V_HI = 0.005, 20
+_V_LO, _V_HI = 0.005, 70
 _V_TICKS     = [0.01, 0.1, 1, 10]
 _PT_S, _PT_A = 12, 0.5
 
@@ -152,12 +153,25 @@ def _merge(v_x_map, v_y_map, field_map, keep_field):
     return pd.DataFrame(rows)
 
 
-_YLABEL = r'$\log(v_S^{E{\|}B,SS})$ or $\log(v_I^{E{\|}B,II})$'
+_YLABEL_S = r'$\log(v_S^{E{\|}B,SS})$'
 _XLABEL_S = r'$\log(v_S^{E+B,SS})$'
-_XLABEL_I = r'$\log(v_I^{E+B,II})$'
 
 
-def _draw_panel(ax, df_e, df_b, xlabel, show_ylabel, row_label=None):
+def _add_encircle(ax, df, idx_set, color):
+    """Draw a circle enclosing all points in idx_set; may spill outside axes."""
+    sub = df[df['unit_idx'].isin(idx_set)]
+    if len(sub) == 0:
+        return
+    xs = _lv(sub['v_comb'].values)
+    ys = _lv(sub['v_sep'].values)
+    cx, cy = xs.mean(), ys.mean()
+    r = np.sqrt((xs - cx)**2 + (ys - cy)**2).max() * 1.08
+    circle = mpatches.Circle((cx, cy), r, color=color, fill=False,
+                              linewidth=0.8, clip_on=False, zorder=5)
+    ax.add_patch(circle)
+
+
+def _draw_panel(ax, df_e, df_b, xlabel, show_ylabel, panel_label=None):
     """One panel: E red, B blue, diagonal."""
     _log_axes(ax, xlabel)
     for df, color, label in [
@@ -169,12 +183,12 @@ def _draw_panel(ax, df_e, df_b, xlabel, show_ylabel, row_label=None):
                    label=label)
     ax.legend(fontsize=9, framealpha=0.85, loc='upper left', markerscale=1.6)
     if show_ylabel:
-        ax.set_ylabel(_YLABEL, labelpad=4)
+        ax.set_ylabel(_YLABEL_S, labelpad=4)
     else:
         ax.tick_params(labelleft=False)
-    if row_label:
-        ax.text(0.97, 0.03, row_label, transform=ax.transAxes,
-                ha='right', va='bottom', fontsize=9,
+    if panel_label:
+        ax.text(0.03, 0.83, panel_label, transform=ax.transAxes,
+                ha='left', va='top', fontsize=9,
                 bbox=dict(facecolor='white', alpha=0.75, edgecolor='none', pad=2))
 
 
@@ -182,43 +196,32 @@ def _plot(v_eb_s_cf, v_e_s_cf, v_b_s_cf,
           v_eb_i_cf, v_e_i_cf, v_b_i_cf,
           v_eb_s_full, v_e_s_full, v_b_s_full,
           v_eb_i_full, v_e_i_full, v_b_i_full,
-          src_field, inst_field, z_s, z_i, paths):
-    # Full-corpus series — x and y both from full corpus
-    df_e_s_full = _merge(v_eb_s_full, v_e_s_full, src_field,  'E')
-    df_b_s_full = _merge(v_eb_s_full, v_b_s_full, src_field,  'B')
-    df_e_i_full = _merge(v_eb_i_full, v_e_i_full, inst_field, 'E')
-    df_b_i_full = _merge(v_eb_i_full, v_b_i_full, inst_field, 'B')
-
-    # Counterfactual series — x and y both from counterfactual rankings
-    df_e_s_cf = _merge(v_eb_s_cf, v_e_s_cf, src_field,  'E')
-    df_b_s_cf = _merge(v_eb_s_cf, v_b_s_cf, src_field,  'B')
-    df_e_i_cf = _merge(v_eb_i_cf, v_e_i_cf, inst_field, 'E')
-    df_b_i_cf = _merge(v_eb_i_cf, v_b_i_cf, inst_field, 'B')
+          src_field, inst_field, z_s, z_i, paths,
+          top_e_idx=None, top_b_idx=None):
+    # Sources only
+    df_e_s_full = _merge(v_eb_s_full, v_e_s_full, src_field, 'E')
+    df_b_s_full = _merge(v_eb_s_full, v_b_s_full, src_field, 'B')
+    df_e_s_cf   = _merge(v_eb_s_cf,   v_e_s_cf,   src_field, 'E')
+    df_b_s_cf   = _merge(v_eb_s_cf,   v_b_s_cf,   src_field, 'B')
 
     _pub_theme()
-    fig, axes = plt.subplots(2, 2, figsize=(10, 10),
-                             sharex='col', sharey='col')
-    fig.subplots_adjust(hspace=0.08, wspace=0.05)
+    fig, (ax_full, ax_cf) = plt.subplots(1, 2, figsize=(10, 5), sharey=True)
+    fig.subplots_adjust(wspace=0.05)
 
-    # Top row: full corpus
-    _draw_panel(axes[0, 0], df_e_s_full, df_b_s_full,
-                xlabel='', show_ylabel=True, row_label='Full corpus')
-    _draw_panel(axes[0, 1], df_e_i_full, df_b_i_full,
-                xlabel='', show_ylabel=False)
-
-    # Bottom row: counterfactual
-    _draw_panel(axes[1, 0], df_e_s_cf, df_b_s_cf,
+    _draw_panel(ax_full, df_e_s_full, df_b_s_full,
                 xlabel=_XLABEL_S, show_ylabel=True,
-                row_label=f'Counterfactual (top-{z_s} sources omitted)')
-    _draw_panel(axes[1, 1], df_e_i_cf, df_b_i_cf,
-                xlabel=_XLABEL_I, show_ylabel=False)
+                panel_label='Full corpus')
+    if top_e_idx is not None:
+        _add_encircle(ax_full, df_e_s_full, top_e_idx, E_COLOR)
+    if top_b_idx is not None:
+        _add_encircle(ax_full, df_b_s_full, top_b_idx, B_COLOR)
 
-    # Column titles on top row only
-    axes[0, 0].set_title('Sources', fontsize=10, pad=6)
-    axes[0, 1].set_title('Institutions', fontsize=10, pad=6)
+    _draw_panel(ax_cf, df_e_s_cf, df_b_s_cf,
+                xlabel=_XLABEL_S, show_ylabel=False,
+                panel_label=f'Counterfactual (top-{z_s} sources omitted)')
 
     sup = fig.suptitle(
-        rf'Full corpus vs counterfactual (top-{z_s} sources omitted)',
+        rf'Sources: full corpus vs counterfactual (top-{z_s} omitted)',
         fontsize=10, y=1.01,
     )
 
@@ -232,8 +235,8 @@ def _plot(v_eb_s_cf, v_e_s_cf, v_b_s_cf,
     sup.set_visible(True)
     plt.close(fig)
 
-    for label, df_e, df_b in [('Sources (cf)', df_e_s_cf, df_b_s_cf),
-                               ('Institutions (cf)', df_e_i_cf, df_b_i_cf)]:
+    for label, df_e, df_b in [('Sources (full)', df_e_s_full, df_b_s_full),
+                               ('Sources (cf)',   df_e_s_cf,   df_b_s_cf)]:
         print(f'\n{label}:')
         print(f'  E n={len(df_e)}  median log(v_sep/v_comb) = '
               f'{(_lv(df_e.v_sep) - _lv(df_e.v_comb)).median():+.3f}')
@@ -332,13 +335,22 @@ def main():
     v_eb_i_full = _load_full('EB', '0001', 'U')
     v_e_i_full  = _load_full('E',  '0001', 'U')
     v_b_i_full  = _load_full('B',  '0001', 'U')
+
+    # Top-10 E and B by field-specific SS ranking (for encircling on full corpus panel)
+    top_e_idx = set(rk_db2.execute(
+        f"SELECT unit_idx FROM {_tname(bl,'E','1000')} WHERE unit_type='S' ORDER BY v DESC LIMIT 10"
+    ).df()['unit_idx'].astype(int))
+    top_b_idx = set(rk_db2.execute(
+        f"SELECT unit_idx FROM {_tname(bl,'B','1000')} WHERE unit_type='S' ORDER BY v DESC LIMIT 10"
+    ).df()['unit_idx'].astype(int))
     rk_db2.close()
 
     _plot(v_eb_s,      v_e_s,      v_b_s,
           v_eb_i,      v_e_i,      v_b_i,
           v_eb_s_full, v_e_s_full, v_b_s_full,
           v_eb_i_full, v_e_i_full, v_b_i_full,
-          src_field, inst_field, z_s, z_i, paths)
+          src_field, inst_field, z_s, z_i, paths,
+          top_e_idx=top_e_idx, top_b_idx=top_b_idx)
 
 
 if __name__ == '__main__':

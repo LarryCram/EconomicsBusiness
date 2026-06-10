@@ -62,46 +62,56 @@ $M_I$ & 0.91 & 0.93 & 960 \\
 \end{tabular}
 \end{table}
 
-Table~\ref{tab:kernel_structure} quantifies how, in one step, institutions spread outgoing references more broadly than sources ($\bar{J}_{II}=0.73$ vs $\bar{J}_{SS}=0.47$; fan-out $7.9\times$ larger), while receiving incoming references only slightly more broadly than sources ($J_{col, II}=0.95$ vs $J_{col, SS}=0.90$). In two-step kernels, $\mathbf{M}_S$ spreads references more evenly than $C_{SS}$ ($\bar{J}:$ 0.81 c.f. 0.47) while also narrowing the spread of incoming references ($J_{\text{col}}$: 0.83 c.f. 0.90). The bipartite round-trip spreads attention/influence broadly while rewarding the most-cited sources, raising $v$ for high-ranked sources as shown in Figs~\ref{fig:fig_3by} and \ref{fig:fig_3bz}: normalisation of influence then reduces $v$ for lower ranked sources. For institutions, $\mathbf{M}_I$ is more balanced ($\bar{J}=0.90$, $J_{\text{col}}=0.93$): bipartite paths make little difference compared with institution-only paths, although $v_I^I$ is slightly less than $v_I^B$ for the highest ranks. The joint block model covering the full citation matrix yields $v$ between the bipartite and single-unit value.
+Table~\ref{tab:kernel_structure} quantifies how, in one step, institutions spread outgoing references more broadly than sources ($\bar{J}_{II}=0.73$ vs $\bar{J}_{SS}=0.47$; fan-out $7.9\times$ larger), while receiving incoming references only slightly more broadly than sources ($J_{col, II}=0.95$ vs $J_{col, SS}=0.90$). In two-step kernels, $\mathbf{M}_S$ spreads references more evenly than $C_{SS}$ ($\bar{J}:$ 0.81 c.f. 0.47) while also narrowing the spread of incoming references ($J_{\text{col}}$: 0.83 c.f. 0.90). The bipartite round-trip spreads attention/influence broadly while rewarding the most-cited sources, raising $v$ for high-ranked sources as shown in Figs~\ref{fig:fig_3by}: normalisation of influence then reduces $v$ for lower ranked sources. For institutions, $\mathbf{M}_I$ is more balanced ($\bar{J}=0.90$, $J_{\text{col}}=0.93$): bipartite paths make little difference compared with institution-only paths, although $v_I^I$ is slightly less than $v_I^B$ for the highest ranks. The joint block model covering the full citation matrix yields $v$ between the bipartite and single-unit value.
 
 \subsection{Business and Economics}
 
-With this understanding of the role of unit masking, we now explore the effects of subfields. For clarity, in this subsection we restrict consideration to $E$ and $B$ units only (no $A$ or $X$), including the baseline model.  To focus on the effects of subfields, we first set aside bipartite ranking. Figure~\ref{fig:combined_vs_separate} compares source-only ($m=1000$) and institution-only ($m=0001$) ranking for $E$-only and $B$-only subfields ($y$-axis) with the combined fields $E+B$ ($x$-axis).
+With this understanding of the role of unit masking, we now explore the effects of subfields. For clarity, in this subsection we restrict consideration to $E$ and $B$ units only (no $A$ or $X$). To focus on the effects of subfields alone, we first set aside bipartite ranking. Figure~\ref{fig:combined_vs_separate} compares source-only ($m=1000$) and institution-only ($m=0001$)cardinal rankings for both fields, $E+B$ ($x$-axis), with separate subfields, $E$-only and $B$-only ($y$-axis). 
+
+First consider sources, Figure~\ref{fig:combined_vs_separate} (left). The linearity (in log--log) indicates that the ordinal ranking among $E$ and $B$ sources is not strongly effected by ranking together or separately. The explanation of the separation between $E$ and $B$ lies in the role of $\approx$10 top $E$ sources that have $v>10$ in the joint ranking, illustrated by the red circle.
 \begin{figure}[!htb]
   \centering
-  \includegraphics[width=0.8\textwidth]{../plots/counterfactual_zs10_zi0_latex.pdf}
-  \caption{Combined vs.\ separate field single-unit rankings for sources (left)
-    and institutions (right).
-    The $x$-axis is the combined $F{=}EB$ spectral ranking ($m{=}1000$ for sources,
-    $m{=}0001$ for institutions); the $y$-axis is the ranking computed within each
-    field separately ($F{=}E$ or $F{=}B$, same mode).
-    Points above the diagonal gain influence when the field is isolated;
-    points below lose it.
-    Source $F_E$ journals shift downward (median $\Delta\log v = -0.16$) while
-    $F_B$ journals shift upward (median $+0.19$), reflecting the asymmetric
-    cross-field citation flow in which top $B$ sources cite top $E$ sources at
-    five times the reciprocal rate.
-    Institution rankings are near-neutral for both fields
-    (medians $+0.01$ and $+0.04$ respectively), confirming that the $E$/$B$
-    structural asymmetry is a source-level phenomenon.}
+  \includegraphics[width=0.8\textwidth]{../plots/fig_3eb_latex.pdf}
+  \caption{Cardinal rankings for separate ($E||B$) and combined ($E+B$) subfields, using the source-only (m=1000) block (left) and institution-only block (right). The $x$-axis is the combined ranking, while the $y$-axis is the ranking computed separately for each field ($E||B$). The red circle delineates the \textit{clique} of top $E$ journals.} 
   \label{fig:combined_vs_separate}
 \end{figure}
-To interpret this figure, we focus on the top $10$ sources for $E$ which extend in the $x$ direction, $v_S^{EB,SS} \gtrapprox 10$, and the top $10$ for $B$ which extend in the $y$ direction, $v_S^{B,SS} \gtrapprox 10$. Among these two groups, the directed density $d_{XY}$ is the per-directed-pair average of baseline ($\rho=0$) citation matrix elements from group $X$ to group $Y$, with denominator $N_X(N_X-1)$ for within-group pairs and $N_X N_Y$ for cross-group pairs: $d_{EE}=71$, $d_{BB}=41$, $d_{BE}=4$, $d_{EB}=0.8$.
 
-% The top panels of Figure~\ref{fig:fig_field_joint_risk} show how $E$ and $B$ subfields stand apart, especially for sources, when ranked using $SS$ and $II$ masks (1000/0001: $y$-axis) compared with the $EB$ baseline bipartite ranking (0110: $x-axis$) \textit{when subfields are ranked together}. When a mix of $E$ and $B$ sources is used to construct a source citation matrix \citep{bollenJournalStatus2006, bergstromEigenfactorMetricsFigure2008}, spectral ranking gives $E$ sources higher influence vales. It might be concluded that the field of economics has greater influence than the field of business.  
+Define the directed density $d_{XY}$ ($X, Y \in \{E, B\}$) as the per-directed-pair average of citation matrix elements (with $\rho=0$) from group $X$ to group $Y$, with denominator $N_X(N_X-1)$ for within-group pairs and $N_X N_Y$ for cross-group pairs. As exhibited in Table~\ref{tab:link_density}, the top-ten $E$ sources are mutually linked at a rate $49.61/0.272=182$ times the density among other $E$ sources, and $49.61/0.307=161$ times the density among all $B$ sources. They also receive $3.20/0.728=4.4$ times more references from top $B$ sources than they give to them. Spectral ranking over the combined $E+B$ corpus drives the total influence probability of this \textit{clique} of 10 $E$ sources to 25.9\%. For $E$-only ranking the influence probability of the clique rises to 38.5\% since the $E$ network is smaller. This increase reduces the influence probability and cardinal ranking of other $E$ sources and flattening the slope of the red $E$ points in the left-hand panel of Figure~\ref{fig:combined_vs_separate}. The influence of the clique is not present in the green points ($B$ only), so their ordinal rankings rise. 
+\begin{table}[!htbp]
+\centering
+\caption{Directed link density $d_{XY}$ (average citation weight per directed pair) between source communities. Rows = citing group; columns = cited group. `Top' means top-ten sources by field-specific $SS$ ranking.}
+\label{tab:link_density}
+\begin{tabular}{lrrrrrr}
+\toprule
+ & \makebox[1.6cm][r]{\small Top-$E$} & \makebox[1.6cm][r]{\small Rest-$E$} & \makebox[1.6cm][r]{\small All-$E$} & \makebox[1.6cm][r]{\small Top-$B$} & \makebox[1.6cm][r]{\small Rest-$B$} & \makebox[1.6cm][r]{\small All-$B$} \\
+\midrule
+Top-$E$ & 49.61 & 0.535 & 1.11 & 0.728 & 0.028 & 0.035 \\
+Rest-$E$ & 3.70 & 0.272 & 0.316 & 0.179 & 0.069 & 0.070 \\
+All-$E$ & 4.23 & 0.275 & 0.327 & 0.186 & 0.068 & 0.069 \\
+\midrule
+Top-$B$ & 3.20 & 0.062 & 0.103 & 12.59 & 0.4ten& 0.513 \\
+Rest-$B$ & 0.438 & 0.053 & 0.058 & 1.53 & 0.293 & 0.305 \\
+All-$B$ & 0.464 & 0.053 & 0.058 & 1.63 & 0.294 & 0.307 \\
+\bottomrule
+\end{tabular}
+\end{table}
 
-% Specifically, $E$-sources receive an influence boost due to greater unit concentration as described above, compared with $B$-sources. The separation exemplifies the observation of \cite{pinskiCitationInfluenceJournal1976} and \cite{waltmanSourceNormalizedIndicators2013} that spectral ranking is sensitive to the presence of subfields: not only are there different responses, but these responses may themselves alter the rankings and influence scores.  
 
-% Figure~\ref{fig:fig_field_joint_risk} illustrates the process by exhibiting influence distributions when unit sets are truncated to lie within the $E$ or $B$ subfields. Rather than the subfield separation seen in Figure~\ref{fig:fig_3by}, subfields are mingled over similar distributions. Both $B$ and $E$ sources attain similar values of high influence, with influence for $B$-sources rising by around 10-20\% and $E$-sources falling by a comparable amount compared with ranking over the combined subfields. The different behaviour between combined and separated subfields is apparent in the second eigenvector of the combined corpus (not shown), where the two subfields are cleanly separated by sign. Subfield separation occurs in the combined case despite the relatively low modularity of the full corpus, 0.2 for the source-only network, 0.07 for institutions, and 0.002/0.0001 for the two forms ($S \rightarrow I$ and $I \rightarrow S$) of the bipartite network.
+The institution response to joint and separate rankings using $m=0001$ is quite different. There is no clique of institutions with an over-density of reference links, and the cardinal rankings of $E$ and $B$ are intermixed whether ranked together or separately. Note however that all but one of the top 20 institutions are designated $E$, and the institution designated $B$ is unusual, insofar as it achieves its high cardinal rank from widespread $B$-works referencing its high output ($>90$\%) of methodology and review publications. Recall that institution labelling is at best an indication of a tendency to publish in one or the other field.
+
+Figure~\ref{fig:eb_alignment} (left) exhibits a counterfactual, showing that when the clique is artificially removed the cardinal rankings of $E$ and $B$ sources are no longer sharply delineated between separate and joint ranking with $m=1000$, and some $B$ sources rise above $v=10$. The delineation is also diminished in Figure~\ref{fig:eb_alignment} (right), where recirculation through institutions spreads the reference concentration in the clique as discussed above. We discuss these processes below.
+\begin{figure}[!htb]
+  \centering
+  \includegraphics[width=0.8\textwidth]{../plots/fig_3ef_latex.pdf}
+  \caption{Cardinal rankings for combined ($E+B$) versus separate ($E||B$) fields, using the source-only (m=1000) block (left) and bipartite block (right). In the left panel, the \textit{clique} (top ten$E$ sources) has artificially removed. In the right panel, influence recirculates through institutions and is spread beyond the clique.}
+  \label{fig:eb_alignment}
+\end{figure}
 
 \subsection{Time dependence}
 
-The variation of unit influence over 25 years is illustrated in Figure~\ref{fig:fig6}, which plots $v$ for all sources and institutions across the five time windows $t_x=1,\ldots,5$ (2000--2024). The trend of the running means reveals an influence hierarchy that broadly persists.  
-The Spearman correlation between $v$ in 2000--04 and $v$ in 2020--24 is approximately $\rho=0.7$ for sources and institutions in the common sets. The consecutive-window values are higher, implying that the scatter in Figure~\ref{fig:fig6} arises from long-run drift rather than short-run
-volatility. Institutions are no more stable in rank than sources, despite having
-more volatile absolute $v$ values across windows. The volatility reflects the
-growing size of the institution corpus as additional universities
-cross the $\tau_I$ threshold over the 25-year period.
+The variation of unit influence over 25 years is illustrated in Figure~\ref{fig:fig6}, which plots $v$ for sources and institutions (when present in the window) across the five time windows $t_x=1,\ldots,5$ (2000--2024). The trend of the running means reveals an influence hierarchy that broadly persists: the Spearman correlation between $v$ in 2000--04 and $v$ in 2020--24 is approximately $\rho=0.7$ for sources and institutions in the common sets. The consecutive-window values are higher, implying that the scatter in Figure~\ref{fig:fig6} arises from long-run drift rather than short-run
+volatility. Institutions are no more stable in rank than sources. The volatility mainly reflects the
+growing size of the institution corpus as additional universities cross the $\tau_I$ threshold over the 25-year period.
 The greater smoothness of the institution panel in Figure~\ref{fig:fig_3by}
 and the comparable long-run rank stability in Figure~\ref{fig:fig6}
 point to the same mechanism: the $SI$--$IS$ coupling acts as a
