@@ -109,3 +109,8 @@ normalise
 HRank
 Franceschet
 unnormalised
+centiles
+centile
+anticipted
+harbour
+citers

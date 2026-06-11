@@ -5,7 +5,7 @@
 % ---------------------------------------------------------------
 
 The paper establishes that spectral ranking of journals and institutions
-by recirculation is feasible, interpretable against expert rankings, and largely stable
+by recirculation is feasible, interpretable against expert rankings, and largely stable for highly ranked units 
 across a quarter-century of economics and business literature. Several threads
 invite further development.
 
@@ -15,19 +15,20 @@ projecting works to units introduces fictitious information by conflating indepe
 reference chains passing through a shared unit. Spectral methods applied directly to
 the work-level graph could avoid this conflation, but currently call on the Katz-Hubbell 
 (PageRank) or HRank approaches with arbitrary parameters. While $\alpha$ and $\mathbf{\mu}$ stabilise the solution they 
-distort the network, defeating the intent. High order eigenpairs would add information 
+distort the network, tending to defeat the intent of the study. High order eigenpairs would add information 
 that could help resolve the trade-off.
 
 The sentinel analysis ($\varepsilon=1$) identifies units whose reference flows are
 connected to works outside the corpus boundary. Broadening the network with a more 
-faithful representation of its environment will generally increase the amount of sub-structure in the network, 
+faithful representation of its environment would improve the representation at the expense of 
+increasing sub-structure in the network and  
 potentially clouding the interpretation of the wider ranking. A systematic
 characterisation of these boundary flows would complement unit-level influence scores
 and distinguish between units whose standing/prestige is field-specific and those anchored across a
 broader literature. Again, high order eigenpairs could help delineate these tensions.
 
-The enclave phenomenon uncovers communities of highly cited works in low-influence
-units, with low-influence references. As flagged in the Introduction, actor-network theory could be important for
+The enclave phenomenon uncovers communities of highly cited works with low-influence citers in low-influence
+units. As flagged in the Introduction, actor-network theory could be important for
 understanding the intent of researchers, editors and managers within these communities
 \citep{latourReassemblingSocialIntroduction2007}. Connecting enclave membership to
 authorship networks, career trajectories and funding structures is a natural follow-on
