@@ -12,9 +12,9 @@ In practice many institutions and some sources publishing only
 a few works per year can be dropped from the corpus. We specify 
 the threshold numbers of works per year that must be attained by institutions ($\tau_I$) and sources ($\tau_S$), with $\mathfrak{I}\subseteq\mathfrak{I}'$ and $\mathfrak{S}\subseteq\mathfrak{S}'$ as the surviving sets. Works that lose all their authorships under the institution filter, or whose source is dropped by the source filter, are removed from the corpus. 
 
-The corpus reference set $\mathfrak{R}$ does not include references from census works in $\mathfrak{W}^c$ to works outside $\mathfrak{W}^t$, or from works outside $\mathfrak{W}^c$ to target works in $\mathfrak{W}^t$. These exogenous connections can be discarded, as signified by the binary mask $\varepsilon=0$. Alternatively, the connections can be represented by links to members of a pair of \emph{sentinel} units: a fictitious external source $s_0\notin\mathfrak{S}$ and a fictitious external institution $i_0\notin\mathfrak{I}$, each hosting the totality of works beyond the corpus. This is denoted by the flag $\varepsilon = 1$. The sentinels enter the citation matrix and the eigenvector computation (see below) but their influence values are not reported. The fraction of a unit's normalised reference weight directed at or received from $s_0$ or $i_0$ is its \emph{external balance}, indicating how strongly the work's references and citations reach beyond the corpus boundary.
+The corpus reference set $\mathfrak{R}$ does not include references from census works in $\mathfrak{W}^c$ to works outside $\mathfrak{W}^t$, or from works outside $\mathfrak{W}^c$ to target works in $\mathfrak{W}^t$. These exogenous connections can be discarded, as signified by the binary flag $\varepsilon=0$. Alternatively, the connections can be represented by links to members of a pair of \emph{sentinel} units: a fictitious external source $s_0\notin\mathfrak{S}$ and a fictitious external institution $i_0\notin\mathfrak{I}$, each hosting the totality of works beyond the corpus. This is denoted by the flag $\varepsilon = 1$. The sentinels enter the citation matrix and the eigenvector computation (see below) but their influence values are not reported. The fraction of a unit's normalised reference weight directed at or received from $s_0$ or $i_0$ is its \emph{external balance}, indicating how strongly the work's references and citations reach beyond the corpus boundary.
 
-Let $R_i = |{j : (i,j)\in\mathfrak{R}}|$ be the number of corpus references from work $w_i$, and $\bar{R} = |\mathfrak{R}|/N_w$ the mean of $R_i$ over $\mathfrak{W}$. Since within-corpus reference lists have different lengths, we consider two cases for weighting them, selected by a binary mask $\rho$:
+Let $R_i = |{j : (i,j)\in\mathfrak{R}}|$ be the number of corpus references from work $w_i$, and $\bar{R} = |\mathfrak{R}|/N_w$ the mean of $R_i$ over $\mathfrak{W}$. Since within-corpus reference lists have different lengths, we consider two cases for weighting them, selected by a binary flag $\rho$:
 \begin{equation}
 	\rho_i \;=\;
 	\begin{cases}
@@ -28,7 +28,7 @@ the prominence; under fractional reference counting every work's filtered refere
 equally \citep{zittModifyingJournalImpact2008}.
 
 A work has a retained source and one or more institutions. For journal ranking it is straightforward to link the work to its journal. When sources and institutions are considered together, fractionation of institutions and the fractionation between journal and institutions must be considered. 
-There are two common models for fractionating a work's institutions (i.e. the \textit{institution weight}), selected by the binary mask $\omega$:
+There are two common models for fractionating a work's institutions (i.e. the \textit{institution weight}), selected by the binary flag $\omega$:
 \begin{equation}
   \omega_{ix} \;=\;
   \begin{cases}
@@ -111,7 +111,7 @@ Markov chain with transition matrix $\mathbf{H}$, and that it coincides
 with the \textit{influence weight} of \cite{pinskiCitationInfluenceJournal1976}
 scaled by the reference-count proportion $r_p / \sum_q r_q$.
 
-Working with a binary choice matrix whose products count the length of chains, \cite{katzNewStatusIndex1953} proposed attenuating chains of length $k$ by a factor $\alpha^k$, $\alpha\in(0,1)$, so that distant links count for less than proximate ones. The same procedure applies to chains between distant units as products of the citation matrix. . In its original historical formulation, Katz set the boundary condition \citep{vignaSpectralRanking2016} to the uniform vector $\mathbf{1}$, leaving the eigenvector unnormalised.
+Working with a binary choice matrix whose products count the length of chains, \cite{katzNewStatusIndex1953} proposed attenuating chains of length $k$ by a factor $\alpha^k$, $\alpha\in(0,1)$, so that distant links count for less than proximate ones. The same procedure applies to chains between distant units regarded as products of the citation matrix. In its original historical formulation, Katz set the boundary condition \citep{vignaSpectralRanking2016} to the uniform vector $\mathbf{1}$, leaving the eigenvector unnormalised.
 Summing chains of all lengths and endowing every unit with a
 uniform initial score of $1$ yields the Katz resolvent equation
 \[
@@ -223,7 +223,7 @@ the resolvent
 $\boldsymbol{\pi}=\mathbf{\tilde{H}}^{\top}\boldsymbol{\pi}$
 is equivalent to \eqref{eq:spectral}. This is the general form of
 our numerical problem, though most results reported below use $\alpha=1$ and $\boldsymbol{\mu}=\mathbf{0}$, so $\mathbf{\tilde{H}}=\mathbf{H}$.
-We construct many realisations of $\mathbf{\tilde{H}}$ to test unit pairings, subfield restrictions, temporal changes, other parameter choices, and for bootstrap uncertainty estimation. Each realisation entails a unit--unit reference network with one giant strongly connected component (SCC) together with a few, typically singleton, components that are disjoint from the main network. We retain the SCC, and drop all disconnected components. We then remove any units whose row sum (dangling nodes) or column sum (unreferenced nodes) on the SCC is zero, alternating between component, row and column removals until the residual $\mathbf{\tilde{H}}$ is strictly row-stochastic. These steps do not remove units from the baseline, but do remove a few units from source-only runs. Primitivity is then verified numerically as described below.
+We construct many realisations of $\mathbf{\tilde{H}}$ to test unit pairings, subfield restrictions, temporal changes, other parameter choices, and for bootstrap uncertainty estimation. Each realisation entails a unit--unit reference network with one giant strongly connected component (SCC) together with a few, typically singleton, components that are disjoint from the main network. We retain the SCC, and drop all disconnected components. We then remove any units whose row sum (dangling nodes) or column sum (unreferenced nodes) on the SCC is zero, alternating between component, row and column removals until the residual $\mathbf{\tilde{H}}$ is strictly row-stochastic. In practice these steps do not remove units from the baseline, but they do remove a few units from source-only runs. Primitivity is then verified numerically as described below.
 
 In our implementation $\mathbf{\tilde{H}}$ is a sparse matrix constructed from the filtered and weighted edge list $\mathcal{E}$ accumulated over $\mathfrak{R}$, stored in compressed sparse row (CSR) format. We use two numerical approaches, applied to different regimes:
 \begin{itemize}
