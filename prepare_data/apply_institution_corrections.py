@@ -1,5 +1,5 @@
 """
-apply_institution_corrections.py — Apply the institution correction table to frozen corpus parquets.
+apply_institution_corrections.py — Apply the institution (and journal) correction tables to frozen corpus parquets.
 
 QSS revision. Replaces the role of INSTITUTION_EXCLUSIONS in load_corpus_entities.py
 without touching OpenAlex: it reads the frozen corpus parquets (the locked
@@ -19,6 +19,13 @@ merge  : authorships of old_idx are relabelled to new_idx (name, ror, country ta
          corpus_institutions and works_count / works_per_year of new_idx recomputed.
 drop   : old_idx is removed from corpus_institutions (its authorships stay, exactly as
          with the INSTITUTION_EXCLUSIONS filter; they are dropped at edge-list build).
+
+Journal merges (data/source_corrections.csv): works of old_idx are relabelled to new_idx
+(and new_name) in corpus_works / corpus_works_supp; in source_master the old row is
+removed and the target renamed, its works/citation counts summed, and its registry
+signals (ISSN, registry names and categories, scores, field_eb) taken from the old
+record when metadata_from == 'old'. Registry-stage parquets (oas_star,
+source_densities, dropped_sources) describe journal matching and are left unchanged.
 
 --empty copies every parquet unchanged (byte-identical): the reproduction check that
 the rerun pipeline reproduces the locked baseline before any correction is applied.
@@ -42,7 +49,12 @@ from util import load_config
 CORPUS_YEARS = 25   # 2000–2024, as in load_corpus_entities.py
 FORBIDDEN = ('econ_bus_qss_submitted',)
 CHANGED = ('corpus_authorships.parquet', 'corpus_authorships_supp.parquet',
-           'corpus_institutions.parquet')
+           'corpus_institutions.parquet', 'corpus_works.parquet',
+           'corpus_works_supp.parquet', 'source_master.parquet')
+# source_master columns taken from the merged (old) record when metadata_from == 'old'
+REGISTRY_COLS = ('issn', 'era_journal_name', 'era_for_codes', 'harzing_journal_name',
+                 'harzing_field', 'wos_journal_name', 'wos_categories', 'scopus_journal_name',
+                 'scopus_asjc', 'econ_score', 'bus_score', 'field_eb')
 
 
 def load_table(path: Path) -> pd.DataFrame:
@@ -63,6 +75,8 @@ def main():
     ap = argparse.ArgumentParser()
     ap.add_argument('--source', required=True, help='frozen parquet folder (read only)')
     ap.add_argument('--corrections', default=None)
+    ap.add_argument('--source-corrections', default=None,
+                    help='journal merges (default data/source_corrections.csv)')
     ap.add_argument('--empty', action='store_true', help='copy unchanged (reproduction check)')
     args = ap.parse_args()
 
@@ -179,12 +193,66 @@ def main():
         ) TO '{dst}/corpus_institutions.parquet' (FORMAT PARQUET)
     """)
 
-    # 5. report
+    # 5. journal (source) merges: relabel works, merge source_master rows
+    sc = pd.read_csv(Path(args.source_corrections) if args.source_corrections
+                     else paths.data / 'source_corrections.csv')
+    sc = sc[sc.status == 'accepted']
+    assert set(sc.action) <= {'merge'} and sc.old_idx.is_unique
+    assert not set(sc.new_idx) & set(sc.old_idx), 'chained source merges'
+    con.register('sm_m', sc[['old_idx', 'new_idx', 'new_name', 'metadata_from']]
+                 .astype({'old_idx': 'int64', 'new_idx': 'int64'}))
+    con.execute(f"""
+        COPY (
+            SELECT w.* REPLACE (COALESCE(m.new_idx, w.source_idx) AS source_idx,
+                                COALESCE(m.new_name, tg.new_name, w.source_name) AS source_name)
+            FROM (SELECT *, row_number() OVER () AS _rn
+                  FROM '{src}/corpus_works.parquet') w
+            LEFT JOIN sm_m m ON w.source_idx = m.old_idx
+            LEFT JOIN (SELECT DISTINCT new_idx, new_name FROM sm_m) tg
+                   ON w.source_idx = tg.new_idx
+            ORDER BY w._rn
+        ) TO '{dst}/_tmp_works.parquet' (FORMAT PARQUET)
+    """)
+    con.execute(f"""COPY (SELECT * EXCLUDE (_rn) FROM '{dst}/_tmp_works.parquet')
+                    TO '{dst}/corpus_works.parquet' (FORMAT PARQUET)""")
+    (dst / '_tmp_works.parquet').unlink()
+    con.execute(f"""
+        COPY (
+            SELECT w.* REPLACE (COALESCE(m.new_idx, w.source_idx) AS source_idx)
+            FROM (SELECT *, row_number() OVER () AS _rn
+                  FROM '{src}/corpus_works_supp.parquet') w
+            LEFT JOIN sm_m m ON w.source_idx = m.old_idx
+            ORDER BY w._rn
+        ) TO '{dst}/_tmp_supp.parquet' (FORMAT PARQUET)
+    """)
+    con.execute(f"""COPY (SELECT * EXCLUDE (_rn) FROM '{dst}/_tmp_supp.parquet')
+                    TO '{dst}/corpus_works_supp.parquet' (FORMAT PARQUET)""")
+    (dst / '_tmp_supp.parquet').unlink()
+    sm_cols = [r[0] for r in con.execute(
+        f"DESCRIBE SELECT * FROM '{src}/source_master.parquet'").fetchall()]
+    repl = [f"CASE WHEN m.metadata_from = 'old' THEN o.{c} ELSE t.{c} END AS {c}"
+            for c in REGISTRY_COLS if c in sm_cols]
+    repl.append("COALESCE(m.new_name, t.source_name) AS source_name")
+    for c in ('works_count', 'cited_by_count'):
+        if c in sm_cols:
+            repl.append(f"t.{c} + COALESCE(o.{c}, 0) AS {c}")
+    con.execute(f"""
+        COPY (
+            SELECT t.* REPLACE ({', '.join(repl)})
+            FROM '{src}/source_master.parquet' t
+            LEFT JOIN sm_m m ON t.source_idx = m.new_idx
+            LEFT JOIN '{src}/source_master.parquet' o ON o.source_idx = m.old_idx
+            WHERE t.source_idx NOT IN (SELECT old_idx FROM sm_m)
+        ) TO '{dst}/source_master.parquet' (FORMAT PARQUET)
+    """)
+
+    # 6. report
     def n(path, q='COUNT(*)'):
         return con.execute(f"SELECT {q} FROM '{path}'").fetchone()[0]
     for f in CHANGED:
         print(f'{f}: {n(src / f):,} -> {n(dst / f):,} rows')
-    print(f'applied {len(merges)} merges and {len(drops)} drops; corrected parquets in {dst}')
+    print(f'applied {len(merges)} institution merges, {len(drops)} drops and '
+          f'{len(sc)} journal merges; corrected parquets in {dst}')
 
 
 if __name__ == '__main__':

@@ -1,0 +1,3 @@
+old_idx,old_name,action,new_idx,new_name,metadata_from,status,evidence
+4210169982,"Eurasian economic review :",merge,2764805720,"Eurasian Economic Review",new,accepted,"one journal split across two OpenAlex sources (147 + 133 works 2020-24); ISSNs 2147-429X and 1309-4297; target keeps its registry signals (field B)"
+131117787,"Review of Finance",merge,49857371,"Review of Finance",old,accepted,"OpenAlex files current Review of Finance works under the old-name source European Finance Review (237 works 2020-24) while the current-ISSN source has 2; merged into the populated source, renamed, registry signals taken from the Review of Finance record (field A)"

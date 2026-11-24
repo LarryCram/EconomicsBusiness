@@ -14,7 +14,7 @@ Sources,backward,2020–24,2000–04,v>1,no works,47
 Sources,backward,2020–24,2000–04,v<1,v>1,16
 Sources,backward,2020–24,2000–04,v<1,v<1,393
 Sources,backward,2020–24,2000–04,v<1,below τ,250
-Sources,backward,2020–24,2000–04,v<1,no works,605
+Sources,backward,2020–24,2000–04,v<1,no works,604
 Sources,forward,2000–04,2005–09,v>1,v>1,103
 Sources,forward,2000–04,2005–09,v>1,v<1,12
 Sources,forward,2000–04,2005–09,v>1,below τ,2
@@ -36,7 +36,7 @@ Sources,forward,2010–14,2015–19,v>1,v<1,42
 Sources,forward,2010–14,2015–19,v>1,below τ,3
 Sources,forward,2010–14,2015–19,v>1,no works,1
 Sources,forward,2010–14,2015–19,v<1,v>1,65
-Sources,forward,2010–14,2015–19,v<1,v<1,873
+Sources,forward,2010–14,2015–19,v<1,v<1,874
 Sources,forward,2010–14,2015–19,v<1,below τ,73
 Sources,forward,2010–14,2015–19,v<1,no works,19
 Sources,forward,2015–19,2020–24,v>1,v>1,230
@@ -44,7 +44,7 @@ Sources,forward,2015–19,2020–24,v>1,v<1,50
 Sources,forward,2015–19,2020–24,v>1,below τ,8
 Sources,forward,2015–19,2020–24,v>1,no works,1
 Sources,forward,2015–19,2020–24,v<1,v>1,64
-Sources,forward,2015–19,2020–24,v<1,v<1,1028
+Sources,forward,2015–19,2020–24,v<1,v<1,1027
 Sources,forward,2015–19,2020–24,v<1,below τ,110
 Sources,forward,2015–19,2020–24,v<1,no works,13
 Institutions,forward,2000–04,2020–24,v>1,v>1,104
@@ -80,11 +80,11 @@ Institutions,forward,2005–09,2010–14,v<1,v<1,364
 Institutions,forward,2005–09,2010–14,v<1,below τ,12
 Institutions,forward,2005–09,2010–14,v<1,no works,0
 Institutions,forward,2010–14,2015–19,v>1,v>1,242
-Institutions,forward,2010–14,2015–19,v>1,v<1,24
+Institutions,forward,2010–14,2015–19,v>1,v<1,25
 Institutions,forward,2010–14,2015–19,v>1,below τ,9
 Institutions,forward,2010–14,2015–19,v>1,no works,0
 Institutions,forward,2010–14,2015–19,v<1,v>1,102
-Institutions,forward,2010–14,2015–19,v<1,v<1,578
+Institutions,forward,2010–14,2015–19,v<1,v<1,577
 Institutions,forward,2010–14,2015–19,v<1,below τ,26
 Institutions,forward,2010–14,2015–19,v<1,no works,0
 Institutions,forward,2015–19,2020–24,v>1,v>1,319
