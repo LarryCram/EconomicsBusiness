@@ -19,6 +19,11 @@ EconomicsBusiness/
   PLOTS.md
 ```
 
+## QSS referee revision (from 2026-11-24)
+The paper was submitted to *Quantitative Science Studies* on 2026-06-12 (tag `qss-submitted`). Revision work is on
+branch `qss-revision`. See `qss_lock/README.md` for the locked data, OpenAlex snapshot and package versions.
+Never point `OPENALEX` at `openalex_jul26`/`openalex_oct26` and never write to `/home/lc/m/working/econ_bus_qss_submitted`.
+
 ## Python environment
 Always use `.venv/bin/python` and `.venv/bin/pip`. Never invoke bare `python` or `pip`.
 

@@ -17,3 +17,28 @@ MyLibrary
 *.blg
 *.pyc
 openalex-downloads
+# LaTeX auxiliary / build files (regenerated on compile)
+*.fdb_latexmk
+*.fls
+*.out
+*.toc
+*.lof
+*.lot
+*.loa
+*.nav
+*.snm
+*.vrb
+*.bcf
+*.run.xml
+*.xdv
+*.dvi
+*.idx
+*.ilg
+*.ind
+*.spl
+*.tdo
+*.synctex(busy)
+*.synctex.gz(busy)
+
+# Bibliographies are exported by Zotero (Better BibTeX), not version-controlled
+*.bib
