@@ -14,7 +14,8 @@ EconomicsBusiness/
   data/                    # Small reference files (MB-scale, git-tracked)
   plots/                   # Plots for exploration and publication (git-tracked)
   params.csv               # Run schedule — one row per ranking run
-  config.yaml              # Machine-specific data paths — gitignored
+  config.yaml              # Machine-specific data paths (note: actually tracked in git)
+  config.rev.yaml          # QSS-revision config → econ_bus_rev (gitignored)
   CLAUDE.md
   PLOTS.md
 ```
@@ -23,6 +24,26 @@ EconomicsBusiness/
 The paper was submitted to *Quantitative Science Studies* on 2026-06-12 (tag `qss-submitted`). Revision work is on
 branch `qss-revision`. See `qss_lock/README.md` for the locked data, OpenAlex snapshot and package versions.
 Never point `OPENALEX` at `openalex_jul26`/`openalex_oct26` and never write to `/home/lc/m/working/econ_bus_qss_submitted`.
+
+**Corrected baseline for the revision.** It lives in `/home/lc/m/working/econ_bus_rev`, built from the frozen corpus with no OpenAlex re-extraction.
+- To run any script on it, set `ECONBUS_CONFIG=config.rev.yaml` (`util/load_config.py` honours the variable).
+- To rebuild it:
+  1. Run `prepare_data/apply_institution_corrections.py --source /home/lc/m/working/econ_bus/parquet`. It applies `data/institution_corrections.csv` (merge/drop/include) and `data/source_corrections.csv` (journal merges).
+  2. Run `build_edge_lists` → `build_institution_field_eb` → `filter_mode_units` → `run_rankings`, all with the same config.
+- `--empty` reproduces the locked baseline exactly (checked with `spectral_ranking/compare_rankings_db.py`).
+- `verify_edge_lists.py` is broken: it queries the catalog column `t_x`, which no longer exists.
+- Revision analyses:
+  - `split_institution_ranking.py`
+  - `survivorship_transitions.py`
+  - `finance_reclassification.py`
+  - `benchmark_journals.py`
+  - `benchmark_institutions.py`
+  - `screen_institutions.py`
+  - `paper_numbers.py`
+- In-text numbers are tracked in `spectral_ranking_latex/NUMBERS_CHECKLIST.md`.
+- Submitted-version figures are reproduced in `plots/qss_submitted/`.
+- The error-study figures (bootstrap/MC) are deliberately not regenerated. They use ω=1 replicates; ω=0 in the code means author-fractional, which is the baseline.
+- `QSS_REVISION_PLAN.md` and the QSS PDFs are local only (gitignored): they contain referee material.
 
 ## Python environment
 Always use `.venv/bin/python` and `.venv/bin/pip`. Never invoke bare `python` or `pip`.

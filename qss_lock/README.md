@@ -41,3 +41,15 @@ so the referee revision does not drift onto newer OpenAlex data or library versi
 
 ## Config
 - `config.qss-submitted.yaml`: copy of this machine's `config.yaml` at lock time.
+
+## Corrected baseline for the revision (added 2026-11-24)
+- **Location:** `/home/lc/m/working/econ_bus_rev`, selected with `ECONBUS_CONFIG=config.rev.yaml`.
+- **What it is:** the frozen corpus parquets plus explicit correction tables. No OpenAlex access.
+  - `data/institution_corrections.csv` contains 35 merges, 6 drops and 58 includes. The includes are units passing τ that were removed by the OpenAlex institution-type filter; the rule is to keep everything except companies and hospitals. The three former `INSTITUTION_EXCLUSIONS` drops became merges.
+  - `data/source_corrections.csv` contains 2 journal merges: Eurasian Economic Review, and Review of Finance (filed by OpenAlex under the old-name record "European Finance Review").
+- **Applied by:** `prepare_data/apply_institution_corrections.py --source /home/lc/m/working/econ_bus/parquet`, then build_edge_lists → build_institution_field_eb → filter_mode_units → run_rankings.
+- **Reproduction check:** with `--empty`, the rerun reproduces all 36 locked ranking tables to ≤ 6e-11 dex (`spectral_ranking/compare_rankings_db.py`). The empty-run rankings are kept in `econ_bus_rev/empty_check/`.
+- **Other folders:**
+  - `econ_bus_rev_fin` is the finance-as-business variant (referee 3.1);
+  - `revision.duckdb` holds the split-institution test (referee 1).
+- **Locked data:** the checksums of the locked `rankings.duckdb`, `edge_lists.duckdb` and `econ.duckdb` were re-verified after the submitted figures were reproduced from them.
