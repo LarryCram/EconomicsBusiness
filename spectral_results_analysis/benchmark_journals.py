@@ -1,18 +1,24 @@
 """
-benchmark_journals.py — Compare cardinal journal influence v with external rankings, using error bands.
+benchmark_journals.py — Compare cardinal journal influence v with external journal lists, using error bands.
 
-QSS revision, referee 3 (and 1). Rank correlations would discard the cardinality of v
-and its error bands, so each benchmark is compared at its own level of measurement:
+QSS revision, referee 3 ("UT-Dallas, FT50, AJG ... SJR, Eigenfactor or RePEc").
+Rank correlations would discard the cardinality of v and its error bands, and the
+external indices differ in construction, so every benchmark is treated as an ordered
+tier list or a membership list and compared on the log v scale:
 
-  cardinal   JCR Article Influence Score (AIS; mean article = 1, like v):
-             log v on log AIS, by field; residuals judged against each journal's band;
-             E-vs-B offset at fixed AIS (the calibration prediction)
-  tiers      AJG 2024 (4*,4,3,2,1; from Harzing JQL 71) and ABDC 2025 (A*,A,B,C):
-             each tier's position on the log v scale, adjacent-tier gaps in band
-             widths, journals significantly misplaced (whole band beyond the median of
-             an adjacent tier)
-  membership FT50 (Harzing JQL 'FT 2016' flag): best v threshold (Youden) and the
-             members / non-members whose whole band lies on the wrong side of it
+  tiers      AJG 2024 (4*..1; Harzing JQL 71), ABDC 2025 (A*..C), JCR 2024 AIS quartile
+             (best quartile over a journal's categories), SJR best quartile (if a
+             SCImago download is present in data/source_masters/scimagojr*.csv), RePEc
+             simple impact factor (quartiles among matched corpus journals)
+             -> each tier's median and IQR of log v, adjacent-tier gaps in band widths,
+                journals significantly misplaced (whole band beyond the median of an
+                adjacent tier)
+  membership FT50 (Harzing JQL 'FT 2016' flag), UTD24 (UT Dallas list)
+             -> best v threshold (Youden) and members / non-members whose whole band
+                lies on the wrong side of it
+
+No cardinal fit to AIS or SJR values is made: agreement is assessed at the tier level
+and disagreement is not interpreted as error in either index.
 
 Band: 2.5–97.5% interval of log v over the 1,000 work-resampling bootstrap replicates
 (stage4_resample, ω=1 replicates, carried over to the corrected baseline as agreed);
@@ -44,12 +50,49 @@ import pandas as pd
 sys.path.insert(0, str(Path(__file__).parent.parent))
 from util import load_config, load_runs
 
-ISSN_RE = re.compile(r'\d{4}-\d{3}[\dXx]')
-AJG_TIERS = ['4*', '4', '3', '2', '1']
-# OpenAlex files Review of Finance's current works under the old-name source
-# 'European Finance Review' (49857371); its current ISSNs point at a near-empty source.
+ISSN_RE = re.compile(r'\b(\d{4})-?(\d{3}[\dXx])\b')
+# Review of Finance's current ISSNs (its works are under source 49857371, merged in the
+# corrected corpus; kept so the script also works on uncorrected data)
 ISSN_ALIASES = {'1572-3097': 49857371, '1573-692X': 49857371}
-ABDC_TIERS = ['A*', 'A', 'B', 'C']
+
+TIERS = {
+    'AJG 2024': ['4*', '4', '3', '2', '1'],
+    'ABDC 2025': ['A*', 'A', 'B', 'C'],
+    'AIS quartile': ['Q1', 'Q2', 'Q3', 'Q4'],
+    'SJR quartile': ['Q1', 'Q2', 'Q3', 'Q4'],
+    'RePEc IF quartile': ['Q1', 'Q2', 'Q3', 'Q4'],
+}
+
+# UT Dallas Top 100 Business School Research Rankings journal list (UTD24).
+# The UTD page could not be fetched (TLS error); list as published by UTD — verify.
+UTD24 = [
+    'The Accounting Review', 'Journal of Accounting and Economics',
+    'Journal of Accounting Research', 'Journal of Finance', 'Journal of Financial Economics',
+    'Review of Financial Studies', 'Information Systems Research',
+    'INFORMS Journal on Computing', 'MIS Quarterly', 'Journal of Consumer Research',
+    'Journal of Marketing', 'Journal of Marketing Research', 'Marketing Science',
+    'Management Science', 'Operations Research', 'Journal of Operations Management',
+    'Manufacturing and Service Operations Management', 'Production and Operations Management',
+    'Academy of Management Journal', 'Academy of Management Review',
+    'Administrative Science Quarterly', 'Organization Science',
+    'Journal of International Business Studies', 'Strategic Management Journal',
+]
+
+
+PUBLISHER_RE = re.compile(
+    r'(?i)\b(ltd|inc|universit|department|faculty|school|institut|academ|akad|press|verlag|'
+    r'editore|society|association|cent(er|re)|college|bank|ministry|council|foundation|'
+    r'publish|publication|wiley|sons|siebeck|springer|elsevier|emerald|sage|taylor|'
+    r'routledge|gruyter|brill|kiad)')
+
+
+def norm(s: str) -> str:
+    s = str(s).lower().replace('&', ' and ')
+    s = re.sub(r'[^\w ]+', ' ', s)      # keep non-Latin letters (avoid false matches)
+    w = s.split()
+    if w and w[0] == 'the':
+        w = w[1:]
+    return ' '.join(w)
 
 
 def issns(*vals):
@@ -57,15 +100,14 @@ def issns(*vals):
     for v in vals:
         if v is None or (isinstance(v, float) and np.isnan(v)):
             continue
-        out.update(m.upper() for m in ISSN_RE.findall(str(v)))
+        out.update(f'{a}-{b}'.upper() for a, b in ISSN_RE.findall(str(v)))
     return out
 
 
 def issn_map(P: Path) -> dict:
     """ISSN -> source_idx using the registry ISSN lists matched in the pipeline."""
-    con = duckdb.connect()
-    d = con.execute(f"""
-        SELECT sm.source_idx, list_distinct(flatten(list(cjl.unique_issn_list))) AS issns,
+    d = duckdb.connect().execute(f"""
+        SELECT sm.source_idx, list_distinct(flatten(list(cjl.unique_issn_list))) AS il,
                any_value(sm.issn) AS issn_l
         FROM '{P}/source_master.parquet' sm
         LEFT JOIN '{P}/comprehensive_journal_list.parquet' cjl
@@ -74,7 +116,7 @@ def issn_map(P: Path) -> dict:
     """).df()
     m = {}
     for r in d.itertuples():
-        for i in issns(r.issn_l, *(r.issns if r.issns is not None else [])):
+        for i in issns(r.issn_l, *(r.il if r.il is not None else [])):
             m.setdefault(i, r.source_idx)
     m.update(ISSN_ALIASES)
     return m
@@ -85,30 +127,93 @@ def match(df: pd.DataFrame, cols, imap) -> pd.Series:
                                     if i in imap), np.nan), axis=1)
 
 
-def load_benchmarks(data: Path, imap) -> pd.DataFrame:
-    src = data / 'source_masters'
+def name_map(sm: pd.DataFrame) -> dict:
+    """normalised journal name -> source_idx, from OpenAlex and registry names."""
+    m = {}
+    for c in ('source_name', 'harzing_journal_name', 'wos_journal_name',
+              'era_journal_name', 'scopus_journal_name'):
+        if c in sm.columns:
+            for i, n in zip(sm.index, sm[c]):
+                if isinstance(n, str) and n.strip():
+                    m.setdefault(norm(n), i)
+    return m
+
+
+def repec_match(rp: pd.DataFrame, nmap: dict) -> pd.DataFrame:
+    """RePEc titles are 'Journal, Publisher'. Match the title with the last one or two
+    comma-separated parts removed (publisher); prefer the one-part split. When several
+    RePEc series match one journal, keep the best-supported match (one-part split), then
+    the highest impact factor."""
+    def f(t):
+        parts = t.split(', ')
+        for gap in (1, 2):
+            k = len(parts) - gap
+            # a two-part split is accepted only if the removed part looks like a
+            # publisher (titles such as 'Organization, Technology and Management in
+            # Construction' must not match 'Organization')
+            if gap == 2 and not PUBLISHER_RE.search(parts[-2]):
+                continue
+            if k >= 1:
+                sid = nmap.get(norm(', '.join(parts[:k])))
+                if sid is not None:
+                    return pd.Series({'source_idx': sid, 'gap': gap})
+        return pd.Series({'source_idx': np.nan, 'gap': np.nan})
+    m = pd.concat([rp, rp['title_publisher'].apply(f)], axis=1).dropna(subset=['source_idx'])
+    return (m.sort_values(['source_idx', 'gap', 'simple_if'], ascending=[True, True, False])
+             .groupby('source_idx').head(1))
+
+
+def load_benchmarks(paths, sm: pd.DataFrame) -> pd.DataFrame:
+    src = paths.data / 'source_masters'
+    imap = issn_map(paths.parquet)
+    nmap = name_map(sm)
+    parts = []
+
     h = pd.read_excel(src / 'ecobus_journal_harzing_era.xlsx', sheet_name='Harzing')
     h.columns = [c.split('\n')[0] + ('_' + c.split('\n')[1] if '\n' in c else '')
                  for c in h.columns]
     h['source_idx'] = match(h, ['ISSN'], imap)
-    h = h.dropna(subset=['source_idx'])
-    h = h.assign(ajg=h['AJG_2024'].astype(str).str.strip().replace({'nan': np.nan}),
-                 ft50=h['FT_2016'].eq(1)).groupby('source_idx')[['ajg', 'ft50']].first()
+    parts.append(h.dropna(subset=['source_idx'])
+                  .assign(**{'AJG 2024': h['AJG_2024'].astype(str).str.strip()
+                             .replace({'nan': np.nan}),
+                             'FT50': h['FT_2016'].eq(1)})
+                  .groupby('source_idx')[['AJG 2024', 'FT50']].first())
 
     w = pd.read_excel(src / 'ecobus_journal_harzing_era.xlsx', sheet_name='wos_jcr')
     w['source_idx'] = match(w, ['ISSN', 'eISSN'], imap)
-    w = (w.dropna(subset=['source_idx', 'Article Influence Score'])
-          .groupby('source_idx')['Article Influence Score'].max().rename('ais'))
-    w = w[w > 0]
+    w = w.dropna(subset=['source_idx', 'AIS Quartile'])
+    w = w[w['AIS Quartile'].astype(str).str.match(r'Q[1-4]')]
+    parts.append(w.groupby('source_idx')['AIS Quartile'].min().rename('AIS quartile'))
 
     a = pd.read_excel(src / 'ABDC-JQL-2025-v1-260326.xlsx', sheet_name='2025 JQL')
     a['source_idx'] = match(a, ['ISSN', 'ISSNOnline'], imap)
-    a = (a.dropna(subset=['source_idx'])
-          .assign(abdc=lambda x: x['2025 rating'].astype(str).str.strip())
-          .groupby('source_idx')['abdc'].first())
+    parts.append(a.dropna(subset=['source_idx'])
+                  .assign(abdc=lambda x: x['2025 rating'].astype(str).str.strip())
+                  .groupby('source_idx')['abdc'].first().rename('ABDC 2025'))
 
-    b = pd.concat([h, w, a], axis=1)
+    sjr_files = sorted(src.glob('scimagojr*.csv'))
+    if sjr_files:
+        s = pd.read_csv(sjr_files[-1], sep=';')
+        s['source_idx'] = match(s, ['Issn'], imap)
+        s = s.dropna(subset=['source_idx'])
+        s = s[s['SJR Best Quartile'].astype(str).str.match(r'Q[1-4]')]
+        parts.append(s.groupby('source_idx')['SJR Best Quartile'].min().rename('SJR quartile'))
+        print(f'SJR: {sjr_files[-1].name}')
+    else:
+        print('SJR: no data/source_masters/scimagojr*.csv — SJR quartiles skipped')
+
+    rp_files = sorted(src.glob('repec_simple_if_*.csv'))
+    if rp_files:
+        rp = repec_match(pd.read_csv(rp_files[-1]), nmap)
+        parts.append(rp.set_index('source_idx')['simple_if'].rename('repec_if'))
+
+    b = pd.concat(parts, axis=1)
     b.index = b.index.astype('int64')
+    utd = {nmap.get(norm(n)) for n in UTD24} - {None}
+    b = b.reindex(b.index.union(pd.Index(sorted(utd), dtype='int64')))
+    b['UTD24'] = b.index.isin(utd)
+    missing = [n for n in UTD24 if nmap.get(norm(n)) is None]
+    print(f'UTD24: matched {len(utd)} of 24; not in corpus or unmatched: {missing}')
     return b
 
 
@@ -122,28 +227,43 @@ def bands(boot: Path) -> pd.Series:
                      name='hw')
 
 
-def tier_table(d, col, tiers, model, field, rows):
-    g = d.dropna(subset=[col])
-    g = g[g[col].isin(tiers)]
+def tier_rows(d, col, tiers, model, field):
+    g = d[d[col].isin(tiers)]
     if len(g) < 5:
-        return
+        return []
     med = g.groupby(col)['lv'].median().reindex(tiers)
-    hw_med = g['hw'].median()
+    bw = 2 * g['hw'].median()
+    rows = []
     for k, t in enumerate(tiers):
         x = g[g[col] == t]
         if x.empty:
             continue
-        up = med.iloc[k - 1] if k > 0 else np.nan          # next better tier
+        up = med.iloc[k - 1] if k > 0 else np.nan
         dn = med.iloc[k + 1] if k + 1 < len(tiers) else np.nan
-        sig_up = int(((x.lv - x.hw) > up).sum()) if not np.isnan(up) else 0
-        sig_dn = int(((x.lv + x.hw) < dn).sum()) if not np.isnan(dn) else 0
-        gap = (med.iloc[k - 1] - med.iloc[k]) / (2 * hw_med) if k > 0 else np.nan
-        rows.append(dict(model=model, field=field, benchmark=col, tier=t, n=len(x),
-                         median_log_v=x.lv.median(), q25=x.lv.quantile(.25),
-                         q75=x.lv.quantile(.75), median_halfwidth=x.hw.median(),
-                         gap_to_better_tier_in_bandwidths=gap,
-                         sig_above_better_tier_median=sig_up,
-                         sig_below_worse_tier_median=sig_dn))
+        rows.append(dict(
+            model=model, field=field, benchmark=col, tier=t, n=len(x),
+            median_log_v=x.lv.median(), q25=x.lv.quantile(.25), q75=x.lv.quantile(.75),
+            gap_to_better_tier_in_bandwidths=(up - med.iloc[k]) / bw if k > 0 else np.nan,
+            sig_above_better_tier_median=int(((x.lv - x.hw) > up).sum()) if k > 0 else 0,
+            sig_below_worse_tier_median=int(((x.lv + x.hw) < dn).sum())
+            if not np.isnan(dn) else 0))
+    return rows
+
+
+def membership(d, col, universe_mask, model):
+    x = d[universe_mask].copy()
+    x[col] = x[col].fillna(False).astype(bool)
+    if x[col].sum() == 0:
+        return None, None, None
+    cand = np.sort(x.lv.unique())
+    best = max(cand, key=lambda c: ((x.lv >= c) & x[col]).sum() / x[col].sum()
+               + ((x.lv < c) & ~x[col]).sum() / (~x[col]).sum())
+    below = x[x[col] & ((x.lv + x.hw) < best)]
+    above = x[~x[col] & ((x.lv - x.hw) > best)]
+    row = dict(model=model, field='all', benchmark=col, tier='threshold v*', n=int(x[col].sum()),
+               median_log_v=best, sig_below_worse_tier_median=len(below),
+               sig_above_better_tier_median=len(above))
+    return row, below, above
 
 
 def main():
@@ -152,13 +272,11 @@ def main():
     args = ap.parse_args()
     paths = load_config()
     bl = next(r for r in load_runs() if r['label'] == 'baseline')
-    imap = issn_map(paths.parquet)
-    bench = load_benchmarks(paths.data, imap)
-    hw = bands(Path(args.boot))
-    sm = pd.read_parquet(paths.parquet / 'source_master.parquet',
-                         columns=['source_idx', 'source_name', 'field_eb'])
+    sm = pd.read_parquet(paths.parquet / 'source_master.parquet')
     sm['field_eb'] = sm['field_eb'].fillna('X')
     sm = sm.set_index('source_idx')
+    bench = load_benchmarks(paths, sm)
+    hw = bands(Path(args.boot))
     rk = duckdb.connect(str(paths.working / 'rankings.duckdb'), read_only=True)
 
     summary, detail = [], []
@@ -167,71 +285,47 @@ def main():
              f"_vartau_rho0_m{m}_chi50_alpha100")
         v = rk.execute(f"SELECT unit_idx, v FROM {t} WHERE unit_type='S'").df() \
               .set_index('unit_idx')['v']
-        d = pd.DataFrame({'v': v}).join(sm).join(bench).join(hw)
+        d = pd.DataFrame({'v': v}).join(sm[['source_name', 'field_eb']]).join(bench).join(hw)
         d['lv'] = np.log10(d['v'])
         d['hw'] = d['hw'].fillna(d['hw'].median())
+        # RePEc: quartiles of simple IF among matched journals in this ranking
+        r = d['repec_if'].dropna()
+        d['RePEc IF quartile'] = pd.qcut(r.rank(method='first', ascending=False), 4,
+                                         labels=['Q1', 'Q2', 'Q3', 'Q4']).astype(str) \
+            .reindex(d.index)
+        for c in TIERS:
+            if c not in d.columns:
+                d[c] = np.nan
         d['model'] = model
-        detail.append(d.reset_index())
-        print(f"\n######## {model}: {len(d)} journals; matched AIS {d.ais.notna().sum()}, "
-              f"AJG {d.ajg.notna().sum()}, ABDC {d.abdc.notna().sum()}, "
-              f"FT50 {int(d.ft50.fillna(False).sum())}; median band half-width "
-              f"{d.hw.median():.3f} dex")
+        detail.append(d.reset_index().rename(columns={'index': 'source_idx'}))
+        print(f"\n######## {model}: {len(d)} journals; median band half-width {d.hw.median():.3f} dex")
+        print('  matched: ' + ', '.join(f"{c} {d[c].isin(TIERS[c]).sum()}" for c in TIERS)
+              + f", FT50 {int(d.FT50.fillna(False).sum())}, UTD24 {int(d.UTD24.fillna(False).sum())}")
 
-        # cardinal: AIS
-        print('  AIS (fit log v = a + b log AIS):')
-        for f in ['E', 'B', 'A', 'all']:
-            x = d.dropna(subset=['ais'])
-            x = x if f == 'all' else x[x.field_eb == f]
-            if len(x) < 10:
-                continue
-            la = np.log10(x.ais)
-            b, a = np.polyfit(la, x.lv, 1)
-            res = x.lv - (a + b * la)
-            sig = int((res.abs() > x.hw).sum())
-            print(f"    {f:3s} n={len(x):4d} slope={b:.2f} intercept={a:+.2f} "
-                  f"scatter={res.std():.3f} dex  |resid|>band: {sig} ({sig / len(x):.0%})")
-            summary.append(dict(model=model, field=f, benchmark='AIS', tier='', n=len(x),
-                                slope=b, intercept=a, scatter=res.std(), n_sig=sig))
-        x = d.dropna(subset=['ais'])
-        x = x[x.field_eb.isin(['E', 'B'])]
-        X = np.column_stack([np.ones(len(x)), np.log10(x.ais), (x.field_eb == 'B').astype(float)])
-        coef = np.linalg.lstsq(X, x.lv, rcond=None)[0]
-        print(f"    B offset relative to E at equal AIS: {coef[2]:+.3f} dex (x{10 ** coef[2]:.2f})")
-        summary.append(dict(model=model, field='B vs E', benchmark='AIS', tier='offset',
-                            n=len(x), intercept=coef[2]))
-
-        # tiers
         rows = []
-        for f in ['E', 'B', 'A', 'all']:
+        for f in ['all', 'E', 'B', 'A']:
             x = d if f == 'all' else d[d.field_eb == f]
-            tier_table(x, 'ajg', AJG_TIERS, model, f, rows)
-            tier_table(x, 'abdc', ABDC_TIERS, model, f, rows)
+            for c, tiers in TIERS.items():
+                rows += tier_rows(x, c, tiers, model, f)
         tt = pd.DataFrame(rows)
         summary.extend(tt.to_dict('records'))
-        show = tt[tt.field == 'all'][['benchmark', 'tier', 'n', 'median_log_v', 'q25', 'q75',
+        show = tt[tt.field == 'all'][['benchmark', 'tier', 'n', 'median_log_v',
                                       'gap_to_better_tier_in_bandwidths',
                                       'sig_above_better_tier_median',
                                       'sig_below_worse_tier_median']]
-        print('  tiers (all fields):')
         print(show.round(2).to_string(index=False))
 
-        # membership: FT50 among JQL journals
-        x = d[d.ajg.notna() | d.ft50.fillna(False)].copy()
-        x['ft50'] = x.ft50.fillna(False)
-        cand = np.sort(x.lv.unique())
-        best = max(cand, key=lambda c: ((x.lv >= c) & x.ft50).sum() / x.ft50.sum()
-                   + ((x.lv < c) & ~x.ft50).sum() / (~x.ft50).sum())
-        below = x[x.ft50 & ((x.lv + x.hw) < best)]
-        above = x[~x.ft50 & ((x.lv - x.hw) > best)]
-        print(f"  FT50: threshold v*={10 ** best:.2f}; members {int(x.ft50.sum())}, "
-              f"significantly below: {len(below)}; non-members significantly above: {len(above)}")
-        print('    members below :', '; '.join(below.sort_values('lv').source_name.str[:32]))
-        print('    non-members above:', '; '.join(above.sort_values('lv', ascending=False)
-                                                .source_name.str[:32].head(25)))
-        summary.append(dict(model=model, field='JQL', benchmark='FT50', tier='threshold',
-                            n=len(x), intercept=10 ** best, n_sig=len(below) + len(above),
-                            sig_below_worse_tier_median=len(below),
-                            sig_above_better_tier_median=len(above)))
+        jql = d['AJG 2024'].notna() | d['FT50'].fillna(False).astype(bool)
+        for col, universe in [('FT50', jql), ('UTD24', jql | d['UTD24'].fillna(False).astype(bool))]:
+            row, below, above = membership(d, col, universe, model)
+            if row is None:
+                continue
+            summary.append(row)
+            print(f"  {col}: threshold v*={10 ** row['median_log_v']:.2f}; members {row['n']}, "
+                  f"significantly below {len(below)}, non-members significantly above {len(above)}")
+            print('    members below    :', '; '.join(below.sort_values('lv').source_name.str[:34]))
+            print('    non-members above:', '; '.join(above.sort_values('lv', ascending=False)
+                                                     .source_name.str[:34].head(20)))
 
     pd.DataFrame(summary).to_csv(paths.data / 'benchmark_journals_summary.csv', index=False)
     out = paths.working / 'benchmarks'
