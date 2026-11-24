@@ -42,3 +42,8 @@ openalex-downloads
 
 # Bibliographies are exported by Zotero (Better BibTeX), not version-controlled
 *.bib
+
+# QSS referee revision: confidential reports and the working plan stay local
+QSS_REVISION_PLAN.md
+spectral_ranking_latex/QSS-*.pdf
+spectral_ranking_latex/qss-*.pdf
