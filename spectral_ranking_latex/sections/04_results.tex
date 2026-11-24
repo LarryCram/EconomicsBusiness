@@ -7,7 +7,7 @@
 
 A glossary of the terms used in the model is exhibited in Table~\ref{tab:parameters}. There are three structural arrangements: (1) blocks, picked by the unit mask $m$ and encoded as $1000 \rightarrow S$ (sources only), $0001 \rightarrow I$ (institutions only), $0110 \rightarrow B$ (bipartite) and $1111 \rightarrow J$ (joint), (2) subfields, picked from $\mathfrak{F}$ ($E, B, A, X$), and (3) census and target time windows, overlapped ($t_c=t_t$) and picked from the sets \[\{T_t: t = 1 \ldots 5\} = \{[2000, 2004], [2005, 2009], [2010, 2014], [2015,2019], [2020,2024]\}.\] These fully overlapping windows `overcount' references to recent works in each window. We also present a sensitivity analysis for the parameters $\rho,~\chi,~\omega,~\epsilon,~(\alpha,~\mu),~\rm{and}~t_c$, a bootstrap study of work-induced ranking instability, and a Monte Carlo study of metadata errors. Results focus on $\mathbf{v}_S$ and $\mathbf{v}_I$, the source and institution influence vectors, derived from the ranking probability by Equation \ref{eq:vstar}. An instance of the model is designated using a subscript for the unit and superscripts as required to designate structural arrangements and parameters. For example, $\mathbf{v}_I^{S,E,T_5}$ is the institution influence vector for the $S$ ($m=1000$) block, $F=E$ (Economics), and census and target time windows 2020-2024. Throughout this work, logarithms are base 10.
 
-Figure~\ref{fig:fig_3by} compares influence values across the four unit masks. The $x$-direction is the ordinal rank of sources (left) and institutions (right) in the baseline (i.e. bipartite resolvent with $S \rightarrow I \rightarrow S,~\varepsilon=0,~\rho=0,~\omega=0,~\chi=0.5,~\alpha=1,~\mu=0,~T_5 = [2020-2024]$ and $F=EBAX,~\rm{all~subfields}$). The solid black curve traces the corresponding baseline influence value $v$ in the $y$-direction. Units near $v=1$ lie near the work-count weighted average influence per work, corresponding to rank position $\approx$15\% for sources and $\approx$25\% for institutions. For most sources and institutions, $v$ lies between  1 and 0.1. Overlaid on the bipartite source curve are $v_S^S$ (red: $S \rightarrow S$) and $v_S^J$ (green: joint $S+I \rightarrow S+I$). A point on the $x$-axis is the same unit in every case. For institutions, we show $v_I^I$ ($I \rightarrow I$) and $v_I^J$ (joint). 
+Figure~\ref{fig:fig_3by} compares influence values across the four unit masks. The $x$-direction is the ordinal rank of sources (left) and institutions (right) in the baseline (i.e. bipartite resolvent with $S \rightarrow I \rightarrow S,~\varepsilon=0,~\rho=0,~\omega=0,~\chi=0.5,~\alpha=1,~\mu=0,~T_5 = [2020-2024]$ and $F=EBAX,~\rm{all~subfields}$). The solid black curve traces the corresponding baseline influence value $v$ in the $y$-direction. Units near $v=1$ lie near the work-count weighted average influence per work, corresponding to rank position $\approx$19\% for sources and $\approx$27\% for institutions. For most sources and institutions, $v$ lies between  1 and 0.1. Overlaid on the bipartite source curve are $v_S^S$ (red: $S \rightarrow S$) and $v_S^J$ (green: joint $S+I \rightarrow S+I$). A point on the $x$-axis is the same unit in every case. For institutions, we show $v_I^I$ ($I \rightarrow I$) and $v_I^J$ (joint). 
 
 \begin{figure}[!hbt]
   \centering
@@ -51,18 +51,18 @@ measures its variability, with $J_{\text{col}}=1$ when units receive equal refer
 Kernel & $\bar{J}$ & $J_{\text{col}}$ & $\bar{K}$ \\
 \midrule
 $C_{SS}$ & 0.47 & 0.90 & 32 \\
-$C_{II}$ & 0.73 & 0.95 & 256 \\
+$C_{II}$ & 0.73 & 0.95 & 255 \\
 $C_{SI}$ & 0.62 & 0.94 & 114 \\
-$C_{IS}$ & 0.62 & 0.84 & 97 \\
+$C_{IS}$ & 0.62 & 0.83 & 95 \\
 \midrule
 $M_S$ & 0.81 & 0.84 & 389 \\
 \midrule
-$M_I$ & 0.91 & 0.93 & 960 \\
+$M_I$ & 0.90 & 0.93 & 951 \\
 \bottomrule
 \end{tabular}
 \end{table}
 
-Table~\ref{tab:kernel_structure} quantifies how, in one step, institutions spread outgoing references more broadly than sources ($\bar{J}_{II}=0.73$ vs $\bar{J}_{SS}=0.47$; fan-out $7.9\times$ larger), while receiving incoming references only slightly more broadly than sources ($J_{col, II}=0.95$ vs $J_{col, SS}=0.90$). In two-step kernels, $\mathbf{M}_S$ spreads references more evenly than $C_{SS}$ ($\bar{J}:$ 0.81 c.f. 0.47) while also narrowing the spread of incoming references ($J_{\text{col}}$: 0.83 c.f. 0.90). The bipartite round-trip spreads attention/influence broadly while rewarding the most-cited sources, raising $v$ for high-ranked sources as shown in Figs~\ref{fig:fig_3by}: normalisation of influence then reduces $v$ for lower ranked sources. For institutions, $\mathbf{M}_I$ is more balanced ($\bar{J}=0.90$, $J_{\text{col}}=0.93$): bipartite paths make little difference compared with institution-only paths, although $v_I^I$ is slightly less than $v_I^B$ for the highest ranks. The joint block model covering the full citation matrix yields $v$ between the bipartite and single-unit value.
+Table~\ref{tab:kernel_structure} quantifies how, in one step, institutions spread outgoing references more broadly than sources ($\bar{J}_{II}=0.73$ vs $\bar{J}_{SS}=0.47$; fan-out $7.9\times$ larger), while receiving incoming references only slightly more broadly than sources ($J_{col, II}=0.95$ vs $J_{col, SS}=0.90$). In two-step kernels, $\mathbf{M}_S$ spreads references more evenly than $C_{SS}$ ($\bar{J}:$ 0.81 c.f. 0.47) while also narrowing the spread of incoming references ($J_{\text{col}}$: 0.84 c.f. 0.90). The bipartite round-trip spreads attention/influence broadly while rewarding the most-cited sources, raising $v$ for high-ranked sources as shown in Figs~\ref{fig:fig_3by}: normalisation of influence then reduces $v$ for lower ranked sources. For institutions, $\mathbf{M}_I$ is more balanced ($\bar{J}=0.90$, $J_{\text{col}}=0.93$): bipartite paths make little difference compared with institution-only paths, although $v_I^I$ is slightly less than $v_I^B$ for the highest ranks. The joint block model covering the full citation matrix yields $v$ between the bipartite and single-unit value.
 
 \subsection{Business and Economics}
 
@@ -76,7 +76,7 @@ First consider sources, Figure~\ref{fig:combined_vs_separate} (left). The linear
   \label{fig:combined_vs_separate}
 \end{figure}
 
-Define the directed density $d_{XY}$ ($X, Y \in \{E, B\}$) as the per-directed-pair average of citation matrix elements (with $\rho=0$) from group $X$ to group $Y$, with denominator $N_X(N_X-1)$ for within-group pairs and $N_X N_Y$ for cross-group pairs. As exhibited in Table~\ref{tab:link_density}, the top-ten $E$ sources are mutually linked at a rate $49.61/0.272=182$ times the density among other $E$ sources, and $49.61/0.307=161$ times the density among all $B$ sources. They also receive $3.20/0.728=4.4$ times more references from top $B$ sources than they give to them. Spectral ranking over the combined $E+B$ corpus drives the total influence probability of this \textit{clique} of 10 $E$ sources to 25.9\%. For $E$-only ranking the influence probability of the clique rises to 38.5\% since the $E$ network is smaller. This increase reduces the influence probability and cardinal ranking of other $E$ sources and flattening the slope of the red $E$ points in the left-hand panel of Figure~\ref{fig:combined_vs_separate}. The influence of the clique is not present in the green points ($B$ only), so their ordinal rankings rise. 
+Define the directed density $d_{XY}$ ($X, Y \in \{E, B\}$) as the per-directed-pair average of citation matrix elements (with $\rho=0$) from group $X$ to group $Y$, with denominator $N_X(N_X-1)$ for within-group pairs and $N_X N_Y$ for cross-group pairs. As exhibited in Table~\ref{tab:link_density}, the top-ten $E$ sources are mutually linked at a rate $53.32/0.719=74$ times the density among other $E$ sources, and $53.32/0.767=70$ times the density among all $B$ sources. They also receive $4.16/0.809=5.1$ times more references from top $B$ sources than they give to them. Spectral ranking over the combined $E+B$ corpus drives the total influence probability of this \textit{clique} of 10 $E$ sources to 26.1\%. For $E$-only ranking the influence probability of the clique rises to 38.8\% since the $E$ network is smaller. This increase reduces the influence probability and cardinal ranking of other $E$ sources and flattening the slope of the red $E$ points in the left-hand panel of Figure~\ref{fig:combined_vs_separate}. The influence of the clique is not present in the green points ($B$ only), so their ordinal rankings rise. 
 \begin{table}[!htbp]
 \centering
 \caption{Directed link density $d_{XY}$ (average citation weight per directed pair) between source communities. Rows = citing group; columns = cited group. `Top' means top-ten sources by field-specific $SS$ ranking.}
@@ -85,13 +85,13 @@ Define the directed density $d_{XY}$ ($X, Y \in \{E, B\}$) as the per-directed-p
 \toprule
  & \makebox[1.6cm][r]{\small Top-$E$} & \makebox[1.6cm][r]{\small Rest-$E$} & \makebox[1.6cm][r]{\small All-$E$} & \makebox[1.6cm][r]{\small Top-$B$} & \makebox[1.6cm][r]{\small Rest-$B$} & \makebox[1.6cm][r]{\small All-$B$} \\
 \midrule
-Top-$E$ & 49.61 & 0.535 & 1.11 & 0.728 & 0.028 & 0.035 \\
-Rest-$E$ & 3.70 & 0.272 & 0.316 & 0.179 & 0.069 & 0.070 \\
-All-$E$ & 4.23 & 0.275 & 0.327 & 0.186 & 0.068 & 0.069 \\
+Top-$E$ & 53.32 & 0.829 & 1.64 & 0.809 & 0.045 & 0.054 \\
+Rest-$E$ & 6.38 & 0.719 & 0.816 & 0.301 & 0.190 & 0.191 \\
+All-$E$ & 7.11 & 0.721 & 0.831 & 0.310 & 0.187 & 0.189 \\
 \midrule
-Top-$B$ & 3.20 & 0.062 & 0.103 & 12.59 & 0.4ten& 0.513 \\
-Rest-$B$ & 0.438 & 0.053 & 0.058 & 1.53 & 0.293 & 0.305 \\
-All-$B$ & 0.464 & 0.053 & 0.058 & 1.63 & 0.294 & 0.307 \\
+Top-$B$ & 4.16 & 0.083 & 0.153 & 14.19 & 0.605 & 0.763 \\
+Rest-$B$ & 0.674 & 0.154 & 0.163 & 2.36 & 0.746 & 0.767 \\
+All-$B$ & 0.719 & 0.153 & 0.163 & 2.50 & 0.744 & 0.767 \\
 \bottomrule
 \end{tabular}
 \end{table}
@@ -124,10 +124,10 @@ The variation of unit influence over 25 years is illustrated in Figure~\ref{fig:
 
 Figure~\ref{fig:figstability} quantifies the achievement and persistence of
 above-average influence - defined as $v>1$ - across the 25-year span.
-Approximately 15\% of sources and 25\% of institutions have
+Between one sixth and one fifth of sources and about a quarter of institutions have
 above-average influence in each time window, and this fraction is stable over time.
-Considering the 651~sources and 417~institutions present in both the
-2000--04 and 2020--24 windows, $86\%$ of sources and $96\%$ of
+Considering the 651~sources and 411~institutions present in both the
+2000--04 and 2020--24 windows, $87\%$ of sources and $96\%$ of
 institutions with above-average influence in 2000--04 retain that status
 in 2020--24. The scatter plots exhibit the asymmetry: very few sources or institutions move from 
 $v>1$ in 2000-04 to $v<1$ in 2020-24 (bottom right quadrant), and many move from $v<1$ to $v>1$
@@ -140,7 +140,7 @@ and the associated increase in research-active faculty size.
   \includegraphics[width=0.8\textwidth]{../plots/fig_stability_scatter_latex.pdf}
   \caption{Influence $v$ in 2000--04 against $v$ in 2020--24
     for units present in both windows (log--log) with baseline parameters.
-    Left: sources ($n=651$).  Right: institutions ($n=417$).
+    Left: sources ($n=651$).  Right: institutions ($n=411$).
     Diagonal: $v_{t_1}=v_{t_5}$. Hue encodes threshold-crossing status, e.g. red denotes the few units that decline across $v=1$ between 2000 and 2024.}
   \label{fig:figstability}
 \end{figure}
@@ -155,8 +155,8 @@ In addition to the structural results presented above (units, subfields and time
   \caption{Parameter sensitivity of influence $v$ against baseline
     ordinal rank.
     Left: sources.  Right: institutions.
-    Black line: baseline ($\tau_I{=}10$, $\tau_S{=}5$, $\rho{=}0$, $\alpha{=}1$, $\varepsilon{=}0$).
-    Red $\times$: $\tau{=}40$ ($N_S{=}663$, $N_I{=}1{,}125$).
+    Black line: baseline ($\tau_I{=}20$, $\tau_S{=}10$, $\rho{=}0$, $\alpha{=}1$, $\varepsilon{=}0$).
+    Red $\times$: $\tau{=}40$ ($N_S{=}664$, $N_I{=}1{,}134$).
     Blue $\times$: $\rho{=}1$.
     Green $\times$: census year 2024 only.
     Yellow $\times$: $\omega=1$.
@@ -165,16 +165,16 @@ In addition to the structural results presented above (units, subfields and time
   \label{fig:fig5}
 \end{figure}
 
-Raising the work-per-year threshold to $\tau_I{=}\tau_S{=}40$ reduces the corpus size to around 40\% for sources and 57\% for institutions. Despite this reduction, the influence scores of the surviving units track the baseline closely, with Spearman coefficients $>~0.97$. However, the higher threshold removes low-ranked units differentially, raising influence for the most influential units and lowering it by about $0.1$ in $\log{v}$ for sources ($0.06$ for institutions) over the bulk of units. Consequently, the median absolute ordinal rank shift is large among the lower-influence population, 7.5\% for sources and 6.4\% for institutions that remain in the corpus. 
+Raising the work-per-year threshold to $\tau_I{=}\tau_S{=}40$ reduces the corpus size to around 40\% for sources and 57\% for institutions. Despite this reduction, the influence scores of the surviving units track the baseline closely, with Spearman coefficients $>~0.97$. However, the higher threshold removes low-ranked units differentially, raising influence for the most influential units and lowering it over the bulk of units (median shift $-0.04$ in $\log{v}$ for sources and $-0.08$ for institutions, with standard deviations of $0.11$ and $0.06$). Consequently, the median absolute ordinal rank shift is large among the lower-influence population, 7.4\% for sources and 6.6\% for institutions that remain in the corpus.
 
 Removing the normalisation of reference list lengths ($\rho{=}1$)
 leads to a small overall reduction of average source influence, $-0.07$ in $\log(v)$, while introducing substantial changes in individual influence values, (standard deviation - s.d. - in $\log(v)$ 0.2 for sources and 0.1 for institutions). These relatively large fractional variations occur across all units, leading to a median change in ordinal rank of 5\% for sources and institutions. 
 
 The overlapping census and target windows for the baseline model `over-count' references that are close in publication date. When the census window is reduced to one year ($t_c=2024$), total reference counts reduce and many values of $v$ change  (s.d. 0.2 for sources, 0.1 for institutions). Because the reduction in citer-cited pairs occurs uniformly over $\mathbf{H}$ the shape of $v^{S,I}$ is similar to $v^B$.
 
-Moving between institution weights based on author fractional counting and uniform counting leads to very small changes in source $v$; for institutions the s.d. is 0.04 with no change in median value, and the median ordinal rank changes by less than 1.6\%.
+Moving between institution weights based on author fractional counting and uniform counting leads to very small changes in source $v$; for institutions the s.d. is 0.04 with no change in median value, and the median ordinal rank changes by less than 2\%.
 
-When the baseline is modified by including the sentinel units ($\varepsilon=1$) the presence of the single large source and sink for all corpus units reduces the normalised size of within-corpus exchanges, flattening and shuffling the distribution of $v$ for sources and institutions. The median shift in $\log(v)$ is 0.3 for sources and 0.25 for institutions, and the median ordinal rank shift is around 10\%. We emphasise that the use of single sentinel units is only a coarse approximation to the flow of references to and from the corpus.
+When the baseline is modified by including the sentinel units ($\varepsilon=1$) the presence of the single large source and sink for all corpus units reduces the normalised size of within-corpus exchanges, flattening and shuffling the distribution of $v$ for sources and institutions. The standard deviation of the shift in $\log(v)$ is 0.30 for sources and 0.24 for institutions (median shifts 0.04 and 0.16), and the median ordinal rank shift is around 10\%. We emphasise that the use of single sentinel units is only a coarse approximation to the flow of references to and from the corpus.
 
 Commonly, bibliometric spectral rankings adopt the Katz-Hubbell (PageRank) algorithm, with an attenuation \citep{katzNewStatusIndex1953} $\alpha<1$ and a boundary condition \citep{hubbellInputoutputApproachClique1965} $\mathbf{\mu} \ne \mathbf{0}$ \citep{bollenJournalStatus2006, bergstromEigenfactorMetrics2008}. With $\alpha=0.85$ and $\mu_p=1/(N_S+N_I)$, the baseline model is radically altered as shown in Figure~\ref{fig:fig5d}. Units that had low $v$ in the Perron-Frobenius model are held up by the floor $(1-\alpha)\mathbf{\mu}$ on the Katz-Hubbell eigenvector $\mathbf{\pi}$. Because influence $v_p \propto \pi_p/a_p$, units with only few works $a_p$ may further amplify this lift, leading to the occasional large rises seen in Figure~\ref{fig:fig5d}. Comparison between Figures~\ref{fig:fig5d} and \ref{fig:fig_3by} illustrates the straightforward interplay between the block models and the Katz-Hubbell algorithm: in the recirculating bipartite case, routing through units tends to spread influence compared with single-unit influence, although both are elevated by the boundary value $\mathbf{\mu}$. As noted above, we might choose $\mu = 1/(N_S+N_I)$ or $\mu= (1/2N_S, 1/2N_I)$ for sources and institutions. Unsurprisingly, with $N_S \approx N_I$ this choice makes little  difference, less than 0.02 in the log. While similar to the $\alpha=0.85$ model, the Eigenvector ranking \textcite{bergstromEigenfactorMetrics2008} excludes unit self-edges. We find that removing self edges systematically lowers $v$ when $v < 1$, by around 0.04 in the log for sources and institutions, while the variation around this shift is 0.08 (s.d.) for sources and 0.07 (s.d.) for institutions. For this data set, unit self-referencing contributes little to influence values or rank.  
 \begin{figure}[!htbp]
@@ -260,7 +260,7 @@ An alternative viewpoint is that for \textit{some} purposes, projecting the work
   \label{fig:enclave_referer_v}
 \end{figure}
 
-We can explore some differences between work-work and unit-unit networks by examining highly cited works (HCW: citation counts in the top percentile for their publication year), since high citations are symptomatic of an extensive, coupled work-work reference network. Between 2014 and 2023, there are 8,675 HCWs in the corpus. Let us define the \textit{ranking of a work} $v_w$ as the median of its source and institutional cardinal rankings, and the ranking of a set of referencing works as the median of the separate work rankings. We are mindful of the cautionary advice of \textcite{stevensTheoryScalesMeasurement1946} in relation to arithmetic operations on cardinal scales, but the eigenvector normalisation (Equation~\ref{eq:eig}) provides support for these combinations.  Figure~\ref{fig:enclave_referer_v} shows that HCWs with $v<1$ are overwhelmingly referenced by works with $v<1$, revealing a substantial population of highly cited works that is disconnected from units with high spectral ranking. This highlights the distinction between influence transfer at the work level and at the unit level.
+We can explore some differences between work-work and unit-unit networks by examining highly cited works (HCW: citation counts in the top percentile for their publication year), since high citations are symptomatic of an extensive, coupled work-work reference network. Between 2014 and 2023, there are 9,151 HCWs in the corpus. Let us define the \textit{ranking of a work} $v_w$ as the median of its source and institutional cardinal rankings, and the ranking of a set of referencing works as the median of the separate work rankings. We are mindful of the cautionary advice of \textcite{stevensTheoryScalesMeasurement1946} in relation to arithmetic operations on cardinal scales, but the eigenvector normalisation (Equation~\ref{eq:eig}) provides support for these combinations.  Figure~\ref{fig:enclave_referer_v} shows that HCWs with $v<1$ are overwhelmingly referenced by works with $v<1$, revealing a substantial population of highly cited works that is disconnected from units with high spectral ranking. This highlights the distinction between influence transfer at the work level and at the unit level.
 
 To investigate further, we apply non-negative matrix factorization \citep{leeLearningPartsObjects1999} to the TF-IDF representation of the titles of all HCW with $v<1$, identifying $k=10$ large latent title-based topics that we consolidate by manual inspection into six named clusters. Five of the topic clusters form connected work-work communities while the `resource curse' cluster splits into two connected communities. The intriguing space between highly cited status and modest unit spectral ranking invites a deeper study of the works and researchers involved in these highly active topic communities, which we propose to call \textit{enclaves}.
 
@@ -273,12 +273,12 @@ To investigate further, we apply non-negative matrix factorization \citep{leeLea
     \toprule
     Enclave & $n_{\text{HCW}}$ & Works & CC & $\langle v \rangle_{\text{HCW}}$ & $\langle v \rangle_{\text{citing}}$ \\
     \midrule
-    Sustainability & 666 & 39,654 & 1 & 0.749 & 0.693 \\
-    Systematic literature reviews & 332 & 17,478 & 1 & 0.701 & 0.665 \\
-    Digital transformation \& China & 304 & 13,140 & 1 & 0.694 & 0.735 \\
-    COVID-19 \& financial markets & 265 & 14,807 & 1 & 0.712 & 0.628 \\
-    Resource curse \& development & 160 & 8,744 & 2 & 0.728 & 0.621 \\
-    Bitcoin \& policy uncertainty & 70 & 4,492 & 1 & 0.801 & 0.668 \\
+    Sustainability & 755 & 45,911 & 1 & 0.736 & 0.668 \\
+    Systematic literature reviews & 311 & 16,658 & 1 & 0.691 & 0.646 \\
+    Digital transformation \& China & 302 & 13,615 & 1 & 0.697 & 0.734 \\
+    COVID-19 \& financial markets & 219 & 9,687 & 1 & 0.737 & 0.714 \\
+    Resource curse \& development & 163 & 8,751 & 2 & 0.725 & 0.622 \\
+    Bitcoin \& policy uncertainty & 63 & 4,138 & 1 & 0.804 & 0.662 \\
     \bottomrule
   \end{tabular}
 \end{table}
