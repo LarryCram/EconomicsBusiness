@@ -64,7 +64,7 @@ TIERS = {
 }
 
 # UT Dallas Top 100 Business School Research Rankings journal list (UTD24).
-# The UTD page could not be fetched (TLS error); list as published by UTD — verify.
+# Checked 2026-11-24 against the UTD list supplied by the author (24 titles, identical).
 UTD24 = [
     'The Accounting Review', 'Journal of Accounting and Economics',
     'Journal of Accounting Research', 'Journal of Finance', 'Journal of Financial Economics',
@@ -108,22 +108,29 @@ def issn_map(P: Path) -> dict:
     """ISSN -> source_idx using the registry ISSN lists matched in the pipeline."""
     d = duckdb.connect().execute(f"""
         SELECT sm.source_idx, list_distinct(flatten(list(cjl.unique_issn_list))) AS il,
-               any_value(sm.issn) AS issn_l
+               any_value(sm.issn) AS issn_l, any_value(sm.works_count) AS works
         FROM '{P}/source_master.parquet' sm
         LEFT JOIN '{P}/comprehensive_journal_list.parquet' cjl
                ON list_contains(cjl.unique_issn_list, sm.issn)
         GROUP BY sm.source_idx
     """).df()
-    m = {}
+    # an ISSN can reach several sources through shared registry rows; resolve
+    # deterministically: the source whose own ISSN-L it is, then most works, then lowest id
+    cand = {}
     for r in d.itertuples():
+        own = issns(r.issn_l)
         for i in issns(r.issn_l, *(r.il if r.il is not None else [])):
-            m.setdefault(i, r.source_idx)
+            key = (i not in own, -(r.works if r.works == r.works else 0), r.source_idx)
+            if i not in cand or key < cand[i][0]:
+                cand[i] = (key, r.source_idx)
+    m = {i: sid for i, (_, sid) in cand.items()}
     m.update(ISSN_ALIASES)
     return m
 
 
 def match(df: pd.DataFrame, cols, imap) -> pd.Series:
-    return df.apply(lambda r: next((imap[i] for i in issns(*[r[c] for c in cols])
+    # sorted: set iteration order depends on string hashing and differs between runs
+    return df.apply(lambda r: next((imap[i] for i in sorted(issns(*[r[c] for c in cols]))
                                     if i in imap), np.nan), axis=1)
 
 
