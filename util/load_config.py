@@ -17,11 +17,15 @@ Usage:
 """
 
 import csv
+import os
 from dataclasses import dataclass
 from pathlib import Path
 import yaml
 
-_CONFIG_PATH = Path(__file__).parent.parent / 'config.yaml'
+# ECONBUS_CONFIG selects an alternative config file (e.g. config.rev.yaml for the
+# QSS-revision rerun into a separate WORKING folder); default is config.yaml.
+_CONFIG_PATH = Path(os.environ.get('ECONBUS_CONFIG',
+                                   Path(__file__).parent.parent / 'config.yaml'))
 _PARAMS_PATH = Path(__file__).parent.parent / 'params.yaml'
 _RUNS_PATH   = Path(__file__).parent.parent / 'params.csv'
 

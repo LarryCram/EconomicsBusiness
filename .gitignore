@@ -47,3 +47,9 @@ openalex-downloads
 QSS_REVISION_PLAN.md
 spectral_ranking_latex/QSS-*.pdf
 spectral_ranking_latex/qss-*.pdf
+
+# QSS revision rerun config (machine-specific)
+config.rev.yaml
+
+# LibreOffice lock files
+.~lock.*#
