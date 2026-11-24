@@ -19,6 +19,10 @@ merge  : authorships of old_idx are relabelled to new_idx (name, ror, country ta
          corpus_institutions and works_count / works_per_year of new_idx recomputed.
 drop   : old_idx is removed from corpus_institutions (its authorships stay, exactly as
          with the INSTITUTION_EXCLUSIONS filter; they are dropped at edge-list build).
+include: old_idx, excluded by the OpenAlex institution-type filter, is added to
+         corpus_institutions from the authorship metadata (name, ROR, country); its
+         OpenAlex type is read from the category text. Rule (2026-11-24): every unit
+         passing τ is kept unless it is a company or a hospital.
 
 Journal merges (data/source_corrections.csv): works of old_idx are relabelled to new_idx
 (and new_name) in corpus_works / corpus_works_supp; in source_master the old row is
@@ -67,7 +71,7 @@ def load_table(path: Path) -> pd.DataFrame:
     assert m['new_idx'].notna().all(), 'every merge needs new_idx'
     assert not set(m['new_idx'].astype('int64')) & set(d['old_idx']), \
         'a merge target is itself corrected (chain) — resolve the chain in the table'
-    assert set(d.action) <= {'merge', 'drop'}
+    assert set(d.action) <= {'merge', 'drop', 'include'}
     return d
 
 
@@ -100,9 +104,14 @@ def main():
                       else paths.data / 'institution_corrections.csv')
     merges = corr[corr.action == 'merge'][['old_idx', 'new_idx']].astype('int64')
     drops = corr[corr.action == 'drop'][['old_idx']]
+    incl = corr[corr.action == 'include'][['old_idx', 'category']].rename(columns={'old_idx': 'inst'})
+    incl['inst'] = incl['inst'].astype('int64')
+    # OpenAlex type recorded in the category text, e.g. '(OpenAlex type facility on 2026-11-24)'
+    incl['itype'] = incl['category'].str.extract(r'OpenAlex type (\w+)', expand=False)
     con = duckdb.connect()
     con.register('m', merges)
     con.register('dr', drops)
+    con.register('incl', incl)
     ci = f"'{src}/corpus_institutions.parquet'"
 
     missing = con.execute(f"SELECT new_idx FROM m WHERE new_idx NOT IN "
@@ -189,9 +198,22 @@ def main():
             LEFT JOIN cnt USING (institution_idx)
             WHERE ci.institution_idx NOT IN (SELECT old_idx FROM m)
               AND ci.institution_idx NOT IN (SELECT old_idx FROM dr)
-            ORDER BY works_count DESC
+            UNION ALL
+            -- include: units excluded by the OpenAlex type filter, built from the
+            -- authorship metadata (name, ROR, country) of the corrected authorships
+            SELECT a.institution_idx, any_value(a.institution_name), any_value(a.country_code),
+                   any_value(i.itype), any_value(a.ror),
+                   COUNT(DISTINCT a.work_idx),
+                   ROUND(COUNT(DISTINCT a.work_idx) / {CORPUS_YEARS}.0, 4)
+            FROM '{dst}/corpus_authorships.parquet' a
+            JOIN incl i ON i.inst = a.institution_idx
+            GROUP BY a.institution_idx
+            ORDER BY 6 DESC
         ) TO '{dst}/corpus_institutions.parquet' (FORMAT PARQUET)
     """)
+    dup = con.execute(f"SELECT COUNT(*) - COUNT(DISTINCT institution_idx) "
+                      f"FROM '{dst}/corpus_institutions.parquet'").fetchone()[0]
+    assert dup == 0, 'an included unit is already in corpus_institutions'
 
     # 5. journal (source) merges: relabel works, merge source_master rows
     sc = pd.read_csv(Path(args.source_corrections) if args.source_corrections
@@ -251,7 +273,7 @@ def main():
         return con.execute(f"SELECT {q} FROM '{path}'").fetchone()[0]
     for f in CHANGED:
         print(f'{f}: {n(src / f):,} -> {n(dst / f):,} rows')
-    print(f'applied {len(merges)} institution merges, {len(drops)} drops and '
+    print(f'applied {len(merges)} institution merges, {len(drops)} drops, {len(incl)} includes and '
           f'{len(sc)} journal merges; corrected parquets in {dst}')
 
 
