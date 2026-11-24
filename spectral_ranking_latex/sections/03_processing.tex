@@ -2,24 +2,24 @@
 % ---------------------------------------------------------------% ---------------------------------------------------------------
 \section{Corpus selection}
 \label{sec:sources}
-OpenAlex \citep{priemOpenAlexFullyopenIndex2022, alperinAnalysisSuitabilityOpenAlex2024a, OpeningCWTSLeiden2024} provides our bibliometric data. We select the fields of economics and business due to their traditions of evaluative ranking of journals and institutions \citep[e.g.][]{liebowitzAssessingRelativeImpacts1984, boricPossibilitiesRankingBusiness2024}. Corpus selection starts with a list of eligible sources having three features: evidence from one of our journal registries that the source substantially 
+OpenAlex \citep{priemOpenAlexFullyopenIndex2022, alperinAnalysisSuitabilityOpenAlex2024, vaneckneesjanOpeningCWTSLeiden2024} provides our bibliometric data. We select the fields of economics and business due to their traditions of evaluative ranking of journals and institutions \citep[e.g.][]{liebowitzAssessingRelativeImpacts1984, boricPossibilitiesRankingBusiness2024}. Corpus selection starts with a list of eligible sources having three features: evidence from one of our journal registries that the source substantially 
 publishes economics or business research, an OpenAlex source identifier for corpus extraction, and a sufficient number of published works per year.
 
-The journal registries are as follows. Harzing's \textit{71st Edition of the Journal Quality List}~\cite[][JQL]{harzingJournalQualityList2024} assembles
+The journal registries are as follows. Harzing's \textit{71st Edition of the Journal Quality List}~\textcite[][JQL]{harzingJournalQualityList2024} assembles
 peer assessments of journal quality across business and economics
 disciplines. Its scope is confined to economics and business so no
 filtering is applied.
-The \textit{ERA 2023 Submission Journal List}~\cite[][SJL]{australianresearchcouncilERA2023Submission2022} assigns up to three
+The \textit{ERA 2023 Submission Journal List}~\textcite[][SJL]{australianresearchcouncilERA2023Submission2022} assigns up to three
 Field of Research (FoR) codes to each entry.
 From the full list of 26{,}241 journals we retain those for which \emph{every} assigned FoR code falls within
 Division~35 (Commerce, Management, Tourism and Services) or
 Division~38 (Economics)---specifically the 35 and 38 two-digit divisions and the four-digit groups
 3501--3509 and 3801--3803, 3899.
-\textit{Clarivate Web of Science Journal Citation Reports}~\cite[][JCR]{clarivateanalyticsJournalCitationReports2026} assign each
+\textit{Clarivate Web of Science Journal Citation Reports}~\textcite[][JCR]{clarivateanalyticsJournalCitationReports2026} assign each
 journal a Web of Science category. We retain those in
 ``Economics'', ``Management'', ``Business'', ``Transportation'',
 or ``Business, Finance''.
-The \textit{Scopus Source List}~\cite[][SSL]{ScopusSources2026} (March 2026 edition) assigns All Science Journal Classification (ASJC) codes to each source. We retain journals carrying code~1400 (Business, Management and Accounting) or code~2000 (Economics, Econometrics and Finance), including inactive titles.
+The \textit{Scopus Source List}~\textcite[][SSL]{elsevierScopusSourceList2026} (March 2026 edition) assigns All Science Journal Classification (ASJC) codes to each source. We retain journals carrying code~1400 (Business, Management and Accounting) or code~2000 (Economics, Econometrics and Finance), including inactive titles.
 
 Every journal in JQL, SJL, JCR, and SSL has at least one ISSN, and may have several. These registry ISSNs are joined independently to the February 2026 OpenAlex sources snapshot using its list of ISSNs as the matching key and selecting only the `journal' source-type. Around 60 additional matches are identified by exact title matching for OpenAlex sources that lack an ISSN. We denote the union of matched OpenAlex sources OAS\textsuperscript{**}. Some of these sources publish mainly in fields such as sociology, psychology, technology, education or law. Using the OpenAlex topic/field entity, we drop sources with less than 40\% of their OpenAlex assigned field count in \textit{Economics, Econometrics, and Finance} or \textit{Business, Management and Accounting}. We denote the remaining sources OAS\textsuperscript{*}.
 

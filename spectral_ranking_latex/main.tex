@@ -1,6 +1,11 @@
 \documentclass[11pt]{article}
 \setlength\parindent{10pt}
-\usepackage{booktabs, natbib, amsmath, amssymb, mathrsfs, tabularx, booktabs, makecell}
+\usepackage{booktabs, amsmath, amssymb, mathrsfs, tabularx, makecell}
+\usepackage[british]{babel}
+\usepackage{csquotes}
+% APA 7 references, as required by QSS at revision (compile with biber, e.g. latexmk)
+\usepackage[style=apa, backend=biber, natbib=true]{biblatex}
+\addbibresource{MyLibrary.bib}
 \usepackage[margin=1in]{geometry}
 \usepackage{caption} 
 \usepackage{authblk} % Package for author/affiliation management
@@ -20,7 +25,6 @@ Charles Darwin University, Brinkin, 0810, NT, Australia}
 
 \date{\today}
 \captionsetup[table]{skip=10pt} % Adjust '10pt' as needed
-%%\bibpunct[,~]{(}{)}{;}{a}{,}{,}
 \usepackage{tikz}
 \usetikzlibrary{positioning, arrows.meta}
 \usepackage{hyperref}
@@ -62,6 +66,5 @@ Katz-Hubbell resolvent, ranking economics and business
 \input{sections/06_prospects}
 \input{sections/07_addenda}
 
-\bibliographystyle{spbasic}
-\bibliography{MyLibrary}
+\printbibliography
 \end{document}
