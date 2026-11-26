@@ -4,7 +4,7 @@ Regenerated 2026-11-24.
 
 - **Corrected baseline:** `econ_bus_rev` (identity corrections, restored type-excluded institutions, journal merges), run with `ECONBUS_CONFIG=config.rev.yaml`.
 - **"Submitted data":** the same scripts run on the locked `econ_bus` folder. Figures and tables from that run are in `plots/qss_submitted/` and `tables/qss_submitted/`; the locked data was not written.
-- **Bootstrap and metadata-error figures** (`fig_boot_envelope_resample`, `fig_boot_ratio_facet`): **being regenerated** (decision reversed 2026-11-26). The error studies are re-run on the corrected baseline with ω = 0 replicates (`run_error_studies.sh`); figures, benchmark bands and §4.4 numbers follow when the run completes.
+- **Bootstrap and metadata-error figures** (`fig_boot_envelope_resample`, `fig_boot_ratio_facet`): **regenerated 2026-11-26** from the error studies re-run on the corrected baseline with ω = 0 replicates (`run_error_studies.sh`). Submitted versions are kept in `plots/qss_submitted/`. Benchmark summaries (`data/benchmark_*_summary.csv`) use the new resample bands.
 
 **Applied 2026-11-24** to `04_results.tex` and `05_discussion.tex`: every *update* and *stale* item, plus "OAJ" → "OAS" and "anticipted" → "anticipated". The link-density table was applied later the same day using the `paper_numbers.py` definition. The submitted values could not be reproduced:
 - the stated definition gives a mean error of 0.23 dex or more;
@@ -107,7 +107,24 @@ Add the survivorship-free counts (referee 3.2) from `data/survivorship_transitio
 
 ## §4.4 Errors and uncertainties
 
-To be regenerated from the 2026-11-26 re-run (corrected baseline, ω = 0 replicates, no combined run). The ω = 1 note is no longer needed. The section moves to Supplement 2 (plan §6).
+Regenerated 2026-11-26 from the re-run (corrected baseline, ω = 0 replicates, each error type separate). The section moves to Supplement 2 (plan §6).
+
+Half-widths are of the 2.5–97.5% interval of (replicate − baseline) fractional rank; "rest" = units below rank 100. S = sources, I = institutions.
+
+| Quantity | Paper | Submitted | Corrected | Status |
+|---|---|---|---|---|
+| Units in the error studies | — | 1,565 S, 1,957 I | 1,564 S, 1,979 I | — |
+| Resample: top ≈100 "narrow" (median half-width) | narrow | 0.006 S, 0.006 I | 0.006 S, 0.006 I | ok |
+| Resample: lower ranks "≈±15%" (median / 90th pct half-width, rest) | ≈ ±15% | 0.063/0.134 S, 0.055/0.106 I | 0.062/0.133 S, 0.058/0.112 I | ok |
+| Resample: median band half-width in log *v* | — | 0.123 S, 0.065 I | 0.121 S, 0.067 I | ok |
+| Errors: "insubstantial among top ≈10%" (95th pct half-width, top 10%; year_v2 / ref / inst / source) | insubstantial | S 0.011/0.003/0.003/0.001, I 0.018/0.008/0.006/0.001 | S 0.011/0.003/0.003/0.001, I 0.015/0.007/0.007/0.001 | ok |
+| "1000 replicates" | 1000 | 1000 | 1000 | ok |
+
+**Text changed 2026-11-26** (`04_results.tex`, metadata-error paragraph), because the method changed:
+- "Combining a random Stage 1 replicate … with a random Stage 2 replicate …" → each error type is propagated separately (the combined run was removed).
+- "To avoid the need to model author uncertainties, we adopt institutional fractionation …" → replicates use the baseline's author-fractional weights, so a zero-error replicate reproduces the baseline exactly.
+
+**Open (not changed):** the year-uncertainty text says works are drawn from 2018–2021 (drop 2020–21, insert 2018–19). The `year_v2` code draws 2% of a 2015–2024 pool, deletes in-window draws and inserts pre-window (2015–19) draws with year 2020. Text or code to be reconciled. The table caption window [2018–2021] has the same issue.
 
 ## §4.5 Enclaves (l.263, `tab:enclaves`)
 

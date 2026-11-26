@@ -21,7 +21,7 @@ No cardinal fit to AIS or SJR values is made: agreement is assessed at the tier 
 and disagreement is not interpreted as error in either index.
 
 Band: 2.5–97.5% interval of log v over the 1,000 work-resampling bootstrap replicates
-(stage4_resample, ω=1 replicates, carried over to the corrected baseline as agreed);
+(stage4_resample, run on the corrected corpus with ω=0 replicates, 2026-11-26);
 half-width in dex = (log p97.5 − log p2.5)/2, applied around the corrected baseline v.
 
 Models: baseline bipartite (m=0110) and journal-only (m=1000), F=EBAX, from the active
@@ -33,8 +33,8 @@ Outputs:
                                                benchmark values (kept out of git)
 
 Usage:
-  ECONBUS_CONFIG=config.rev.yaml .venv/bin/python spectral_results_analysis/benchmark_journals.py \
-      --boot /home/lc/m/working/econ_bus/bootstrap_oa_errors/stage4_resample
+  ECONBUS_CONFIG=config.rev.yaml .venv/bin/python spectral_results_analysis/benchmark_journals.py
+      [--boot <stage4_resample folder>]
 """
 
 import argparse
@@ -275,15 +275,17 @@ def membership(d, col, universe_mask, model):
 
 def main():
     ap = argparse.ArgumentParser()
-    ap.add_argument('--boot', required=True)
+    ap.add_argument('--boot', default=None,
+                    help='stage4_resample folder (default: WORKING/bootstrap_oa_errors/stage4_resample)')
     args = ap.parse_args()
     paths = load_config()
+    boot = Path(args.boot) if args.boot else paths.working / 'bootstrap_oa_errors' / 'stage4_resample'
     bl = next(r for r in load_runs() if r['label'] == 'baseline')
     sm = pd.read_parquet(paths.parquet / 'source_master.parquet')
     sm['field_eb'] = sm['field_eb'].fillna('X')
     sm = sm.set_index('source_idx')
     bench = load_benchmarks(paths, sm)
-    hw = bands(Path(args.boot))
+    hw = bands(boot)
     rk = duckdb.connect(str(paths.working / 'rankings.duckdb'), read_only=True)
 
     summary, detail = [], []

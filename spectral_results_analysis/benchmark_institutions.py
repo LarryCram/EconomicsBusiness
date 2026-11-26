@@ -18,9 +18,10 @@ pi (pi ∝ v × works). Tiers:
   RePEc: 1–25, 26–50, 51–100, 101–200, 201–469
 
 Bands: 2.5–97.5% interval of log v over the work-resampling bootstrap replicates
-(stage4_resample); the same half-width applies to log pi. Institutions changed by the
-identity corrections have no carried-over band (flagged; median half-width used for
-the tier statistics).
+(stage4_resample); the same half-width applies to log pi. With the default bootstrap
+(the active WORKING, i.e. run on the corrected corpus) every institution has its own band.
+With a bootstrap from another WORKING (e.g. the submitted run), institutions changed by
+the identity corrections have no carried-over band (flagged; median half-width used).
 
 Matching: normalised names (department suffix after '→' and acronyms in parentheses
 removed; Centre/Center unified) within the same country; exact match first, then a
@@ -31,8 +32,8 @@ Outputs:
   data/benchmark_institutions_matches.csv     external name -> institution_idx (for review)
 
 Usage:
-  ECONBUS_CONFIG=config.rev.yaml .venv/bin/python spectral_results_analysis/benchmark_institutions.py \
-      --boot /home/lc/m/working/econ_bus/bootstrap_oa_errors/stage4_resample
+  ECONBUS_CONFIG=config.rev.yaml .venv/bin/python spectral_results_analysis/benchmark_institutions.py
+      [--boot <stage4_resample folder>]
 """
 
 import argparse
@@ -175,9 +176,11 @@ def bands(boot: Path) -> pd.Series:
 
 def main():
     ap = argparse.ArgumentParser()
-    ap.add_argument('--boot', required=True)
+    ap.add_argument('--boot', default=None,
+                    help='stage4_resample folder (default: WORKING/bootstrap_oa_errors/stage4_resample)')
     args = ap.parse_args()
     paths = load_config()
+    boot = Path(args.boot) if args.boot else paths.working / 'bootstrap_oa_errors' / 'stage4_resample'
     src = paths.data / 'source_masters'
     bl = next(r for r in load_runs() if r['label'] == 'baseline')
     t = (f"rk_{bl['run_code']}_{bl['fx']}_tauU{bl['tau_u']}_tauS{bl['tau_s']}"
@@ -190,7 +193,9 @@ def main():
     d = d.join(ci.set_index('institution_idx')[['institution_name', 'country_code']])
     corr = pd.read_csv(paths.data / 'institution_corrections.csv')
     corrected = set(corr[corr.status == 'accepted'].new_idx.dropna().astype('int64'))
-    hw = bands(Path(args.boot))
+    if boot.resolve().is_relative_to(paths.working.resolve()):
+        corrected = set()        # bootstrap run on this (corrected) corpus: bands are native
+    hw = bands(boot)
     d = d.join(hw)
     d['band_carried'] = d.hw.notna() & ~d.index.isin(corrected)
     d.loc[~d.band_carried, 'hw'] = np.nan
