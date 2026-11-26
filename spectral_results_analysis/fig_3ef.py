@@ -161,12 +161,12 @@ def main():
     _log_axes(ax_l,
               xlabel=r'$\log(v_S^{E+B,SS})$',
               ylabel=(r'$\log(v_S^{E{\|}B,SS})$'
-                      r' or $\log(v_S^{E{\|}B,\mathrm{Bipartite}})$'))
+                      r' or $\log(v_S^{E{\|}B,\mathrm{bip}})$'))
     _scatter(ax_l, df_e_cf, df_b_cf,
-             panel_label=f'Counterfactual: top-{_Z_S} sources omitted')
+             panel_label=f'Counterfactual: top-{_Z_S} journals omitted')
 
     _log_axes(ax_r,
-              xlabel=r'$\log(v_S^{E+B,\mathrm{Bipartite}})$')
+              xlabel=r'$\log(v_S^{E+B,\mathrm{bip}})$')
     _scatter(ax_r, df_e_bip, df_b_bip,
              panel_label='EB corpus: bipartite')
 

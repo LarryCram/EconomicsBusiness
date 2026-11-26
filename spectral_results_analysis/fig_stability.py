@@ -104,7 +104,7 @@ def persistence_table(panel: pd.DataFrame) -> None:
     print('Threshold persistence  (v > 1,  t1=2000–04  vs  t5=2020–24)')
     print(f'{"─"*65}')
 
-    for utype, label in [('S', 'Sources'), ('U', 'Institutions')]:
+    for utype, label in [('S', 'Journals'), ('U', 'Institutions')]:
         sub = panel[panel['unit_type'] == utype]
         t1 = sub[sub['t'] == 1][['unit_idx', 'v']].rename(columns={'v': 'v_t1'})
         t5 = sub[sub['t'] == 5][['unit_idx', 'v']].rename(columns={'v': 'v_t5'})
@@ -199,7 +199,7 @@ def print_movers(movers: pd.DataFrame, names: dict, top_n: int = 10) -> None:
     print(f'Systematic movers  (log(v) linear trend over 5 windows)')
     print(f'{"─"*72}')
 
-    for utype, label in [('S', 'Sources'), ('U', 'Institutions')]:
+    for utype, label in [('S', 'Journals'), ('U', 'Institutions')]:
         sub = movers[movers['unit_type'] == utype].copy()
         sub['name'] = sub['unit_idx'].map(names).fillna('?')
         n_total = len(sub)
@@ -308,7 +308,7 @@ def plot_v_scatter(panel: pd.DataFrame, movers: pd.DataFrame,
     fig.subplots_adjust(wspace=0.05)
 
     _draw_scatter_panel(axes[0], both_s, lids_s, names, shared_lims,
-                        'Sources', show_ylabel=True, show_labels=False)
+                        'Journals', show_ylabel=True, show_labels=False)
     _draw_scatter_panel(axes[1], both_u, lids_u, names, shared_lims,
                         'Institutions', show_ylabel=False, show_labels=False)
 
@@ -341,7 +341,7 @@ def plot_movers(movers: pd.DataFrame, names: dict, paths,
     fig, axes = plt.subplots(1, 2, figsize=(10, 5))
     fig.subplots_adjust(wspace=0.05)
 
-    for ax, utype, ulab in [(axes[0], 'S', 'Sources'),
+    for ax, utype, ulab in [(axes[0], 'S', 'Journals'),
                              (axes[1], 'U', 'Institutions')]:
         sub = movers[movers['unit_type'] == utype].copy()
         sub['name'] = sub['unit_idx'].map(names).fillna('?')
@@ -452,7 +452,7 @@ def print_trajectory_report(traj: pd.DataFrame) -> None:
         'stable_low':    'Stable low    (v≤1 in ≥4/5 windows)',
     }
 
-    for utype, ulab in [('S', 'Sources'), ('U', 'Institutions')]:
+    for utype, ulab in [('S', 'Journals'), ('U', 'Institutions')]:
         sub = traj[traj['unit_type'] == utype]
         n   = len(sub)
         print(f'\n  {ulab}  (n={n:,})')
@@ -554,7 +554,7 @@ def plot_trajectories(traj: pd.DataFrame, paths) -> None:
     fig.subplots_adjust(wspace=0.05)
 
     for ax, utype, title, show_y in [
-        (axes[0], 'S', 'Sources', True),
+        (axes[0], 'S', 'Journals', True),
         (axes[1], 'U', 'Institutions', False),
     ]:
         sub = traj[

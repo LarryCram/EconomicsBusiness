@@ -1,0 +1,122 @@
+%!TeX root = ../supplement2.tex
+% Supplement 2: errors and uncertainties (moved from §4 of the submitted paper, plus the curated identity anomalies)
+
+This supplement reports three studies of the errors and uncertainties in the influence values of the paper, all on the corrected baseline corpus: a bootstrap over works (Section~\ref{sec:bootstrap}), a Monte Carlo simulation of random metadata errors (Section~\ref{sec:montecarlo}), and a catalogue of the identity anomalies corrected before ranking (Section~\ref{sec:anomalies}). The first is statistical, the second simulated and the third deterministic and concentrated on a few units. Section~\ref{M-sec:errors} of the paper summarises them.
+
+\textcite{borgattiRobustnessCentralityMeasures2006} reported that, at that time, it was conventional wisdom that network analysis is intolerant to missing or mistaken data. Using random node and edge errors on random graph models, they offered a more optimistic view by showing that small errors allow the construction of confidence intervals around centrality scores. Favorable views of Eigenfactor/spectral methods for bibliometric ranking \citep[e.g.][]{franceschetTenGoodReasons2010} may incorporate this optimism. However, the propagation of citation network and bibliometric metadata errors into spectral ranking is unlike the additive random models studied by Borgatti et al. Moreover, as discussed by \textcite{waltmanLeidenRanking20112012}, the interplay between skewed citation count distributions and different unit sizes can render indicators unstable to changes in the work set: accordingly, the Leiden ranking uses a bootstrap to establish stability intervals for its indicators. 
+
+\section{Bootstrap over works}
+\label{sec:bootstrap}
+
+In the light of these concerns, we extend \textcite{waltmanLeidenRanking20112012} to establish stability intervals for our influence scores. We construct 1000 replicates of the baseline corpus by resampling its referencing works with replacement \citep{efronBootstrapMethodsAnother1992}: a work drawn $k$ times contributes its reference list $k$ times. Each replicate passes through the full pipeline with the baseline parameters, including the procedures for removing outlying and partially detached units.  
+Figure~\ref{fig:boot_envelope_resample} displays the median as a blue dot and the stability interval as a red bar (extending between the 2.5-97.5\% centiles) over the replicates for each unit, against the unit's fractional rank in the baseline. Units absent from a replicate's connected component are excluded from the centile computation for that replicate. For the top $\approx$100 journals and institutions, the stability interval is narrow, and cardinal ranks are not greatly affected by changes in the set of works. For the top $\approx$100 units of each type the half-width of the interval is about $\pm0.6\%$ in fractional rank. For lower ranked units its median is $\pm6\%$ and its 90th centile $\pm13\%$. In $\log v$, the median half-width is 0.12 for journals and 0.07 for institutions; these are the bands used in the comparisons of Section~\ref{M-sec:indicators} of the paper. The higher instability of the few units that are outliers in the median is due to their low number of retained works.
+\begin{figure}[!htbp]
+  \centering
+  \includegraphics[width=0.8\textwidth]{../plots/fig_boot_envelope_resample_latex.pdf}
+  \caption{Stability intervals for fractional ranks in the baseline model. At each unit, a blue point denotes the median over 1,000 replicates, while the red vertical bar spans the 2.5--97.5 percentile interval of cardinal rank.}
+  \label{fig:boot_envelope_resample}
+\end{figure}
+
+\section{Metadata errors: Monte Carlo simulation}
+\label{sec:montecarlo}
+
+Work-driven instabilities are not the only journal of uncertainty in influence scores. Like other bibliometric databases, OpenAlex includes a level of various kinds of metadata errors and uncertainties that might influence findings based on the data \citep{moedCitationAnalysisResearch2005}. We construct simple models of four potentially potent errors \citep{olenskyDataAccuracyBibliometric2015} and apply stochastic (Monte Carlo) simulation to propagate their effects into the spectral ranking. The errors are introduced at the work level and carried through the full non-linear influence pipeline.
+
+Table~\ref{tab:oa_errors} summarises the uncertainty types and their adopted rates.
+Publication year uncertainty generally arises from ambiguities between early-view, on-line and print years. The rate is estimated by examining the gaps in the concordance between recorded
+publication year and the (Volume, Issue, Page) sequence for the $\approx$50\% of journals that have sequential metadata. Journal misallocation, while rare, is observed in practice (e.g.\ some works from
+\textit{Soshiki Kagaku} are attributed to \textit{Organization Science}).
+Institution attribution errors can arise directly or via author attribution errors. Our estimate is based on finding several hundred works misattributed to namesake institutions, and other misidentifications of this kind (Section~\ref{sec:anomalies}). Referencing errors arise when reference lists are incorrectly transcribed, truncated, intermixed, or mis-indexed \citep[c.f.][]{olenskyEvaluationCitationMatching2016}; the adopted error is informed by our experience and the report of \textcite{rodriguesDetectingIncoherentCitation2025}.
+\begin{table}[htbp]
+  \centering
+  \small
+  \caption{Models of errors used in the stochastic simulation of spectral ranking uncertainty.
+           Errors are introduced at the work level and propagate through the pipeline using the baseline parameters. The rate is the proportion of the set in question (works or references) that is randomly affected in a replicate.}
+  \label{tab:oa_errors}
+  \begin{tabular}{lp{9cm}r}
+    \toprule
+    Error model       & Mechanism & Rate \\
+    \midrule
+    Publication year uncertainty
+      & Corpus work published in a year at an edge of the census window
+        [2020--2024] (2019, 2020 or 2024) moved one year across that edge,
+        so that it enters or leaves the window.
+      & 2\% \\
+    Journal misattribution
+      & Corpus work reallocated to a randomly chosen corpus journal.
+      & 0.03\% \\
+    Institution misattribution
+      & Corpus work reallocated to a randomly chosen corpus institution.
+      & 1\% \\
+    Reference misattribution
+      & Corpus reference redirected to another work within the corpus
+        (75\% within the same journal; 25\% to another journal)
+      & 2\% \\
+    \bottomrule
+  \end{tabular}
+\end{table}
+
+The stochastic simulation first constructs 1000 replicates of the corpus works adjusted for each kind of work-level error: publication year and journal/institution allocation. These are saved as differences from the baseline work set (Stage 1). It also constructs 1000 replicates of the work-level citer-cited table adjusted for reference list errors, saving differences from the baseline (Stage 2). Each error type is propagated separately: a replicate applies the differences for one type to the baseline and builds one replicate edge list at a time. Then our ranking algorithm applies the standard preprocessing and resolvent pipelines to generate 1000 replicates of the influence $\mathbf{v}$. Replicates use the same author-fractional institution weights as the baseline, so a replicate with no errors reproduces the baseline ranking exactly.  
+
+The top panels in Figure~\ref{fig:boot_ratio_facet} exhibit the uncertainty interval due to publication year uncertainties. A misrecorded year is usually displaced by one year, so it changes the ranking only when it moves a work across an edge of the census window. In each replicate, 2\% of the works published in 2019, 2020 or 2024 are moved across the adjacent edge: about 1,800 works from 2019 enter the window, and about 4,300 from 2020 and 2024 leave it. The replicate edge list is rebuilt from the corpus references for the altered years. A work that leaves the window is no longer a reference target, and its reference list is removed; a work that enters becomes a target of the references it receives from works in the window. Works misdated into the window from 2025 are not modelled, because the corpus ends in 2024. With these changes, the relative rank of most units is hardly changed, but some move substantially in either direction: down (higher in Fig.~\ref{fig:boot_ratio_facet}) when a unit loses a highly referenced work, and up when it gains one published in 2019. Errors in journal attribution or institution attribution (central panels in Fig.~\ref{fig:boot_ratio_facet}) at the level of our model have a minor effect on influence or rank. We model reference errors by replacing 2\% of referenced works with a randomly selected work, from the same journal (75\%) or another. Occasionally this places a highly referenced work into a unit with modest reference counts, raising its influence and rank  (i.e. lower in Fig.~\ref{fig:boot_ratio_facet})
+\begin{figure}[!htbp]
+  \centering
+  \includegraphics[width=0.8\textwidth]{../plots/fig_boot_ratio_facet_latex.pdf}
+    \caption{Uncertainty intervals for fractional rank under four metadata error models. At each unit, a blue point denotes the median over 1000 replicates, while the red vertical bar spans the 2.5--97.5 centile interval. Left column: journals; right column: institutions.}
+  \label{fig:boot_ratio_facet}
+\end{figure}
+
+Our model of OpenAlex errors is guided by others' experience \citep[e.g.][]{vaneckneesjanOpeningCWTSLeiden2024} but rests on plausible assumptions, not measured properties. The stochastic simulation functions as a sensitivity analysis. Errors at the level we have selected lead to insubstantial changes among the top $\approx$ 10\% of units. For lower ranks, the power-law distribution of citation frequencies for works, combined with units that just pass the volume threshold, leads to notable, albeit infrequent, changes in influence. Our experience in reviewing the influence values of units in our corpus is consistent with this: surprising placements can usually be explained by identifying an error or ambiguity in the metadata. The simulation findings are consistent with the empirical study presented by \textcite{scheidstegerHowSimilarAre2025} who found low agreement between unit-level indicators derived from different large bibliometric databases including OpenAlex.
+
+\section{Curated identity anomalies}
+\label{sec:anomalies}
+
+The two studies above perturb the corpus at random. Identity errors in OpenAlex are not random: they attach to particular institutions, and a ranking that names institutions exposes them. We screened the institutions of the frozen corpus in three ways. A home screen gives every author with at least three authorships in 2015--2024 a home institution, the one under which the author appears most often, and flags an institution when at least 25\% of its 2020--24 authorships come from authors whose home is one other institution. A name screen flags pairs of corpus institutions whose normalised names are equal, nested, or similar (Jaro--Winkler at least 0.93). A country screen flags an institution when at least half of its authorships come from authors whose home is in another country. Every flagged institution was checked by hand against its authors and works. Separately, research units of OpenAlex types outside the extraction filter that pass $\tau_I$ are restored, except companies and hospitals. Table~\ref{tab:corrections} classifies the 99 accepted institution corrections and the two journal merges; two candidate corrections were rejected after checking. The corrections are applied to the frozen corpus before the edge lists are built, so no new OpenAlex extraction is needed.
+
+\begin{table}[!htbp]
+  \centering
+  \small
+  \caption{Identity corrections applied to the frozen corpus before ranking.}
+  \label{tab:corrections}
+  \begin{tabular}{@{}llrp{7.6cm}@{}}
+    \toprule
+    Kind & Action & $n$ & Examples \\
+    \midrule
+    Namesake misattribution & merge & 20 & California University of Pennsylvania $\to$ University of Pennsylvania; Universidad del Noreste $\to$ Northeastern University; Harvard University Press $\to$ Harvard University \\
+    Company namesake of a school & merge & 2 & Kellogg's (Canada) $\to$ Northwestern University; Walker (US) $\to$ Appalachian State University \\
+    Duplicate identifier & merge & 5 & Indiana University $\to$ Indiana University Bloomington; World Bank Group $\to$ World Bank \\
+    Campus of one body & merge & 3 & INSEAD (Singapore) $\to$ INSEAD \\
+    School of a university & merge & 3 & Ross School $\to$ University of Michigan; ICMA Centre $\to$ University of Reading \\
+    Out-of-date name & merge & 2 & Maastricht School of Management $\to$ Maastricht University \\
+    Identifier with no single owner & drop & 6 & ORCID; Film Independent \\
+    Unit excluded by OpenAlex type & include & 58 & Bank of Italy; Hoover Institution; ifo Institute; Kiel Institute for the World Economy \\
+    \midrule
+    Journal split across identifiers & merge & 2 & \textit{Review of Finance} (current works filed under \textit{European Finance Review}); \textit{Eurasian Economic Review} \\
+    \bottomrule
+  \end{tabular}
+\end{table}
+
+The corrections remove 36 institution identifiers and add 58, so the baseline grows from 1,957 to 1,979 institutions; the journal merges reduce the journals from 1,565 to 1,564. Table~\ref{tab:corrected_units} lists the institutions that moved most. The largest moves follow from namesake misattributions, which take a substantial share of a strong institution's works into a weak namesake. Of the 35 institutions that receive merged identifiers, seven move by more than 0.05 in $\log v$.
+
+\begin{table}[!htbp]
+  \centering
+  \small
+  \caption{Institutions moved most by the identity corrections (baseline bipartite model). Ranks are among all ranked institutions, which also change as restored units enter.}
+  \label{tab:corrected_units}
+  \begin{tabularx}{\textwidth}{@{}>{\raggedright\arraybackslash}X>{\raggedright\arraybackslash}Xccr@{}}
+    \toprule
+    Institution & Merged identifier & $v$ before $\to$ after & Rank before $\to$ after & $\Delta\log v$ \\
+    \midrule
+    Brown University & John Brown University & 2.46 $\to$ 6.06 & 106 $\to$ 10 & $+0.39$ \\
+    Northeastern University & Universidad del Noreste & 1.91 $\to$ 2.65 & 161 $\to$ 84 & $+0.14$ \\
+    Centre for Economic Policy Research & Center for Economic and Policy Research & 5.77 $\to$ 7.75 & 15 $\to$ 4 & $+0.13$ \\
+    Rutgers University & Rutgers Sexual and Reproductive Health and Rights (Netherlands) & 1.53 $\to$ 1.84 & 258 $\to$ 166 & $+0.08$ \\
+    Northwestern University & Kellogg's (Canada) & 4.05 $\to$ 4.83 & 39 $\to$ 22 & $+0.08$ \\
+    Indiana University Bloomington & Indiana University & 3.13 $\to$ 3.57 & 67 $\to$ 44 & $+0.06$ \\
+    World Bank & World Bank Group & 1.73 $\to$ 1.54 & 200 $\to$ 243 & $-0.05$ \\
+    Harvard University & Harvard University Press & 5.70 $\to$ 5.98 & 16 $\to$ 11 & $+0.02$ \\
+    \bottomrule
+  \end{tabularx}
+\end{table}
+
+The other units hardly move. Institutions untouched by the corrections shift by 0.006 in $\log v$ (s.d.; 99th centile 0.014), and journals by 0.036 (99th centile 0.10). Thirty-six journals move by more than 0.06, mostly small journals that drew influence through a dropped identifier or that regain works whose only affiliations were restored units. In aggregate the removed identifiers held 0.86\% of the institution work weight, close to the 1\% institution misattribution rate assumed in the Monte Carlo study (Table~\ref{tab:oa_errors}). Individually, however, the corrected units move far outside their Monte Carlo intervals, which describe errors spread at random over many units. Identity errors therefore have to be found and corrected unit by unit; averaging over the corpus does not remove them.

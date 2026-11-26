@@ -1,0 +1,21 @@
+\documentclass[11pt]{article}
+\input{preamble}
+\externaldocument[M-]{main}
+\externaldocument[S2-]{supplement2}
+% S1-numbered sections, equations, figures and tables
+\renewcommand{\thesection}{S1.\arabic{section}}
+\renewcommand{\theequation}{S1.\arabic{equation}}
+\renewcommand{\thefigure}{S1.\arabic{figure}}
+\renewcommand{\thetable}{S1.\arabic{table}}
+
+\title{\papertitle\\[6pt]\large Supplement 1: Mathematical framework and implementation}
+\authorblock
+\date{\today}
+
+\begin{document}
+\maketitle
+
+\input{sections/s1_framework}
+
+\printbibliography
+\end{document}

@@ -40,6 +40,7 @@ Never point `OPENALEX` at `openalex_jul26`/`openalex_oct26` and never write to `
   - `benchmark_institutions.py`
   - `screen_institutions.py`
   - `paper_numbers.py`
+  - `computational_cost.py` (runtime and peak memory of counts, MNCS, journal-only KH, work-level KH, bipartite and joint PF from the baseline edge list, one thread each → `data/computational_cost.csv`; Supplement 1 `tab:cost`)
   - `mncs_comparison.py` (combined v against field-normalised MNCS with paired bootstrap bands → `data/mncs_comparison_summary.csv`, `_by_rank.csv`; `--counting full` gives the FWCI-like full-counting variant → `data/mncs_comparison_full_*.csv`)
 - In-text numbers are tracked in `spectral_ranking_latex/NUMBERS_CHECKLIST.md`.
 - Submitted-version figures are reproduced in `plots/qss_submitted/`.
@@ -100,7 +101,15 @@ Sources in `source_master.parquet/csv` carry a `field_eb` column (replaces old `
 **Finance/accounting rule (adopted 2026-11-26, referee 3.1; applied in `apply_institution_corrections.py`, `FIN_ACC_SQL`).** After scoring, a journal classed E or A becomes B if at least two of four signals mark it as finance or accounting: Harzing `F&A`, WoS `BUSINESS, FINANCE`, ERA FoR 3501/3502, OpenAlex top subfield Finance/Accounting. One signal is not enough (ERA 3502 is a secondary code on many economics journals). `data/field_rule_exceptions.csv` keeps J. Monetary Economics, Fiscal Studies, IMF Economic Review and Intereconomics in E. Baseline journals: 525 E / 876 B / 101 A / 62 X. The rule does not affect the EBAX baseline.
 
 ## Paper
-Multi-file LaTeX in `spectral_ranking_latex/`. Master file is `main.tex`; sections are in `sections/`. Bibliography fed by Zotero (`MyLibrary.bib`). Committed to GitHub for backup.
+Multi-file LaTeX in `spectral_ranking_latex/`. Bibliography fed by Zotero (`MyLibrary.bib`, untracked). Committed to GitHub for backup.
+
+**Three documents since the 2026-11-27 restructure** (QSS revision), sharing `preamble.tex`:
+- `main.tex` — the paper: §1 introduction, §2 model in brief (`02_model_brief.tex`, TikZ schematic, parameter table), §3 corpus + "Data quality" paragraph, §4 results (flow structure summary, E/B, time, sensitivity `sec:sensitivity`, error summary `sec:errors`, comparison with AIS and MNCS `sec:indicators` + `tab:indicator_agreement`, enclaves), §5 discussion, §6 prospects.
+- `supplement1.tex` → `sections/s1_framework.tex`: full mathematical framework (the old §2), numerics, reference-flow evenness (η, `tab:kernel_structure`), Katz–Hubbell and self-reference sensitivity (`sec:kh`, Fig. 5d), computational cost (`tab:cost`), notation table, software. Numbered S1.x.
+- `supplement2.tex` → `sections/s2_errors.tex`: bootstrap, metadata-error Monte Carlo, curated identity anomalies (`sec:anomalies`, correction and moved-units tables). Numbered S2.x.
+- Main-text §4 also has `sec:fields` (E/B, finance-rule and split-node checks), `tab:survivorship` (§4.2), `tab:journal_tiers` and `tab:institution_tiers` (§4.5); §5 ends with `sec:limitations`. Layout superscripts are $SS$, $II$, bip, joint (not S/I/B/J); "journal", not "source", in the text.
+- `extra_refs.bib` (tracked, exception in `.gitignore`) holds references not yet in Zotero (Gaston 1978, Mahbuba & Rousseau 2011, GRAS, RePEc, SCImago, UTD); move them into Zotero when convenient.
+- Cross-references use `xr-hyper` with prefixes `S1-`, `S2-` (in main) and `M-` (in supplements). Compile all three twice: `for d in supplement1 supplement2 main; do latexmk -pdf $d; done` (then again).
 
 **Convention (critical):** $C_{ij}$ = attention from $i$ (citing, row) to $j$ (cited, column). Row sum = references given out. This is the transpose of economist's convention but consistent with most non-economics bibliometrics. Prefer "reference" over "citation" unless it is precise. Do not read any folder named `zarchive`, `archive`, or `ARCHIVE`.
 
@@ -115,6 +124,7 @@ Multi-file LaTeX in `spectral_ranking_latex/`. Master file is `main.tex`; sectio
 Previously resolved: text corruption fixed, [FILL] placeholders removed, 04_results_.tex moved to zarchive.
 
 ## Current paper status
+(The section list below predates the 2026-11-27 split into paper + two supplements; see "Paper" above.)
 - `main.tex` compiles cleanly
 - Section 1 (introduction): complete
 - Section 2 (mathematical framework and computational summary): complete

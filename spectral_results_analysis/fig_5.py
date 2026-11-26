@@ -523,7 +523,7 @@ def plot5(src_rank_map: dict, inst_rank_map: dict, series: dict) -> None:
     fig.subplots_adjust(wspace=0.05)
 
     _draw_panel(axes[0], sub, 'S', len(src_rank_map),
-                'Sources', ylabel=r'$\log(v)$', show_legend=True)
+                'Journals', ylabel=r'$\log(v)$', show_legend=True)
     _draw_panel(axes[1], sub, 'I', len(inst_rank_map), 'Institutions',
                 show_legend=True)
     axes[1].tick_params(labelleft=False)
@@ -657,7 +657,7 @@ def _plot5_single(src_rank_map: dict, inst_rank_map: dict,
     fig, axes = plt.subplots(1, 2, figsize=(10, 5), sharey=True)
     fig.subplots_adjust(wspace=0.05)
 
-    _draw_panel(axes[0], sub, 'S', len(src_rank_map),  'Sources',
+    _draw_panel(axes[0], sub, 'S', len(src_rank_map),  'Journals',
                 ylabel=r'$\log(v)$', show_legend=True)
     _draw_panel(axes[1], sub, 'I', len(inst_rank_map), 'Institutions',
                 show_legend=True)

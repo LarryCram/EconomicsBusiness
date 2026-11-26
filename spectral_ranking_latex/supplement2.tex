@@ -1,0 +1,21 @@
+\documentclass[11pt]{article}
+\input{preamble}
+\externaldocument[M-]{main}
+\externaldocument[S1-]{supplement1}
+% S2-numbered sections, equations, figures and tables
+\renewcommand{\thesection}{S2.\arabic{section}}
+\renewcommand{\theequation}{S2.\arabic{equation}}
+\renewcommand{\thefigure}{S2.\arabic{figure}}
+\renewcommand{\thetable}{S2.\arabic{table}}
+
+\title{\papertitle\\[6pt]\large Supplement 2: Errors and uncertainties}
+\authorblock
+\date{\today}
+
+\begin{document}
+\maketitle
+
+\input{sections/s2_errors}
+
+\printbibliography
+\end{document}

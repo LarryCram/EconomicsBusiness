@@ -1,0 +1,7 @@
+method,assemble_s,solve_s,peak_rss_gb,units,label,iters,nnz,machine
+counts,0.63,0.103,0.53,3543,Citation counts and JIF-like mean,,,"AMD Ryzen 9 7900X3D 12-Core Processor, Python 3.12.3"
+mncs,1.17,0.006,1.02,3543,Field-normalised MNCS,,,"AMD Ryzen 9 7900X3D 12-Core Processor, Python 3.12.3"
+journal_kh,1.51,0.024,1.4,1556,Journal-only Katz-Hubbell (alpha 0.85),208.0,,"AMD Ryzen 9 7900X3D 12-Core Processor, Python 3.12.3"
+work_kh,0.72,0.209,0.51,299810,Work-level Katz-Hubbell (alpha 0.85),83.0,1532070.0,"AMD Ryzen 9 7900X3D 12-Core Processor, Python 3.12.3"
+bipartite,2.33,0.287,1.8,3543,Bipartite Perron-Frobenius (baseline),0.0,,"AMD Ryzen 9 7900X3D 12-Core Processor, Python 3.12.3"
+joint,3.08,0.116,1.7,3543,Joint Perron-Frobenius,0.0,,"AMD Ryzen 9 7900X3D 12-Core Processor, Python 3.12.3"

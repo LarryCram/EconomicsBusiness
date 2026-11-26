@@ -1,0 +1,76 @@
+%!TeX root = ../main.tex
+% ---------------------------------------------------------------
+\section{The model in brief}
+\label{sec:networks}
+% ---------------------------------------------------------------
+
+This section summarises the model; Supplement~1 gives the full framework, the derivations and the numerical methods, and its Table~\ref{S1-tab:notation} lists the notation.
+
+The units of the model are journals (OpenAlex sources, $S$) and institutions ($I$), and both are nodes of one network. Every work in the corpus has one journal and one or more institutions. A work's institution weights $\omega_{iu}$ sum to one: each author carries an equal share of the work, divided equally among the author's institutions (author-fractional counting, $\omega=0$). The work count $a_p$ of a unit $p$ is the number of its works, counted in the same fractional way for institutions.
+
+When work $w_i$ includes work $w_j$ in its reference list, the reference is read as a flow of attention from the units of $w_i$ to the units of $w_j$ (Figure~\ref{fig:schematic}). Summed over all corpus references, these flows form a unit-by-unit reference matrix $\mathbf{C}$ with four blocks: journal to journal ($\mathbf{C}_{SS}$), journal to institution ($\mathbf{C}_{SI}$), institution to journal ($\mathbf{C}_{IS}$) and institution to institution ($\mathbf{C}_{II}$). Rows index the referencing unit and columns the referenced unit, so a row sum counts references given and a column sum counts citations received. Each reference of $w_i$ is weighted by $\bar{R}/R_i$, where $R_i$ is the number of corpus references of $w_i$ and $\bar{R}$ is their mean, so that every reference list carries the same total weight ($\rho=0$).
+
+\begin{figure}[!htb]
+  \centering
+  \begin{tikzpicture}[
+      unit/.style={draw, rounded corners, minimum width=2.6cm, minimum height=0.75cm, font=\small},
+      work/.style={draw, circle, minimum size=0.85cm, font=\small},
+      flow/.style={-{Stealth[length=2.2mm]}, thick},
+      lab/.style={font=\footnotesize, fill=white, inner sep=1pt}]
+    \node[unit] (s)  at (0, 1.1)  {journal $s$};
+    \node[unit] (u)  at (0,-1.1)  {institution $u$};
+    \node[unit] (s2) at (6.4, 1.1) {journal $s'$};
+    \node[unit] (u2) at (6.4,-1.1) {institution $u'$};
+    \node[work] (wi) at (-2.4, 0) {$w_i$};
+    \node[work] (wj) at (8.8, 0)  {$w_j$};
+    \draw[dotted] (wi) -- (s.west);  \draw[dotted] (wi) -- (u.west);
+    \draw[dotted] (wj) -- (s2.east); \draw[dotted] (wj) -- (u2.east);
+    \draw[flow] (wi) |- (3.2, 2.35) node[lab, above] {$w_i$ references $w_j$} -| (wj);
+    \draw[flow, gray] (s) -- node[lab, pos=0.5] {$\mathbf{C}_{SS}$} (s2);
+    \draw[flow, gray] (u) -- node[lab, pos=0.5] {$\mathbf{C}_{II}$} (u2);
+    \draw[flow, blue] (s.east) -- node[lab, pos=0.22] {$\mathbf{C}_{SI}$} (u2.west);
+    \draw[flow, blue] (u.east) -- node[lab, pos=0.22] {$\mathbf{C}_{IS}$} (s2.west);
+  \end{tikzpicture}
+  \caption{A reference from work $w_i$ to work $w_j$ is projected onto the units that publish the two works (dotted). It adds weight to the four blocks of the reference matrix: journal to journal ($\mathbf{C}_{SS}$), institution to institution ($\mathbf{C}_{II}$), and the cross blocks $\mathbf{C}_{SI}$ and $\mathbf{C}_{IS}$ (blue). The bipartite baseline uses only the cross blocks, so influence circulates journal $\to$ institution $\to$ journal. A work with several institutions spreads its weight over them by author-fractional counting.}
+  \label{fig:schematic}
+\end{figure}
+
+A binary mask $\mathbf{m}=(m_{SS},m_{SI},m_{IS},m_{II})$ selects the blocks that enter the ranking. It gives four layouts: journal-only ($1000$), institution-only ($0001$), full joint ($1111$) and bipartite ($0110$). The journal-only layout is close to the construction of the Eigenfactor and Article Influence Score \citep{bergstromEigenfactorMetrics2008}, and the institution-only layout is its institutional counterpart. In the bipartite layout, our baseline, influence passes only from journals to institutions and back. A journal gains influence when its works are referenced by works from influential institutions, and an institution gains influence when its works are referenced by works in influential journals. In the joint and bipartite layouts the weight $\chi$ balances the journal and institution sides ($\chi=0.5$).
+
+Each row of the masked matrix is normalised to sum to one, giving a Markov transition matrix $\mathbf{H}$. The ranking probability $\boldsymbol{\pi}$ is its stationary distribution, the Perron--Frobenius eigenvector $\mathbf{H}^\top\boldsymbol{\pi}=\boldsymbol{\pi}$ with $\mathbf{1}^\top\boldsymbol{\pi}=1$ \citep{pinskiCitationInfluenceJournal1976, gellerCitationInfluenceMethodology1978}. Supplement~1 also gives the Katz--Hubbell generalisation with attenuation $\alpha<1$ and prior $\boldsymbol{\mu}$, which we use only as a sensitivity check. The reported quantity is the \emph{influence} per work \citep{palacios-huertaMeasurementIntellectualInfluence2004},
+\begin{equation}
+  v_p \;=\; \frac{A\,\pi_p}{a_p}, \qquad A=\sum_p a_p .
+  \label{eq:vstar}
+\end{equation}
+The $a$-weighted mean of $v$ is one, so $v$ is a ratio scale \citep{stevensTheoryScalesMeasurement1946}: $v=1$ is the corpus-average influence per work and $v=2$ twice that. It is the counterpart of influence per publication \citep{pinskiCitationInfluenceJournal1976} and of the Article Influence Score. A unit's total influence is proportional to $\pi_p=a_p v_p/A$. Table~\ref{tab:parameters} lists the parameters and their baseline values.
+
+\begin{table}[!bt]
+  \centering
+  \caption{Model parameters and baseline values.}
+  \label{tab:parameters}
+  \renewcommand{\arraystretch}{1.00}
+  \begin{tabularx}{\textwidth}{@{}cXc@{}}
+    \hline
+    Parameter & Description & Baseline \\
+    \hline
+    \multicolumn{3}{@{}l}{\textit{Corpus construction}} \\[2pt]
+    $\tau_S$ & Threshold works/journal/year & 10 \\
+    $\tau_I$ & Threshold works/institution/year & 20 \\
+    $F$      & Fields: $E$ (economics), $B$ (business), $A$ (ambiguous),
+               $X$ (none) & $EBAX$ \\
+    $t_c$    & Census window: publication years of referencing works & 2020--2024 \\
+    $t_t$    & Target window: publication years of referenced works & 2020--2024 \\[4pt]
+    \multicolumn{3}{@{}l}{\textit{Reference matrix assembly}} \\[2pt]
+    $\rho$   & Reference-list weights: $\rho=0$, normalise by $\bar{R}/R_i$; $\rho=1$, raw counts & 0 \\
+    $\omega$ & Institution weights: $\omega=0$, author-fractional; $\omega=1$, equal shares $1/n_i$ & 0 \\
+    $\mathbf{m}$ & Block mask: $1000$ journal-only, $0001$ institution-only,
+               $1111$ joint, $0110$ bipartite & 0110 \\
+    $\chi$   & Journal--institution mixing weight: $\chi=0.5$ or $\chi^*=N_I/(N_S+N_I)$ & 0.5 \\
+    $\varepsilon$ & Sentinel flag: $\varepsilon=0$, within-corpus only;
+               $\varepsilon=1$, include sentinel units & 0 \\[4pt]
+    \multicolumn{3}{@{}l}{\textit{Resolvent}} \\[2pt]
+    $\alpha$ & Attenuation: $\alpha=1$, Perron--Frobenius; $\alpha<1$, Katz--Hubbell & 1 \\
+    $\mu$    & Prior with $\alpha<1$: uniform $1/(N_S+N_I)$, or $1/2N_S$ and $1/2N_I$ & n.a. \\
+    \hline
+  \end{tabularx}
+\end{table}

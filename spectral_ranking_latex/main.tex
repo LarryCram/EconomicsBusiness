@@ -1,57 +1,32 @@
 \documentclass[11pt]{article}
-\setlength\parindent{10pt}
-\usepackage{booktabs, amsmath, amssymb, mathrsfs, tabularx, makecell}
-\usepackage[british]{babel}
-\usepackage{csquotes}
-% APA 7 references, as required by QSS at revision (compile with biber, e.g. latexmk)
-\usepackage[style=apa, backend=biber, natbib=true]{biblatex}
-\addbibresource{MyLibrary.bib}
-\usepackage[margin=1in]{geometry}
-\usepackage{caption} 
-\usepackage{authblk} % Package for author/affiliation management
+\input{preamble}
+\externaldocument[S1-]{supplement1}
+\externaldocument[S2-]{supplement2}
 
-\title{Recirculating cardinal spectral ranking of journals and institutions}
-
-% Author 1, linked to institution 1
-\author[1]{Domingo Docampo} 
-% Author 2, linked to institution 1 and 2
-\author[2]{Lawrence Cram}
-
-% Institution 1
-\affil[1]{Atlantic Research Center for Information and Communication Technologies \newline University of Vigo, Vigo, Spain}
-% Institution 2
-\affil[2]{Research School of Physics, Australian National University, Canberra, 2600, ACT, Australia
-Charles Darwin University, Brinkin, 0810, NT, Australia}
-
+\title{\papertitle}
+\authorblock
 \date{\today}
-\captionsetup[table]{skip=10pt} % Adjust '10pt' as needed
-\usepackage{tikz}
-\usetikzlibrary{positioning, arrows.meta}
-\usepackage{hyperref}
-\pagestyle{plain}
 
 \begin{document}
 \maketitle
 
-%%%===%%%
-% RECOVERED ABSTRACT FROM PDF (other machine)
 \begin{abstract}
-Bibliometric-based rankings usually treat journals and institutions differently, clouding the
-inter-dependent roles they have in the science system.
-We introduce a recirculating cardinal spectral ranking that treats journals ($J$) and institutions ($I$) 
-in four bibliometrically distinct layouts:
-$J$ to $J$ (similar to the Clarivate Eigenvector score), 
-$I$ to $I$ (the institutional counterpart), $J+I$ to $J+I$ (full citation matrix), 
-and $JI$ to $IJ$ (recirculating or bipartite). 
-Stable, unique influence vectors for sources and institutions are derived by resolving
+Bibliometric rankings usually treat journals and institutions differently, clouding
+their inter-dependent roles.
+We introduce a recirculating cardinal spectral ranking that treats journals ($J$) and institutions ($I$)
+in four layouts:
+$J$ to $J$ (similar to the Clarivate Eigenfactor score),
+$I$ to $I$ (the institutional counterpart), $J+I$ to $J+I$ (full citation matrix),
+and $JI$ to $IJ$ (recirculating or bipartite).
+Stable, unique influence vectors for journals and institutions are derived by resolving
 suitably conditioned matrix representations of these structures.
-Applied to a sample of the economics and business journal literature using OpenAlex metadata,
-the method produces stable, interpretable joint rankings whose
-sensitivity to model parameters is examined systematically. The recirculating model
-directly links journals and institutions to reinforce the hierarchy of influence. Journal rankings are stablised
-by the inclusion of institutions, and very few journals and institutions have marked ranking declines over 25 years. The results also shed light on the debate over the relative standing of economics and business journals.
-Finally, the study uncovers intriguing pockets of research --- enclaves --- in which hundreds of
-highly cited works appear in low-ranked journals and are produced at low-ranked institutions.
+Applied to the economics and business journal literature in OpenAlex,
+the method produces interpretable joint rankings with error bands, whose
+sensitivity to model parameters is examined. The recirculating model
+links journals and institutions to reinforce the hierarchy of influence. Journal influence agrees closely with the Article Influence Score, and departs from field-normalised citation scores in the direction of the standing of the citing units. Journal rankings are stabilised
+by the inclusion of institutions, and very few units decline markedly over 25 years. The results also shed light on the relative standing of economics and business journals.
+The study also uncovers enclaves, pockets of research in which hundreds of
+highly cited works appear in low-ranked journals and come from low-ranked institutions.
 
 \medskip\noindent
 \textbf{Keywords}: spectral ranking, dual journal--institution influence,
@@ -59,7 +34,7 @@ Katz-Hubbell resolvent, ranking economics and business
 \end{abstract}
 
 \input{sections/01_introduction}
-\input{sections/02_model_specification}
+\input{sections/02_model_brief}
 \input{sections/03_processing}
 \input{sections/04_results}
 \input{sections/05_discussion}
