@@ -36,7 +36,7 @@ Never point `OPENALEX` at `openalex_jul26`/`openalex_oct26` and never write to `
   - `split_institution_ranking.py`
   - `survivorship_transitions.py`
   - `finance_reclassification.py`
-  - `benchmark_journals.py`
+  - `benchmark_journals.py` (tier and membership benchmarks; cardinal log v vs log AIS with v bands → `data/benchmark_journals_ais.csv`)
   - `benchmark_institutions.py`
   - `screen_institutions.py`
   - `paper_numbers.py`

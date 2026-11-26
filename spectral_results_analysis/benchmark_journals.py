@@ -17,8 +17,17 @@ tier list or a membership list and compared on the log v scale:
              -> best v threshold (Youden) and members / non-members whose whole band
                 lies on the wrong side of it
 
-No cardinal fit to AIS or SJR values is made: agreement is assessed at the tier level
-and disagreement is not interpreted as error in either index.
+  cardinal   JCR 2024 Article Influence Score (AIS) values. AIS is also an eigenvector
+             measure per article with 1 = average article, so log v and log AIS are
+             compared directly: correlation, RMA slope and offset, then AIS is mapped
+             onto the v scale with the RMA line (fitted on all matched journals of the
+             model) and each journal is classed in band / near / far against its v
+             band (as in mncs_comparison.py). Reported by field and by v-rank band,
+             with corr(log MNCS, log AIS) for reference when the MNCS comparison has
+             been run. AIS differs from v in its citing population (all of WoS), cited
+             window (2019-23 cited in 2024) and exclusion of journal self-citations.
+             No fit to SJR values is made.
+Disagreement is not interpreted as error in either index.
 
 Band: 2.5–97.5% interval of log v over the 1,000 work-resampling bootstrap replicates
 (stage4_resample, run on the corrected corpus with ω=0 replicates, 2026-11-26);
@@ -29,6 +38,7 @@ config's rankings.duckdb (config.rev.yaml = corrected baseline).
 
 Outputs:
   data/benchmark_journals_summary.csv          summary statistics only (git-tracked)
+  data/benchmark_journals_ais.csv              cardinal AIS comparison, summary only
   WORKING/benchmarks/benchmark_journals.csv    per-journal detail incl. licensed
                                                benchmark values (kept out of git)
 
@@ -48,7 +58,9 @@ import numpy as np
 import pandas as pd
 
 sys.path.insert(0, str(Path(__file__).parent.parent))
+sys.path.insert(0, str(Path(__file__).parent))
 from util import load_config, load_runs
+from mncs_comparison import classify
 
 ISSN_RE = re.compile(r'\b(\d{4})-?(\d{3}[\dXx])\b')
 # Review of Finance's current ISSNs (its works are under source 49857371, merged in the
@@ -188,6 +200,10 @@ def load_benchmarks(paths, sm: pd.DataFrame) -> pd.DataFrame:
 
     w = pd.read_excel(src / 'ecobus_journal_harzing_era.xlsx', sheet_name='wos_jcr')
     w['source_idx'] = match(w, ['ISSN', 'eISSN'], imap)
+    w['ais'] = pd.to_numeric(w['Article Influence Score'], errors='coerce')
+    # AIS is a journal value; the rare differences between category rows come from
+    # several JCR titles sharing an ISSN match: keep the largest
+    parts.append(w[w['ais'] > 0].dropna(subset=['source_idx']).groupby('source_idx')['ais'].max())
     w = w.dropna(subset=['source_idx', 'AIS Quartile'])
     w = w[w['AIS Quartile'].astype(str).str.match(r'Q[1-4]')]
     parts.append(w.groupby('source_idx')['AIS Quartile'].min().rename('AIS quartile'))
@@ -273,6 +289,54 @@ def membership(d, col, universe_mask, model):
     return row, below, above
 
 
+def rma_line(x: np.ndarray, y: np.ndarray):
+    """Reduced-major-axis fit y = a + b x; returns (corr, slope b, intercept a)."""
+    r = np.corrcoef(x, y)[0, 1]
+    b = np.sign(r) * np.std(y) / np.std(x)
+    return r, b, np.mean(y) - b * np.mean(x)
+
+
+def ais_summary(d: pd.DataFrame, model: str) -> pd.DataFrame:
+    """Cardinal comparison of log v with log AIS. d needs lv, hw, ais, field_eb and
+    optionally mncs; adds columns ais_gap and ais_class (in place) and returns one row
+    per field and per v-rank band."""
+    m = d['ais'].notna() & (d['ais'] > 0)
+    x = d[m]
+    la = np.log10(x['ais'])
+    _, b, a = rma_line(la.to_numpy(), x['lv'].to_numpy())
+    gap = x['lv'] - (a + b * la)
+    d['ais_gap'] = gap.reindex(d.index)
+    d['ais_class'] = pd.Series(classify((gap - x['hw']).to_numpy(), (gap + x['hw']).to_numpy()),
+                               index=x.index).reindex(d.index)
+    rank = d['lv'].rank(ascending=False)
+    bands = pd.cut(rank, [0, 10, 100, 500, np.inf], labels=['1-10', '11-100', '101-500', '501+'])
+    groups = ([('field', 'all', m)] + [('field', f, m & (d.field_eb == f)) for f in ['E', 'B', 'A', 'X']]
+              + [('v_rank', str(lab), m & (bands == lab)) for lab in bands.cat.categories])
+    rows = []
+    for gt, g, mask in groups:
+        y = d[mask]
+        if len(y) < 5:
+            continue
+        ly, lay = y['lv'].to_numpy(), np.log10(y['ais'].to_numpy())
+        r, slope, icpt = rma_line(lay, ly)
+        cls = y['ais_class']
+        row = dict(model=model, group_type=gt, group=g, n=len(y),
+                   corr_logv_logais=r, spearman=y['lv'].corr(y['ais'], method='spearman'),
+                   rma_slope=slope, rma_intercept=icpt,
+                   median_logv_minus_logais=np.median(ly - lay),
+                   sd_logv_minus_logais=np.std(ly - lay, ddof=1),
+                   median_gap_to_line=y['ais_gap'].median(),
+                   median_abs_gap_to_line=y['ais_gap'].abs().median(),
+                   median_band_halfwidth=y['hw'].median(),
+                   in_band=int((cls == 'in').sum()), near=int((cls == 'near').sum()),
+                   far=int((cls == 'far').sum()))
+        if 'mncs' in y.columns and y['mncs'].gt(0).sum() > 2:
+            z = y[y['mncs'] > 0]
+            row['corr_logmncs_logais'] = np.corrcoef(np.log10(z['mncs']), np.log10(z['ais']))[0, 1]
+        rows.append(row)
+    return pd.DataFrame(rows)
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument('--boot', default=None,
@@ -287,8 +351,15 @@ def main():
     bench = load_benchmarks(paths, sm)
     hw = bands(boot)
     rk = duckdb.connect(str(paths.working / 'rankings.duckdb'), read_only=True)
+    mncs_file = paths.working / 'benchmarks' / 'mncs_comparison_units.csv'
+    mncs = None
+    if mncs_file.exists():
+        mn = pd.read_csv(mncs_file)
+        mncs = mn[mn.unit_type == 'S'].set_index('unit_idx')['mncs']
+    else:
+        print(f'MNCS: {mncs_file} not found — run mncs_comparison.py for the MNCS reference column')
 
-    summary, detail = [], []
+    summary, detail, ais_rows = [], [], []
     for m, model in [('0110', 'bipartite'), ('1000', 'journal-only')]:
         t = (f"rk_{bl['run_code']}_{bl['fx']}_tauU{bl['tau_u']}_tauS{bl['tau_s']}"
              f"_vartau_rho0_m{m}_chi50_alpha100")
@@ -297,6 +368,8 @@ def main():
         d = pd.DataFrame({'v': v}).join(sm[['source_name', 'field_eb']]).join(bench).join(hw)
         d['lv'] = np.log10(d['v'])
         d['hw'] = d['hw'].fillna(d['hw'].median())
+        if mncs is not None:
+            d['mncs'] = mncs.reindex(d.index)
         # RePEc: quartiles of simple IF among matched journals in this ranking
         r = d['repec_if'].dropna()
         d['RePEc IF quartile'] = pd.qcut(r.rank(method='first', ascending=False), 4,
@@ -324,6 +397,14 @@ def main():
                                       'sig_below_worse_tier_median']]
         print(show.round(2).to_string(index=False))
 
+        at = ais_summary(d, model)
+        ais_rows.append(at)
+        print('  AIS (cardinal):')
+        print(at[['group_type', 'group', 'n', 'corr_logv_logais', 'rma_slope',
+                  'median_logv_minus_logais', 'median_abs_gap_to_line', 'median_band_halfwidth',
+                  'in_band', 'near', 'far'] + (['corr_logmncs_logais'] if 'corr_logmncs_logais' in at else [])]
+              .round(3).to_string(index=False))
+
         jql = d['AJG 2024'].notna() | d['FT50'].fillna(False).astype(bool)
         for col, universe in [('FT50', jql), ('UTD24', jql | d['UTD24'].fillna(False).astype(bool))]:
             row, below, above = membership(d, col, universe, model)
@@ -337,11 +418,12 @@ def main():
                                                      .source_name.str[:34].head(20)))
 
     pd.DataFrame(summary).to_csv(paths.data / 'benchmark_journals_summary.csv', index=False)
+    pd.concat(ais_rows).round(4).to_csv(paths.data / 'benchmark_journals_ais.csv', index=False)
     out = paths.working / 'benchmarks'
     out.mkdir(exist_ok=True)
     pd.concat(detail).to_csv(out / 'benchmark_journals.csv', index=False)
-    print(f"\nwritten: {paths.data / 'benchmark_journals_summary.csv'} and "
-          f"{out / 'benchmark_journals.csv'}")
+    print(f"\nwritten: {paths.data / 'benchmark_journals_summary.csv'}, "
+          f"{paths.data / 'benchmark_journals_ais.csv'} and {out / 'benchmark_journals.csv'}")
 
 
 if __name__ == '__main__':
