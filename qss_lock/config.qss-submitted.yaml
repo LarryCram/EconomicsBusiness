@@ -1,0 +1,13 @@
+# EconomicsBusiness project configuration — machine-specific, gitignored.
+# Paths are resolved in util/load_config.py; do not import this file directly.
+
+# === Paths ===
+PROJECT_ROOT: '/home/lc/Projects/EconomicsBusiness'
+DATA: 'data'                                    # relative to PROJECT_ROOT
+TABLES: 'tables'                                # relative to PROJECT_ROOT
+PLOTS: 'plots'                                  # relative to PROJECT_ROOT
+WORKING: '/home/lc/m/working/econ_bus'         # SSD root; parquet/ subfolder derived
+OPENALEX: '/home/lc/m/openalex_feb26/parquet'  # OA snapshot
+
+# === Development / testing ===
+TEST_SOURCE_ID: "https://openalex.org/S137773608"  # Journal of Economic Literature

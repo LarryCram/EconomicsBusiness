@@ -1,0 +1,11 @@
+counting,unit_type,v_rank,n,median_delta,median_citer_standing,median_band_halfwidth,in_band,near,far
+fractional,journals,1-10,10,0.497,0.309,0.034,0,0,10
+fractional,journals,11-100,90,0.356,0.219,0.05,3,13,74
+fractional,journals,101-500,400,0.129,0.058,0.08,79,162,159
+fractional,journals,501-1000,500,-0.064,-0.081,0.123,172,207,121
+fractional,journals,1001+,564,-0.236,-0.292,0.215,234,218,112
+fractional,institutions,1-10,10,0.612,0.384,0.033,0,0,10
+fractional,institutions,11-100,90,0.464,0.268,0.052,1,4,85
+fractional,institutions,101-500,400,0.166,0.08,0.054,50,142,208
+fractional,institutions,501-1000,500,-0.054,-0.033,0.066,150,197,153
+fractional,institutions,1001+,979,-0.31,-0.188,0.091,145,289,545

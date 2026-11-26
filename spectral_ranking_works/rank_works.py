@@ -36,7 +36,7 @@ from scipy.sparse.linalg import eigs, ArpackNoConvergence
 
 sys.path.insert(0, str(Path(__file__).parent.parent))
 from util import load_config, load_runs
-from spectral_ranking_bootstrap.bootstrap_baseline import compute_r_bar, create_tmp_el
+from spectral_ranking_works.el_helpers import compute_r_bar, create_tmp_el
 import duckdb
 
 

@@ -1,0 +1,97 @@
+unit,direction,from_window,to_window,from_state,to_state,n
+Sources,forward,2000–04,2020–24,v>1,v>1,97
+Sources,forward,2000–04,2020–24,v>1,v<1,15
+Sources,forward,2000–04,2020–24,v>1,below τ,3
+Sources,forward,2000–04,2020–24,v>1,no works,1
+Sources,forward,2000–04,2020–24,v<1,v>1,148
+Sources,forward,2000–04,2020–24,v<1,v<1,391
+Sources,forward,2000–04,2020–24,v<1,below τ,26
+Sources,forward,2000–04,2020–24,v<1,no works,29
+Sources,backward,2020–24,2000–04,v>1,v>1,97
+Sources,backward,2020–24,2000–04,v>1,v<1,148
+Sources,backward,2020–24,2000–04,v>1,below τ,11
+Sources,backward,2020–24,2000–04,v>1,no works,47
+Sources,backward,2020–24,2000–04,v<1,v>1,15
+Sources,backward,2020–24,2000–04,v<1,v<1,391
+Sources,backward,2020–24,2000–04,v<1,below τ,251
+Sources,backward,2020–24,2000–04,v<1,no works,604
+Sources,forward,2000–04,2005–09,v>1,v>1,103
+Sources,forward,2000–04,2005–09,v>1,v<1,11
+Sources,forward,2000–04,2005–09,v>1,below τ,2
+Sources,forward,2000–04,2005–09,v>1,no works,0
+Sources,forward,2000–04,2005–09,v<1,v>1,53
+Sources,forward,2000–04,2005–09,v<1,v<1,515
+Sources,forward,2000–04,2005–09,v<1,below τ,20
+Sources,forward,2000–04,2005–09,v<1,no works,6
+Sources,forward,2005–09,2010–14,v>1,v>1,146
+Sources,forward,2005–09,2010–14,v>1,v<1,16
+Sources,forward,2005–09,2010–14,v>1,below τ,2
+Sources,forward,2005–09,2010–14,v>1,no works,2
+Sources,forward,2005–09,2010–14,v<1,v>1,80
+Sources,forward,2005–09,2010–14,v<1,v<1,682
+Sources,forward,2005–09,2010–14,v<1,below τ,26
+Sources,forward,2005–09,2010–14,v<1,no works,9
+Sources,forward,2010–14,2015–19,v>1,v>1,206
+Sources,forward,2010–14,2015–19,v>1,v<1,43
+Sources,forward,2010–14,2015–19,v>1,below τ,3
+Sources,forward,2010–14,2015–19,v>1,no works,1
+Sources,forward,2010–14,2015–19,v<1,v>1,63
+Sources,forward,2010–14,2015–19,v<1,v<1,876
+Sources,forward,2010–14,2015–19,v<1,below τ,73
+Sources,forward,2010–14,2015–19,v<1,no works,19
+Sources,forward,2015–19,2020–24,v>1,v>1,232
+Sources,forward,2015–19,2020–24,v>1,v<1,48
+Sources,forward,2015–19,2020–24,v>1,below τ,8
+Sources,forward,2015–19,2020–24,v>1,no works,1
+Sources,forward,2015–19,2020–24,v<1,v>1,63
+Sources,forward,2015–19,2020–24,v<1,v<1,1028
+Sources,forward,2015–19,2020–24,v<1,below τ,110
+Sources,forward,2015–19,2020–24,v<1,no works,13
+Institutions,forward,2000–04,2020–24,v>1,v>1,106
+Institutions,forward,2000–04,2020–24,v>1,v<1,5
+Institutions,forward,2000–04,2020–24,v>1,below τ,1
+Institutions,forward,2000–04,2020–24,v>1,no works,0
+Institutions,forward,2000–04,2020–24,v<1,v>1,197
+Institutions,forward,2000–04,2020–24,v<1,v<1,103
+Institutions,forward,2000–04,2020–24,v<1,below τ,7
+Institutions,forward,2000–04,2020–24,v<1,no works,0
+Institutions,backward,2020–24,2000–04,v>1,v>1,106
+Institutions,backward,2020–24,2000–04,v>1,v<1,197
+Institutions,backward,2020–24,2000–04,v>1,below τ,205
+Institutions,backward,2020–24,2000–04,v>1,no works,17
+Institutions,backward,2020–24,2000–04,v<1,v>1,5
+Institutions,backward,2020–24,2000–04,v<1,v<1,103
+Institutions,backward,2020–24,2000–04,v<1,below τ,1003
+Institutions,backward,2020–24,2000–04,v<1,no works,343
+Institutions,forward,2000–04,2005–09,v>1,v>1,102
+Institutions,forward,2000–04,2005–09,v>1,v<1,9
+Institutions,forward,2000–04,2005–09,v>1,below τ,1
+Institutions,forward,2000–04,2005–09,v>1,no works,0
+Institutions,forward,2000–04,2005–09,v<1,v>1,54
+Institutions,forward,2000–04,2005–09,v<1,v<1,246
+Institutions,forward,2000–04,2005–09,v<1,below τ,7
+Institutions,forward,2000–04,2005–09,v<1,no works,0
+Institutions,forward,2005–09,2010–14,v>1,v>1,150
+Institutions,forward,2005–09,2010–14,v>1,v<1,15
+Institutions,forward,2005–09,2010–14,v>1,below τ,2
+Institutions,forward,2005–09,2010–14,v>1,no works,0
+Institutions,forward,2005–09,2010–14,v<1,v>1,98
+Institutions,forward,2005–09,2010–14,v<1,v<1,369
+Institutions,forward,2005–09,2010–14,v<1,below τ,12
+Institutions,forward,2005–09,2010–14,v<1,no works,0
+Institutions,forward,2010–14,2015–19,v>1,v>1,248
+Institutions,forward,2010–14,2015–19,v>1,v<1,27
+Institutions,forward,2010–14,2015–19,v>1,below τ,9
+Institutions,forward,2010–14,2015–19,v>1,no works,0
+Institutions,forward,2010–14,2015–19,v<1,v>1,107
+Institutions,forward,2010–14,2015–19,v<1,v<1,590
+Institutions,forward,2010–14,2015–19,v<1,below τ,27
+Institutions,forward,2010–14,2015–19,v<1,no works,0
+Institutions,forward,2015–19,2020–24,v>1,v>1,328
+Institutions,forward,2015–19,2020–24,v>1,v<1,40
+Institutions,forward,2015–19,2020–24,v>1,below τ,11
+Institutions,forward,2015–19,2020–24,v>1,no works,0
+Institutions,forward,2015–19,2020–24,v<1,v>1,157
+Institutions,forward,2015–19,2020–24,v<1,v<1,831
+Institutions,forward,2015–19,2020–24,v<1,below τ,37
+Institutions,forward,2015–19,2020–24,v<1,no works,0

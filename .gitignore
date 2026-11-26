@@ -17,3 +17,39 @@ MyLibrary
 *.blg
 *.pyc
 openalex-downloads
+# LaTeX auxiliary / build files (regenerated on compile)
+*.fdb_latexmk
+*.fls
+*.out
+*.toc
+*.lof
+*.lot
+*.loa
+*.nav
+*.snm
+*.vrb
+*.bcf
+*.run.xml
+*.xdv
+*.dvi
+*.idx
+*.ilg
+*.ind
+*.spl
+*.tdo
+*.synctex(busy)
+*.synctex.gz(busy)
+
+# Bibliographies are exported by Zotero (Better BibTeX), not version-controlled
+*.bib
+
+# QSS referee revision: confidential reports and the working plan stay local
+QSS_REVISION_PLAN.md
+spectral_ranking_latex/QSS-*.pdf
+spectral_ranking_latex/qss-*.pdf
+
+# QSS revision rerun config (machine-specific)
+config.rev.yaml
+
+# LibreOffice lock files
+.~lock.*#

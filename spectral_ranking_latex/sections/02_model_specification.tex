@@ -45,7 +45,7 @@ Here, $\mathcal{I}_{i\ell}$ is the set of institutions of author $\ell$ of work 
 When institutions and sources are ranked in parallel, the parameter $\chi$ sets the institution share. We consider $\chi = 0.5$ (unit balance) and $\chi=N_I/(N_S+N_I) = \chi^*$ (unit count balance).
 
 With works and references defined in this way, we construct the indexed 
-set of \emph{units} [sources or institutions; \cite{pinskiCitationInfluenceJournal1976}]
+set of \emph{units} [sources or institutions; \textcite{pinskiCitationInfluenceJournal1976}]
 $\mathfrak{P}=\mathfrak{S}\ \cup\ \mathfrak{I}$ with $N=N_S+N_I$ elements,
 ordered so that sources occupy indices $1,\dots,N_S$ and institutions
 indices $N_S+1,\dots,N$. Each reference $r(i,j) \in \mathfrak{R}$ connects units
@@ -105,13 +105,13 @@ ranking $\boldsymbol{\pi}^*$ \citep[see][for an overview]{vignaSpectralRanking20
 	\label{eq:eig}
 \end{equation}
 If $\mathbf{H}$ is primitive (irreducible and aperiodic) the ranking is unique by the
-Perron--Frobenius theorem. We call $\boldsymbol{\pi}^*$ the Perron--Frobenius (PF) eigenvector or ranking. \cite{gellerCitationInfluenceMethodology1978} showed that
+Perron--Frobenius theorem. We call $\boldsymbol{\pi}^*$ the Perron--Frobenius (PF) eigenvector or ranking. \textcite{gellerCitationInfluenceMethodology1978} showed that
 $\boldsymbol{\pi}^*$ is the stationary distribution of the
 Markov chain with transition matrix $\mathbf{H}$, and that it coincides
-with the \textit{influence weight} of \cite{pinskiCitationInfluenceJournal1976}
+with the \textit{influence weight} of \textcite{pinskiCitationInfluenceJournal1976}
 scaled by the reference-count proportion $r_p / \sum_q r_q$.
 
-Working with a binary choice matrix whose products count the length of chains, \cite{katzNewStatusIndex1953} proposed attenuating chains of length $k$ by a factor $\alpha^k$, $\alpha\in(0,1)$, so that distant links count for less than proximate ones. The same procedure applies to chains between distant units regarded as products of the citation matrix. In its original historical formulation, Katz set the boundary condition \citep{vignaSpectralRanking2016} to the uniform vector $\mathbf{1}$, leaving the eigenvector unnormalised.
+Working with a binary choice matrix whose products count the length of chains, \textcite{katzNewStatusIndex1953} proposed attenuating chains of length $k$ by a factor $\alpha^k$, $\alpha\in(0,1)$, so that distant links count for less than proximate ones. The same procedure applies to chains between distant units regarded as products of the citation matrix. In its original historical formulation, Katz set the boundary condition \citep{vignaSpectralRanking2016} to the uniform vector $\mathbf{1}$, leaving the eigenvector unnormalised.
 Summing chains of all lengths and endowing every unit with a
 uniform initial score of $1$ yields the Katz resolvent equation
 \[
@@ -119,7 +119,7 @@ uniform initial score of $1$ yields the Katz resolvent equation
 \]
 Because $\|\mathbf{H}\|_\infty\leq 1$, the spectral radius $\rho(\alpha\mathbf{H}^\top)<1$ for any $\alpha\in(0,1)$, so $(\mathbf{I}-\alpha\mathbf{H}^\top)$ is invertible by Neumann series.
 
-\cite{hubbellInputoutputApproachClique1965} generalised this approach by replacing
+\textcite{hubbellInputoutputApproachClique1965} generalised this approach by replacing
 the uniform endowment $\mathbf{1}$ with an informative prior
 $\boldsymbol{\mu}$ over units, representing exogenous information about
 the standing of units independently of the reference matrix structure,
@@ -143,9 +143,9 @@ Combining these approaches and scaling the exogenous prior by the attenuation ra
 which recovers $\boldsymbol{\pi}^*$ in the limit $\alpha\to 1$ when
 $\mathbf{H}$ is primitive. We call $\boldsymbol{\pi}$ from Equation~\ref{eq:spectral} the Katz--Hubbell (KH) eigenvector or ranking.
 
-The parameters $\alpha$ and $\boldsymbol{\mu}$ have substantive interpretations as reference chain attenuation and exogenous standing, independently of $\mathbf{H}$. Additionally, when $\alpha<1$ and $\mu \ne 0$, there is a unique non-negative solution to \eqref{eq:spectral} even when $\mathbf{H}$ is imprimitive: $\alpha<1$ makes $(\mathbf{I}-\alpha\mathbf{H}^\top)$ invertible, and a nonzero $\boldsymbol{\mu}$ ensures the equation is inhomogeneous. If $\mathbf{C}$ were a binary adjacency matrix with the flat prior, this would be the PageRank spectral ranking \citep{brinAnatomyLargeScaleHypertextual1998}.
+The parameters $\alpha$ and $\boldsymbol{\mu}$ have substantive interpretations as reference chain attenuation and exogenous standing, independently of $\mathbf{H}$. Additionally, when $\alpha<1$ and $\mu \ne 0$, there is a unique non-negative solution to \eqref{eq:spectral} even when $\mathbf{H}$ is imprimitive: $\alpha<1$ makes $(\mathbf{I}-\alpha\mathbf{H}^\top)$ invertible, and a nonzero $\boldsymbol{\mu}$ ensures the equation is inhomogeneous. If $\mathbf{C}$ were a binary adjacency matrix with the flat prior, this would be the PageRank spectral ranking \citep{brinAnatomyLargescaleHypertextual1998}.
 
-As \cite{gellerCitationInfluenceMethodology1978} showed, $\boldsymbol{\pi}$ is the steady-state probability vector of the Markov matrix $\mathbf{H}$, and we may refer to $\pi_p$ as the \emph{ranking probability} of unit $p$.
+As \textcite{gellerCitationInfluenceMethodology1978} showed, $\boldsymbol{\pi}$ is the steady-state probability vector of the Markov matrix $\mathbf{H}$, and we may refer to $\pi_p$ as the \emph{ranking probability} of unit $p$.
 The \emph{influence} $v_p$ is computed as \citep{palacios-huertaMeasurementIntellectualInfluence2004},
 \begin{equation}
 	\mathbf{v}
@@ -163,9 +163,9 @@ The scalar $A$ normalises $\mathbf{v}$ so that its $a_p$-weighted mean equals on
 $\mathbf{a}^{\top}\mathbf{v}/A=\mathbf{1}^{\top}\boldsymbol{\pi}=1$.
 This normalisation provides interpretable cardinal values \citep{stevensTheoryScalesMeasurement1946}: a unit with $v_p=1$ has the corpus-average influence, and
 $v_p=2$ indicates twice the corpus-average influence.  The quantity $v$ is the counterpart of influence per publication \citep{pinskiCitationInfluenceJournal1976} and article influence score 
-\citep{bergstromEigenfactorMetricsFigure2008}.
-\cite{palacios-huertaMeasurementIntellectualInfluence2004} show that
-$\mathbf{v}$ is uniquely characterised by reasonable axioms, although \cite{serranoMeasurementIntellectualInfluence2004} provides an impossibility result via a reasonable additional axiom that breaks the uniqueness.
+\citep{bergstromEigenfactorMetrics2008}.
+\textcite{palacios-huertaMeasurementIntellectualInfluence2004} show that
+$\mathbf{v}$ is uniquely characterised by reasonable axioms, although \textcite{serranoMeasurementIntellectualInfluence2004} provides an impossibility result via a reasonable additional axiom that breaks the uniqueness.
 
 With $\mathbf{m}=(0110)$, equation~\eqref{eq:C} yields block off-diagonal matrices $\mathbf{C}$ and $\mathbf{H}$ corresponding to a directed bipartite network between sources~($S$) and institutions~($I$). This mask characterises our recirculating ranking problem and is used as the baseline model in Section~\ref{sec:results}.
 Partitioning rows and columns into the $S$ and $I$ blocks, $\mathbf{H}$ takes the form

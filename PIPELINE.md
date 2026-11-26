@@ -139,6 +139,8 @@ run_code=20242024 is the baseline (2020–24).  Time-series runs are identified 
 
 ## Stage E — Bootstrap
 
+> **Current (2026-11-26):** `spectral_ranking_bootstrap/run_error_studies.sh` → `bootstrap_oa_errors.py`, output `WORKING/bootstrap_oa_errors/stage4_{resample,source,institution,reference,year_swap}/`, plotted by `fig_boot_envelope.py`. See `BOOTSTRAP.md`. The description below is historical (`bootstrap_baseline.py` is archived).
+
 **Script**: `spectral_ranking/bootstrap_baseline.py` (to be written; spec in `BOOTSTRAP.md`)
 
 **Inputs**: `WORKING/edge_lists.duckdb` (table `el_t5_A_tauU20_tauS20`), `params.yaml`
@@ -172,7 +174,7 @@ labels only).  **No computation inside figure scripts** (see integrity note belo
 | `fig_4.py` | `rankings.duckdb` + eigenpairs | Community measure φ₂/√v |
 | `fig_5.py` | `rankings.duckdb` | Phase 2 sensitivity (τ, ρ) |
 | `fig_6.py` | `rankings.duckdb` | Time-series comparison (t1–t4 vs baseline 2020–24) |
-| `fig_7.py` | `bootstrap/*.npy` + `rankings.duckdb` | Bootstrap uncertainty |
+| `fig_boot_envelope.py` | `bootstrap_oa_errors/stage4_*/` + `rankings.duckdb` | Bootstrap and metadata-error uncertainty |
 
 ---
 

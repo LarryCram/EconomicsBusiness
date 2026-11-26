@@ -20,7 +20,7 @@ Mode → blocks used for SCC
   m=1111  (full joint)  : all four blocks on sources + institutions
 
 The resulting _units_..._m{mstr} tables are what build_csr.py and
-bootstrap_baseline.py read in order to guarantee a mode-primitive unit set.
+bootstrap_oa_errors.py read in order to guarantee a mode-primitive unit set.
 
 Usage
 -----

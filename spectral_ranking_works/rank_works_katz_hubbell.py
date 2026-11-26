@@ -37,7 +37,7 @@ import scipy.sparse as sp
 
 sys.path.insert(0, str(Path(__file__).parent.parent))
 from util import load_config, load_runs
-from spectral_ranking_bootstrap.bootstrap_baseline import compute_r_bar, create_tmp_el
+from spectral_ranking_works.el_helpers import compute_r_bar, create_tmp_el
 from spectral_ranking_works.rank_works import (
     _find_el_table, _load_intersection_edges, _build_matrix, _aggregate_sources,
 )

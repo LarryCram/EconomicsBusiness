@@ -1,0 +1,11 @@
+counting,unit_type,field,n,in_band,near,far,flagged_dropouts,median_delta,sd_delta,corr_logv_logmncs,rma_slope_logv_vs_logmncs,corr_delta_citer_standing,far_sign_matches_standing
+fractional,journals,all,1564,488,600,476,94,-0.04,0.381,0.783,1.208,0.704,0.968
+fractional,institutions,all,1979,346,632,1001,0,-0.124,0.313,0.51,1.54,0.763,0.975
+fractional,journals,A,101,17,33,51,15,-0.701,0.484,0.643,1.184,0.729,0.961
+fractional,journals,B,876,284,321,271,43,-0.011,0.312,0.837,1.093,0.657,0.956
+fractional,journals,E,525,160,220,145,29,-0.018,0.373,0.802,1.299,0.76,0.993
+fractional,journals,X,62,27,26,9,7,-0.116,0.392,0.784,1.381,0.632,1.0
+fractional,institutions,A,198,27,70,101,0,-0.287,0.302,0.516,1.431,0.747,0.99
+fractional,institutions,B,882,144,277,461,0,-0.128,0.296,0.402,1.542,0.794,0.978
+fractional,institutions,E,305,60,89,156,0,0.018,0.358,0.584,1.551,0.775,0.968
+fractional,institutions,X,594,115,196,283,0,-0.126,0.295,0.558,1.476,0.729,0.968

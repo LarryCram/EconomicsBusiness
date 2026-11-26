@@ -12,7 +12,9 @@ derivative of the v-distribution:
   • Bulk (flat v curve): scores are densely packed → many rank swaps per
     unit of v → envelope blows out wide.
 
-Uses the 'all combined' stage4 bootstrap (stage4/).
+Reads the per-filter stage4_{filter}/ outputs of bootstrap_oa_errors.py and
+compares them with the baseline ranking of the same institution weighting ω
+(recorded in each meta.json; outputs without it are legacy ω=1).
 
 Outputs
 -------
@@ -136,11 +138,19 @@ STAGES = [
     ('stage4_resample',    'resample'),
     ('stage4_year',        'year uncertainties'),
     ('stage4_year_v2',     'year uncertainties v2'),
+    ('stage4_year_swap',   'year uncertainties (edge shifts)'),
     ('stage4_source',      'source errors'),
     ('stage4_institution', 'institution errors'),
     ('stage4_reference',   'reference errors'),
-    ('stage4',             'all errors combined'),
 ]
+
+
+def _baseline_table(boot_dir: Path) -> str:
+    """Baseline ranking with the same ω as the replicates (legacy meta → ω=1)."""
+    bl = next(r for r in load_runs() if r['label'] == 'baseline')
+    omega = json.loads((boot_dir / 'meta.json').read_text()).get('omega', 1)
+    return (f"rk_{bl['run_code']}_{bl['fx']}_tauU{bl['tau_u']}_tauS{bl['tau_s']}"
+            f"_vartau_rho0_m0110_chi50_alpha100" + ('_omega1' if omega else ''))
 
 
 def compute_envelopes(paths, stage: str) -> dict:
@@ -148,12 +158,8 @@ def compute_envelopes(paths, stage: str) -> dict:
     Load bootstrap data for one stage directory and return envelope arrays
     for Sources (key 'S') and Institutions (key 'I').
     """
-    bl = next(r for r in load_runs() if r['label'] == 'baseline')
-    BASELINE_TABLE = (f"rk_{bl['run_code']}_{bl['fx']}"
-                      f"_tauU{bl['tau_u']}_tauS{bl['tau_s']}"
-                      f"_vartau_rho0_m0110_chi50_alpha100_omega1")
-
     boot_dir = paths.working / 'bootstrap_oa_errors' / stage
+    BASELINE_TABLE = _baseline_table(boot_dir)
     print(f'  Loading {stage} ...', flush=True)
     v_s = np.load(str(boot_dir / 'v_s_boot.npy')).astype(np.float32)
     v_u = np.load(str(boot_dir / 'v_u_boot.npy')).astype(np.float32)
@@ -356,7 +362,7 @@ def plot_envelope_facet(paths) -> None:
 
 
 RATIO_FACET_STAGES = [
-    ('stage4_year_v2',     'Publication year uncertainty'),
+    ('stage4_year_swap',   'Publication year uncertainty'),
     ('stage4_source',      'Source misattribution'),
     ('stage4_institution', 'Institution misattribution'),
     ('stage4_reference',   'Reference misattribution'),
@@ -520,7 +526,7 @@ def main():
             print(f'  Skipping {stage_dir} — not found')
             continue
         env  = compute_envelopes(paths, stage_dir)
-        stem = f'fig_boot_envelope_{stage_dir.replace("stage4", "").strip("_") or "all"}'
+        stem = f'fig_boot_envelope_{stage_dir.replace("stage4_", "")}'
         plot_envelope(env, error_label, stem, paths)
     plot_envelope_overlay(paths)
     plot_envelope_facet(paths)

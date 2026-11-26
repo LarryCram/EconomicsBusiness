@@ -26,6 +26,9 @@ from spectral_ranking_bootstrap.bootstrap_oa_errors import (
     load_base_refs,
     _build_matrices,
     _rank_one,
+    _institution_weights,
+    _attach_institutions,
+    _r_extra,
 )
 
 
@@ -164,19 +167,18 @@ class TestPerturb:
                 assert int(row['source_idx']) in pre_src_set, \
                     f"year-error source {row['source_idx']} not from pre-window pool"
 
-    def test_inst_weight_recomputed(self):
-        """inst_weight must equal 1/N_i after any institution change."""
+    def test_inst_weight_kept_on_institution_swap(self):
+        """An institution error swaps inst_idx only; the row keeps its weight ω_iu,
+        so each work's weights are unchanged (whatever the weighting ω)."""
+        base_w = BASE_WORKS.groupby('work_idx')['inst_weight'].sum()
         for b in range(10):
             rng = np.random.default_rng(5000 + b)
             d   = perturb_works_one(BASE_WORKS, PRE_WINDOW, SRC_POOL, INST_POOL, rng)
-            ins = d[d['inst_idx_old'].notna()]
+            ins = d[d['error_type'] == 'institution']
             if len(ins) == 0:
                 continue
-            for wid, grp in ins.groupby('work_idx'):
-                n_i = grp['inst_idx'].dropna().nunique()
-                expected_w = np.float32(1.0 / max(n_i, 1))
-                assert np.allclose(grp['inst_weight'].values, expected_w, atol=1e-6), \
-                    f'inst_weight mismatch for work {wid}'
+            got = ins.groupby('work_idx')['inst_weight'].sum()
+            assert np.allclose(got.values, base_w.loc[got.index].values, atol=1e-12)
 
 
 # ── resample_works_one tests ───────────────────────────────────────────────────
@@ -456,3 +458,199 @@ def test_load_base_refs_assigns_ref_idx():
     assert len(df) == 3  # 3 distinct (citer_work, cited_work) pairs
     assert set(df.columns) >= {'ref_idx', 'citer_work_idx', 'cited_work_idx', 'cited_source_idx'}
     db.close()
+
+
+# ── Institution weighting (ω) ──────────────────────────────────────────────────
+
+class _P:
+    def __init__(self, parquet):
+        self.parquet = parquet
+
+
+def _authorships(tmp_path):
+    """
+    work 1: authors a (inst 100), b (inst 100 and 200)          → 2 authors
+    work 2: author c (inst 300)
+    work 3: author d (no institution)
+    work 4: author e (inst 100), author f (no institution)
+    Duplicate row for (1, a, 100) must be ignored (DISTINCT).
+    """
+    df = pd.DataFrame({
+        'work_idx':        [1,   1,   1,   1,   2,   3,    4,   4],
+        'author_idx':      [11,  11,  12,  12,  13,  14,   15,  16],
+        'institution_idx': [100, 100, 100, 200, 300, None, 100, None],
+        'country_code':    ['US','US','US','GB','AU', None,'US', None],
+    })
+    df['institution_idx'] = df['institution_idx'].astype('Int64')
+    df.to_parquet(tmp_path / 'corpus_authorships.parquet', index=False)
+    return _P(tmp_path)
+
+
+def test_institution_weights_author_fractional(tmp_path):
+    p  = _authorships(tmp_path)
+    iw = _institution_weights(p, np.array([1, 2, 3, 4]), omega=0)
+    w  = {(r.work_idx, r.inst_idx): r.inst_weight for r in iw.itertuples()}
+    # work 1: a → 1/2 to 100; b → 1/4 to 100, 1/4 to 200
+    assert w[(1, 100)] == pytest.approx(0.75)
+    assert w[(1, 200)] == pytest.approx(0.25)
+    assert w[(2, 300)] == pytest.approx(1.0)
+    # authors without an institution are not counted (as in build_edge_lists)
+    assert w[(4, 100)] == pytest.approx(1.0)
+    assert 3 not in set(iw['work_idx'])
+    assert iw['inst_weight'].dtype == np.float64
+
+
+def test_institution_weights_direct(tmp_path):
+    p  = _authorships(tmp_path)
+    iw = _institution_weights(p, np.array([1, 2]), omega=1)
+    w  = {(r.work_idx, r.inst_idx): r.inst_weight for r in iw.itertuples()}
+    assert w[(1, 100)] == pytest.approx(0.5)
+    assert w[(1, 200)] == pytest.approx(0.5)
+    assert w[(2, 300)] == pytest.approx(1.0)
+
+
+def test_institution_weights_sum_to_one_per_work(tmp_path):
+    p = _authorships(tmp_path)
+    for omega in (0, 1):
+        iw = _institution_weights(p, np.array([1, 2, 4]), omega=omega)
+        assert np.allclose(iw.groupby('work_idx')['inst_weight'].sum(), 1.0)
+
+
+def test_institution_weights_rejects_bad_omega(tmp_path):
+    with pytest.raises(ValueError):
+        _institution_weights(_authorships(tmp_path), np.array([1]), omega=2)
+
+
+def test_attach_institutions_no_inst_row(tmp_path):
+    p = _authorships(tmp_path)
+    works = pd.DataFrame({'work_idx': [1, 3], 'pub_year': [2021, 2022],
+                          'source_idx': [10, 20]})
+    out = _attach_institutions(works, p, omega=0)
+    w3 = out[out['work_idx'] == 3]
+    assert len(w3) == 1 and w3['inst_idx'].isna().all()
+    assert w3['inst_weight'].iloc[0] == 1.0
+    assert out['inst_idx'].dtype == 'Int64'
+    assert out.loc[(out.work_idx == 1) & (out.inst_idx == 100), 'country_code'].iloc[0] == 'US'
+
+
+# ── ρ: pipeline R_i carried through (_r_extra) ─────────────────────────────────
+
+def test_r_extra_counts_refs_outside_edge_list():
+    refs = pd.DataFrame({'citer_work_idx': [1, 1, 2], 'cited_work_idx': [5, 6, 5],
+                         'cited_source_idx': [10, 10, 10], 'R_i': [4, 4, 1]})
+    ex = _r_extra(refs)
+    assert ex.to_dict() == {1: 2}          # citer 1: R_i=4, two edge-list refs
+
+
+def test_r_extra_legacy_returns_none():
+    refs = pd.DataFrame({'citer_work_idx': [1], 'cited_work_idx': [5],
+                         'cited_source_idx': [10]})
+    assert _r_extra(refs) is None
+
+
+def test_r_extra_rejects_inconsistent_R():
+    refs = pd.DataFrame({'citer_work_idx': [1, 1], 'cited_work_idx': [5, 6],
+                         'cited_source_idx': [10, 10], 'R_i': [1, 1]})
+    with pytest.raises(ValueError):
+        _r_extra(refs)
+
+
+def test_build_matrices_rho_uses_r_extra():
+    """With extra references, ρ_i = R̄ / (kept refs + extra) scales C_SI down."""
+    works = pd.DataFrame({'work_idx': [1, 2], 'pub_year': [2021, 2021],
+                          'source_idx': [10, 20], 'inst_idx': pd.array([100, 200], dtype='Int64'),
+                          'inst_weight': [1.0, 1.0]})
+    refs = np.array([[1, 2, 20], [2, 1, 10]], dtype=np.int64)
+    si, ui = pd.Index([10, 20]), pd.Index([100, 200])
+    C0, _ = _build_matrices(refs, works, si, ui, 1.0, 2, 2)
+    C1, _ = _build_matrices(refs, works, si, ui, 1.0, 2, 2,
+                            r_extra=pd.Series({1: 3}))
+    assert C0[0, 1] == pytest.approx(1.0)       # citer 1: ρ = 1/1
+    assert C1[0, 1] == pytest.approx(0.25)      # citer 1: ρ = 1/(1+3)
+    assert C1[1, 0] == pytest.approx(C0[1, 0])  # citer 2 unaffected
+
+
+# ── Year-swap model ────────────────────────────────────────────────────────────
+
+from spectral_ranking_bootstrap.bootstrap_oa_errors import (
+    YEAR_SWAP, _draw_year_swaps, _year_swap_keep, _year_swap_refs, _swap_works_yr,
+)
+
+
+def test_year_swap_map_crosses_window_edges():
+    assert YEAR_SWAP == {YEAR_LO - 1: YEAR_LO, YEAR_LO: YEAR_LO - 1, YEAR_HI: YEAR_HI + 1}
+
+
+def test_draw_year_swaps_rate_and_mapping():
+    ids = np.arange(300_000, dtype=np.int64)
+    yrs = np.repeat(np.array([YEAR_LO - 1, YEAR_LO, YEAR_HI], np.int16), 100_000)
+    sel, new = _draw_year_swaps(ids, yrs, np.random.default_rng(1), p=0.02)
+    assert abs(len(sel) / len(ids) - 0.02) < 0.002
+    old = yrs[sel]
+    assert all(new[k] == YEAR_SWAP[int(old[k])] for k in range(len(sel)))
+
+
+def test_year_swap_keep_window_and_lag_rule():
+    year = np.array([YEAR_LO, YEAR_LO + 1, YEAR_LO - 1, YEAR_HI, YEAR_HI + 1], np.int16)
+    ci = np.array([1, 0, 1, 2, 3, 4])
+    cd = np.array([0, 1, 2, 1, 4, 3])
+    keep = _year_swap_keep(ci, cd, year)
+    # 2021→2020 ok; 2020→2021 ok (lag +1); →2019 out; 2019 citer out;
+    # →2025 out; 2025 citer out
+    assert keep.tolist() == [True, True, False, False, False, False]
+    year2 = year.copy(); year2[0] = YEAR_LO - 1          # 2020 work shifted out
+    assert _year_swap_keep(ci, cd, year2).tolist() == [False] * 6
+    year3 = year.copy(); year3[2] = YEAR_LO              # 2019 work shifted in
+    assert _year_swap_keep(ci, cd, year3)[2]
+
+
+def test_year_swap_keep_cited_two_years_after_citer_dropped():
+    year = np.array([YEAR_LO, YEAR_LO + 2], np.int16)
+    assert not _year_swap_keep(np.array([0]), np.array([1]), year)[0]
+
+
+def test_year_swap_refs_counts_non_edges_in_r_extra():
+    W = np.array([10, 20, 30], np.int64)
+    year = np.array([YEAR_LO, YEAR_LO, YEAR_LO], np.int16)
+    ci = np.array([0, 0, 1]); cd = np.array([1, 2, 2])
+    edge = np.array([True, False, True])
+    refs, extra = _year_swap_refs(W, ci, cd, edge, year)
+    assert refs[:, :2].tolist() == [[10, 20], [20, 30]]
+    assert extra.to_dict() == {10: 1}
+    # shifting work 30 out removes both of its incoming references
+    year[2] = YEAR_LO - 1
+    refs, extra = _year_swap_refs(W, ci, cd, edge, year)
+    assert refs[:, :2].tolist() == [[10, 20]] and extra.empty
+
+
+def test_swap_works_yr_drops_and_inserts():
+    base = pd.DataFrame({'work_idx': [1, 1, 2], 'pub_year': np.int16(YEAR_LO),
+                         'source_idx': 5, 'inst_idx': pd.array([7, 8, 7], 'Int64'),
+                         'inst_weight': [0.5, 0.5, 1.0]})
+    pool = pd.DataFrame({'work_idx': [9], 'pub_year': np.int16(YEAR_LO - 1),
+                         'source_idx': 6, 'inst_idx': pd.array([7], 'Int64'),
+                         'inst_weight': [1.0]})
+    out = _swap_works_yr(base, pool, np.array([2, 9]),
+                         np.array([YEAR_LO - 1, YEAR_LO], np.int16))
+    assert sorted(out['work_idx'].tolist()) == [1, 1, 9]
+    assert (out.loc[out['work_idx'] == 9, 'pub_year'] == YEAR_LO).all()
+
+
+# ── Run label (separate E / B bootstraps) ──────────────────────────────────────
+
+import spectral_ranking_bootstrap.bootstrap_oa_errors as boe
+
+
+def test_stage_dir_per_run_label(monkeypatch):
+    assert boe._stage_dir() == 'bootstrap_oa_errors'
+    monkeypatch.setattr(boe, 'RUN_LABEL', 'F=E')
+    assert boe._stage_dir() == 'bootstrap_oa_errors_FE'
+
+
+def test_run_requires_bipartite(monkeypatch):
+    monkeypatch.setattr(boe, 'RUN_LABEL', 'F=E')
+    r = boe._run()
+    assert r['fx'] == 'E' and str(r['m']).zfill(4) == '0110'
+    monkeypatch.setattr(boe, 'RUN_LABEL', 'F=E-SS')
+    with pytest.raises(ValueError):
+        boe._run()

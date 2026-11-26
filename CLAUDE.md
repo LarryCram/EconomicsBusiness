@@ -8,16 +8,47 @@
 EconomicsBusiness/
   spectral_ranking/        # Python ranking code + tests
   spectral_ranking_latex/  # LaTeX paper (multi-file master)
-  spectral_results_analysis/  # Figure scripts (fig_2.py … fig_7.py)
+  spectral_results_analysis/  # Figure scripts (fig_2.py … fig_6.py, fig_boot_envelope.py, …)
   prepare_data/            # OpenAlex data pipeline + tests
   util/                    # Shared helpers: load_config, load_runs, Paths
   data/                    # Small reference files (MB-scale, git-tracked)
   plots/                   # Plots for exploration and publication (git-tracked)
   params.csv               # Run schedule — one row per ranking run
-  config.yaml              # Machine-specific data paths — gitignored
+  config.yaml              # Machine-specific data paths (note: actually tracked in git)
+  config.rev.yaml          # QSS-revision config → econ_bus_rev (gitignored)
   CLAUDE.md
   PLOTS.md
 ```
+
+## QSS referee revision (from 2026-11-24)
+The paper was submitted to *Quantitative Science Studies* on 2026-06-12 (tag `qss-submitted`). Revision work is on
+branch `qss-revision`. See `qss_lock/README.md` for the locked data, OpenAlex snapshot and package versions.
+Never point `OPENALEX` at `openalex_jul26`/`openalex_oct26` and never write to `/home/lc/m/working/econ_bus_qss_submitted`.
+
+**Corrected baseline for the revision.** It lives in `/home/lc/m/working/econ_bus_rev`, built from the frozen corpus with no OpenAlex re-extraction.
+- To run any script on it, set `ECONBUS_CONFIG=config.rev.yaml` (`util/load_config.py` honours the variable).
+- To rebuild it:
+  1. Run `prepare_data/apply_institution_corrections.py --source /home/lc/m/working/econ_bus/parquet`. It applies `data/institution_corrections.csv` (merge/drop/include), `data/source_corrections.csv` (journal merges) and the finance/accounting field rule (exceptions in `data/field_rule_exceptions.csv`; `--registry-fields` skips the rule).
+  2. Run `build_edge_lists` → `build_institution_field_eb` → `filter_mode_units` → `run_rankings`, all with the same config.
+- `--empty` reproduces the locked baseline exactly (checked with `spectral_ranking/compare_rankings_db.py`).
+- `verify_edge_lists.py` is broken: it queries the catalog column `t_x`, which no longer exists.
+- Revision analyses:
+  - `split_institution_ranking.py`
+  - `survivorship_transitions.py`
+  - `finance_reclassification.py`
+  - `benchmark_journals.py` (tier and membership benchmarks; cardinal log v vs log AIS with v bands → `data/benchmark_journals_ais.csv`)
+  - `benchmark_institutions.py`
+  - `screen_institutions.py`
+  - `paper_numbers.py`
+  - `mncs_comparison.py` (combined v against field-normalised MNCS with paired bootstrap bands → `data/mncs_comparison_summary.csv`, `_by_rank.csv`; `--counting full` gives the FWCI-like full-counting variant → `data/mncs_comparison_full_*.csv`)
+- In-text numbers are tracked in `spectral_ranking_latex/NUMBERS_CHECKLIST.md`.
+- Submitted-version figures are reproduced in `plots/qss_submitted/`.
+- **Error studies are re-run on the corrected baseline (2026-11-26).** `spectral_ranking_bootstrap/run_error_studies.sh` runs `bootstrap_oa_errors.py` (detached; progress in `$WORKING/logs/error_studies_<stamp>/STATUS`):
+  - sampling bootstrap = filter `resample`; metadata errors = `source`, `institution`, `reference` and `year_swap` (publication-year errors: 2% of works dated 2019, 2020 or 2024 moved one year across the window edge, edge list rebuilt from corpus references; supersedes `year_v2`, which was in effect a 2% deletion). Error types are never combined (the old combined `all` run was removed).
+  - separate economics and business bootstraps: `bootstrap_oa_errors.py --run-label F=E|F=B --stage 1,3` then `--stage 4 --filters resample` → `econ_bus_rev/bootstrap_oa_errors_FE`, `_FB` (resample only).
+  - Replicates use the baseline weighting ω=0 (author-fractional) and the pipeline's R_i, so a zero-error replicate reproduces the baseline exactly (≤1e-11 dex). The submitted runs used ω=1 and an R_i count that was off by up to 0.07 dex at zero error.
+  - Old scripts (`bootstrap_baseline.py`, `fig_7.py`, combined-run diagnostics) are in `ZARCHIVE/bootstrap_2026_11/`.
+- `QSS_REVISION_PLAN.md` and the QSS PDFs are local only (gitignored): they contain referee material.
 
 ## Python environment
 Always use `.venv/bin/python` and `.venv/bin/pip`. Never invoke bare `python` or `pip`.
@@ -65,6 +96,8 @@ Sources in `source_master.parquet/csv` carry a `field_eb` column (replaces old `
 - **'B'**: bus_score > econ_score              (business-dominant)
 
 `field_eb` is never NULL. Scores count how many of {era_field, harzing_field, wos_categories, field_name, scopus_asjc} contain econ/business keywords. Scopus contributes 1 to econ_score if ASJC 2000 present, 1 to bus_score if ASJC 1400 present. F=EB corpus filter is `field_eb IN ('E','B','A')`. F=A is the full corpus (no filter). F=X is the neither-signal residual.
+
+**Finance/accounting rule (adopted 2026-11-26, referee 3.1; applied in `apply_institution_corrections.py`, `FIN_ACC_SQL`).** After scoring, a journal classed E or A becomes B if at least two of four signals mark it as finance or accounting: Harzing `F&A`, WoS `BUSINESS, FINANCE`, ERA FoR 3501/3502, OpenAlex top subfield Finance/Accounting. One signal is not enough (ERA 3502 is a secondary code on many economics journals). `data/field_rule_exceptions.csv` keeps J. Monetary Economics, Fiscal Studies, IMF Economic Review and Intereconomics in E. Baseline journals: 525 E / 876 B / 101 A / 62 X. The rule does not affect the EBAX baseline.
 
 ## Paper
 Multi-file LaTeX in `spectral_ranking_latex/`. Master file is `main.tex`; sections are in `sections/`. Bibliography fed by Zotero (`MyLibrary.bib`). Committed to GitHub for backup.
