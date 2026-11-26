@@ -40,7 +40,7 @@ Never point `OPENALEX` at `openalex_jul26`/`openalex_oct26` and never write to `
   - `benchmark_institutions.py`
   - `screen_institutions.py`
   - `paper_numbers.py`
-  - `mncs_comparison.py` (combined v against field-normalised MNCS with paired bootstrap bands → `data/mncs_comparison_summary.csv`, `_by_rank.csv`)
+  - `mncs_comparison.py` (combined v against field-normalised MNCS with paired bootstrap bands → `data/mncs_comparison_summary.csv`, `_by_rank.csv`; `--counting full` gives the FWCI-like full-counting variant → `data/mncs_comparison_full_*.csv`)
 - In-text numbers are tracked in `spectral_ranking_latex/NUMBERS_CHECKLIST.md`.
 - Submitted-version figures are reproduced in `plots/qss_submitted/`.
 - **Error studies are re-run on the corrected baseline (2026-11-26).** `spectral_ranking_bootstrap/run_error_studies.sh` runs `bootstrap_oa_errors.py` (detached; progress in `$WORKING/logs/error_studies_<stamp>/STATUS`):

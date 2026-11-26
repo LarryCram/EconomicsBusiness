@@ -14,6 +14,9 @@ MNCS (mean normalised citation score)
   journal     MNCS_j = mean of c_w / e over the journal's population works
   institution MNCS_u = sum_w ω_wu (c_w / e) / sum_w ω_wu, ω = author-fractional
               weights (as a_p and the baseline, ω = 0)
+              --counting full gives every institution on a work weight 1 (the FWCI /
+              InCites convention); journals are unaffected. Citer standing keeps the
+              fractional weights, since it describes v.
   The fields are separated only in the expected value: citations from every corpus
   work count, which is how MNCS field normalisation works.
 
@@ -31,15 +34,17 @@ Citer standing (the explanation v offers for a gap): the reference-weighted mean
 log10 v of the citing units — citing institutions for a journal, citing journals for
 an institution (the bipartite route) — minus the same mean over all references.
 
-Outputs
+Outputs (--counting full inserts '_full' after 'mncs_comparison')
   data/mncs_comparison_summary.csv                 by unit type and field
   data/mncs_comparison_by_rank.csv                 by unit type and v-rank band
   WORKING/benchmarks/mncs_comparison_units.csv     per unit
 
 Usage:
   ECONBUS_CONFIG=config.rev.yaml .venv/bin/python spectral_results_analysis/mncs_comparison.py
+  ECONBUS_CONFIG=config.rev.yaml .venv/bin/python spectral_results_analysis/mncs_comparison.py --counting full
 """
 
+import argparse
 import json
 import sys
 import time
@@ -79,6 +84,18 @@ def unit_means(ncs: np.ndarray, W: sp.csr_matrix) -> np.ndarray:
     num = W @ ncs
     den = np.asarray(W.sum(axis=1)).ravel()
     return np.divide(num, den, out=np.full(len(den), np.nan), where=den > 0)
+
+
+def institution_weights_matrix(iw: pd.DataFrame, u_index: pd.Index, W_ids: np.ndarray,
+                               counting: str = 'fractional') -> sp.csr_matrix:
+    """(institutions × works) weights: author-fractional inst_weight, or 1 per
+    institution–work pair with counting='full'."""
+    if counting not in ('fractional', 'full'):
+        raise ValueError(f'counting must be fractional or full, not {counting!r}')
+    w = iw['inst_weight'].to_numpy(float) if counting == 'fractional' else np.ones(len(iw))
+    wpos = np.searchsorted(W_ids, iw['work_idx'].to_numpy(np.int64))
+    return sp.csr_matrix((w, (u_index.get_indexer(iw['inst_idx']), wpos)),
+                         shape=(len(u_index), len(W_ids)))
 
 
 def citation_counts(cited_pos: np.ndarray, citer_mult: np.ndarray, n_works: int) -> np.ndarray:
@@ -136,8 +153,10 @@ def load_inputs(paths):
                 inst_field=ife.set_index('unit_idx')['field_eb'], rk_table=rk_table)
 
 
-def main():
+def main(counting: str = 'fractional'):
     t0 = time.perf_counter()
+    tag = '' if counting == 'fractional' else f'_{counting}'
+    print(f'institution counting: {counting}', flush=True)
     paths = load_config()
     d = load_inputs(paths)
     works, iw, refs = d['works'], d['iw'], d['refs']
@@ -158,9 +177,7 @@ def main():
     sj = s_index.get_indexer(works['source_idx'])
     m = sj >= 0
     W_s = sp.csr_matrix((np.ones(m.sum()), (sj[m], np.nonzero(m)[0])), shape=(len(s_index), n_w))
-    wpos = np.searchsorted(W_ids, iw['work_idx'].to_numpy(np.int64))
-    W_u = sp.csr_matrix((iw['inst_weight'].to_numpy(float), (u_index.get_indexer(iw['inst_idx']), wpos)),
-                        shape=(len(u_index), n_w))
+    W_u = institution_weights_matrix(iw, u_index, W_ids, counting)
 
     # baseline MNCS
     c0 = citation_counts(cited_pos, np.ones(len(refs)), n_w)
@@ -248,7 +265,7 @@ def main():
         else:
             names = d['names_i'].reindex(ids).to_numpy()
             field = d['inst_field'].reindex(ids).fillna('X').to_numpy()
-            n_works = np.asarray(W_u.sum(axis=1)).ravel()
+            n_works = np.asarray(institution_weights_matrix(iw, u_index, W_ids).sum(axis=1)).ravel()
         rows.append(pd.DataFrame({
             'unit_type': ut, 'unit_idx': ids, 'name': names, 'field': field, 'n_works': n_works,
             'v': v0, 'mncs': mncs0[ut], 'delta': delta0, 'delta_lo': lo, 'delta_hi': hi,
@@ -277,7 +294,8 @@ def main():
                          corr_delta_citer_standing=round(float(g[['delta', 'citer_standing']].corr().iloc[0, 1]), 3),
                          far_sign_matches_standing=round(float(sign_ok), 3) if len(far) else np.nan))
     summ = pd.DataFrame(summ)
-    out = paths.data / 'mncs_comparison_summary.csv'
+    summ.insert(0, 'counting', counting)
+    out = paths.data / f'mncs_comparison{tag}_summary.csv'
     summ.to_csv(out, index=False)
 
     # by position in the ranking: v stretches the MNCS scale at both ends
@@ -295,9 +313,10 @@ def main():
                                 in_band=int((c == 'in').sum()), near=int((c == 'near').sum()),
                                 far=int((c == 'far').sum())))
     by_rank = pd.DataFrame(by_rank)
-    out_r = paths.data / 'mncs_comparison_by_rank.csv'
+    by_rank.insert(0, 'counting', counting)
+    out_r = paths.data / f'mncs_comparison{tag}_by_rank.csv'
     by_rank.to_csv(out_r, index=False)
-    det = paths.working / 'benchmarks' / 'mncs_comparison_units.csv'
+    det = paths.working / 'benchmarks' / f'mncs_comparison{tag}_units.csv'
     det.parent.mkdir(parents=True, exist_ok=True)
     units.to_csv(det, index=False)
     pd.set_option('display.width', 220)
@@ -314,4 +333,7 @@ def main():
 
 
 if __name__ == '__main__':
-    main()
+    ap = argparse.ArgumentParser(description=__doc__.split('\n')[1])
+    ap.add_argument('--counting', choices=('fractional', 'full'), default='fractional',
+                    help='institution work weights: author-fractional (default) or full (FWCI-like)')
+    main(ap.parse_args().counting)

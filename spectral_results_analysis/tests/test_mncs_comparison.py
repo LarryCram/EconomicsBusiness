@@ -7,8 +7,10 @@ import scipy.sparse as sp
 
 sys.path.insert(0, str(Path(__file__).parent.parent))
 sys.path.insert(0, str(Path(__file__).parent.parent.parent))
+import pandas as pd
+import pytest
 from mncs_comparison import (citation_counts, classify, expected_by_group,
-                             normalised_scores, unit_means)
+                             institution_weights_matrix, normalised_scores, unit_means)
 
 
 def test_expected_is_group_mean():
@@ -47,3 +49,15 @@ def test_classify():
     lo = np.array([-0.1, 0.05, 0.30, -0.5, np.nan])
     hi = np.array([0.1, 0.15, 0.40, -0.45, 0.1])
     assert classify(lo, hi).tolist() == ['in', 'near', 'far', 'far', 'n/a']
+
+
+def test_institution_weights_fractional_and_full():
+    iw = pd.DataFrame({'work_idx': [10, 10, 20], 'inst_idx': [7, 8, 7],
+                       'inst_weight': [0.75, 0.25, 1.0]})
+    u, works = pd.Index([7, 8]), np.array([10, 20])
+    frac = institution_weights_matrix(iw, u, works).toarray()
+    full = institution_weights_matrix(iw, u, works, 'full').toarray()
+    assert frac.tolist() == [[0.75, 1.0], [0.25, 0.0]]
+    assert full.tolist() == [[1.0, 1.0], [1.0, 0.0]]
+    with pytest.raises(ValueError):
+        institution_weights_matrix(iw, u, works, 'whole')
