@@ -54,3 +54,6 @@ config.rev.yaml
 
 # LibreOffice lock files
 .~lock.*#
+
+# Full pip freeze of the QSS venv: local only (unrelated packages raised Dependabot alerts); see qss_lock/README.md
+qss_lock/requirements-qss.txt

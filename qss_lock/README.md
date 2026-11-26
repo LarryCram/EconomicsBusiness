@@ -33,10 +33,14 @@ so the referee revision does not drift onto newer OpenAlex data or library versi
   corpus into a scratch folder, and diff against `econ_bus_qss_submitted/parquet` before using it.
 
 ## Python environment
-- `requirements-qss.txt`: full `pip freeze` of `.venv` (Python 3.12.3). The venv was last changed on 2026-06-09
-  (pytest only), so this is the environment that produced the submitted results.
+- `requirements-core.txt` (tracked): the 16 packages the project code imports, pinned to the versions of the
+  `.venv` that produced the submitted and revision results (Python 3.12.3). Use it to rebuild the environment.
+- `requirements-qss.txt`: full `pip freeze` of `.venv`. The venv was last changed on 2026-06-09 (pytest only).
+  **Local only since 2026-11-27** (gitignored): it listed ~170 unrelated packages (torch, aiohttp, …) and raised
+  172 Dependabot alerts on the public repository. Copy it between machines with the data if an exact clone of
+  the venv is needed; it remains in git history up to commit 44ef930.
 - Note: the repo's `requirements.txt` pins *different* versions (e.g. duckdb 1.5.0, numpy 2.2.6, scipy 1.16.0)
-  than this venv (duckdb 1.3.2, numpy 1.26.4, scipy 1.13.1). Use `requirements-qss.txt` for the revision on
+  than this venv (duckdb 1.3.2, numpy 1.26.4, scipy 1.13.1). Use `requirements-core.txt` for the revision on
   both machines.
 
 ## Config
