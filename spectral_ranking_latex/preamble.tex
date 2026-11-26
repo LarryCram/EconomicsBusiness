@@ -1,0 +1,29 @@
+% Shared preamble for main.tex, supplement1.tex and supplement2.tex
+\setlength\parindent{10pt}
+\usepackage{booktabs, amsmath, amssymb, mathrsfs, array, tabularx, makecell}
+\usepackage[british]{babel}
+\usepackage{csquotes}
+% APA 7 references, as required by QSS at revision (compile with biber, e.g. latexmk)
+\usepackage[style=apa, backend=biber, natbib=true]{biblatex}
+\addbibresource{MyLibrary.bib}
+\addbibresource{extra_refs.bib} % references not yet in Zotero
+\usepackage[margin=1in]{geometry}
+\usepackage{graphicx}
+\usepackage{caption}
+\usepackage{authblk} % author/affiliation management
+\captionsetup[table]{skip=10pt}
+\usepackage{tikz}
+\usetikzlibrary{positioning, arrows.meta}
+% Cross-references between the paper and its supplements: compile the
+% supplements and the paper in turn (each reads the others' .aux files).
+\usepackage{xr-hyper}
+\usepackage{hyperref}
+\pagestyle{plain}
+
+\newcommand{\authorblock}{%
+  \author[1]{Domingo Docampo}
+  \author[2]{Lawrence Cram}
+  \affil[1]{Atlantic Research Center for Information and Communication Technologies \newline University of Vigo, Vigo, Spain}
+  \affil[2]{Research School of Physics, Australian National University, Canberra, 2600, ACT, Australia
+  Charles Darwin University, Brinkin, 0810, NT, Australia}}
+\newcommand{\papertitle}{Recirculating cardinal spectral ranking of journals and institutions}

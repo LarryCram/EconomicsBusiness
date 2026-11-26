@@ -1,0 +1,392 @@
+%!TeX root = ../supplement1.tex
+% Supplement 1: mathematical framework and implementation (moved from §2 of the submitted paper)
+
+This supplement gives the mathematical framework of the recirculating spectral ranking, the numerical methods, the measures of reference-flow structure used in Section~\ref{M-sec:results} of the paper, the notation (Table~\ref{tab:notation}) and the software used. It is written to be read on its own. Section~\ref{M-sec:networks} of the paper summarises it. Throughout, rows of a reference matrix index the referencing (citing) side and columns the referenced (cited) side.
+
+\section{Units, works and weights}
+\label{sec:units}
+
+We begin by selecting $N_S$ journals $\mathfrak{S}$ in a set of fields, disciplines or categories $\mathfrak{F}$. Then we select $N_w$ works $\mathfrak{W}$ published in $\mathfrak{S}$ within the census
+window years $t_c = [t^c_0, t^c_1]$ or target years $t_t = [t^t_0, t^t_1]$. Author affiliations in $\mathfrak{W}$ establish a set of institutions $\mathfrak{I}'$ and
+authors $\mathfrak{A}'$. From the reference lists of the set of census works $\mathfrak{W}^c$ we identify the set of target works $\mathfrak{W}^t$ and form the filtered corpus reference set
+$\mathfrak{R}=\{r(i,j):w_i\in\mathfrak{W}^c,\,w_j\in\mathfrak{W}^t\}$.
+
+In practice many institutions and some journals publishing only
+a few works per year can be dropped from the corpus. We specify 
+the threshold numbers of works per year that must be attained by institutions ($\tau_I$) and journals ($\tau_S$), with $\mathfrak{I}\subseteq\mathfrak{I}'$ and $\mathfrak{S}\subseteq\mathfrak{S}'$ as the surviving sets. Works that lose all their authorships under the institution filter, or whose journal is dropped by the journal filter, are removed from the corpus. 
+
+The corpus reference set $\mathfrak{R}$ does not include references from census works in $\mathfrak{W}^c$ to works outside $\mathfrak{W}^t$, or from works outside $\mathfrak{W}^c$ to target works in $\mathfrak{W}^t$. These exogenous connections can be discarded, as signified by the binary flag $\varepsilon=0$. Alternatively, the connections can be represented by links to members of a pair of \emph{sentinel} units: a fictitious external source $s_0\notin\mathfrak{S}$ and a fictitious external institution $i_0\notin\mathfrak{I}$, each hosting the totality of works beyond the corpus. This is denoted by the flag $\varepsilon = 1$. The sentinels enter the citation matrix and the eigenvector computation (see below) but their influence values are not reported. The fraction of a unit's normalised reference weight directed at or received from $s_0$ or $i_0$ is its \emph{external balance}, indicating how strongly the work's references and citations reach beyond the corpus boundary.
+
+Let $R_i = |{j : (i,j)\in\mathfrak{R}}|$ be the number of corpus references from work $w_i$, and $\bar{R} = |\mathfrak{R}|/N_w$ the mean of $R_i$ over $\mathfrak{W}$. Since within-corpus reference lists have different lengths, we consider two cases for weighting them, selected by a binary flag $\rho$:
+\begin{equation}
+	\rho_i \;=\;
+	\begin{cases}
+		\bar{R}/R_i & \text{(fractional reference counting [$\rho=0$])} \\
+		1 & \text{(full reference counting [$\rho=1$])}.
+	\end{cases}
+	\label{eq:rho}
+\end{equation}
+Under full reference counting a work with twice as many filtered references has twice
+the prominence; under fractional reference counting every work's filtered references count
+equally \citep{zittModifyingJournalImpact2008}.
+
+A work has a retained journal and one or more institutions. For journal ranking it is straightforward to link the work to its journal. When journals and institutions are considered together, fractionation of institutions and the fractionation between journal and institutions must be considered. 
+There are two common models for fractionating a work's institutions (i.e. the \textit{institution weight}), selected by the binary flag $\omega$:
+\begin{equation}
+  \omega_{ix} \;=\;
+  \begin{cases}
+	\displaystyle\sum_{\ell:\,x\in\mathcal{I}_{i\ell}}
+    \frac{1}{a_i}\,\frac{1}{x_{i\ell}}, & \text{(author-fractional, $\omega=0$, the baseline),} \\[14pt]
+    \dfrac{1}{n_i}, & \text{(equal institution shares, $\omega=1$).}
+	\end{cases}
+  \label{eq:omega}
+\end{equation}
+Here, $\mathcal{I}_{i\ell}$ is the set of institutions of author $\ell$ of work $w_i$, $x_{i\ell}=|\mathcal{I}_{i\ell}|$ is its cardinality, $a_i$ is the author count of work $w_i$, and $n_i = |\bigcup_\ell \mathcal{I}_{i\ell}|$ is the number of distinct institutions of work $w_i$. Authorships with no institution are automatically excluded, so $x_{i\ell}\ge 1$, and under either counting $\sum_x\omega_{ix}=1$ \citep{waltmanFieldnormalizedCitationImpact2015}. The work counts $a_p$ of institutions (Section~\ref{sec:influence}) are always author-fractional. Institution pruning below the annual output threshold $\tau_I$ precedes fractional counting; this choice boosts a work's remaining institutions but diminishes the work's total contribution when some institutions are dropped.
+When institutions and journals are ranked in parallel, the parameter $\chi$ sets the institution share. We consider $\chi = 0.5$ (unit balance) and $\chi=N_I/(N_S+N_I) = \chi^*$ (unit count balance).
+
+\section{The reference matrix}
+\label{sec:matrix}
+
+With works and references defined in this way, we construct the indexed 
+set of \emph{units} [journals or institutions; \textcite{pinskiCitationInfluenceJournal1976}]
+$\mathfrak{P}=\mathfrak{S}\ \cup\ \mathfrak{I}$ with $N=N_S+N_I$ elements,
+ordered so that journals occupy indices $1,\dots,N_S$ and institutions
+indices $N_S+1,\dots,N$. Each reference $r(i,j) \in \mathfrak{R}$ connects units
+associated with $w_i$ to units associated with $w_j$
+across four unit-type pairs: journal--journal ($SS$), journal--institution
+($SI$), institution--journal ($IS$), and institution--institution ($II$).
+
+For each work $w_i$ we define the journal membership one-hot vector
+$\mathbf{b}_S(i)\in\mathbb{R}^{N_S}$ with $[\mathbf{b}_S(i)]_x=\mathbf{1}[w_i\in x]$,
+and the institution weight distribution vector
+$\mathbf{b}_I(i)\in\mathbb{R}^{N_I}$ with $[\mathbf{b}_I(i)]_y=\omega_{iy}$
+from \eqref{eq:omega}. The vectors $\mathbf{b}$ yield the projection across unit
+pairs, accumulated as four block matrices over $\mathfrak{R}$ via
+rank-1 outer products,
+\begin{equation}
+	\mathbf{C}_{XY} \;=\; \sum_{(i,j)\,\in\,\mathfrak{R}}
+	\rho_i\;\mathbf{b}_X(i)\,\mathbf{b}_Y(j)^\top,
+	\qquad XY\in\{SS,\,SI,\,IS,\,II\}.
+	\label{eq:Cblock}
+\end{equation}
+Here, $\mathbf{b}_X(i)$ projects the referencing side over units of type $X$, 
+while $\mathbf{b}_Y(j)$ projects the referenced side
+across units of type $Y$. Each entry $[\mathbf{C}_{XY}]_{pq}$ is proportional
+to the sum over $\mathfrak{R}$ of $\rho_i$-weighted fractional references from unit $p$ of type $X$ to unit $q$ of type $Y$. Note that throughout this paper, rows of $\mathbf{C}$ index the referencing side and columns index the referenced side. Row sums are therefore total references \emph{given} and column sums are total citations \emph{received}.
+
+The reference matrix assembles the four blocks:
+\begin{equation}
+	\mathbf{C}(\mathbf{m}, \varepsilon, \rho, \omega, \chi) \;=\;
+	\begin{bmatrix}
+		m_{SS}\,\mathbf{C}_{SS} &
+		m_{SI}\,\chi(1-\chi)\,\mathbf{C}_{SI} \\[4pt]
+		m_{IS}\,\chi(1-\chi)\,\mathbf{C}_{IS} &
+		m_{II}\,\mathbf{C}_{II}
+	\end{bmatrix}.
+	\label{eq:C}
+\end{equation}
+The binary \textit{block mask} $\mathbf{m}=(m_{SS},m_{SI},m_{IS},m_{II})\in\{0,1\}^4$
+is bibliometrically meaningful for journal-only $(1000)$, institution-only $(0001)$,
+bipartite $(0110)$, and joint-full $(1111)$ combined blocks.
+The institution-journal fractionation $\chi$ weights the bipartite and joint masks.
+
+Let $r_p=\sum_q C_{pq}$ be the row sum of fractionated references given by unit $p$
+and $\mathbf{D}_r=\mathrm{diag}(r_p)$ the corresponding diagonal matrix.
+Row-normalising $\mathbf{C}$ gives the row semi-stochastic matrix
+$\mathbf{H}=\mathbf{D}_r^{-1}\mathbf{C}$, ensuring that, when $\rho = 0$, differences in reference intensity across units are removed. They are reintroduced later
+via the influence scaling \eqref{eq:vstar}. 
+
+\section{Perron--Frobenius and Katz--Hubbell rankings}
+\label{sec:resolvents}
+
+The masks journal-only $(1000)$, institution-only $(0001)$, and full-joint $(1111)$
+each yield a square matrix $\mathbf{H}$ with the spectral
+ranking $\boldsymbol{\pi}^*$ \citep[see][for an overview]{vignaSpectralRanking2016}
+\begin{equation}
+	(\mathbf{I} - \mathbf{H}^\top)\boldsymbol{\pi}^* = \mathbf{0},
+	\qquad
+	\mathbf{1}^\top\boldsymbol{\pi}^*=1,
+	\quad
+	\boldsymbol{\pi}^*\ge 0.
+	\label{eq:eig}
+\end{equation}
+If $\mathbf{H}$ is primitive (irreducible and aperiodic) the ranking is unique by the
+Perron--Frobenius theorem. We call $\boldsymbol{\pi}^*$ the Perron--Frobenius (PF) eigenvector or ranking. \textcite{gellerCitationInfluenceMethodology1978} showed that
+$\boldsymbol{\pi}^*$ is the stationary distribution of the
+Markov chain with transition matrix $\mathbf{H}$, and that it coincides
+with the \textit{influence weight} of \textcite{pinskiCitationInfluenceJournal1976}
+scaled by the reference-count proportion $r_p / \sum_q r_q$.
+
+Working with a binary choice matrix whose products count the length of chains, \textcite{katzNewStatusIndex1953} proposed attenuating chains of length $k$ by a factor $\alpha^k$, $\alpha\in(0,1)$, so that distant links count for less than proximate ones. The same procedure applies to chains between distant units regarded as products of the citation matrix. In its original historical formulation, Katz set the boundary condition \citep{vignaSpectralRanking2016} to the uniform vector $\mathbf{1}$, leaving the eigenvector unnormalised.
+Summing chains of all lengths and endowing every unit with a
+uniform initial score of $1$ yields the Katz resolvent equation
+\[
+	(\mathbf{I} - \alpha\mathbf{H}^\top)\boldsymbol{\pi}_\text{Katz} = \mathbf{1}.
+\]
+Because $\|\mathbf{H}\|_\infty\leq 1$, the spectral radius $r(\alpha\mathbf{H}^\top)<1$ for any $\alpha\in(0,1)$, so $(\mathbf{I}-\alpha\mathbf{H}^\top)$ is invertible by Neumann series.
+
+\textcite{hubbellInputoutputApproachClique1965} generalised this approach by replacing
+the uniform endowment $\mathbf{1}$ with an informative prior
+$\boldsymbol{\mu}$ over units, representing exogenous information about
+the standing of units independently of the reference matrix structure,
+\[
+	(\mathbf{I} - \alpha\mathbf{H}^\top)\boldsymbol{\pi}_\text{Hubbell} = \boldsymbol{\mu}.
+\]
+We explore two priors, normalised so that $\mathbf{1}^\top\boldsymbol{\mu}=1$:  for every unit $p\in\mathfrak{P}$ either $\mu_p = 1/(N_S+N_I)$ (uniform prior) or $\mu_p=1/(2N_S)$ for journals and $\mu_p=1/(2N_I)$ for institutions (unit-weighted prior). Because Hubbell adopts an `input-output' viewpoint, $\mathbf{1}^\top\boldsymbol{\pi}_{\text{Hubbell}} = (1-\alpha)^{-1}$. 
+Note that if $\alpha < 1$ and $\boldsymbol{\mu}=\boldsymbol{0}$ the resolvent $(\mathbf{I}-\alpha\mathbf{H}^\top)\boldsymbol{\pi}=\mathbf{0}$ admits only the trivial solution $\boldsymbol{\pi}=\mathbf{0}$ and is not useful as a ranking.
+
+Combining these approaches and scaling the exogenous prior by the attenuation rate $(1-\alpha)$ yields the general (Katz--Hubbell) resolvent equation
+\begin{equation}
+	(\mathbf{I} - \alpha\mathbf{H}^\top)\boldsymbol{\pi}
+	\;=\;
+	(1-\alpha)\boldsymbol{\mu},
+	\qquad
+	\mathbf{1}^\top\boldsymbol{\pi}=1,
+	\quad
+	\boldsymbol{\pi}\ge 0,
+	\label{eq:spectral}
+\end{equation}
+which recovers $\boldsymbol{\pi}^*$ in the limit $\alpha\to 1$ when
+$\mathbf{H}$ is primitive. We call $\boldsymbol{\pi}$ from Equation~\ref{eq:spectral} the Katz--Hubbell (KH) eigenvector or ranking.
+
+The parameters $\alpha$ and $\boldsymbol{\mu}$ have substantive interpretations as reference chain attenuation and exogenous standing, independently of $\mathbf{H}$. Additionally, when $\alpha<1$ and $\mu \ne 0$, there is a unique non-negative solution to \eqref{eq:spectral} even when $\mathbf{H}$ is imprimitive: $\alpha<1$ makes $(\mathbf{I}-\alpha\mathbf{H}^\top)$ invertible, and a nonzero $\boldsymbol{\mu}$ ensures the equation is inhomogeneous. If $\mathbf{C}$ were a binary adjacency matrix with the flat prior, this would be the PageRank spectral ranking \citep{brinAnatomyLargescaleHypertextual1998}.
+
+\section{Influence}
+\label{sec:influence}
+
+As \textcite{gellerCitationInfluenceMethodology1978} showed, $\boldsymbol{\pi}$ is the steady-state probability vector of the Markov matrix $\mathbf{H}$, and we may refer to $\pi_p$ as the \emph{ranking probability} of unit $p$.
+The \emph{influence} $v_p$ is computed as \citep{palacios-huertaMeasurementIntellectualInfluence2004},
+\begin{equation}
+	\mathbf{v}
+	\;=\;
+	A\,\mathbf{A}^{-1}\boldsymbol{\pi},
+	\qquad
+	\mathbf{A}=\mathrm{diag}(a_p),
+	\qquad
+	A = \mathbf{a}^{\top}\mathbf{1} = \textstyle\sum_p a_p,
+	\label{eq:vstar}
+\end{equation}
+i.e.\ $v_p = (A/a_p)\,\pi_p$. 
+Here, the unit work count $a_p = |\{i:w_i\in p\}|$ where $p$ is a specific journal or institution, $A$ is the total number of works, and $\boldsymbol{\pi}$ denotes the solution to \eqref{eq:spectral}.
+The scalar $A$ normalises $\mathbf{v}$ so that its $a_p$-weighted mean equals one:
+$\mathbf{a}^{\top}\mathbf{v}/A=\mathbf{1}^{\top}\boldsymbol{\pi}=1$.
+This normalisation provides interpretable cardinal values \citep{stevensTheoryScalesMeasurement1946}: a unit with $v_p=1$ has the corpus-average influence, and
+$v_p=2$ indicates twice the corpus-average influence.  The quantity $v$ is the counterpart of influence per publication \citep{pinskiCitationInfluenceJournal1976} and article influence score 
+\citep{bergstromEigenfactorMetrics2008}.
+\textcite{palacios-huertaMeasurementIntellectualInfluence2004} show that
+$\mathbf{v}$ is uniquely characterised by reasonable axioms, although \textcite{serranoMeasurementIntellectualInfluence2004} provides an impossibility result via a reasonable additional axiom that breaks the uniqueness.
+
+\section{The bipartite layout}
+\label{sec:bipartite}
+
+With $\mathbf{m}=(0110)$, equation~\eqref{eq:C} yields block off-diagonal matrices $\mathbf{C}$ and $\mathbf{H}$ corresponding to a directed bipartite network between journals~($S$) and institutions~($I$). This mask characterises our recirculating ranking problem and is used as the baseline model in Section~\ref{M-sec:results} of the paper.
+Partitioning rows and columns into the $S$ and $I$ blocks, $\mathbf{H}$ takes the form
+\begin{equation}
+  \mathbf{H}
+  \;=\;
+  \begin{pmatrix} \mathbf{0} & \mathbf{H}_{SI} \\ \mathbf{H}_{IS} & \mathbf{0} \end{pmatrix},
+  \label{eq:H_bipartite}
+\end{equation}
+where $\mathbf{H}_{SI}$ connects journals to institutions and $\mathbf{H}_{IS}$ does the reverse.
+Because every path alternates $S\to I\to S\to\cdots$ this structure makes $\mathbf{H}$ periodic with period~2, and thus imprimitive.
+Squaring $\mathbf{H}$ collapses two-step paths to separate unit types, giving one-unit relations
+\[
+  \mathbf{H}^2
+  \;=\;
+  \begin{pmatrix} \mathbf{M}_S & \mathbf{0} \\ \mathbf{0} & \mathbf{M}_I \end{pmatrix},
+  \qquad
+  \mathbf{M}_S = \mathbf{H}_{SI}\mathbf{H}_{IS},
+  \quad
+  \mathbf{M}_I = \mathbf{H}_{IS}\mathbf{H}_{SI}.
+\]
+Both $\mathbf{M}_S$ and $\mathbf{M}_I$ are row semi-stochastic products of row semi-stochastic matrices.
+
+If the Katz--Hubbell method is chosen ($\alpha \ne 1$), we adopt the convention that a single $SI$ or $IS$ step is attenuated by $\sqrt{\alpha}$, so the round-trip $S\to I\to S$ incurs attenuation $\sqrt{\alpha}\cdot\sqrt{\alpha}=\alpha$, matching the one-step attenuation in the unipartite modes. This ensures the spectral radius $r(\alpha\mathbf{M}_S)$ equals that of the corresponding unipartite operator and makes $\alpha$ comparable across masks.
+Applying this substitution to \eqref{eq:spectral} and partitioning $\boldsymbol{\pi} = (\boldsymbol{\pi}_S, \boldsymbol{\pi}_I)$
+and $\boldsymbol{\mu} = (\boldsymbol{\mu}_S, \boldsymbol{\mu}_I)$, we obtain:\begin{eqnarray*}
+	\boldsymbol{\pi}_S - \sqrt{\alpha}\,\mathbf{H}_{IS}^{\top}\,\boldsymbol{\pi}_I & = & (1-\sqrt{\alpha})\,\boldsymbol{\mu}_S \\
+	\boldsymbol{\pi}_I - \sqrt{\alpha}\,\mathbf{H}_{SI}^{\top}\,\boldsymbol{\pi}_S & = & (1-\sqrt{\alpha})\,\boldsymbol{\mu}_I
+\end{eqnarray*}
+Replacing $\boldsymbol{\pi}_I$ in the first equation gives
+\[
+\boldsymbol{\pi}_S - \sqrt{\alpha}\,\mathbf{H}_{IS}^{\top}\Bigl[\,\sqrt{\alpha}\,\mathbf{H}_{SI}^{\top}\,\boldsymbol{\pi}_S + (1-\sqrt{\alpha})\,\boldsymbol{\mu}_I\Bigr] \;=\; (1-\sqrt{\alpha})\,\boldsymbol{\mu}_S .
+\]
+\noindent which, since
+\(\mathbf{H}_{IS}^{\top}\mathbf{H}_{SI}^{\top}  = \mathbf{M}_S^{\top}\),  yields the bipartite resolvent for journals:
+\[
+(\mathbf{I} - \alpha \mathbf{M}_S^{\top})\,\boldsymbol{\pi}_S = (1-\sqrt{\alpha})\Bigl(\boldsymbol{\mu}_S + \sqrt{\alpha}\,\mathbf{H}_{IS}^{\top}\,\boldsymbol{\mu}_I\Bigr) .
+\]
+When $\alpha<1$ and $\boldsymbol{\mu}\ne\mathbf{0}$, the right-hand side links the institution and journal priors via $\mathbf{H}_{IS}^\top$. The institution ranking follows directly as the matrix--vector product
+\begin{equation}
+  \boldsymbol{\pi}_I
+  \;=\;
+  \sqrt{\alpha}\,\mathbf{H}_{SI}^\top\boldsymbol{\pi}_S+(1-\sqrt{\alpha})\boldsymbol{\mu}_I.
+  \label{eq:kh_inst}
+\end{equation}
+
+\section{Numerical methods}
+\label{sec:numerics}
+
+Defining the modified matrix
+\begin{equation}
+	\mathbf{\tilde{H}}
+	\;=\;
+	\alpha\mathbf{H}+(1-\alpha)\boldsymbol{\mu}\mathbf{1}^\top,
+	\label{eq:Hstar}
+\end{equation}
+the resolvent
+$\boldsymbol{\pi}=\mathbf{\tilde{H}}^{\top}\boldsymbol{\pi}$
+is equivalent to \eqref{eq:spectral}. This is the general form of
+our numerical problem, though most results reported below use $\alpha=1$ and $\boldsymbol{\mu}=\mathbf{0}$, so $\mathbf{\tilde{H}}=\mathbf{H}$.
+We construct many realisations of $\mathbf{\tilde{H}}$ to test unit pairings, subfield restrictions, temporal changes, other parameter choices, and for bootstrap uncertainty estimation. Each realisation entails a unit--unit reference network with one giant strongly connected component (SCC) together with a few, typically singleton, components that are disjoint from the main network. We retain the SCC, and drop all disconnected components. We then remove any units whose row sum (dangling nodes) or column sum (unreferenced nodes) on the SCC is zero, alternating between component, row and column removals until the residual $\mathbf{\tilde{H}}$ is strictly row-stochastic. In practice these steps do not remove units from the baseline, but they do remove a few units from journal-only runs. Primitivity is then verified numerically as described below.
+
+In our implementation $\mathbf{\tilde{H}}$ is a sparse matrix constructed from the filtered and weighted edge list $\mathcal{E}$ accumulated over $\mathfrak{R}$, stored in compressed sparse row (CSR) format. We use two numerical approaches, applied to different regimes:
+\begin{itemize}
+	\setlength{\itemsep}{0pt}
+	\item For runs with $\alpha=1$, $\boldsymbol{\mu}=\mathbf{0}$ including the baseline and bootstrap, the dominant eigenpair of $\mathbf{\tilde{H}}^\top$ is computed with \texttt{scipy.sparse.linalg.eigs}, which also returns the next few eigenvalues and thereby tests primitivity (a unique eigenvalue of modulus~1, which is found to be always true in our investigations).
+	\item For runs with $\alpha<1$, the power iteration
+		\begin{equation}
+			\boldsymbol{\pi}^{(k+1)}
+			\;=\;
+			\mathbf{\tilde{H}}^{\top}\boldsymbol{\pi}^{(k)}
+			\label{eq:power}
+		\end{equation}
+is used. Because $(1-\alpha)\boldsymbol{\mu}\mathbf{1}^\top$ makes $\mathbf{\tilde{H}}$ primitive, power iteration converges to $\boldsymbol{\pi}$ from any strictly positive starting vector $\boldsymbol{\pi}^{(0)}$.
+\end{itemize}
+In either approach, the influence scaling \eqref{eq:vstar} is applied after $\boldsymbol{\pi}$ has been computed.
+
+\section{Structure of the reference flows}
+\label{sec:flows}
+
+The structure of the reference matrices $\mathbf{H}$ and $\mathbf{M}$ governs how references spread as they are given, and concentrate as they are received. To characterise this reference flow we consider the Shannon evenness $\eta$ \citep{stirlingGeneralFrameworkAnalysing2007}. For an $n_{\text{row}}\times n_{\text{col}}$ row stochastic citation matrix $X~=~x_{ij}$, $\eta$ over row $i$ is defined as 
+\begin{equation}
+  \eta_i = \frac{x_i}{\log n_{\text{col}}}, \qquad
+  x_i = -\sum_j X_{ij}\log X_{ij},
+  \label{eq:row_evenness}
+\end{equation}
+with $\eta_i\in[0,1]$. If a row distributes references uniformly $\eta=1$, while concentration of references to one column over the row gives $\eta=0$. The mean over all rows,
+\begin{equation}
+  \bar{\eta} = \frac{1}{n_{\text{row}}}\sum_i \eta_i,
+  \label{eq:eta_bar}
+\end{equation}
+is relatively large when outward references are dispersed evenly across the whole corpus. The fan-out $\bar{K} = (n_{\text{col}})^{\bar{\eta}}$ converts normalised row evenness to a count: the geometric mean number of effective targets reached in one step over the Markov matrix.
+A similar measure $\eta_{\text{col}}$ applies to the mean column sums $p_j = \sum_iX_{ij} / n_{\text{row}}$. Because X is row-stochastic, $p_j$ is a valid marginal distribution and
+\begin{equation}
+  \eta_{\text{col}} = \frac{-\sum_j p_j \log p_j}{\log n_{\text{col}}},
+  \label{eq:eta_col}
+\end{equation}
+measures its variability, with $\eta_{\text{col}}=1$ when units receive equal reference in-flow and $\eta_{\text{col}}\to 0$ when references flow only to a few units. Note that $p_j$ is a version of the journal impact factor (JIF). 
+
+\begin{table}[htbp]
+\centering
+\caption{Shannon evenness and fan-out for the four reference blocks and the two bipartite kernels of the baseline model.
+  $\bar{\eta}$: mean row evenness; $\eta_{\text{col}}$: column evenness of the
+  marginal distribution; $\bar{K} = (n_{\text{col}})^{\bar{\eta}}$: geometric
+  mean fan-out (distinct targets per step).}
+\label{tab:kernel_structure}
+\begin{tabular}{lccc}
+\toprule
+Kernel & $\bar{\eta}$ & $\eta_{\text{col}}$ & $\bar{K}$ \\
+\midrule
+$C_{SS}$ & 0.47 & 0.90 & 32 \\
+$C_{II}$ & 0.73 & 0.95 & 255 \\
+$C_{SI}$ & 0.62 & 0.94 & 114 \\
+$C_{IS}$ & 0.62 & 0.83 & 95 \\
+\midrule
+$M_S$ & 0.81 & 0.84 & 389 \\
+\midrule
+$M_I$ & 0.90 & 0.93 & 951 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+Table~\ref{tab:kernel_structure} is discussed in Section~\ref{M-sec:results} of the paper.
+
+\section{Katz--Hubbell rankings and self-references}
+\label{sec:kh}
+
+Commonly, bibliometric spectral rankings adopt the Katz-Hubbell (PageRank) algorithm, with an attenuation \citep{katzNewStatusIndex1953} $\alpha<1$ and a boundary condition \citep{hubbellInputoutputApproachClique1965} $\mathbf{\mu} \ne \mathbf{0}$ \citep{bollenJournalStatus2006, bergstromEigenfactorMetrics2008}. With $\alpha=0.85$ and $\mu_p=1/(N_S+N_I)$, the baseline model of the paper is radically altered as shown in Figure~\ref{fig:fig5d}. Units that had low $v$ in the Perron-Frobenius model are held up by the floor $(1-\alpha)\mathbf{\mu}$ on the Katz-Hubbell eigenvector $\mathbf{\pi}$. Because influence $v_p \propto \pi_p/a_p$, units with only few works $a_p$ may further amplify this lift, leading to the occasional large rises seen in Figure~\ref{fig:fig5d}. Comparison between Figure~\ref{fig:fig5d} and Figure~\ref{M-fig:fig_3by} of the paper illustrates the straightforward interplay between the block models and the Katz-Hubbell algorithm: in the recirculating bipartite case, routing through units tends to spread influence compared with single-unit influence, although both are elevated by the boundary value $\mathbf{\mu}$. As noted above, we might choose $\mu = 1/(N_S+N_I)$ or $\mu= (1/2N_S, 1/2N_I)$ for journals and institutions. Unsurprisingly, with $N_S \approx N_I$ this choice makes little  difference, less than 0.02 in the log. While similar to the $\alpha=0.85$ model, the Eigenvector ranking \textcite{bergstromEigenfactorMetrics2008} excludes unit self-edges. We find that removing self edges systematically lowers $v$ when $v < 1$, by around 0.04 in the log for journals and institutions, while the variation around this shift is 0.08 (s.d.) for journals and 0.07 (s.d.) for institutions. For this data set, unit self-referencing contributes little to influence values or rank.  
+\begin{figure}[!htbp]
+  \centering
+  \includegraphics[width=0.8\textwidth]{../plots/fig_5d_latex.pdf}
+  \caption{Comparing the Perron--Frobenius (black line), bipartite Katz--Hubbell (green points), and single-unit Katz-Hubbell (red points) spectral rankings, with $\alpha=0.85$ and uniform prior $\boldsymbol{\mu}$.     Left: journals.  Right: institutions. 
+  The $x$-axis is locked to baseline  (Perron--Frobenius) rank.}
+  \label{fig:fig5d}
+\end{figure}
+
+\section{Computational cost}
+\label{sec:cost}
+
+Table~\ref{tab:cost} gives the runtime and peak memory of the baseline ranking and of simpler indicators computed from the same baseline edge list (7.7 million work--institution reference rows; 1.53 million work-to-work references among 299,810 works). Each method ran in its own process on one core of a desktop computer (AMD Ryzen 9 7900X3D 12-Core Processor), with NumPy, SciPy and DuckDB limited to one thread. Assembling the matrices or aggregates from the edge list dominates; the eigenvector itself takes a fraction of a second. A bootstrap or Monte Carlo replicate repeats the assembly and the solution, and takes 2.4--3.3~s, so each 1,000-replicate study of Supplement~2 runs in under an hour on one core. Building the corpus and the edge list from the OpenAlex snapshot is a one-off cost shared by all methods and is not included. Every method in the table reads the same works, affiliations and references, so all are exposed to the same metadata errors; in the eigenvector methods an error also changes the influence that the affected unit passes on to the units it references, and the Monte Carlo study of Supplement~2 measures that propagation.
+
+\begin{table}[!htbp]
+  \centering
+  \small
+  \caption{Runtime (seconds, one core) and peak memory (resident set, GB, including the Python interpreter and libraries) from the baseline edge list. Units: journals and institutions ranked, or works for the work-level method. Assemble: edge list to aggregates or sparse matrices, including the database query; solve: averaging or eigenvector. Script: \texttt{computational\_cost.py}.}
+  \label{tab:cost}
+  \begin{tabular}{@{}lrrrrr@{}}
+    \toprule
+    Method & Units & Assemble & Solve & Total & Memory \\
+    \midrule
+    Citation counts and JIF-like mean & 3,543 & 0.6 & 0.10 & 0.7 & 0.5 \\
+    Field-normalised MNCS & 3,543 & 1.2 & 0.01 & 1.2 & 1.0 \\
+    Journal-only Katz--Hubbell, $\alpha=0.85$ & 1,556 & 1.5 & 0.02 & 1.5 & 1.4 \\
+    Work-level Katz--Hubbell, $\alpha=0.85$ & 299,810 & 0.7 & 0.21 & 0.9 & 0.5 \\
+    Bipartite Perron--Frobenius (baseline) & 3,543 & 2.3 & 0.29 & 2.6 & 1.8 \\
+    Joint Perron--Frobenius & 3,543 & 3.1 & 0.12 & 3.2 & 1.7 \\
+    \bottomrule
+  \end{tabular}
+\end{table}
+
+\section{Notation}
+\label{sec:notation}
+
+\begin{table}[!htbp]
+  \centering
+  \small
+  \caption{Notation. Bold symbols are vectors or matrices; rows of every reference matrix index the referencing side.}
+  \label{tab:notation}
+  \begin{tabularx}{\textwidth}{@{}lX@{}}
+    \toprule
+    Symbol & Meaning \\
+    \midrule
+    \multicolumn{2}{@{}l}{\textit{Sets and counts}} \\
+    $\mathfrak{S}$, $N_S$ & retained journals (OpenAlex sources) and their number \\
+    $\mathfrak{I}$, $N_I$ & retained institutions and their number \\
+    $\mathfrak{P}$, $N$ & units, $\mathfrak{P}=\mathfrak{S}\cup\mathfrak{I}$, $N=N_S+N_I$ \\
+    $\mathfrak{W}$, $N_w$; $\mathfrak{W}^c$, $\mathfrak{W}^t$ & corpus works and their number; census (referencing) and target (referenced) works \\
+    $\mathfrak{R}$, $r(i,j)$ & corpus references, from census work $w_i$ to target work $w_j$ \\
+    $R_i$, $\bar{R}$ & number of corpus references of $w_i$; their mean \\
+    $a_p$, $A$ & work count of unit $p$ (author-fractional for institutions); $A=\sum_p a_p$ \\
+    $a_i$, $n_i$; $\mathcal{I}_{i\ell}$, $x_{i\ell}$ & authors and distinct institutions of $w_i$; institutions of author $\ell$ of $w_i$ and their number \\
+    $\tau_S$, $\tau_I$ & thresholds, works per year, for journals and institutions \\
+    $t_c$, $t_t$; $T_1,\dots,T_5$ & census and target windows; the five-year windows 2000--04, \dots, 2020--24 \\
+    $F$; $E$, $B$, $A$, $X$ & field subset; economics, business, ambiguous, neither \\[3pt]
+    \multicolumn{2}{@{}l}{\textit{Weights and matrices}} \\
+    $\rho$, $\rho_i$ & reference-list flag; weight of the references of $w_i$, Eq.~\eqref{eq:rho} \\
+    $\omega$, $\omega_{ix}$ & institution-weight flag; weight of institution $x$ in $w_i$, Eq.~\eqref{eq:omega} \\
+    $\chi$, $\chi^*$ & institution share in the joint and bipartite layouts; unit-count balance $N_I/(N_S+N_I)$ \\
+    $\varepsilon$; $s_0$, $i_0$ & sentinel flag; sentinel journal and institution \\
+    $\mathbf{b}_S(i)$, $\mathbf{b}_I(i)$ & journal membership and institution weight vectors of $w_i$ \\
+    $\mathbf{C}_{XY}$, $\mathbf{C}$, $\mathbf{m}$ & reference blocks ($XY\in\{SS,SI,IS,II\}$), assembled matrix, block mask, Eqs~\eqref{eq:Cblock}--\eqref{eq:C} \\
+    $r_p$, $\mathbf{D}_r$ & row sum of unit $p$; diagonal matrix of row sums \\
+    $\mathbf{H}$; $\mathbf{H}_{SI}$, $\mathbf{H}_{IS}$ & row-normalised reference matrix; its bipartite blocks \\
+    $\mathbf{M}_S$, $\mathbf{M}_I$ & two-step bipartite kernels $\mathbf{H}_{SI}\mathbf{H}_{IS}$ and $\mathbf{H}_{IS}\mathbf{H}_{SI}$ \\
+    $\tilde{\mathbf{H}}$ & modified matrix of the Katz--Hubbell resolvent, Eq.~\eqref{eq:Hstar} \\[3pt]
+    \multicolumn{2}{@{}l}{\textit{Rankings}} \\
+    $\boldsymbol{\pi}^*$, $\boldsymbol{\pi}$ & Perron--Frobenius and Katz--Hubbell ranking probabilities \\
+    $\alpha$, $\boldsymbol{\mu}$ & attenuation; prior over units \\
+    $\mathbf{v}$, $v_p$ & influence per work, Eq.~\eqref{eq:vstar} \\
+    $v^{SS}$, $v^{II}$, $v^{\mathrm{bip}}$, $v^{\mathrm{joint}}$ & influence in the journal-only, institution-only, bipartite and joint layouts (paper, Section~\ref{M-sec:results}) \\
+    $r(\cdot)$ & spectral radius \\[3pt]
+    \multicolumn{2}{@{}l}{\textit{Flow structure}} \\
+    $\eta_i$, $\bar{\eta}$, $\eta_{\text{col}}$ & row evenness, mean row evenness, column evenness, Eqs~\eqref{eq:row_evenness}--\eqref{eq:eta_col} \\
+    $\bar{K}$ & geometric-mean fan-out $(n_{\text{col}})^{\bar{\eta}}$ \\
+    \bottomrule
+  \end{tabularx}
+\end{table}
+
+\section{Software}
+\label{sec:software}
+
+The pipeline is written in Python 3.12 with NumPy 1.26.4, SciPy 1.13.1, pandas 2.2.3 and DuckDB 1.3.2; the complete list of package versions is archived with the project. The corpus was extracted once from the February 2026 OpenAlex snapshot and frozen; every ranking, bootstrap replicate and error-study replicate is computed from that frozen corpus.

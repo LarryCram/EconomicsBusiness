@@ -417,7 +417,7 @@ def plot6(src_rank_map, inst_rank_map, df_s_base, df_i_base, pairs) -> None:
     fig.subplots_adjust(wspace=0.05)
 
     _draw_scatter_panel(axes[0], df_s_base, df_i_base, pairs,
-                        0, n_base_s, 'Sources')
+                        0, n_base_s, 'Journals')
     _draw_scatter_panel(axes[1], df_s_base, df_i_base, pairs,
                         1, n_base_i, 'Institutions')
 

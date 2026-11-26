@@ -176,7 +176,7 @@ def compute_envelopes(paths, stage: str) -> dict:
 
     out = {}
     for unit_type, v_boot, id_list, panel_label in [
-        ('S', v_s, meta['source_ids'],  'Sources'),
+        ('S', v_s, meta['source_ids'],  'Journals'),
         ('U', v_u, meta['inst_ids'],    'Institutions'),
     ]:
         base = df[df['unit_type'] == unit_type].set_index('unit_idx')['v']
@@ -199,7 +199,7 @@ def plot_envelope(env: dict, error_label: str, stem: str, paths) -> None:
     fig.subplots_adjust(wspace=0.05)
 
     _draw_panel(axes[0], **{k: env['S'][k] for k in ('x','y_lo','y_med','y_hi')},
-                title='Sources', ylabel='Bootstrap fractional rank',
+                title='Journals', ylabel='Bootstrap fractional rank',
                 n_units=env['S']['n'], error_label=error_label)
     _draw_panel(axes[1], **{k: env['I'][k] for k in ('x','y_lo','y_med','y_hi')},
                 title='Institutions', n_units=env['I']['n'], error_label=error_label)
@@ -228,7 +228,7 @@ def _draw_overlay_panel(ax, envs: list, unit_key: str,
     # Short display names in the order user specified for the legend
     short_names = {
         'year uncertainties':        'Year uncertainties',
-        'source errors':      'Source',
+        'source errors':      'Journal',
         'institution errors': 'Institution',
         'reference errors':   'Reference',
     }
@@ -287,7 +287,7 @@ def plot_envelope_overlay(paths) -> None:
     n_u = envs[0][0]['I']['n']
 
     _draw_overlay_panel(axes[0], envs, 'S',
-                        title='Sources', ylabel='Bootstrap fractional rank',
+                        title='Journals', ylabel='Bootstrap fractional rank',
                         n_units=n_s)
     _draw_overlay_panel(axes[1], envs, 'I',
                         title='Institutions', n_units=n_u)
@@ -326,7 +326,7 @@ def plot_envelope_facet(paths) -> None:
     fig.subplots_adjust(wspace=0.05, hspace=0.10)
 
     for row, (env, label) in enumerate(envs):
-        for col, (unit_key, col_title) in enumerate([('S', 'Sources'), ('I', 'Institutions')]):
+        for col, (unit_key, col_title) in enumerate([('S', 'Journals'), ('I', 'Institutions')]):
             ax = axes[row, col]
             d  = env[unit_key]
             band_alpha = 0.7 if col == 0 else 1.0
@@ -363,7 +363,7 @@ def plot_envelope_facet(paths) -> None:
 
 RATIO_FACET_STAGES = [
     ('stage4_year_swap',   'Publication year uncertainty'),
-    ('stage4_source',      'Source misattribution'),
+    ('stage4_source',      'Journal misattribution'),
     ('stage4_institution', 'Institution misattribution'),
     ('stage4_reference',   'Reference misattribution'),
 ]
@@ -396,7 +396,7 @@ def plot_ratio_facet(paths) -> None:
     _lsz = plt.rcParams.get('axes.labelsize', 10)
 
     for row, (env, label) in enumerate(envs):
-        for col, (unit_key, col_title) in enumerate([('S', 'Sources'),
+        for col, (unit_key, col_title) in enumerate([('S', 'Journals'),
                                                       ('I', 'Institutions')]):
             ax = axes[row, col]
             d  = env[unit_key]
@@ -470,7 +470,7 @@ def plot_resample_strip(paths) -> None:
                              sharey=True, sharex=True, squeeze=False)
     _lsz = plt.rcParams.get('axes.labelsize', 10)
 
-    for col, (unit_key, col_title) in enumerate([('S', 'Sources'),
+    for col, (unit_key, col_title) in enumerate([('S', 'Journals'),
                                                   ('I', 'Institutions')]):
         ax = axes[0, col]
         d  = env[unit_key]

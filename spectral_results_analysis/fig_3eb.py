@@ -187,7 +187,7 @@ def main():
 
     _draw_panel(ax_s, df_e_s, df_b_s,
                 xlabel=r'$\log(v_S^{E+B,SS})$',
-                title='Sources',
+                title='Journals',
                 top_e_idx=top_e_idx, top_b_idx=top_b_idx)
     ax_s.set_ylabel(r'$\log(v_S^{E{\|}B,SS})$ or $\log(v_I^{E{\|}B,II})$',
                     labelpad=4)
@@ -204,7 +204,7 @@ def main():
     )
     _save(fig, sup, 'fig_3eb', paths)
 
-    for label, df_e, df_b in [('Sources', df_e_s, df_b_s),
+    for label, df_e, df_b in [('Journals', df_e_s, df_b_s),
                                ('Institutions', df_e_i, df_b_i)]:
         print(f'\n{label}:')
         print(f'  E n={len(df_e)}  median log(v_sep/v_comb) = '

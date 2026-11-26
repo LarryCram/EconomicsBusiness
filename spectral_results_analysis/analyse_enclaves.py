@@ -271,7 +271,7 @@ def plot_referer_v(df: pd.DataFrame, out_path: Path) -> None:
     fig, axes = plt.subplots(1, 2, figsize=(10, 5), sharey=True)
 
     panels = [
-        ('source_v',    'median_citing_source_v', 'Sources',      axes[0]),
+        ('source_v',    'median_citing_source_v', 'Journals',      axes[0]),
         ('mean_inst_v', 'median_citing_inst_v',   'Institutions', axes[1]),
     ]
 

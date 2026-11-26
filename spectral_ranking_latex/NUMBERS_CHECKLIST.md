@@ -1,5 +1,21 @@
 # In-text numbers: paper vs submitted data vs corrected baseline
 
+**Restructured 2026-11-27.** The paper is now `main.tex` plus `supplement1.tex` (framework, flow structure, notation) and `supplement2.tex` (error studies, identity anomalies). Line numbers below refer to the pre-split files. New numbers added in the restructure:
+- §3 Data quality and S2.3: 99 accepted institution corrections (35 merges incl. 22 namesake, 6 drops, 58 includes; 2 rejected) + 2 journal merges; institutions 1,957 → 1,979, journals 1,565 → 1,564; removed identifiers 0.86% of institution a_p in the locked baseline; spillover s.d. 0.006 (institutions, p99 0.014) / 0.036 (journals, p99 0.10), 36 journals > 0.06 dex; moved-units table (Brown 2.46 → 6.06, rank 106 → 10, …). Source: scratch `s2_anomalies.py` (locked vs `econ_bus_rev` baseline rankings).
+- §4.4 error summary: resample median half-width 0.12 / 0.07 dex; rank half-width ±0.6% (top 100), median ±6% and p90 ±13% below; metadata errors p95 ≤ 2% for the top 10%.
+- §4.5 comparison: `data/benchmark_journals_ais.csv`, `data/mncs_comparison_summary.csv`, `_by_rank.csv`, `data/mncs_comparison_full_summary.csv` (`tab:indicator_agreement`).
+- Abstract trimmed to 197 words (QSS limit 200).
+
+**Completed 2026-11-27** (plan items after the restructure):
+- §4.1 finance check: `data/finance_reclassification.csv` (registry vs rule): clique 9/10 same, share 26.1% vs 25.5%, E–B displacement ×2.2 vs ×1.7 journal-only, ×1.08 vs ×1.04 bipartite.
+- §4.1 split-node check: `split_institution_ranking.py` re-run 2026-11-27 (after the finance rule), log in scratch: journals E/B median shift −0.006/−0.014, scatter 0.045/0.034; institutions recombined scatter 0.012; clique share of journal π (bipartite EBAX) 7.9% → 8.7%; non-clique top 20 4E/16B → 6E/14B; EB-corpus E–B displacement 0.017 dex whole, 0.000 split.
+- §4.2 survivorship: `data/survivorship_transitions.csv` (`tab:survivorship`): v>1 in 2000–04 retained 97/116 journals (84%), 106/112 institutions (95%); exits 4 and 1; consecutive retention 89→80% (journals), 91→87% (institutions); v<1 risers 25% / 64%; of 2020–24 institutions, 93% of v<1 and 42% of v>1 not ranked in 2000–04.
+- §4.5 tiers: `data/benchmark_journals_summary.csv` (bipartite, all fields) → `tab:journal_tiers`; misplaced = sig_above + sig_below; FT50 v* 2.13 (3 below, 45 above), UTD24 v* 2.25 (1 below, 57 above).
+- §4.5 institutions: `data/benchmark_institutions_summary.csv` (re-run 2026-11-27, bands from the re-run bootstrap) → `tab:institution_tiers`.
+- §5 limitations: Fed Minneapolis a_p = 44.4 (2020–24, author-fractional); NBER #2, CEPR #4 among institutions.
+- S1 cost table: `data/computational_cost.csv` (bipartite 2.6 s, counts 0.7 s, MNCS 1.2 s, …); replicate times 2.4–3.3 s from `econ_bus_rev/logs/error_studies_20261126_1120/STATUS` and the year_swap log.
+- Main text 8,413 words by texcount including abstract, table cells and addenda (prose about 7,600); the Katz–Hubbell/self-reference paragraph and Fig. 5d moved to S1 (`sec:kh`) to keep within the QSS 8,000-word guide.
+
 Regenerated 2026-11-24.
 
 - **Corrected baseline:** `econ_bus_rev` (identity corrections, restored type-excluded institutions, journal merges), run with `ECONBUS_CONFIG=config.rev.yaml`.
@@ -181,6 +197,8 @@ Enclave table, *n*<sub>HCW</sub> / works / median *v* by cluster:
 | Franceschet paragraph: "≈0.2 (s.d. in log), ≈5%" | | ρ / census s.d. 0.18–0.21; rank 5% | same | ok |
 
 ## Figures regenerated in `plots/`
+
+**2026-11-27:** all ten paper figures regenerated on the corrected baseline with "Journals" for "Sources" in panel titles, "Journal misattribution" in the error facet, and the layout superscripts SS, II, bip, joint (fig_3by, fig_3ef). Data unchanged (fig_5_stability.csv differed only at 1e-14 and was restored).
 
 `*.pdf` is gitignored. The submitted versions are reproduced in `plots/qss_submitted/`.
 

@@ -2,7 +2,7 @@
 % ---------------------------------------------------------------% ---------------------------------------------------------------
 \section{Corpus selection}
 \label{sec:sources}
-OpenAlex \citep{priemOpenAlexFullyopenIndex2022, alperinAnalysisSuitabilityOpenAlex2024, vaneckneesjanOpeningCWTSLeiden2024} provides our bibliometric data. We select the fields of economics and business due to their traditions of evaluative ranking of journals and institutions \citep[e.g.][]{liebowitzAssessingRelativeImpacts1984, boricPossibilitiesRankingBusiness2024}. Corpus selection starts with a list of eligible sources having three features: evidence from one of our journal registries that the source substantially 
+OpenAlex \citep{priemOpenAlexFullyopenIndex2022, alperinAnalysisSuitabilityOpenAlex2024, vaneckneesjanOpeningCWTSLeiden2024} provides our bibliometric data. We select the fields of economics and business due to their traditions of evaluative ranking of journals and institutions \citep[e.g.][]{liebowitzAssessingRelativeImpacts1984, boricPossibilitiesRankingBusiness2024}. Corpus selection starts with a list of eligible journals having three features: evidence from one of our journal registries that the journal substantially 
 publishes economics or business research, an OpenAlex source identifier for corpus extraction, and a sufficient number of published works per year.
 
 The journal registries are as follows. Harzing's \textit{71st Edition of the Journal Quality List}~\textcite[][JQL]{harzingJournalQualityList2024} assembles
@@ -19,21 +19,21 @@ Division~38 (Economics)---specifically the 35 and 38 two-digit divisions and the
 journal a Web of Science category. We retain those in
 ``Economics'', ``Management'', ``Business'', ``Transportation'',
 or ``Business, Finance''.
-The \textit{Scopus Source List}~\textcite[][SSL]{elsevierScopusSourceList2026} (March 2026 edition) assigns All Science Journal Classification (ASJC) codes to each source. We retain journals carrying code~1400 (Business, Management and Accounting) or code~2000 (Economics, Econometrics and Finance), including inactive titles.
+The \textit{Scopus Source List}~\textcite[][SSL]{elsevierScopusSourceList2026} (March 2026 edition) assigns All Science Journal Classification (ASJC) codes to each journal. We retain journals carrying code~1400 (Business, Management and Accounting) or code~2000 (Economics, Econometrics and Finance), including inactive titles.
 
-Every journal in JQL, SJL, JCR, and SSL has at least one ISSN, and may have several. These registry ISSNs are joined independently to the February 2026 OpenAlex sources snapshot using its list of ISSNs as the matching key and selecting only the `journal' source-type. Around 60 additional matches are identified by exact title matching for OpenAlex sources that lack an ISSN. We denote the union of matched OpenAlex sources OAS\textsuperscript{**}. Some of these sources publish mainly in fields such as sociology, psychology, technology, education or law. Using the OpenAlex topic/field entity, we drop sources with less than 40\% of their OpenAlex assigned field count in \textit{Economics, Econometrics, and Finance} or \textit{Business, Management and Accounting}. We denote the remaining sources OAS\textsuperscript{*}.
+Every journal in JQL, SJL, JCR, and SSL has at least one ISSN, and may have several. These registry ISSNs are joined independently to the February 2026 OpenAlex sources snapshot using its list of ISSNs as the matching key and selecting only the `journal' source-type. Around 60 additional matches are identified by exact title matching for OpenAlex sources that lack an ISSN. We denote the union of matched OpenAlex sources OAS\textsuperscript{**}. Some of these journals publish mainly in fields such as sociology, psychology, technology, education or law. Using the OpenAlex topic/field entity, we drop journals with less than 40\% of their OpenAlex assigned field count in \textit{Economics, Econometrics, and Finance} or \textit{Business, Management and Accounting}. We denote the remaining journals OAS\textsuperscript{*}.
 
-Once the OAS\textsuperscript{*} sources list is established, we conduct a preliminary extract of work and authorship data to identify sources or institutions with few works over the period 2020-2024. Sorting sources by their works count, the relation between total dropped works and sources leads us to retain sources that publish on average $\tau_S \ge 10$ works/source/year. Sources retained above the threshold $\tau_S$ form the set OAS. Following the same steps for institutions, we truncate the long tail of low-output institutions by adopting a threshold of $\tau_I \ge 20$ works/institution/year. Many of the institutions removed at this point are fragments of larger institutions not blended by OpenAlex, or technology-focussed institutions with a small output of business scholarship. 
+Once the OAS\textsuperscript{*} journals list is established, we conduct a preliminary extract of work and authorship data to identify journals or institutions with few works over the period 2020-2024. Sorting journals by their works count, the relation between total dropped works and journals leads us to retain journals that publish on average $\tau_S \ge 10$ works/journal/year. Journals retained above the threshold $\tau_S$ form the set OAS. Following the same steps for institutions, we truncate the long tail of low-output institutions by adopting a threshold of $\tau_I \ge 20$ works/institution/year. Many of the institutions removed at this point are fragments of larger institutions not blended by OpenAlex, or technology-focussed institutions with a small output of business scholarship. 
 
-Selecting sources and institutions that satisfy these thresholds, we extract works, authorships and reference lists published between 2000 and 2024, retaining works typed as article or review, and excluding works that are paratext, retracted, or without an authorship entity. We retain institutions from a work's authorship metadata if the OpenAlex institution type is education, nonprofit, government, or other, while excluding companies and funders. Although most results relate to the recent 5-year window 2020-2024, we choose the wider 2000--2024 time window to support our time-series and error analyses.
+Selecting journals and institutions that satisfy these thresholds, we extract works, authorships and reference lists published between 2000 and 2024, retaining works typed as article or review, and excluding works that are paratext, retracted, or without an authorship entity. The extraction retains institutions from a work's authorship metadata if the OpenAlex institution type is education, nonprofit, government, or other; research units of other types that pass $\tau_I$ are restored by the correction table described below, while companies and hospitals remain excluded. Although most results relate to the recent 5-year window 2020-2024, we choose the wider 2000--2024 time window to support our time-series and error analyses.
 
 \begin{table}[!htbp]
 \centering
-\caption{Registry and OpenAlex sources classified by field $E/B/A/X$. The upper section counts each appearance in a registry and field. JQL: Harzing Journal Quality List; JCR: Web of Science Journal Citation List; SJL: ERA Subject Journal List; SSL: Scopus Source List. OAS$^{**}$ is the union of all registry sources matched to OpenAlex. OAS$^{*}$ drops sources whose OpenAlex topic content is less than 40\% economics or business. OAS drops sources publishing at a rate below $\tau_S$.}
+\caption{Registry and OpenAlex sources classified by field $E/B/A/X$. The upper section counts each appearance in a registry and field. JQL: Harzing Journal Quality List; JCR: Web of Science Journal Citation List; SJL: ERA Subject Journal List; SSL: Scopus Source List. OAS$^{**}$ is the union of all registry journals matched to OpenAlex. OAS$^{*}$ drops journals whose OpenAlex topic content is less than 40\% economics or business. OAS drops journals publishing at a rate below $\tau_S$.}
 \label{tab:registry_overview}
 \begin{tabular}{lrrrrrrrr}
 \toprule
-Registry & Sources & OA Match & Match\% & E & B & A & X \\
+Registry & Journals & OA Match & Match\% & E & B & A & X \\
 \midrule
 JQL & 850 & 836 & 98.4\% & 233 & 377 & 33 & 193 \\
 JCR & 1,433 & 1,397 & 97.5\% & 555 & 674 & 83 & 85 \\
@@ -47,7 +47,7 @@ OAS & 1,693 & --- & --- & 613 & 855 & 154 & 71 \\
 \end{tabular}
 \end{table}
 
-Within the broad field of Economics and Business, many sources publish works in smaller subfields $F$ within the set $\mathfrak{F}$. To relate OAS sources to subfields ${F}$ we capitalise on registry subfield labels (categories, groups, subjects, ASJC and topics in JQL, SJL, JCR, SSL, and OAS respectively). These labels are mapped by hand to the broad subfields $F=E$ (economics) or $F=B$ (business), or $F=X$ when the subfield is out of scope (e.g. Psychology, Education from JQL). Some sources publish across $E$ and $B$; they are designated ambiguous, $F=A$. The five signals are counted, and each source classified according to this sequence:
+Within the broad field of Economics and Business, many journals publish works in smaller subfields $F$ within the set $\mathfrak{F}$. To relate OAS journals to subfields ${F}$ we capitalise on registry subfield labels (categories, groups, subjects, ASJC and topics in JQL, SJL, JCR, SSL, and OAS respectively). These labels are mapped by hand to the broad subfields $F=E$ (economics) or $F=B$ (business), or $F=X$ when the subfield is out of scope (e.g. Psychology, Education from JQL). Some journals publish across $E$ and $B$; they are designated ambiguous, $F=A$. The five signals are counted, and each journal classified according to this sequence:
 \begin{itemize}
 	\setlength{\itemsep}{0pt}
 	\item `X' when $E$-count + $B$-count $< 2$ (weak in both fields);
@@ -55,43 +55,12 @@ Within the broad field of Economics and Business, many sources publish works in 
 	\item `E' $E$-count $>$ $B$-count (economics-dominant);
 	\item `B' $B$-count $>$ $E$-count (business-dominant).
 \end{itemize}
-Finally, a source classified `E' or `A' is reclassified `B' if at least two of four registry signals mark it as finance or accounting (JQL `F\&A', JCR `Business, Finance', SJL codes 3501 or 3502, OpenAlex subfield Finance or Accounting), since these fields are usually anchored in business schools. A single signal is not sufficient: SJL code 3502 is a secondary code for many economics journals. Four economics journals that meet the two-signal rule are kept in $E$ (\textit{Journal of Monetary Economics}, \textit{Fiscal Studies}, \textit{IMF Economic Review}, \textit{Intereconomics}). Of the 1,564 baseline sources, 525 are classified $E$, 876 $B$, 101 $A$ and 62 $X$.
-Table~\ref{tab:registry_overview} summarises the number of matched sources in the registries by field, and indicates the effects of removing sources predominantly outside economics and business, or publishing few works in 2020-2024. 
+Finally, a journal classified `E' or `A' is reclassified `B' if at least two of four registry signals mark it as finance or accounting (JQL `F\&A', JCR `Business, Finance', SJL codes 3501 or 3502, OpenAlex subfield Finance or Accounting), since these fields are usually anchored in business schools. A single signal is not sufficient: SJL code 3502 is a secondary code for many economics journals. Four economics journals that meet the two-signal rule are kept in $E$ (\textit{Journal of Monetary Economics}, \textit{Fiscal Studies}, \textit{IMF Economic Review}, \textit{Intereconomics}). Of the 1,564 baseline journals, 525 are classified $E$, 876 $B$, 101 $A$ and 62 $X$.
+Table~\ref{tab:registry_overview} summarises the number of matched journals in the registries by field, and indicates the effects of removing journals predominantly outside economics and business, or publishing few works in 2020-2024. 
 
 Institutions often host both business and economics, and direct categorical classification is problematic. 
 To indicate the balance of $E$ and $B$ for an institution
-we use the stochastic reference matrix $H_{SI}$ to relate an institution to already-classified sources. For each source~$s$, $H_{SI}[s,u]$ is the fraction of $s$'s reference weight directed at institution~$u$. 
-The sum over sources in field $F$, $f_{Fu}$, is the fraction of institution~$u$'s incoming reference weight from $F$-classified sources. These fractions are sorted and institutions assigned field labels by a quota rule matched to the field-distribution of sources: top 30\% by $f_{Xu}$ receive $X$; from the remainder, top 10\% by $f_{Au}$ receive $A$; of the rest, institutions with $f_{Eu}\geq f_{Bu}$ receive $E$ (up to a 5:8 $E$:$B$ quota, which does not bind) and the others $B$. Classification of institutions by subfield describes no more than tendency.
+we use the stochastic reference matrix $H_{SI}$ to relate an institution to already-classified journals. For each journal~$s$, $H_{SI}[s,u]$ is the fraction of $s$'s reference weight directed at institution~$u$. 
+The sum over journals in field $F$, $f_{Fu}$, is the fraction of institution~$u$'s incoming reference weight from $F$-classified journals. These fractions are sorted and institutions assigned field labels by a quota rule matched to the field-distribution of journals: top 30\% by $f_{Xu}$ receive $X$; from the remainder, top 10\% by $f_{Au}$ receive $A$; of the rest, institutions with $f_{Eu}\geq f_{Bu}$ receive $E$ (up to a 5:8 $E$:$B$ quota, which does not bind) and the others $B$. Classification of institutions by subfield describes no more than tendency.
 
-
-\begin{table}[!bt]
-  \centering
-  \caption{Glossary.}
-  \label{tab:parameters}
-  \renewcommand{\arraystretch}{1.00} %1.25}
-  \begin{tabular}{@{}clcc@{}}
-    \hline
-    Parameter & Description & Baseline \\
-    \hline
-    \multicolumn{3}{@{}l}{\textit{Corpus construction}} \\[2pt]
-    $\tau_S$ & Threshold works/source/year & 10 \\
-    $\tau_I$ & Threshold works/institution/year & 20 \\
-    $F$      & Fields: $E$ (economics), $B$ (business), $A$ (ambiguous),
-               $X$ (none) & $EBAX$ \\
-    $t_c$    & Census window: publication years of referencing works & 2020--2024 \\
-    $t_t$    & Target window: publication years of referenced works & 2020--2024 \\[4pt]
-    \multicolumn{3}{@{}l}{\textit{Reference matrix assembly}} \\[2pt]
-    $\rho$   & Reference-list weights: $\rho=0$, normalise by $\bar{R}/R_i$; $\rho=1$, raw counts & 0 \\
-    $\omega$ & Institution weight flag: $\omega=0$ equal-shares; $\omega=1$ author-fractionation & 0 \\
-    $\mathbf{m}$ & Block mask: $1000$-S only, $0001$-I only,
-               $1111$=joint, $0110$=bipartite & 0110 \\
-    $\chi$   & Source--institution mixing weight: $\chi=0.5$ or $\chi^*=N_I/(N_S+N_I)$ & 0.5 \\
-    $\varepsilon$ & Sentinel flag: $\varepsilon=0$ - within-corpus only;
-               $\varepsilon=1$ - include sentinel units & 0 \\[4pt]
-    \multicolumn{3}{@{}l}{\textit{Resolvent}} \\[2pt]
-    $\alpha$ & Damping parameter: $\alpha=1$ - Perron--Frobenius; $\alpha<1$ - Katz--Hubbell & 1 \\
-    $\mu$    & Prior with $\alpha<1$: uniform $1/(N_S+N_I)$ or $\mu=1/2N_S, 1/2N_I$ & n.a. \\
-    \hline
-  \end{tabular}
-\end{table}
-
+\paragraph{Data quality.} OpenAlex identity errors concentrate on institutions, and a ranking that names institutions exposes them. Before ranking we therefore apply a documented correction table to the frozen corpus (Supplement~2, Section~\ref{S2-sec:anomalies}). It merges 35 institution identifiers into the institution they belong to, including 22 namesake misattributions such as \textit{Harvard University Press} for Harvard University. It drops six identifiers that have no single owner, and restores 58 research units, such as the Bank of Italy and the Hoover Institution, that pass $\tau_I$ but were excluded by their OpenAlex type. Two journals filed under two OpenAlex identifiers are merged. The identifiers removed held 0.9\% of the institution work weight. Supplement~2 also reports a bootstrap over works and a Monte Carlo study of random metadata errors, run on the corrected corpus; Section~\ref{sec:errors} summarises them. The bootstrap gives every unit a 95\% interval for $\log v$, with median half-width 0.12 for journals and 0.07 for institutions. When $v$ is compared with another indicator (Section~\ref{sec:indicators}), the interval sets the scale of agreement. A difference is \emph{in band} when its 95\% interval contains zero, \emph{near} when the interval misses zero by less than its own width, and \emph{far} otherwise.

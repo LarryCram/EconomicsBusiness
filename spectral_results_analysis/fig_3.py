@@ -462,7 +462,7 @@ def plot3(src_rank_map: dict, inst_rank_map: dict, series: dict) -> None:
     fig.subplots_adjust(wspace=0.35)
 
     _draw_panel(axes[0], series, 'S', S_LABELS,
-                n_baseline=len(src_rank_map),  panel_title='Sources')
+                n_baseline=len(src_rank_map),  panel_title='Journals')
     _draw_panel(axes[1], series, 'I', I_LABELS,
                 n_baseline=len(inst_rank_map), panel_title='Institutions')
 
@@ -823,14 +823,14 @@ def plot3by(src_rank_map: dict, inst_rank_map: dict, series: dict) -> None:
     fig.subplots_adjust(wspace=0.05)
 
     _draw_panel(ax_s, series, 'S', S_LABELS,
-                n_baseline=len(src_rank_map), panel_title='Sources',
+                n_baseline=len(src_rank_map), panel_title='Journals',
                 log_linear_y=True,
-                label_map={'m=0110': r'$v_S^B$',
-                           'm=1000': r'$v_S^S$',
-                           'm=1111': r'$v_S^J$'},
+                label_map={'m=0110': r'$v_S^{\mathrm{bip}}$',
+                           'm=1000': r'$v_S^{SS}$',
+                           'm=1111': r'$v_S^{\mathrm{joint}}$'},
                 marker_map={'m=1000': 'o', 'm=1111': 'D'},
                 legend_fontsize=10, legend_markerscale=1.6)
-    ax_s.set_xlabel(r'$v_S^B$ rank', labelpad=4)
+    ax_s.set_xlabel(r'$v_S^{\mathrm{bip}}$ rank', labelpad=4)
     ax_s.set_ylabel(r'$\log(v)$', labelpad=4)
     ax_s.set_xlim(0, len(src_rank_map))
     ax_s.set_ylim(_LOG_LO, _LOG_HI)
@@ -838,12 +838,12 @@ def plot3by(src_rank_map: dict, inst_rank_map: dict, series: dict) -> None:
     _draw_panel(ax_i, series, 'I', I_LABELS,
                 n_baseline=len(inst_rank_map), panel_title='Institutions',
                 log_linear_y=True,
-                label_map={'m=0110': r'$v_I^B$',
-                           'm=0001': r'$v_I^I$',
-                           'm=1111': r'$v_I^J$'},
+                label_map={'m=0110': r'$v_I^{\mathrm{bip}}$',
+                           'm=0001': r'$v_I^{II}$',
+                           'm=1111': r'$v_I^{\mathrm{joint}}$'},
                 marker_map={'m=0001': 'o', 'm=1111': 'D'},
                 legend_fontsize=10, legend_markerscale=1.6)
-    ax_i.set_xlabel(r'$v_I^B$ rank', labelpad=4)
+    ax_i.set_xlabel(r'$v_I^{\mathrm{bip}}$ rank', labelpad=4)
     ax_i.set_ylabel('')
     ax_i.tick_params(labelleft=False)
     ax_i.set_xlim(0, len(inst_rank_map))
@@ -873,13 +873,13 @@ def plot3bz(src_rank_map: dict, inst_rank_map: dict, series: dict) -> None:
 
     _draw_log_field(
         ax_s, series, 'S', 'm=1000', src_labels,
-        xlabel=r'$\log(v_S^B)$', ylabel=r'$\log(v_S^S)$',
+        xlabel=r'$\log(v_S^{\mathrm{bip}})$', ylabel=r'$\log(v_S^{SS})$',
     )
-    ax_s.set_title('Sources', fontsize=11, pad=6)
+    ax_s.set_title('Journals', fontsize=11, pad=6)
 
     _draw_log_field(
         ax_i, series, 'I', 'm=0001', inst_labels,
-        xlabel=r'$\log(v_I^B)$', ylabel=r'',
+        xlabel=r'$\log(v_I^{\mathrm{bip}})$', ylabel=r'',
     )
     ax_i.set_title('Institutions', fontsize=11, pad=6)
     ax_i.tick_params(labelleft=False)
@@ -929,7 +929,7 @@ def plot3c_pi_v(series: dict) -> None:
     ]
 
     for ax, df, title, tag in [
-        (axes[0], df_s, 'Sources',      'S'),
+        (axes[0], df_s, 'Journals',     'S'),
         (axes[1], df_i, 'Institutions', 'I'),
     ]:
         x = df['log_a'].values
