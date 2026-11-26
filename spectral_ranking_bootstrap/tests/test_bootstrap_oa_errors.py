@@ -634,3 +634,23 @@ def test_swap_works_yr_drops_and_inserts():
                          np.array([YEAR_LO - 1, YEAR_LO], np.int16))
     assert sorted(out['work_idx'].tolist()) == [1, 1, 9]
     assert (out.loc[out['work_idx'] == 9, 'pub_year'] == YEAR_LO).all()
+
+
+# ── Run label (separate E / B bootstraps) ──────────────────────────────────────
+
+import spectral_ranking_bootstrap.bootstrap_oa_errors as boe
+
+
+def test_stage_dir_per_run_label(monkeypatch):
+    assert boe._stage_dir() == 'bootstrap_oa_errors'
+    monkeypatch.setattr(boe, 'RUN_LABEL', 'F=E')
+    assert boe._stage_dir() == 'bootstrap_oa_errors_FE'
+
+
+def test_run_requires_bipartite(monkeypatch):
+    monkeypatch.setattr(boe, 'RUN_LABEL', 'F=E')
+    r = boe._run()
+    assert r['fx'] == 'E' and str(r['m']).zfill(4) == '0110'
+    monkeypatch.setattr(boe, 'RUN_LABEL', 'F=E-SS')
+    with pytest.raises(ValueError):
+        boe._run()

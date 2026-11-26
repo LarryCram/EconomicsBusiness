@@ -54,6 +54,22 @@ All other cells are unchanged.
 
 ## §4.1 Business and Economics
 
+**Finance/accounting rule adopted 2026-11-26 (referee 3.1).** A journal classed E or A with at least two of four finance/accounting registry signals becomes B, except four economics journals listed in `data/field_rule_exceptions.csv`. Baseline journals: 525 E / 876 B / 101 A / 62 X (registry: 584 / 781 / 137 / 62). The combined (EBAX) baseline and all EBAX/X/EBA runs are unchanged (≤ 1e-9 dex); only the E, B, A and EB runs move. Values after the rule are in the "Rule" column below and are applied to the text. `data/finance_reclassification.csv` now compares registry vs rule: clique 9/10 unchanged (J. Finance out, AEJ: Economic Policy in), clique share of journal π 26.1% → 25.5%, journal-only E-vs-B shift ×2.21 → ×1.68, bipartite ×1.08 → ×1.04.
+
+| Quantity | Corrected (registry fields) | Rule (applied) |
+|---|---|---|
+| Clique share of π, E+B journal-only | 26.1% | 25.5% |
+| Clique share of π, E-only journal-only | 38.8% | 41.7% |
+| Link density Top-E/Top-E, Rest-E/Rest-E, All-B/All-B | 53.32, 0.719, 0.767 | 58.80, 0.752, 0.793 |
+| Ratios in text | 74×, 70×, 5.1× | 78×, 74×, 3.2× |
+| Top-B/Top-B (new sentence: finance-led top-ten B, 54× Rest-B; 9.6% of π in E+B) | 14.19 | 41.66 |
+| Top-20 institutions designated E | 19 | 17 (institution labels: E 305, B 882, A 198, X 594; was 401/786) |
+| `fig_3eb` journal-only medians E / B | −0.155 / +0.189 | −0.120 / +0.105 |
+| `fig_3ef` bipartite medians E / B | −0.015 / +0.018 | +0.014 / −0.003 |
+| Ritzberger A+/A by field | 23 E, 1 A | 21 E, 3 B (JF, RFS, JFE) — §5 text updated |
+
+The tables below record the earlier comparisons (submitted vs corrected, registry fields).
+
 | Quantity | Paper | Submitted | Corrected | Status |
 |---|---|---|---|---|
 | Clique share of π, E+B journal-only | 25.9% | 25.9% | 26.1% | update |

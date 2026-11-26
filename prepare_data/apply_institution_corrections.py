@@ -31,6 +31,15 @@ signals (ISSN, registry names and categories, scores, field_eb) taken from the o
 record when metadata_from == 'old'. Registry-stage parquets (oas_star,
 source_densities, dropped_sources) describe journal matching and are left unchanged.
 
+Field rule (adopted 2026-11-26, referee 3.1): a journal classed E or A by the registry
+scores is reclassed B if at least two of four registry signals mark it as finance or
+accounting — Harzing 'F&A', WoS category 'BUSINESS, FINANCE', ERA FoR 3501/3502, or
+OpenAlex top subfield Finance/Accounting (FIN_ACC_SQL). One signal is not enough: ERA
+3502 is a secondary code on many economics journals. Journals listed in
+data/field_rule_exceptions.csv keep the field given there (economics journals the rule
+would move). X stays X. --registry-fields skips the rule and keeps the registry
+classification (used for the reverse robustness check).
+
 --empty copies every parquet unchanged (byte-identical): the reproduction check that
 the rerun pipeline reproduces the locked baseline before any correction is applied.
 
@@ -55,6 +64,15 @@ FORBIDDEN = ('econ_bus_qss_submitted',)
 CHANGED = ('corpus_authorships.parquet', 'corpus_authorships_supp.parquet',
            'corpus_institutions.parquet', 'corpus_works.parquet',
            'corpus_works_supp.parquet', 'source_master.parquet')
+# Finance/accounting signals for the field rule (see docstring): at least two of four
+FIN_ACC_SIGNALS = (
+    "coalesce(harzing_field, '') LIKE '%F&A%'",
+    "list_contains(coalesce(wos_categories, []), 'BUSINESS, FINANCE')",
+    "len(list_filter(coalesce(era_for_codes, []), x -> x IN ('3501', '3502'))) > 0",
+    "coalesce(subfield_name, '') IN ('Finance', 'Accounting')",
+)
+FIN_ACC_SQL = ('(' + ' + '.join(f'CAST(({c}) AS INTEGER)' for c in FIN_ACC_SIGNALS)
+               + ') >= 2')
 # source_master columns taken from the merged (old) record when metadata_from == 'old'
 REGISTRY_COLS = ('issn', 'era_journal_name', 'era_for_codes', 'harzing_journal_name',
                  'harzing_field', 'wos_journal_name', 'wos_categories', 'scopus_journal_name',
@@ -82,6 +100,8 @@ def main():
     ap.add_argument('--source-corrections', default=None,
                     help='journal merges (default data/source_corrections.csv)')
     ap.add_argument('--empty', action='store_true', help='copy unchanged (reproduction check)')
+    ap.add_argument('--registry-fields', action='store_true',
+                    help='keep the registry field_eb (skip the finance/accounting -> B rule)')
     args = ap.parse_args()
 
     paths = load_config()
@@ -265,10 +285,32 @@ def main():
             LEFT JOIN sm_m m ON t.source_idx = m.new_idx
             LEFT JOIN '{src}/source_master.parquet' o ON o.source_idx = m.old_idx
             WHERE t.source_idx NOT IN (SELECT old_idx FROM sm_m)
-        ) TO '{dst}/source_master.parquet' (FORMAT PARQUET)
+        ) TO '{dst}/_tmp_sm.parquet' (FORMAT PARQUET)
     """)
 
-    # 6. report
+    # 6. field rule: finance/accounting journals classed E or A become B
+    exc = pd.read_csv(paths.data / 'field_rule_exceptions.csv')
+    assert exc.source_idx.is_unique and set(exc.field_eb) <= {'E', 'B', 'A', 'X'}
+    con.register('fexc', exc[['source_idx', 'field_eb']].astype({'source_idx': 'int64'}))
+    rule = 'FALSE' if args.registry_fields else f'field_eb IN (\'E\', \'A\') AND ({FIN_ACC_SQL})'
+    exc_sql = ('NULL' if args.registry_fields else
+               '(SELECT x.field_eb FROM fexc x WHERE x.source_idx = t.source_idx)')
+    con.execute(f"""
+        COPY (
+            SELECT t.* REPLACE (COALESCE({exc_sql},
+                                         CASE WHEN {rule} THEN 'B' ELSE field_eb END) AS field_eb)
+            FROM '{dst}/_tmp_sm.parquet' t
+        ) TO '{dst}/source_master.parquet' (FORMAT PARQUET)
+    """)
+    moved = con.execute(f"""
+        SELECT a.field_eb, COUNT(*) FROM '{dst}/_tmp_sm.parquet' a
+        JOIN '{dst}/source_master.parquet' b USING (source_idx)
+        WHERE a.field_eb <> b.field_eb GROUP BY 1 ORDER BY 1""").fetchall()
+    (dst / '_tmp_sm.parquet').unlink()
+    print('field rule: ' + ('skipped (--registry-fields)' if args.registry_fields else
+          ', '.join(f'{f}->B {n:,}' for f, n in moved) or 'no change'))
+
+    # 7. report
     def n(path, q='COUNT(*)'):
         return con.execute(f"SELECT {q} FROM '{path}'").fetchone()[0]
     for f in CHANGED:

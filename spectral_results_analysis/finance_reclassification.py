@@ -1,7 +1,13 @@
 """
 finance_reclassification.py — Robustness of the E/B results to counting finance and accounting as business.
 
-QSS revision, referee 3.1.
+QSS revision, referee 3.1.  Superseded as a robustness check on 2026-11-26: the rule is
+now part of the corrected baseline (apply_institution_corrections.py, FIN_ACC_SQL).
+`analyse` still compares two rankings.duckdb files; the reverse check builds a folder with
+apply_institution_corrections.py --registry-fields.  data/finance_reclassification.csv
+holds the registry-classified vs finance->B comparison made before adoption, with the
+earlier any-signal rule (superseded: ERA 3502 alone moved core economics journals).
+`prepare` now applies the two-signal rule without the exception list.
 
 prepare : copy the parquets of a source working folder into the parquet folder of the
           active config, with source_master.field_eb changed from E or A to B for every
@@ -35,12 +41,8 @@ import pandas as pd
 sys.path.insert(0, str(Path(__file__).parent.parent))
 from util import load_config, load_runs
 
-FIN_SQL = """
-      coalesce(harzing_field, '') LIKE '%F&A%'
-   OR list_contains(coalesce(wos_categories, []), 'FINANCE')
-   OR len(list_filter(coalesce(era_for_codes, []), x -> x IN ('3501', '3502'))) > 0
-   OR coalesce(subfield_name, '') IN ('Finance', 'Accounting')
-"""
+sys.path.insert(0, str(Path(__file__).parent.parent / 'prepare_data'))
+from apply_institution_corrections import FIN_ACC_SQL as FIN_SQL  # noqa: E402
 
 
 def prepare(src: Path):

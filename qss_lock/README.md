@@ -59,3 +59,9 @@ so the referee revision does not drift onto newer OpenAlex data or library versi
 - Replicates now use ω = 0, and the reference counts R_i come from the pipeline. A replicate with no errors reproduces the corrected baseline to ≤ 1e-11 dex. The submitted runs used ω = 1 and recounted R_i from edge-list references only, which put their zero-error point up to 0.07 dex off the baseline.
 - The combined `all` error run is removed.
 - The publication-year study now uses the boundary-swap model (`--stage year_swap`, output `stage4_year_swap/`): 2% of works dated 2019, 2020 or 2024 move one year across the window edge and the edge list is rebuilt from `corpus_references`. It replaces `year_v2`, whose inserted works never entered the references. The zero-shift replicate reproduces the baseline edges and R_i exactly.
+
+## Finance/accounting field rule (2026-11-26)
+- Referee 3.1: finance and accounting journals now count as business. `apply_institution_corrections.py` reclasses a journal from E or A to B when at least two of four registry signals mark it as finance or accounting; `data/field_rule_exceptions.csv` keeps four economics journals in E. `--registry-fields` reproduces the registry classification.
+- The EBAX baseline and every EBAX/X/EBA ranking are unchanged (≤ 1e-9 dex); only the E, B, A and EB runs change. Baseline journals: 525 E / 876 B / 101 A / 62 X.
+- Separate resampling bootstraps for the economics and business rankings (`bootstrap_oa_errors.py --run-label F=E|F=B`) are in `econ_bus_rev/bootstrap_oa_errors_FE` and `_FB`.
+

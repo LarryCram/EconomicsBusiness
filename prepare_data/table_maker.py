@@ -219,7 +219,7 @@ def write_latex_table1(data, out_path):
     L.append(r"\centering")
     L.append(
         r"""\caption{Registry and OpenAlex sources classified by field. JQL:
-        Harzing Journal Quality List; MJL: Web of Science Master Journal List; SJL: ERA Subject Journal List; SSL: Scopus Source List. A source appearing in multiple registries is counted in each. E/B/A/X are assigned by the combined five-signal scoring. OAS$^{**}$ is the union of all registry sources matched to OpenAlex. OAS$^{*}$ drops sources whose OpenAlex topic content is less than 40\% economics or business. OAS drops sources publishing below $\tau_S$.}"""
+        Harzing Journal Quality List; MJL: Web of Science Master Journal List; SJL: ERA Subject Journal List; SSL: Scopus Source List. A source appearing in multiple registries is counted in each. E/B/A/X are assigned by the combined five-signal scoring, before finance and accounting sources are reclassified $B$. OAS$^{**}$ is the union of all registry sources matched to OpenAlex. OAS$^{*}$ drops sources whose OpenAlex topic content is less than 40\% economics or business. OAS drops sources publishing below $\tau_S$.}"""
     )
     L.append(r"\label{tab:registry_overview}")
     L.append(r"\begin{tabular}{lrrrrrrrr}")

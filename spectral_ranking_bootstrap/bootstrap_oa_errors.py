@@ -70,10 +70,15 @@ STAGES is a comma list from {1,2,3,4,year_v2,year_swap}, e.g. --stage 1,2,3
 then --stage 4 --filters resample (one process per filter can run in parallel)
 and --stage year_swap.
 
+--run-label perturbs another m=0110 run of params.csv (e.g. 'F=E', 'F=B', the
+separate economics and business rankings) instead of the baseline: stages 1, 3 and
+4 --filters resample only, output in WORKING/bootstrap_oa_errors_<label>.
+
 --omega sets the institution weighting of the replicates (default 0, the
 author-fractional weighting of the baseline).  Stage-4 meta.json records it.
 """
 
+import re
 import sys
 import json
 import time
@@ -100,6 +105,27 @@ P_ERROR_INST = 0.010   # 1%   institution errors
 P_ERROR_REF  = 0.020   # 2%   reference errors (total; 75% same-source, 25% cross-source)
 P_WITHIN     = 0.75    # fraction of institution errors within same country
 STAGE_DIR = 'bootstrap_oa_errors'
+# Run whose units and edge list the replicates use (params.csv label).  'baseline'
+# writes to WORKING/bootstrap_oa_errors; any other label (e.g. 'F=E') to
+# WORKING/bootstrap_oa_errors_<label without '='>, e.g. bootstrap_oa_errors_FE.
+RUN_LABEL = 'baseline'
+
+
+def _stage_dir() -> str:
+    if RUN_LABEL == 'baseline':
+        return STAGE_DIR
+    return f"{STAGE_DIR}_{re.sub(r'[^A-Za-z0-9]+', '', RUN_LABEL)}"
+
+
+def _run() -> dict:
+    """params.csv row of RUN_LABEL (must be a bipartite m=0110 run)."""
+    rows = [r for r in load_runs() if r['label'] == RUN_LABEL]
+    if len(rows) != 1:
+        raise ValueError(f'run label {RUN_LABEL!r} matches {len(rows)} params.csv rows')
+    r = rows[0]
+    if str(r['m']).zfill(4) != '0110':
+        raise ValueError(f"run {RUN_LABEL!r} has m={r['m']}; the replicates rank m=0110")
+    return r
 MAX_FILTER_ITERS = 200
 
 # Stage-4 error filters.  Each isolates one source of uncertainty; they are
@@ -191,13 +217,13 @@ def _attach_institutions(works: pd.DataFrame, paths, omega: int) -> pd.DataFrame
 
 
 def _write_stage_meta(paths, name: str, omega: int) -> None:
-    out_dir = paths.working / STAGE_DIR
+    out_dir = paths.working / _stage_dir()
     (out_dir / f'{name}_meta.json').write_text(json.dumps({'omega': omega}, indent=2))
 
 
 def _read_stage_meta(paths, name: str) -> dict:
     """ω used to build a stage-1 table; files written before ω was recorded used ω=1."""
-    p = paths.working / STAGE_DIR / f'{name}_meta.json'
+    p = paths.working / _stage_dir() / f'{name}_meta.json'
     return json.loads(p.read_text()) if p.exists() else {'omega': 1}
 
 
@@ -224,7 +250,7 @@ def build_base_works(paths, omega: int = DEFAULT_OMEGA) -> pd.DataFrame:
     """
     import duckdb as _duckdb
 
-    out_dir = paths.working / STAGE_DIR
+    out_dir = paths.working / _stage_dir()
     out_dir.mkdir(parents=True, exist_ok=True)
 
     print('Stage 1: loading corpus_works ...', flush=True)
@@ -238,7 +264,7 @@ def build_base_works(paths, omega: int = DEFAULT_OMEGA) -> pd.DataFrame:
     print(f'  Works {YEAR_LO}-{YEAR_HI} (all corpus): {len(works):,}', flush=True)
 
     # Restrict to works in the baseline edge list (citer ∪ cited)
-    bl       = next(r for r in load_runs() if r['label'] == 'baseline')
+    bl       = _run()
     el_table = f'el_{bl["run_code"]}_{bl["fx"]}_tauU{bl["tau_u"]}_tauS{bl["tau_s"]}_vartau'
     print(f'Stage 1: restricting to baseline edge list ({el_table}) ...', flush=True)
     db = _duckdb.connect(str(paths.working / 'edge_lists.duckdb'), read_only=True)
@@ -505,7 +531,7 @@ def build_work_replicates(base: pd.DataFrame, paths,
 
     Saves: $WORKING/bootstrap_oa_errors/stage2_work_errors.parquet
     """
-    out_dir  = paths.working / STAGE_DIR
+    out_dir  = paths.working / _stage_dir()
     out_path = out_dir / 'stage2_work_errors.parquet'
     print(f'Stage 2: generating {B} work replicates ...', flush=True)
 
@@ -576,7 +602,7 @@ def build_ref_replicates(db, el_table: str, base_works: pd.DataFrame,
       stage3_base_refs.parquet   — (ref_idx, citer_work_idx, cited_work_idx, cited_source_idx, R_i)
       stage3_ref_errors.parquet  — (replicate_id, ref_idx, new_cited_work_idx)
     """
-    out_dir = paths.working / STAGE_DIR
+    out_dir = paths.working / _stage_dir()
     print('Stage 3: loading base references from edge list ...', flush=True)
     base_refs = load_base_refs(db, el_table)
     refs_path = out_dir / 'stage3_base_refs.parquet'
@@ -880,14 +906,14 @@ def build_rankings(paths, error_filter: str, B: int = 1000, seed: int = 42) -> N
     """
     import duckdb
 
-    out_dir    = paths.working / STAGE_DIR
+    out_dir    = paths.working / _stage_dir()
     if error_filter not in ERROR_FILTERS:
         raise ValueError(f'error_filter must be one of {ERROR_FILTERS}, got {error_filter!r}')
     stage4_dir = out_dir / f'stage4_{error_filter}'
     stage4_dir.mkdir(parents=True, exist_ok=True)
 
     # ── Load baseline units ────────────────────────────────────────────────────
-    bl          = next(r for r in load_runs() if r['label'] == 'baseline')
+    bl          = _run()
     run_code    = bl['run_code'];  tau_u = bl['tau_u'];  tau_s = bl['tau_s']
     fx          = bl['fx']
     el_table    = f'el_{run_code}_{fx}_tauU{tau_u}_tauS{tau_s}_vartau'
@@ -922,25 +948,27 @@ def build_rankings(paths, error_filter: str, B: int = 1000, seed: int = 42) -> N
                   ['work_idx'].unique().astype(np.int64))
     print(f'  In-window works available for resample: {len(in_win_ids):,}', flush=True)
 
-    work_errors = pd.read_parquet(str(out_dir / 'stage2_work_errors.parquet'))
-    work_deltas: dict[int, pd.DataFrame] = {
-        int(rid): grp for rid, grp in work_errors.groupby('replicate_id')
-    }
+    need_work = error_filter in ('year', 'source', 'institution')
+    work_errors = (pd.read_parquet(str(out_dir / 'stage2_work_errors.parquet'))
+                   if need_work else None)
+    work_deltas: dict[int, pd.DataFrame] = {}
 
     base_refs_df  = pd.read_parquet(str(out_dir / 'stage3_base_refs.parquet'))
     base_refs_arr = base_refs_df[['citer_work_idx', 'cited_work_idx',
                                    'cited_source_idx']].to_numpy(dtype=np.int64)
     r_extra = _r_extra(base_refs_df)
 
-    ref_errors = pd.read_parquet(str(out_dir / 'stage3_ref_errors.parquet'))
-    ref_deltas_all: dict[int, tuple[np.ndarray, np.ndarray]] = {
-        int(rid): (grp['ref_idx'].to_numpy(dtype=np.int64),
-                   grp['new_cited_work_idx'].to_numpy(dtype=np.int64))
-        for rid, grp in ref_errors.groupby('replicate_id')
-    }
+    ref_deltas_all: dict[int, tuple[np.ndarray, np.ndarray]] = {}
+    if error_filter == 'reference':
+        ref_errors = pd.read_parquet(str(out_dir / 'stage3_ref_errors.parquet'))
+        ref_deltas_all = {
+            int(rid): (grp['ref_idx'].to_numpy(dtype=np.int64),
+                       grp['new_cited_work_idx'].to_numpy(dtype=np.int64))
+            for rid, grp in ref_errors.groupby('replicate_id')
+        }
 
     # ── Apply error_filter ────────────────────────────────────────────────────
-    if error_filter in ('year', 'source', 'institution'):
+    if need_work:
         filtered = work_errors[work_errors['error_type'] == error_filter]
         work_deltas = {int(rid): grp
                        for rid, grp in filtered.groupby('replicate_id')}
@@ -1024,7 +1052,7 @@ def build_rankings(paths, error_filter: str, B: int = 1000, seed: int = 42) -> N
         n=B, seed=seed, error_filter=error_filter, n_s=n_s, n_u=n_u,
         source_ids=source_ids.tolist(),
         inst_ids=inst_ids.tolist(),
-        run_code=run_code, units_table=units_table,
+        run_code=run_code, units_table=units_table, run_label=RUN_LABEL,
         omega=_read_stage_meta(paths, "stage1")["omega"],
         b2_arr=b2_arr.tolist(), b3_arr=b3_arr.tolist(),
     )
@@ -1061,7 +1089,7 @@ def build_year_v2_pool(paths, omega: int = DEFAULT_OMEGA) -> pd.DataFrame:
              country_code.  One row per (work, institution); works with no
              institution appear once with inst_idx=NA, inst_weight=1.0.
     """
-    out_dir  = paths.working / STAGE_DIR
+    out_dir  = paths.working / _stage_dir()
     out_path = out_dir / 'stage1_year_v2_pool.parquet'
 
     print(f'Year-v2: building pool {YEAR_PRE_LO_V2}–{YEAR_HI} ...', flush=True)
@@ -1107,7 +1135,7 @@ def build_year_v2_replicates(pool: pd.DataFrame, paths,
         country_code  object
         error_type    str     ('del' | 'ins')
     """
-    out_dir  = paths.working / STAGE_DIR
+    out_dir  = paths.working / _stage_dir()
     out_path = out_dir / 'stage2_year_v2.parquet'
 
     all_work_ids = pool['work_idx'].unique().astype(np.int64)
@@ -1197,7 +1225,7 @@ def build_year_v2_rankings(paths, B: int = 1000, seed: int = 42) -> None:
     """
     import duckdb
 
-    out_dir    = paths.working / STAGE_DIR
+    out_dir    = paths.working / _stage_dir()
     stage4_dir = out_dir / 'stage4_year_v2'
     stage4_dir.mkdir(parents=True, exist_ok=True)
 
@@ -1345,7 +1373,7 @@ def build_year_swap_inputs(paths, omega: int = DEFAULT_OMEGA) -> None:
     import duckdb as _duckdb
     bl = _baseline_run()
     pq = paths.parquet
-    out_dir = paths.working / STAGE_DIR
+    out_dir = paths.working / _stage_dir()
     lo, hi = YEAR_LO - 1, YEAR_HI
     n_years = YEAR_HI - YEAR_LO + 1
 
@@ -1489,7 +1517,7 @@ def _swap_works_yr(base_yr: pd.DataFrame, pool: pd.DataFrame,
 def build_year_swap_replicates(paths, B: int = 1000, seed: int = 42) -> None:
     """Stage 2: B sets of boundary shifts over all corpus works dated 2019, 2020
     or 2024 → stage2_year_swap.parquet (replicate_id, work_idx, pub_year, new_year)."""
-    out_dir = paths.working / STAGE_DIR
+    out_dir = paths.working / _stage_dir()
     cand = pd.read_parquet(str(paths.parquet / 'corpus_works.parquet'),
                            columns=['work_idx', 'publication_year'])
     cand = cand[cand['publication_year'].isin(list(YEAR_SWAP))].sort_values('work_idx')
@@ -1515,7 +1543,7 @@ def build_year_swap_rankings(paths, B: int = 1000, seed: int = 42) -> None:
     """Stage 4 for the year-swap model → stage4_year_swap/ (same layout as the others)."""
     import duckdb
 
-    out_dir    = paths.working / STAGE_DIR
+    out_dir    = paths.working / _stage_dir()
     stage4_dir = out_dir / 'stage4_year_swap'
     stage4_dir.mkdir(parents=True, exist_ok=True)
 
@@ -1659,6 +1687,10 @@ def main():
     parser.add_argument('--filters', default=','.join(PAPER_FILTERS),
                         help=f'Stage-4 error filters, comma list from {ERROR_FILTERS} '
                              f'(default: {",".join(PAPER_FILTERS)})')
+    parser.add_argument('--run-label', default='baseline',
+                        help="params.csv label of the m=0110 run to perturb (default "
+                             "baseline; e.g. 'F=E', 'F=B': resample only, output in "
+                             "WORKING/bootstrap_oa_errors_<label>)")
     parser.add_argument('--n',    type=int, default=1000, help='Replicates (stages 2-4)')
     parser.add_argument('--seed', type=int, default=42,  help='Base random seed')
     parser.add_argument('--omega', type=int, default=DEFAULT_OMEGA, choices=[0, 1],
@@ -1680,11 +1712,19 @@ def main():
     if bad:
         parser.error(f'unknown filter(s): {sorted(bad)}')
 
-    bl          = next(r for r in load_runs() if r['label'] == 'baseline')
+    global RUN_LABEL
+    RUN_LABEL = args.run_label
+    if RUN_LABEL != 'baseline':
+        if (run_stages & {'2', 'year_v2', 'year_swap'}
+                or ('4' in run_stages and set(filters) - {'resample'})):
+            parser.error('runs other than the baseline support only stages 1, 3 and '
+                         '4 with --filters resample')
+    bl          = _run()
     el_table    = (f"el_{bl['run_code']}_{bl['fx']}"
                    f"_tauU{bl['tau_u']}_tauS{bl['tau_s']}_vartau")
+    print(f'run {RUN_LABEL!r}: {el_table} -> WORKING/{_stage_dir()}', flush=True)
 
-    out_dir = paths.working / STAGE_DIR
+    out_dir = paths.working / _stage_dir()
     out_dir.mkdir(parents=True, exist_ok=True)
 
     base_works = None

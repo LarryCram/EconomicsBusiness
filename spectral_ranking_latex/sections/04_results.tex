@@ -72,11 +72,11 @@ First consider sources, Figure~\ref{fig:combined_vs_separate} (left). The linear
 \begin{figure}[!htb]
   \centering
   \includegraphics[width=0.8\textwidth]{../plots/fig_3eb_latex.pdf}
-  \caption{Cardinal rankings for separate ($E||B$) and combined ($E+B$) subfields, using the source-only (m=1000) block (left) and institution-only block (right). The $x$-axis is the combined ranking, while the $y$-axis is the ranking computed separately for each field ($E||B$). The red circle delineates the \textit{clique} of top $E$ journals.} 
+  \caption{Cardinal rankings for separate ($E||B$) and combined ($E+B$) subfields, using the source-only (m=1000) block (left) and institution-only block (right). The $x$-axis is the combined ranking, while the $y$-axis is the ranking computed separately for each field ($E||B$). The red circle delineates the \textit{clique} of top $E$ journals, and the blue circle the top ten $B$ journals.} 
   \label{fig:combined_vs_separate}
 \end{figure}
 
-Define the directed density $d_{XY}$ ($X, Y \in \{E, B\}$) as the per-directed-pair average of citation matrix elements (with $\rho=0$) from group $X$ to group $Y$, with denominator $N_X(N_X-1)$ for within-group pairs and $N_X N_Y$ for cross-group pairs. As exhibited in Table~\ref{tab:link_density}, the top-ten $E$ sources are mutually linked at a rate $53.32/0.719=74$ times the density among other $E$ sources, and $53.32/0.767=70$ times the density among all $B$ sources. They also receive $4.16/0.809=5.1$ times more references from top $B$ sources than they give to them. Spectral ranking over the combined $E+B$ corpus drives the total influence probability of this \textit{clique} of 10 $E$ sources to 26.1\%. For $E$-only ranking the influence probability of the clique rises to 38.8\% since the $E$ network is smaller. This increase reduces the influence probability and cardinal ranking of other $E$ sources and flattening the slope of the red $E$ points in the left-hand panel of Figure~\ref{fig:combined_vs_separate}. The influence of the clique is not present in the green points ($B$ only), so their ordinal rankings rise. 
+Define the directed density $d_{XY}$ ($X, Y \in \{E, B\}$) as the per-directed-pair average of citation matrix elements (with $\rho=0$) from group $X$ to group $Y$, with denominator $N_X(N_X-1)$ for within-group pairs and $N_X N_Y$ for cross-group pairs. As exhibited in Table~\ref{tab:link_density}, the top-ten $E$ sources are mutually linked at a rate $58.80/0.752=78$ times the density among other $E$ sources, and $58.80/0.793=74$ times the density among all $B$ sources. They also receive $16.29/5.10=3.2$ times more references from top $B$ sources than they give to them. The top-ten $B$ sources, led by finance and accounting journals, are also densely interlinked ($41.66/0.765=54$ times the density among other $B$ sources), but in the combined ranking they hold only 9.6\% of the influence probability. Spectral ranking over the combined $E+B$ corpus drives the total influence probability of this \textit{clique} of 10 $E$ sources to 25.5\%. For $E$-only ranking the influence probability of the clique rises to 41.7\% since the $E$ network is smaller. This increase reduces the influence probability and cardinal ranking of other $E$ sources and flattening the slope of the red $E$ points in the left-hand panel of Figure~\ref{fig:combined_vs_separate}. The influence of the clique is not present in the green points ($B$ only), so their ordinal rankings rise. 
 \begin{table}[!htbp]
 \centering
 \caption{Directed link density $d_{XY}$ (average citation weight per directed pair) between source communities. Rows = citing group; columns = cited group. `Top' means top-ten sources by field-specific $SS$ ranking.}
@@ -85,19 +85,19 @@ Define the directed density $d_{XY}$ ($X, Y \in \{E, B\}$) as the per-directed-p
 \toprule
  & \makebox[1.6cm][r]{\small Top-$E$} & \makebox[1.6cm][r]{\small Rest-$E$} & \makebox[1.6cm][r]{\small All-$E$} & \makebox[1.6cm][r]{\small Top-$B$} & \makebox[1.6cm][r]{\small Rest-$B$} & \makebox[1.6cm][r]{\small All-$B$} \\
 \midrule
-Top-$E$ & 53.32 & 0.829 & 1.64 & 0.809 & 0.045 & 0.054 \\
-Rest-$E$ & 6.38 & 0.719 & 0.816 & 0.301 & 0.190 & 0.191 \\
-All-$E$ & 7.11 & 0.721 & 0.831 & 0.310 & 0.187 & 0.189 \\
+Top-$E$ & 58.80 & 0.895 & 1.90 & 5.10 & 0.052 & 0.110 \\
+Rest-$E$ & 6.84 & 0.752 & 0.869 & 1.41 & 0.244 & 0.257 \\
+All-$E$ & 7.73 & 0.755 & 0.889 & 1.48 & 0.240 & 0.254 \\
 \midrule
-Top-$B$ & 4.16 & 0.083 & 0.153 & 14.19 & 0.605 & 0.763 \\
-Rest-$B$ & 0.674 & 0.154 & 0.163 & 2.36 & 0.746 & 0.767 \\
-All-$B$ & 0.719 & 0.153 & 0.163 & 2.50 & 0.744 & 0.767 \\
+Top-$B$ & 16.29 & 0.168 & 0.477 & 41.66 & 0.411 & 0.839 \\
+Rest-$B$ & 0.925 & 0.179 & 0.193 & 3.20 & 0.765 & 0.793 \\
+All-$B$ & 1.10 & 0.179 & 0.196 & 3.60 & 0.760 & 0.793 \\
 \bottomrule
 \end{tabular}
 \end{table}
 
 
-The institution response to joint and separate rankings using $m=0001$ is quite different. There is no clique of institutions with an over-density of reference links, and the cardinal rankings of $E$ and $B$ are intermixed whether ranked together or separately. All but one of the top 20 institutions are designated $E$, although we note that institution labelling is at best an indication of a tendency to publish in one or the other field.
+The institution response to joint and separate rankings using $m=0001$ is quite different. There is no clique of institutions with an over-density of reference links, and the cardinal rankings of $E$ and $B$ are intermixed whether ranked together or separately. Seventeen of the top 20 institutions are designated $E$, although we note that institution labelling is at best an indication of a tendency to publish in one or the other field.
 
 Figure~\ref{fig:eb_alignment} (left) exhibits a counterfactual, showing that when the clique is artificially removed the cardinal rankings of $E$ and $B$ sources are no longer sharply delineated between separate and joint ranking with $m=1000$, and some $B$ sources rise above $v=10$. The delineation is also diminished in Figure~\ref{fig:eb_alignment} (right), where recirculation through institutions spreads the reference concentration in the clique as discussed above. We discuss these processes below.
 \begin{figure}[!htb]
