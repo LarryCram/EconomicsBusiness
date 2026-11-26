@@ -8,7 +8,7 @@
 EconomicsBusiness/
   spectral_ranking/        # Python ranking code + tests
   spectral_ranking_latex/  # LaTeX paper (multi-file master)
-  spectral_results_analysis/  # Figure scripts (fig_2.py … fig_7.py)
+  spectral_results_analysis/  # Figure scripts (fig_2.py … fig_6.py, fig_boot_envelope.py, …)
   prepare_data/            # OpenAlex data pipeline + tests
   util/                    # Shared helpers: load_config, load_runs, Paths
   data/                    # Small reference files (MB-scale, git-tracked)
@@ -42,7 +42,10 @@ Never point `OPENALEX` at `openalex_jul26`/`openalex_oct26` and never write to `
   - `paper_numbers.py`
 - In-text numbers are tracked in `spectral_ranking_latex/NUMBERS_CHECKLIST.md`.
 - Submitted-version figures are reproduced in `plots/qss_submitted/`.
-- The error-study figures (bootstrap/MC) are deliberately not regenerated. They use ω=1 replicates; ω=0 in the code means author-fractional, which is the baseline.
+- **Error studies are re-run on the corrected baseline (2026-11-26).** `spectral_ranking_bootstrap/run_error_studies.sh` runs `bootstrap_oa_errors.py` (detached; progress in `$WORKING/logs/error_studies_<stamp>/STATUS`):
+  - sampling bootstrap = filter `resample`; metadata errors = `source`, `institution`, `reference` and `year_v2`. Error types are never combined (the old combined `all` run was removed).
+  - Replicates use the baseline weighting ω=0 (author-fractional) and the pipeline's R_i, so a zero-error replicate reproduces the baseline exactly (≤1e-11 dex). The submitted runs used ω=1 and an R_i count that was off by up to 0.07 dex at zero error.
+  - Old scripts (`bootstrap_baseline.py`, `fig_7.py`, combined-run diagnostics) are in `ZARCHIVE/bootstrap_2026_11/`.
 - `QSS_REVISION_PLAN.md` and the QSS PDFs are local only (gitignored): they contain referee material.
 
 ## Python environment

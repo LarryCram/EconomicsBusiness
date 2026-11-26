@@ -26,6 +26,9 @@ from spectral_ranking_bootstrap.bootstrap_oa_errors import (
     load_base_refs,
     _build_matrices,
     _rank_one,
+    _institution_weights,
+    _attach_institutions,
+    _r_extra,
 )
 
 
@@ -164,19 +167,18 @@ class TestPerturb:
                 assert int(row['source_idx']) in pre_src_set, \
                     f"year-error source {row['source_idx']} not from pre-window pool"
 
-    def test_inst_weight_recomputed(self):
-        """inst_weight must equal 1/N_i after any institution change."""
+    def test_inst_weight_kept_on_institution_swap(self):
+        """An institution error swaps inst_idx only; the row keeps its weight ω_iu,
+        so each work's weights are unchanged (whatever the weighting ω)."""
+        base_w = BASE_WORKS.groupby('work_idx')['inst_weight'].sum()
         for b in range(10):
             rng = np.random.default_rng(5000 + b)
             d   = perturb_works_one(BASE_WORKS, PRE_WINDOW, SRC_POOL, INST_POOL, rng)
-            ins = d[d['inst_idx_old'].notna()]
+            ins = d[d['error_type'] == 'institution']
             if len(ins) == 0:
                 continue
-            for wid, grp in ins.groupby('work_idx'):
-                n_i = grp['inst_idx'].dropna().nunique()
-                expected_w = np.float32(1.0 / max(n_i, 1))
-                assert np.allclose(grp['inst_weight'].values, expected_w, atol=1e-6), \
-                    f'inst_weight mismatch for work {wid}'
+            got = ins.groupby('work_idx')['inst_weight'].sum()
+            assert np.allclose(got.values, base_w.loc[got.index].values, atol=1e-12)
 
 
 # ── resample_works_one tests ───────────────────────────────────────────────────
@@ -456,3 +458,113 @@ def test_load_base_refs_assigns_ref_idx():
     assert len(df) == 3  # 3 distinct (citer_work, cited_work) pairs
     assert set(df.columns) >= {'ref_idx', 'citer_work_idx', 'cited_work_idx', 'cited_source_idx'}
     db.close()
+
+
+# ── Institution weighting (ω) ──────────────────────────────────────────────────
+
+class _P:
+    def __init__(self, parquet):
+        self.parquet = parquet
+
+
+def _authorships(tmp_path):
+    """
+    work 1: authors a (inst 100), b (inst 100 and 200)          → 2 authors
+    work 2: author c (inst 300)
+    work 3: author d (no institution)
+    work 4: author e (inst 100), author f (no institution)
+    Duplicate row for (1, a, 100) must be ignored (DISTINCT).
+    """
+    df = pd.DataFrame({
+        'work_idx':        [1,   1,   1,   1,   2,   3,    4,   4],
+        'author_idx':      [11,  11,  12,  12,  13,  14,   15,  16],
+        'institution_idx': [100, 100, 100, 200, 300, None, 100, None],
+        'country_code':    ['US','US','US','GB','AU', None,'US', None],
+    })
+    df['institution_idx'] = df['institution_idx'].astype('Int64')
+    df.to_parquet(tmp_path / 'corpus_authorships.parquet', index=False)
+    return _P(tmp_path)
+
+
+def test_institution_weights_author_fractional(tmp_path):
+    p  = _authorships(tmp_path)
+    iw = _institution_weights(p, np.array([1, 2, 3, 4]), omega=0)
+    w  = {(r.work_idx, r.inst_idx): r.inst_weight for r in iw.itertuples()}
+    # work 1: a → 1/2 to 100; b → 1/4 to 100, 1/4 to 200
+    assert w[(1, 100)] == pytest.approx(0.75)
+    assert w[(1, 200)] == pytest.approx(0.25)
+    assert w[(2, 300)] == pytest.approx(1.0)
+    # authors without an institution are not counted (as in build_edge_lists)
+    assert w[(4, 100)] == pytest.approx(1.0)
+    assert 3 not in set(iw['work_idx'])
+    assert iw['inst_weight'].dtype == np.float64
+
+
+def test_institution_weights_direct(tmp_path):
+    p  = _authorships(tmp_path)
+    iw = _institution_weights(p, np.array([1, 2]), omega=1)
+    w  = {(r.work_idx, r.inst_idx): r.inst_weight for r in iw.itertuples()}
+    assert w[(1, 100)] == pytest.approx(0.5)
+    assert w[(1, 200)] == pytest.approx(0.5)
+    assert w[(2, 300)] == pytest.approx(1.0)
+
+
+def test_institution_weights_sum_to_one_per_work(tmp_path):
+    p = _authorships(tmp_path)
+    for omega in (0, 1):
+        iw = _institution_weights(p, np.array([1, 2, 4]), omega=omega)
+        assert np.allclose(iw.groupby('work_idx')['inst_weight'].sum(), 1.0)
+
+
+def test_institution_weights_rejects_bad_omega(tmp_path):
+    with pytest.raises(ValueError):
+        _institution_weights(_authorships(tmp_path), np.array([1]), omega=2)
+
+
+def test_attach_institutions_no_inst_row(tmp_path):
+    p = _authorships(tmp_path)
+    works = pd.DataFrame({'work_idx': [1, 3], 'pub_year': [2021, 2022],
+                          'source_idx': [10, 20]})
+    out = _attach_institutions(works, p, omega=0)
+    w3 = out[out['work_idx'] == 3]
+    assert len(w3) == 1 and w3['inst_idx'].isna().all()
+    assert w3['inst_weight'].iloc[0] == 1.0
+    assert out['inst_idx'].dtype == 'Int64'
+    assert out.loc[(out.work_idx == 1) & (out.inst_idx == 100), 'country_code'].iloc[0] == 'US'
+
+
+# ── ρ: pipeline R_i carried through (_r_extra) ─────────────────────────────────
+
+def test_r_extra_counts_refs_outside_edge_list():
+    refs = pd.DataFrame({'citer_work_idx': [1, 1, 2], 'cited_work_idx': [5, 6, 5],
+                         'cited_source_idx': [10, 10, 10], 'R_i': [4, 4, 1]})
+    ex = _r_extra(refs)
+    assert ex.to_dict() == {1: 2}          # citer 1: R_i=4, two edge-list refs
+
+
+def test_r_extra_legacy_returns_none():
+    refs = pd.DataFrame({'citer_work_idx': [1], 'cited_work_idx': [5],
+                         'cited_source_idx': [10]})
+    assert _r_extra(refs) is None
+
+
+def test_r_extra_rejects_inconsistent_R():
+    refs = pd.DataFrame({'citer_work_idx': [1, 1], 'cited_work_idx': [5, 6],
+                         'cited_source_idx': [10, 10], 'R_i': [1, 1]})
+    with pytest.raises(ValueError):
+        _r_extra(refs)
+
+
+def test_build_matrices_rho_uses_r_extra():
+    """With extra references, ρ_i = R̄ / (kept refs + extra) scales C_SI down."""
+    works = pd.DataFrame({'work_idx': [1, 2], 'pub_year': [2021, 2021],
+                          'source_idx': [10, 20], 'inst_idx': pd.array([100, 200], dtype='Int64'),
+                          'inst_weight': [1.0, 1.0]})
+    refs = np.array([[1, 2, 20], [2, 1, 10]], dtype=np.int64)
+    si, ui = pd.Index([10, 20]), pd.Index([100, 200])
+    C0, _ = _build_matrices(refs, works, si, ui, 1.0, 2, 2)
+    C1, _ = _build_matrices(refs, works, si, ui, 1.0, 2, 2,
+                            r_extra=pd.Series({1: 3}))
+    assert C0[0, 1] == pytest.approx(1.0)       # citer 1: ρ = 1/1
+    assert C1[0, 1] == pytest.approx(0.25)      # citer 1: ρ = 1/(1+3)
+    assert C1[1, 0] == pytest.approx(C0[1, 0])  # citer 2 unaffected

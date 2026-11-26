@@ -1,5 +1,15 @@
 # BOOTSTRAP.md — Bootstrap Uncertainty Analysis for Baseline Ranking
 
+> **Current state (2026-11-26).** All error studies in the paper come from
+> `spectral_ranking_bootstrap/bootstrap_oa_errors.py`, run by `run_error_studies.sh`:
+> the sampling bootstrap is its `resample` filter (100% of works with replacement), and
+> the metadata-error studies are the `source`, `institution`, `reference` filters plus
+> `year_v2`. Error types are never combined (the former combined `all` run was removed).
+> Replicates use the baseline institution weighting (ω=0) and the pipeline's R_i, so a
+> replicate with no errors reproduces the baseline ranking exactly.
+> `bootstrap_baseline.py` (80% subsample, §5 below) and the scripts built on the combined
+> run are archived in `ZARCHIVE/bootstrap_2026_11/`; the sections below are historical.
+
 ## Goal - metadata error
 
 Openalex has metadata errors at work level and at reference list level.
@@ -270,7 +280,7 @@ runs via `--resume` flag.
 
 ---
 
-## 5. Runner Script: `spectral_ranking_bootstrap/bootstrap_baseline.py`
+## 5. Runner Script: `spectral_ranking_bootstrap/bootstrap_baseline.py` (archived 2026-11-26)
 
 ### CLI interface
 

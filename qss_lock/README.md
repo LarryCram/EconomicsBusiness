@@ -53,3 +53,8 @@ so the referee revision does not drift onto newer OpenAlex data or library versi
   - `econ_bus_rev_fin` is the finance-as-business variant (referee 3.1);
   - `revision.duckdb` holds the split-institution test (referee 1).
 - **Locked data:** the checksums of the locked `rankings.duckdb`, `edge_lists.duckdb` and `econ.duckdb` were re-verified after the submitted figures were reproduced from them.
+
+## Error studies re-run (2026-11-26)
+- The bootstrap and metadata-error studies are re-run on `econ_bus_rev` with `spectral_ranking_bootstrap/run_error_studies.sh`. Output goes to `econ_bus_rev/bootstrap_oa_errors/`. The submitted runs stay in the locked `econ_bus/bootstrap_oa_errors/`.
+- Replicates now use ω = 0, and the reference counts R_i come from the pipeline. A replicate with no errors reproduces the corrected baseline to ≤ 1e-11 dex. The submitted runs used ω = 1 and recounted R_i from edge-list references only, which put their zero-error point up to 0.07 dex off the baseline.
+- The combined `all` error run is removed.

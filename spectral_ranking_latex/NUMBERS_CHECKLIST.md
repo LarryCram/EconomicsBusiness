@@ -4,7 +4,7 @@ Regenerated 2026-11-24.
 
 - **Corrected baseline:** `econ_bus_rev` (identity corrections, restored type-excluded institutions, journal merges), run with `ECONBUS_CONFIG=config.rev.yaml`.
 - **"Submitted data":** the same scripts run on the locked `econ_bus` folder. Figures and tables from that run are in `plots/qss_submitted/` and `tables/qss_submitted/`; the locked data was not written.
-- **Bootstrap and metadata-error figures** (`fig_boot_envelope_resample`, `fig_boot_ratio_facet`) are **not** regenerated. They stay the submitted error study, carried over as agreed.
+- **Bootstrap and metadata-error figures** (`fig_boot_envelope_resample`, `fig_boot_ratio_facet`): **being regenerated** (decision reversed 2026-11-26). The error studies are re-run on the corrected baseline with ω = 0 replicates (`run_error_studies.sh`); figures, benchmark bands and §4.4 numbers follow when the run completes.
 
 **Applied 2026-11-24** to `04_results.tex` and `05_discussion.tex`: every *update* and *stale* item, plus "OAJ" → "OAS" and "anticipted" → "anticipated". The link-density table was applied later the same day using the `paper_numbers.py` definition. The submitted values could not be reproduced:
 - the stated definition gives a mean error of 0.23 dex or more;
@@ -107,7 +107,7 @@ Add the survivorship-free counts (referee 3.2) from `data/survivorship_transitio
 
 ## §4.4 Errors and uncertainties
 
-Unchanged: this is the submitted error study, which moves to Supplement 2 with the ω = 1 note (plan §6).
+To be regenerated from the 2026-11-26 re-run (corrected baseline, ω = 0 replicates, no combined run). The ω = 1 note is no longer needed. The section moves to Supplement 2 (plan §6).
 
 ## §4.5 Enclaves (l.263, `tab:enclaves`)
 

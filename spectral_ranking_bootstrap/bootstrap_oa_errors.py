@@ -21,8 +21,16 @@ Stage 3 — build_ref_replicates
     0.5% cross-source replacement).  Only changed rows persisted.
 
 Stage 4 — build_rankings
-    B bipartite (m=0110) spectral rankings from random pairings of Stage 2 × Stage 3.
+    B bipartite (m=0110) spectral rankings per error filter, each isolating one
+    source of uncertainty: resample (sampling error), source, institution,
+    reference (and the superseded year model).  Error types are never combined.
     Uses the fixed baseline unit set; no tau recomputation.
+
+Year-v2 — build_year_v2_pool / _replicates / _rankings
+    The publication-year model used in the paper (needs stages 1 and 3 first).
+
+A replicate with no errors reproduces the stored baseline ranking exactly
+(institution weights ω and reference counts R_i are taken as in the pipeline).
 
 Error rates (empirically estimated):
     pub_year    — 2%   of in-window works replaced by a randomly drawn pre-window
@@ -35,19 +43,27 @@ Storage: $WORKING/bootstrap_oa_errors/
     stage1_base_works.parquet
     stage2_work_errors.parquet    (replicate_id, work_idx, pub_year, source_idx,
                                    inst_idx, inst_weight, country_code, inst_idx_old)
-    stage3_base_refs.parquet      (ref_idx, citer_work_idx, cited_work_idx, cited_source_idx)
+    stage3_base_refs.parquet      (ref_idx, citer_work_idx, cited_work_idx, cited_source_idx, R_i)
     stage3_ref_errors.parquet     (replicate_id, ref_idx, new_cited_work_idx)
-    stage4/v_s_boot.npy                (B, n_s) float32  — all errors combined
-    stage4/v_u_boot.npy                (B, n_u) float32
-    stage4/lam_ratio_boot.npy          (B,) float32
-    stage4/meta.json                   includes error_filter='all'
-    stage4_{type}/...                  same layout for type in year|source|institution|reference|resample
+    stage1_meta.json, stage1_year_v2_meta.json   ω used for the stage-1 tables
+    stage4_{filter}/v_s_boot.npy       (B, n_s) float32
+    stage4_{filter}/v_u_boot.npy       (B, n_u) float32
+    stage4_{filter}/lam_ratio_boot.npy (B,) float32
+    stage4_{filter}/meta.json          error_filter, omega, unit ids
+    stage4_year_v2/...                 same layout
 
 CLI
 ---
-python spectral_ranking_bootstrap/bootstrap_oa_errors.py
-    [--stage {1,2,3,4,all}]
-    [--n 1000]  [--seed 42]  [--tol 1e-7]
+python spectral_ranking_bootstrap/bootstrap_oa_errors.py --stage STAGES
+    [--filters resample,source,institution,reference]
+    [--n 1000]  [--seed 42]  [--omega {0,1}]
+
+STAGES is a comma list from {1,2,3,4,year_v2}, e.g. --stage 1,2,3 then
+--stage 4 --filters resample (one process per filter can run in parallel)
+and --stage year_v2.
+
+--omega sets the institution weighting of the replicates (default 0, the
+author-fractional weighting of the baseline).  Stage-4 meta.json records it.
 """
 
 import sys
@@ -63,7 +79,6 @@ import scipy.sparse as sp
 sys.path.insert(0, str(Path(__file__).parent.parent))
 from util import load_config, load_runs
 from spectral_ranking.katz_ranker import bipartite, _row_normalise
-from spectral_ranking_bootstrap.bootstrap_baseline import _bipartite_core
 
 YEAR_LO      = 2020
 YEAR_HI      = 2024
@@ -77,11 +92,110 @@ P_ERROR_INST = 0.010   # 1%   institution errors
 P_ERROR_REF  = 0.020   # 2%   reference errors (total; 75% same-source, 25% cross-source)
 P_WITHIN     = 0.75    # fraction of institution errors within same country
 STAGE_DIR = 'bootstrap_oa_errors'
+MAX_FILTER_ITERS = 200
+
+# Stage-4 error filters.  Each isolates one source of uncertainty; they are
+# deliberately not combined.
+ERROR_FILTERS   = ('resample', 'source', 'institution', 'reference', 'year')
+PAPER_FILTERS   = ('resample', 'source', 'institution', 'reference')  # + year_v2
+
+# Institution weighting ω, as in params.csv: 0 = author-fractional (baseline,
+# paper eq. 1; edge-list column inst_weight), 1 = direct 1/N_inst (edge-list
+# column direct_inst_weight).  Replicates must use the baseline's ω so that a
+# replicate with no errors reproduces the baseline ranking exactly.
+DEFAULT_OMEGA = 0
+
+
+def _institution_weights(paths, work_ids: np.ndarray, omega: int) -> pd.DataFrame:
+    """
+    One row per (work_idx, inst_idx) with the institution weight ω_iu of the work.
+
+    Mirrors prepare_data/build_edge_lists.py (iw_raw) exactly: authorships are
+    DISTINCT (work, author, institution) with a non-null institution;
+      ω=0: Σ_authors 1 / (n_authors · n_inst_per_author)
+      ω=1: 1 / n_institutions
+    Weights are over all of the work's institutions (retained or not), as in the
+    edge list.  country_code is the institution's country on that work.
+
+    Columns: work_idx int64, inst_idx int64, inst_weight float64, country_code object.
+    """
+    import duckdb as _duckdb
+    if omega not in (0, 1):
+        raise ValueError(f'omega must be 0 or 1, got {omega!r}')
+    w_expr = ('SUM(1.0 / wac.n_authors / aic.n_inst_per_author)' if omega == 0
+              else 'ANY_VALUE(1.0 / wac.n_institutions)')
+    con = _duckdb.connect(':memory:')
+    con.register('_ids', pd.DataFrame({'work_idx': np.asarray(work_ids, dtype=np.int64)}))
+    df = con.execute(f"""
+        WITH auths AS (
+            SELECT DISTINCT work_idx, author_idx, institution_idx
+            FROM '{paths.parquet}/corpus_authorships.parquet'
+            WHERE institution_idx IS NOT NULL
+              AND work_idx IN (SELECT work_idx FROM _ids)
+        ),
+        wac AS (
+            SELECT work_idx,
+                   COUNT(DISTINCT author_idx)      AS n_authors,
+                   COUNT(DISTINCT institution_idx) AS n_institutions
+            FROM auths GROUP BY work_idx
+        ),
+        aic AS (
+            SELECT work_idx, author_idx,
+                   COUNT(DISTINCT institution_idx) AS n_inst_per_author
+            FROM auths GROUP BY work_idx, author_idx
+        ),
+        iw AS (
+            SELECT a.work_idx, a.institution_idx AS inst_idx, {w_expr} AS inst_weight
+            FROM auths a
+            JOIN wac ON a.work_idx = wac.work_idx
+            JOIN aic ON a.work_idx = aic.work_idx AND a.author_idx = aic.author_idx
+            GROUP BY a.work_idx, a.institution_idx
+        ),
+        cc AS (
+            SELECT work_idx, institution_idx AS inst_idx, MIN(country_code) AS country_code
+            FROM '{paths.parquet}/corpus_authorships.parquet'
+            WHERE institution_idx IS NOT NULL
+              AND work_idx IN (SELECT work_idx FROM _ids)
+            GROUP BY work_idx, institution_idx
+        )
+        SELECT iw.work_idx, iw.inst_idx, iw.inst_weight, cc.country_code
+        FROM iw LEFT JOIN cc USING (work_idx, inst_idx)
+        ORDER BY iw.work_idx, iw.inst_idx
+    """).fetchdf()
+    con.close()
+    df['work_idx']    = df['work_idx'].astype(np.int64)
+    df['inst_idx']    = df['inst_idx'].astype(np.int64)
+    df['inst_weight'] = df['inst_weight'].astype(np.float64)
+    return df
+
+
+def _attach_institutions(works: pd.DataFrame, paths, omega: int) -> pd.DataFrame:
+    """
+    Left-join works (work_idx, pub_year, source_idx) to their institution rows.
+    Works with no institution appear once with inst_idx=NA, inst_weight=1.0.
+    """
+    iw = _institution_weights(paths, works['work_idx'].unique(), omega)
+    out = works.merge(iw, on='work_idx', how='left')
+    out.loc[out['inst_idx'].isna(), 'inst_weight'] = 1.0
+    out['inst_weight'] = out['inst_weight'].astype(np.float64)
+    out['inst_idx'] = out['inst_idx'].astype('Int64')
+    return out
+
+
+def _write_stage_meta(paths, name: str, omega: int) -> None:
+    out_dir = paths.working / STAGE_DIR
+    (out_dir / f'{name}_meta.json').write_text(json.dumps({'omega': omega}, indent=2))
+
+
+def _read_stage_meta(paths, name: str) -> dict:
+    """ω used to build a stage-1 table; files written before ω was recorded used ω=1."""
+    p = paths.working / STAGE_DIR / f'{name}_meta.json'
+    return json.loads(p.read_text()) if p.exists() else {'omega': 1}
 
 
 # ── Stage 1 ────────────────────────────────────────────────────────────────────
 
-def build_base_works(paths) -> pd.DataFrame:
+def build_base_works(paths, omega: int = DEFAULT_OMEGA) -> pd.DataFrame:
     """
     Load baseline edge-list works for YEAR_LO..YEAR_HI with institution fractionation.
 
@@ -93,7 +207,8 @@ def build_base_works(paths) -> pd.DataFrame:
         pub_year     int16
         source_idx   int64
         inst_idx     Int64   (nullable; pd.NA for works with no institution)
-        inst_weight  float32 (1/N_i; 1.0 if no institution)
+        inst_weight  float64 (ω_iu per `omega`, see _institution_weights;
+                              1.0 if no institution)
         country_code object  (nullable str)
 
     One row per (work_idx, inst_idx).  Works with no authorship record appear
@@ -131,28 +246,8 @@ def build_base_works(paths) -> pd.DataFrame:
     works = works[works['work_idx'].isin(baseline_work_set)]
     print(f'  Works after edge-list filter: {len(works):,}', flush=True)
 
-    print('Stage 1: loading corpus_authorships ...', flush=True)
-    auth = pd.read_parquet(
-        str(paths.parquet / 'corpus_authorships.parquet'),
-        columns=['work_idx', 'institution_idx', 'country_code'],
-    )
-    auth = auth[auth['work_idx'].isin(works['work_idx'])]
-    auth = auth.drop_duplicates(['work_idx', 'institution_idx'])
-    auth = auth.dropna(subset=['institution_idx'])
-
-    n_inst = auth.groupby('work_idx').size().rename('n_inst')
-    auth   = auth.join(n_inst, on='work_idx')
-    auth['inst_weight'] = (1.0 / auth['n_inst']).astype(np.float32)
-    auth = auth.drop(columns='n_inst').rename(columns={'institution_idx': 'inst_idx'})
-    auth['inst_idx'] = auth['inst_idx'].astype(np.int64)
-
-    base = works.merge(
-        auth[['work_idx', 'inst_idx', 'inst_weight', 'country_code']],
-        on='work_idx', how='left',
-    )
-    no_inst = base['inst_idx'].isna()
-    base.loc[no_inst, 'inst_weight'] = np.float32(1.0)
-    base['inst_idx'] = base['inst_idx'].astype('Int64')
+    print(f'Stage 1: institution weights from corpus_authorships (ω={omega}) ...', flush=True)
+    base = _attach_institutions(works, paths, omega)
 
     # Verify containment: every work_idx in base must be in the baseline edge list
     base_work_ids = set(base['work_idx'].unique().tolist())
@@ -179,29 +274,11 @@ def build_base_works(paths) -> pd.DataFrame:
     pre_works['source_idx']  = pre_works['source_idx'].astype(np.int64)
     print(f'  Pre-window OAS works: {len(pre_works):,}', flush=True)
 
-    auth_pre = pd.read_parquet(
-        str(paths.parquet / 'corpus_authorships.parquet'),
-        columns=['work_idx', 'institution_idx', 'country_code'],
-    )
-    auth_pre = auth_pre[auth_pre['work_idx'].isin(pre_works['work_idx'])].copy()
-    auth_pre = auth_pre.drop_duplicates(['work_idx', 'institution_idx'])
-    auth_pre = auth_pre.dropna(subset=['institution_idx'])
-    n_inst_pre = auth_pre.groupby('work_idx').size().rename('n_inst')
-    auth_pre   = auth_pre.join(n_inst_pre, on='work_idx')
-    auth_pre['inst_weight'] = (1.0 / auth_pre['n_inst']).astype(np.float32)
-    auth_pre = auth_pre.drop(columns='n_inst').rename(columns={'institution_idx': 'inst_idx'})
-    auth_pre['inst_idx'] = auth_pre['inst_idx'].astype(np.int64)
-
-    pre_base = pre_works.merge(
-        auth_pre[['work_idx', 'inst_idx', 'inst_weight', 'country_code']],
-        on='work_idx', how='left',
-    )
-    no_inst_pre = pre_base['inst_idx'].isna()
-    pre_base.loc[no_inst_pre, 'inst_weight'] = np.float32(1.0)
-    pre_base['inst_idx'] = pre_base['inst_idx'].astype('Int64')
+    pre_base = _attach_institutions(pre_works, paths, omega)
 
     pre_path = out_dir / 'stage1_prewindow_pool.parquet'
     pre_base.to_parquet(str(pre_path), index=False)
+    _write_stage_meta(paths, 'stage1', omega)
     print(f'  Pre-window pool saved: {pre_path}  '
           f'({pre_base["work_idx"].nunique():,} unique works, {len(pre_base):,} rows)',
           flush=True)
@@ -466,11 +543,15 @@ def build_work_replicates(base: pd.DataFrame, paths,
 
 def load_base_refs(db, el_table: str) -> pd.DataFrame:
     """
-    Return DISTINCT (citer_work_idx, cited_work_idx, cited_source_idx) from the
-    edge list, with a sequential ref_idx column.
+    Return DISTINCT (citer_work_idx, cited_work_idx, cited_source_idx, R_i) from
+    the edge list, with a sequential ref_idx column.
+
+    R_i is the pipeline's reference count of the citing work.  It also counts
+    references to corpus works in sources below τ_S, which are not edges, so it
+    can exceed the number of the citer's rows here; see _r_extra.
     """
     df = db.execute(f"""
-        SELECT DISTINCT citer_work_idx, cited_work_idx, cited_source_idx
+        SELECT DISTINCT citer_work_idx, cited_work_idx, cited_source_idx, R_i
         FROM {el_table}
         ORDER BY citer_work_idx, cited_work_idx
     """).fetchdf()
@@ -484,7 +565,7 @@ def build_ref_replicates(db, el_table: str, base_works: pd.DataFrame,
     Stage 3: generate B reference replicates and save deltas.
 
     Saves:
-      stage3_base_refs.parquet   — (ref_idx, citer_work_idx, cited_work_idx, cited_source_idx)
+      stage3_base_refs.parquet   — (ref_idx, citer_work_idx, cited_work_idx, cited_source_idx, R_i)
       stage3_ref_errors.parquet  — (replicate_id, ref_idx, new_cited_work_idx)
     """
     out_dir = paths.working / STAGE_DIR
@@ -579,6 +660,27 @@ def apply_work_delta(base: pd.DataFrame, delta: pd.DataFrame) -> pd.DataFrame:
     return pd.concat([base_reduced, delta_clean], ignore_index=True)
 
 
+def _r_extra(base_refs_df: pd.DataFrame) -> pd.Series | None:
+    """
+    Per citing work, the references counted in the pipeline's R_i that are not
+    edge-list references (references to corpus works in sources below τ_S).
+
+    ρ_i = R̄ / R_i in the pipeline (build_csr).  A replicate recounts the citer's
+    kept edge-list references and adds this fixed extra, so with no errors the
+    replicate's ρ_i equals the pipeline's exactly.  Returns None for stage-3
+    files written before R_i was stored (legacy: ρ from edge-list refs only).
+    """
+    if 'R_i' not in base_refs_df.columns:
+        print('  WARNING: stage3_base_refs has no R_i — ρ uses edge-list references '
+              'only and will not match the pipeline; re-run stage 3.', flush=True)
+        return None
+    g = base_refs_df.groupby('citer_work_idx')
+    extra = g['R_i'].first().astype(np.int64) - g.size()
+    if (extra < 0).any():
+        raise ValueError('R_i smaller than the number of edge-list references')
+    return extra[extra > 0]
+
+
 def apply_ref_delta(base_refs_arr: np.ndarray, err_idx: np.ndarray,
                     new_cited: np.ndarray) -> np.ndarray:
     """
@@ -594,6 +696,7 @@ def _build_matrices(refs_arr: np.ndarray, works_yr: pd.DataFrame,
                     src_index: pd.Index, inst_index: pd.Index,
                     r_bar: float, n_s: int, n_u: int,
                     work_mult: dict | None = None,
+                    r_extra: pd.Series | None = None,
                     ) -> tuple[sp.csr_matrix, sp.csr_matrix]:
     """
     Build C_SI (n_s × n_u) and C_IS (n_u × n_s) from reference and work arrays.
@@ -605,6 +708,9 @@ def _build_matrices(refs_arr: np.ndarray, works_yr: pd.DataFrame,
 
     Uses fixed baseline unit indices (src_index, inst_index).
     Rows with source/institution not in units are silently dropped.
+
+    r_extra: per-citer count of references outside the edge list (from _r_extra),
+             added to the recounted R_i so that ρ_i matches the pipeline.
     """
     # ── Filter references to works in the year window ─────────────────────────
     valid_set = set(works_yr['work_idx'].to_numpy().tolist())
@@ -620,7 +726,9 @@ def _build_matrices(refs_arr: np.ndarray, works_yr: pd.DataFrame,
         return (sp.csr_matrix((n_s, n_u)), sp.csr_matrix((n_u, n_s)))
 
     # ── Compute R_i and rho_w ──────────────────────────────────────────────────
-    _, inv, counts = np.unique(refs[:, 0], return_inverse=True, return_counts=True)
+    uniq, inv, counts = np.unique(refs[:, 0], return_inverse=True, return_counts=True)
+    if r_extra is not None:
+        counts = counts + r_extra.reindex(uniq, fill_value=0).to_numpy(dtype=np.int64)
     rho_w = r_bar / counts[inv]   # (N_keep,)
     if work_mult is not None:
         # Scale each reference by the citer's resample count (k appearances = k× weight)
@@ -704,29 +812,70 @@ def _rank_one(C_SI: sp.csr_matrix, C_IS: sp.csr_matrix,
     return v_s, v_u, float(lam1), float(lam2), len(s_idx), len(u_idx), n_iter
 
 
+def _bipartite_core(C_SI: sp.csr_matrix, C_IS: sp.csr_matrix) -> tuple:
+    """
+    Iteratively remove sources/institutions with zero indegree or outdegree
+    until convergence (bipartite analogue of SCC).
+
+    A source is retained iff it has:
+      - at least one outgoing SI edge (row of C_SI non-zero)
+      - at least one incoming IS edge (column of C_IS non-zero)
+
+    An institution is retained iff it has:
+      - at least one outgoing IS edge (row of C_IS non-zero)
+      - at least one incoming SI edge (column of C_SI non-zero)
+
+    Returns
+    -------
+    s_idx  : int array — global source indices retained
+    u_idx  : int array — global institution indices retained
+    n_iter : int — number of filtering passes to convergence
+    """
+    s_idx = np.arange(C_SI.shape[0], dtype=np.int32)
+    u_idx = np.arange(C_IS.shape[0], dtype=np.int32)
+
+    for n_iter in range(1, MAX_FILTER_ITERS + 1):
+        sub_SI = C_SI[s_idx, :][:, u_idx]
+        sub_IS = C_IS[u_idx, :][:, s_idx]
+
+        s_out = np.diff(sub_SI.indptr) > 0
+        s_in  = np.asarray(sub_IS.sum(axis=0)).ravel() > 0
+        u_out = np.diff(sub_IS.indptr) > 0
+        u_in  = np.asarray(sub_SI.sum(axis=0)).ravel() > 0
+
+        s_keep = s_out & s_in
+        u_keep = u_out & u_in
+
+        if s_keep.all() and u_keep.all():
+            break
+
+        s_idx = s_idx[s_keep]
+        u_idx = u_idx[u_keep]
+
+    return s_idx, u_idx, n_iter
+
+
 # ── Stage 4 ────────────────────────────────────────────────────────────────────
 
-def build_rankings(paths, B: int = 32, seed: int = 42,
-                   error_filter: str = 'all') -> None:
+def build_rankings(paths, error_filter: str, B: int = 1000, seed: int = 42) -> None:
     """
-    Stage 4: build B bipartite (m=0110) spectral rankings from random
-    Stage 2 × Stage 3 pairings.
+    Stage 4: build B bipartite (m=0110) spectral rankings, each isolating one
+    source of uncertainty.
 
-    error_filter : 'all' | 'year' | 'source' | 'institution' | 'reference'
-        'all'         — apply all work deltas + all ref deltas (default)
-        'year'        — apply only year-error work deltas; no ref deltas
-        'source'      — apply only source-error work deltas; no ref deltas
-        'institution' — apply only institution-error work deltas; no ref deltas
-        'reference'   — no work deltas; apply all ref deltas; no resample
-        'resample'    — 100%-with-replacement resample only; no work/ref deltas
-        'all'         — all work deltas + ref deltas + resample
-        Output goes to stage4/ for 'all', stage4_{filter}/ for specific types.
+    error_filter : one of ERROR_FILTERS
+        'resample'    — 100%-with-replacement resample of works only (sampling error)
+        'source'      — source-error work deltas only
+        'institution' — institution-error work deltas only
+        'reference'   — reference deltas only
+        'year'        — original year-error model (superseded by year_v2; not in paper)
+    Output goes to stage4_{filter}/.  The year-v2 model is run by build_year_v2_rankings.
     """
     import duckdb
 
     out_dir    = paths.working / STAGE_DIR
-    suffix     = '' if error_filter == 'all' else f'_{error_filter}'
-    stage4_dir = out_dir / f'stage4{suffix}'
+    if error_filter not in ERROR_FILTERS:
+        raise ValueError(f'error_filter must be one of {ERROR_FILTERS}, got {error_filter!r}')
+    stage4_dir = out_dir / f'stage4_{error_filter}'
     stage4_dir.mkdir(parents=True, exist_ok=True)
 
     # ── Load baseline units ────────────────────────────────────────────────────
@@ -773,6 +922,7 @@ def build_rankings(paths, B: int = 32, seed: int = 42,
     base_refs_df  = pd.read_parquet(str(out_dir / 'stage3_base_refs.parquet'))
     base_refs_arr = base_refs_df[['citer_work_idx', 'cited_work_idx',
                                    'cited_source_idx']].to_numpy(dtype=np.int64)
+    r_extra = _r_extra(base_refs_df)
 
     ref_errors = pd.read_parquet(str(out_dir / 'stage3_ref_errors.parquet'))
     ref_deltas_all: dict[int, tuple[np.ndarray, np.ndarray]] = {
@@ -795,15 +945,11 @@ def build_rankings(paths, B: int = 32, seed: int = 42,
         ref_deltas  = ref_deltas_all
         print(f'  error_filter=reference: no work deltas, '
               f'{len(ref_deltas)} ref replicates, no resample', flush=True)
-    elif error_filter == 'resample':
+    else:  # 'resample'
         work_deltas = {}
         ref_deltas  = {}
         print(f'  error_filter=resample: sampling error only (100% w/ replacement)',
               flush=True)
-    else:  # 'all'
-        ref_deltas = ref_deltas_all
-        print(f'  error_filter=all: {len(work_deltas)} work replicates, '
-              f'{len(ref_deltas)} ref replicates, + resample', flush=True)
 
     max_b2 = max(work_deltas) + 1 if work_deltas else 1
     max_b3 = max(ref_deltas)  + 1 if ref_deltas  else 1
@@ -833,7 +979,7 @@ def build_rankings(paths, B: int = 32, seed: int = 42,
         refs_b  = (apply_ref_delta(base_refs_arr, ref_err[0], ref_err[1])
                    if ref_err is not None else base_refs_arr)
 
-        if error_filter in ('all', 'resample'):
+        if error_filter == 'resample':
             rng_rs    = np.random.default_rng(seed + 30_000 + b)
             work_mult = resample_works_one(in_win_ids, rng_rs)
         else:
@@ -841,7 +987,7 @@ def build_rankings(paths, B: int = 32, seed: int = 42,
 
         C_SI, C_IS = _build_matrices(refs_b, works_yr,
                                      src_index, inst_index, r_bar, n_s, n_u,
-                                     work_mult=work_mult)
+                                     work_mult=work_mult, r_extra=r_extra)
 
         if C_SI.nnz == 0 or C_IS.nnz == 0:
             continue
@@ -871,6 +1017,7 @@ def build_rankings(paths, B: int = 32, seed: int = 42,
         source_ids=source_ids.tolist(),
         inst_ids=inst_ids.tolist(),
         run_code=run_code, units_table=units_table,
+        omega=_read_stage_meta(paths, "stage1")["omega"],
         b2_arr=b2_arr.tolist(), b3_arr=b3_arr.tolist(),
     )
     (stage4_dir / 'meta.json').write_text(json.dumps(meta, indent=2))
@@ -891,7 +1038,7 @@ def build_rankings(paths, B: int = 32, seed: int = 42,
 # Saved to stage2_year_v2.parquet; rankings in stage4_year_v2/.
 
 
-def build_year_v2_pool(paths) -> pd.DataFrame:
+def build_year_v2_pool(paths, omega: int = DEFAULT_OMEGA) -> pd.DataFrame:
     """
     Build the 2015-2024 work pool for the year-v2 model.
 
@@ -913,28 +1060,10 @@ def build_year_v2_pool(paths) -> pd.DataFrame:
     works['pub_year']    = works['pub_year'].astype(np.int16)
     works['source_idx']  = works['source_idx'].astype(np.int64)
 
-    auth = pd.read_parquet(
-        str(paths.parquet / 'corpus_authorships.parquet'),
-        columns=['work_idx', 'institution_idx', 'country_code'],
-    )
-    auth = auth[auth['work_idx'].isin(works['work_idx'])].copy()
-    auth = auth.drop_duplicates(['work_idx', 'institution_idx'])
-    auth = auth.dropna(subset=['institution_idx'])
-    n_inst = auth.groupby('work_idx').size().rename('n_inst')
-    auth   = auth.join(n_inst, on='work_idx')
-    auth['inst_weight'] = (1.0 / auth['n_inst']).astype(np.float32)
-    auth = auth.drop(columns='n_inst').rename(columns={'institution_idx': 'inst_idx'})
-    auth['inst_idx'] = auth['inst_idx'].astype(np.int64)
-
-    pool = works.merge(
-        auth[['work_idx', 'inst_idx', 'inst_weight', 'country_code']],
-        on='work_idx', how='left',
-    )
-    no_inst = pool['inst_idx'].isna()
-    pool.loc[no_inst, 'inst_weight'] = np.float32(1.0)
-    pool['inst_idx'] = pool['inst_idx'].astype('Int64')
+    pool = _attach_institutions(works, paths, omega)
 
     pool.to_parquet(str(out_path), index=False)
+    _write_stage_meta(paths, 'stage1_year_v2', omega)
     n_works = pool['work_idx'].nunique()
     in_win  = pool[pool['pub_year'].between(YEAR_LO, YEAR_HI)]['work_idx'].nunique()
     pre_win = n_works - in_win
@@ -960,7 +1089,7 @@ def build_year_v2_replicates(pool: pd.DataFrame, paths,
         pub_year      int16
         source_idx    int64
         inst_idx      Int64
-        inst_weight   float32
+        inst_weight   float64
         country_code  object
         error_type    str     ('del' | 'ins')
     """
@@ -1091,6 +1220,7 @@ def build_year_v2_rankings(paths, B: int = 1000, seed: int = 42) -> None:
     base_refs_arr = base_refs_df[
         ['citer_work_idx', 'cited_work_idx', 'cited_source_idx']
     ].to_numpy(dtype=np.int64)
+    r_extra = _r_extra(base_refs_df)
 
     year_v2_deltas_df = pd.read_parquet(str(out_dir / 'stage2_year_v2.parquet'))
     year_v2_deltas = {
@@ -1111,7 +1241,8 @@ def build_year_v2_rankings(paths, B: int = 1000, seed: int = 42) -> None:
         works_yr = works_b[works_b['pub_year'].between(YEAR_LO, YEAR_HI)]
 
         C_SI, C_IS = _build_matrices(
-            base_refs_arr, works_yr, src_index, inst_index, r_bar, n_s, n_u
+            base_refs_arr, works_yr, src_index, inst_index, r_bar, n_s, n_u,
+            r_extra=r_extra,
         )
         if C_SI.nnz == 0 or C_IS.nnz == 0:
             continue
@@ -1139,6 +1270,7 @@ def build_year_v2_rankings(paths, B: int = 1000, seed: int = 42) -> None:
         n=B, seed=seed, error_filter='year_v2', n_s=n_s, n_u=n_u,
         source_ids=source_ids.tolist(), inst_ids=inst_ids.tolist(),
         run_code=run_code, units_table=units_table,
+        omega=_read_stage_meta(paths, "stage1_year_v2")["omega"],
         completed=B,
     )
     (stage4_dir / 'meta.json').write_text(json.dumps(meta, indent=2))
@@ -1155,12 +1287,16 @@ def main():
     parser = argparse.ArgumentParser(
         description='4-stage metadata error bootstrap for the bipartite spectral ranking.'
     )
-    parser.add_argument('--stage', default='year_v2', #'all',
-                        choices=['1', '2', '3', '4', 'all', 'year_v2'],
-                        help='Which stage(s) to run (default: all); '
-                             'year_v2 runs only the new year-uncertainty model')
+    parser.add_argument('--stage', required=True,
+                        help="Comma list of stages from {1,2,3,4,year_v2}")
+    parser.add_argument('--filters', default=','.join(PAPER_FILTERS),
+                        help=f'Stage-4 error filters, comma list from {ERROR_FILTERS} '
+                             f'(default: {",".join(PAPER_FILTERS)})')
     parser.add_argument('--n',    type=int, default=1000, help='Replicates (stages 2-4)')
     parser.add_argument('--seed', type=int, default=42,  help='Base random seed')
+    parser.add_argument('--omega', type=int, default=DEFAULT_OMEGA, choices=[0, 1],
+                        help='Institution weighting for stage 1 / year-v2 pool: '
+                             '0 = author-fractional (baseline), 1 = 1/N_inst')
     args = parser.parse_args()
 
     import duckdb
@@ -1168,16 +1304,14 @@ def main():
     paths = load_config()
     B     = args.n
     seed  = args.seed
-    run_stages = ({'1', '2', '3', '4'} if args.stage == 'all'
-                  else {args.stage})
-
-    if args.stage == 'year_v2':
-        out_dir = paths.working / STAGE_DIR
-        out_dir.mkdir(parents=True, exist_ok=True)
-        pool = build_year_v2_pool(paths)
-        build_year_v2_replicates(pool, paths, B=B, seed=seed)
-        build_year_v2_rankings(paths, B=B, seed=seed)
-        return
+    run_stages = {x.strip() for x in args.stage.split(',') if x.strip()}
+    bad = run_stages - {'1', '2', '3', '4', 'year_v2'}
+    if bad:
+        parser.error(f'unknown stage(s): {sorted(bad)}')
+    filters = [f.strip() for f in args.filters.split(',') if f.strip()]
+    bad = set(filters) - set(ERROR_FILTERS)
+    if bad:
+        parser.error(f'unknown filter(s): {sorted(bad)}')
 
     bl          = next(r for r in load_runs() if r['label'] == 'baseline')
     el_table    = (f"el_{bl['run_code']}_{bl['fx']}"
@@ -1188,7 +1322,7 @@ def main():
 
     base_works = None
     if '1' in run_stages:
-        base_works = build_base_works(paths)
+        base_works = build_base_works(paths, omega=args.omega)
 
     if '2' in run_stages:
         if base_works is None:
@@ -1203,9 +1337,14 @@ def main():
         db.close()
 
     if '4' in run_stages:
-        for ef in ('all', 'year', 'source', 'institution', 'reference', 'resample'):
+        for ef in filters:
             print(f'\n── Stage 4: error_filter={ef!r} ──', flush=True)
-            build_rankings(paths, B=B, seed=seed, error_filter=ef)
+            build_rankings(paths, ef, B=B, seed=seed)
+
+    if 'year_v2' in run_stages:
+        pool = build_year_v2_pool(paths, omega=args.omega)
+        build_year_v2_replicates(pool, paths, B=B, seed=seed)
+        build_year_v2_rankings(paths, B=B, seed=seed)
 
 
 if __name__ == '__main__':

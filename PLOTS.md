@@ -83,9 +83,9 @@ locked to baseline rank. Colours: purple/blue/green/red for t1–t4, black for b
 Running mean curves through scatter points (log-space rolling mean, window=max(30, n//100)).
 Units absent from an earlier-period corpus are omitted from that series.
 
-### Figure 7 — Bootstrap uncertainty
-**Script**: `spectral_results_analysis/fig_7.py` (to be written; spec in `BOOTSTRAP.md`)
-**Status**: Planned
-**Description**: Bootstrap uncertainty bands around baseline prestige-per-work rankings.
-Reads `WORKING/bootstrap/v_s_boot.npy`, `v_u_boot.npy`, `meta.json`.
+### Error-study figures — bootstrap and metadata errors
+**Script**: `spectral_results_analysis/fig_boot_envelope.py`
+**Files**: `plots/fig_boot_envelope_resample_latex.pdf` (sampling bootstrap), `plots/fig_boot_ratio_facet_latex.pdf` (year_v2, source, institution, reference)
+**Status**: Re-run on the corrected baseline in progress (2026-11-26)
+**Description**: Reads `WORKING/bootstrap_oa_errors/stage4_{filter}/` from `bootstrap_oa_errors.py`; compares with the baseline table of the same ω (from meta.json). The old `fig_7.py` is archived in `ZARCHIVE/bootstrap_2026_11/`.
 
