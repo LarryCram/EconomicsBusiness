@@ -4,7 +4,9 @@
 > `spectral_ranking_bootstrap/bootstrap_oa_errors.py`, run by `run_error_studies.sh`:
 > the sampling bootstrap is its `resample` filter (100% of works with replacement), and
 > the metadata-error studies are the `source`, `institution`, `reference` filters plus
-> `year_v2`. Error types are never combined (the former combined `all` run was removed).
+> `year_swap` (2% of works dated 2019, 2020 or 2024 moved one year across the window
+> edge; references rebuilt from `corpus_references`, zero-shift identity checked before
+> the replicates run; supersedes the deletion-only `year_v2`). Error types are never combined (the former combined `all` run was removed).
 > Replicates use the baseline institution weighting (ω=0) and the pipeline's R_i, so a
 > replicate with no errors reproduces the baseline ranking exactly.
 > `bootstrap_baseline.py` (80% subsample, §5 below) and the scripts built on the combined

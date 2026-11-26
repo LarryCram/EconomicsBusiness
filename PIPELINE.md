@@ -139,7 +139,7 @@ run_code=20242024 is the baseline (2020–24).  Time-series runs are identified 
 
 ## Stage E — Bootstrap
 
-> **Current (2026-11-26):** `spectral_ranking_bootstrap/run_error_studies.sh` → `bootstrap_oa_errors.py`, output `WORKING/bootstrap_oa_errors/stage4_{resample,source,institution,reference,year_v2}/`, plotted by `fig_boot_envelope.py`. See `BOOTSTRAP.md`. The description below is historical (`bootstrap_baseline.py` is archived).
+> **Current (2026-11-26):** `spectral_ranking_bootstrap/run_error_studies.sh` → `bootstrap_oa_errors.py`, output `WORKING/bootstrap_oa_errors/stage4_{resample,source,institution,reference,year_swap}/`, plotted by `fig_boot_envelope.py`. See `BOOTSTRAP.md`. The description below is historical (`bootstrap_baseline.py` is archived).
 
 **Script**: `spectral_ranking/bootstrap_baseline.py` (to be written; spec in `BOOTSTRAP.md`)
 

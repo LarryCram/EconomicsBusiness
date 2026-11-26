@@ -2,7 +2,7 @@
 # run_error_studies.sh — re-run the bootstrap and metadata-error studies used in the paper.
 #
 #   stages 1,2,3 (sequential), then in parallel:
-#     stage 4 --filters resample | source | institution | reference, and year_v2
+#     stage 4 --filters resample | source | institution | reference, and year_swap
 #
 # Usage (from the project root; detached, survives logout):
 #   ECONBUS_CONFIG=config.rev.yaml setsid nohup spectral_ranking_bootstrap/run_error_studies.sh \
@@ -58,9 +58,9 @@ for f in resample source institution reference; do
       > "$LOG/stage4_$f.log" 2>&1 &
   PIDS[stage4_$f]=$!
 done
-$PY spectral_ranking_bootstrap/bootstrap_oa_errors.py --stage year_v2 --n "$N" --omega "$OMEGA" \
-    > "$LOG/year_v2.log" 2>&1 &
-PIDS[year_v2]=$!
+$PY spectral_ranking_bootstrap/bootstrap_oa_errors.py --stage year_swap --n "$N" --omega "$OMEGA" \
+    > "$LOG/year_swap.log" 2>&1 &
+PIDS[year_swap]=$!
 
 : > "$LOG/DONE.tmp"
 fail=0

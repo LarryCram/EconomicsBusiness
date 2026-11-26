@@ -138,6 +138,7 @@ STAGES = [
     ('stage4_resample',    'resample'),
     ('stage4_year',        'year uncertainties'),
     ('stage4_year_v2',     'year uncertainties v2'),
+    ('stage4_year_swap',   'year uncertainties (edge shifts)'),
     ('stage4_source',      'source errors'),
     ('stage4_institution', 'institution errors'),
     ('stage4_reference',   'reference errors'),
@@ -361,7 +362,7 @@ def plot_envelope_facet(paths) -> None:
 
 
 RATIO_FACET_STAGES = [
-    ('stage4_year_v2',     'Publication year uncertainty'),
+    ('stage4_year_swap',   'Publication year uncertainty'),
     ('stage4_source',      'Source misattribution'),
     ('stage4_institution', 'Institution misattribution'),
     ('stage4_reference',   'Reference misattribution'),

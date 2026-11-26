@@ -117,7 +117,7 @@ Half-widths are of the 2.5–97.5% interval of (replicate − baseline) fraction
 | Resample: top ≈100 "narrow" (median half-width) | narrow | 0.006 S, 0.006 I | 0.006 S, 0.006 I | ok |
 | Resample: lower ranks "≈±15%" (median / 90th pct half-width, rest) | ≈ ±15% | 0.063/0.134 S, 0.055/0.106 I | 0.062/0.133 S, 0.058/0.112 I | ok |
 | Resample: median band half-width in log *v* | — | 0.123 S, 0.065 I | 0.121 S, 0.067 I | ok |
-| Errors: "insubstantial among top ≈10%" (95th pct half-width, top 10%; year_v2 / ref / inst / source) | insubstantial | S 0.011/0.003/0.003/0.001, I 0.018/0.008/0.006/0.001 | S 0.011/0.003/0.003/0.001, I 0.015/0.007/0.007/0.001 | ok |
+| Errors: "insubstantial among top ≈10%" (95th pct half-width, top 10%; year / ref / inst / source) | insubstantial | S 0.011/0.003/0.003/0.001, I 0.018/0.008/0.006/0.001 | S 0.014/0.003/0.003/0.001, I 0.020/0.007/0.007/0.001 (year = `year_swap`) | ok |
 | "1000 replicates" | 1000 | 1000 | 1000 | ok |
 
 **Text changed 2026-11-26** (`04_results.tex`, metadata-error paragraph), because the method changed:
@@ -125,6 +125,8 @@ Half-widths are of the 2.5–97.5% interval of (replicate − baseline) fraction
 - "To avoid the need to model author uncertainties, we adopt institutional fractionation …" → replicates use the baseline's author-fractional weights, so a zero-error replicate reproduces the baseline exactly.
 
 **Resolved 2026-11-26 — year-uncertainty text.** The paper said 2% of works from 2018–2021 are dropped (2020–21) or inserted (2018–19). The `year_v2` code draws 2% of a 2015–2024 pool, deletes in-window draws and inserts pre-window draws as 2020 works; but the inserted works never appear in the replicate references (0 of ~418k), so the model is in effect a 2% deletion of window works (≈6,000 of 299,810 per replicate). §4.4 text and the Table 3 row now say exactly that, and that misdating into the window is not modelled.
+
+**Superseded 2026-11-26 — boundary-swap year model (`year_swap`).** 2% of works dated 2019, 2020 or 2024 are moved one year across the adjacent window edge (≈1,830 in, ≈4,260 out per replicate; net −14,200 of 1.53M edges); the edge list is rebuilt from `corpus_references` with the edge-list rules (retained-institution works, cited year ≤ citer year + 1, singleton/SCC-pruned units), and a zero-shift replicate reproduces the baseline edges and R_i exactly. 2025→2024 is not modelled (corpus ends in 2024). Bands are now two-sided: units moving > 0.1 dex up/down: S 154/101, I 82/19 (`year_v2`: S 4/227, I 1/36). Median log-v half-width S 0.034→0.038, I 0.025→0.033; top-10% p95 fractional-rank half-width S 0.011→0.014, I 0.015→0.020. Table 3 row and §4.4 paragraph rewritten; `fig_boot_ratio_facet` year row now plots `stage4_year_swap`. One top-10% institution (Morgan State, rank 96) has a 0.25 rank band: one 2020 work carries 234 of its 759 references and is shifted out in 30 of 1,000 replicates (19 under `year_v2`), just past the 2.5% tail.
 
 ## §4.5 Enclaves (l.263, `tab:enclaves`)
 

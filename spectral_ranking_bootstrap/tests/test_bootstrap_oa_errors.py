@@ -568,3 +568,69 @@ def test_build_matrices_rho_uses_r_extra():
     assert C0[0, 1] == pytest.approx(1.0)       # citer 1: ρ = 1/1
     assert C1[0, 1] == pytest.approx(0.25)      # citer 1: ρ = 1/(1+3)
     assert C1[1, 0] == pytest.approx(C0[1, 0])  # citer 2 unaffected
+
+
+# ── Year-swap model ────────────────────────────────────────────────────────────
+
+from spectral_ranking_bootstrap.bootstrap_oa_errors import (
+    YEAR_SWAP, _draw_year_swaps, _year_swap_keep, _year_swap_refs, _swap_works_yr,
+)
+
+
+def test_year_swap_map_crosses_window_edges():
+    assert YEAR_SWAP == {YEAR_LO - 1: YEAR_LO, YEAR_LO: YEAR_LO - 1, YEAR_HI: YEAR_HI + 1}
+
+
+def test_draw_year_swaps_rate_and_mapping():
+    ids = np.arange(300_000, dtype=np.int64)
+    yrs = np.repeat(np.array([YEAR_LO - 1, YEAR_LO, YEAR_HI], np.int16), 100_000)
+    sel, new = _draw_year_swaps(ids, yrs, np.random.default_rng(1), p=0.02)
+    assert abs(len(sel) / len(ids) - 0.02) < 0.002
+    old = yrs[sel]
+    assert all(new[k] == YEAR_SWAP[int(old[k])] for k in range(len(sel)))
+
+
+def test_year_swap_keep_window_and_lag_rule():
+    year = np.array([YEAR_LO, YEAR_LO + 1, YEAR_LO - 1, YEAR_HI, YEAR_HI + 1], np.int16)
+    ci = np.array([1, 0, 1, 2, 3, 4])
+    cd = np.array([0, 1, 2, 1, 4, 3])
+    keep = _year_swap_keep(ci, cd, year)
+    # 2021→2020 ok; 2020→2021 ok (lag +1); →2019 out; 2019 citer out;
+    # →2025 out; 2025 citer out
+    assert keep.tolist() == [True, True, False, False, False, False]
+    year2 = year.copy(); year2[0] = YEAR_LO - 1          # 2020 work shifted out
+    assert _year_swap_keep(ci, cd, year2).tolist() == [False] * 6
+    year3 = year.copy(); year3[2] = YEAR_LO              # 2019 work shifted in
+    assert _year_swap_keep(ci, cd, year3)[2]
+
+
+def test_year_swap_keep_cited_two_years_after_citer_dropped():
+    year = np.array([YEAR_LO, YEAR_LO + 2], np.int16)
+    assert not _year_swap_keep(np.array([0]), np.array([1]), year)[0]
+
+
+def test_year_swap_refs_counts_non_edges_in_r_extra():
+    W = np.array([10, 20, 30], np.int64)
+    year = np.array([YEAR_LO, YEAR_LO, YEAR_LO], np.int16)
+    ci = np.array([0, 0, 1]); cd = np.array([1, 2, 2])
+    edge = np.array([True, False, True])
+    refs, extra = _year_swap_refs(W, ci, cd, edge, year)
+    assert refs[:, :2].tolist() == [[10, 20], [20, 30]]
+    assert extra.to_dict() == {10: 1}
+    # shifting work 30 out removes both of its incoming references
+    year[2] = YEAR_LO - 1
+    refs, extra = _year_swap_refs(W, ci, cd, edge, year)
+    assert refs[:, :2].tolist() == [[10, 20]] and extra.empty
+
+
+def test_swap_works_yr_drops_and_inserts():
+    base = pd.DataFrame({'work_idx': [1, 1, 2], 'pub_year': np.int16(YEAR_LO),
+                         'source_idx': 5, 'inst_idx': pd.array([7, 8, 7], 'Int64'),
+                         'inst_weight': [0.5, 0.5, 1.0]})
+    pool = pd.DataFrame({'work_idx': [9], 'pub_year': np.int16(YEAR_LO - 1),
+                         'source_idx': 6, 'inst_idx': pd.array([7], 'Int64'),
+                         'inst_weight': [1.0]})
+    out = _swap_works_yr(base, pool, np.array([2, 9]),
+                         np.array([YEAR_LO - 1, YEAR_LO], np.int16))
+    assert sorted(out['work_idx'].tolist()) == [1, 1, 9]
+    assert (out.loc[out['work_idx'] == 9, 'pub_year'] == YEAR_LO).all()

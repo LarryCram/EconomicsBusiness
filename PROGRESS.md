@@ -56,7 +56,7 @@ All 22 runs in `params.csv` have been executed, including baseline (2000–2024)
 | `fig_log_ratio_stability.py` | log₂(v_SS/v_bip) by community | Complete |
 
 ### Bootstrap
-> **2026-11-26:** superseded. All error studies now come from `bootstrap_oa_errors.py` (filters `resample`, `source`, `institution`, `reference`, plus `year_v2`), run by `run_error_studies.sh`; see `BOOTSTRAP.md`. `bootstrap_baseline.py` and `fig_7.py` are archived in `ZARCHIVE/bootstrap_2026_11/`. The notes below are historical.
+> **2026-11-26:** superseded. All error studies now come from `bootstrap_oa_errors.py` (filters `resample`, `source`, `institution`, `reference`, plus `year_swap`), run by `run_error_studies.sh`; see `BOOTSTRAP.md`. `bootstrap_baseline.py` and `fig_7.py` are archived in `ZARCHIVE/bootstrap_2026_11/`. The notes below are historical.
 
 Two independent bootstrap implementations:
 

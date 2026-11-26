@@ -85,7 +85,7 @@ Units absent from an earlier-period corpus are omitted from that series.
 
 ### Error-study figures — bootstrap and metadata errors
 **Script**: `spectral_results_analysis/fig_boot_envelope.py`
-**Files**: `plots/fig_boot_envelope_resample_latex.pdf` (sampling bootstrap), `plots/fig_boot_ratio_facet_latex.pdf` (year_v2, source, institution, reference)
+**Files**: `plots/fig_boot_envelope_resample_latex.pdf` (sampling bootstrap), `plots/fig_boot_ratio_facet_latex.pdf` (year_swap, source, institution, reference)
 **Status**: Re-run on the corrected baseline in progress (2026-11-26)
 **Description**: Reads `WORKING/bootstrap_oa_errors/stage4_{filter}/` from `bootstrap_oa_errors.py`; compares with the baseline table of the same ω (from meta.json). The old `fig_7.py` is archived in `ZARCHIVE/bootstrap_2026_11/`.
 

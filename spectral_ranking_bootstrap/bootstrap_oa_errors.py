@@ -26,15 +26,22 @@ Stage 4 — build_rankings
     reference (and the superseded year model).  Error types are never combined.
     Uses the fixed baseline unit set; no tau recomputation.
 
+Year-swap — build_year_swap_inputs / _replicates / _rankings
+    The publication-year model used in the paper (needs stages 1 and 3 first):
+    works dated 2019, 2020 or 2024 are shifted across the nearest window edge
+    with probability 2% (2019→2020 in; 2020→2019 and 2024→2025 out), and the
+    references are rebuilt from corpus_references for the shifted years.
+
 Year-v2 — build_year_v2_pool / _replicates / _rankings
-    The publication-year model used in the paper (needs stages 1 and 3 first).
+    Superseded year model (in effect a 2% deletion of window works).
 
 A replicate with no errors reproduces the stored baseline ranking exactly
 (institution weights ω and reference counts R_i are taken as in the pipeline).
 
 Error rates (empirically estimated):
-    pub_year    — 2%   of in-window works replaced by a randomly drawn pre-window
-                        work (2016–2019, with replacement); original pub_year kept.
+    pub_year    — 2%   of works dated 2019, 2020 or 2024 shifted across the window
+                        edge (year-swap model; the stage-2 'year' and year-v2
+                        models are superseded).
     source      — 0.03% uniform draw from OAS source pool
     institution — 1%   75% within-country, 25% global uniform
     references  — 2%   1.5% same-source cited-work, 0.5% cross-source cited-work
@@ -50,7 +57,8 @@ Storage: $WORKING/bootstrap_oa_errors/
     stage4_{filter}/v_u_boot.npy       (B, n_u) float32
     stage4_{filter}/lam_ratio_boot.npy (B,) float32
     stage4_{filter}/meta.json          error_filter, omega, unit ids
-    stage4_year_v2/...                 same layout
+    stage1_year_swap_pool.parquet, stage1_year_swap_refs.parquet, stage2_year_swap.parquet
+    stage4_year_v2/, stage4_year_swap/  same layout
 
 CLI
 ---
@@ -58,9 +66,9 @@ python spectral_ranking_bootstrap/bootstrap_oa_errors.py --stage STAGES
     [--filters resample,source,institution,reference]
     [--n 1000]  [--seed 42]  [--omega {0,1}]
 
-STAGES is a comma list from {1,2,3,4,year_v2}, e.g. --stage 1,2,3 then
---stage 4 --filters resample (one process per filter can run in parallel)
-and --stage year_v2.
+STAGES is a comma list from {1,2,3,4,year_v2,year_swap}, e.g. --stage 1,2,3
+then --stage 4 --filters resample (one process per filter can run in parallel)
+and --stage year_swap.
 
 --omega sets the institution weighting of the replicates (default 0, the
 author-fractional weighting of the baseline).  Stage-4 meta.json records it.
@@ -97,7 +105,7 @@ MAX_FILTER_ITERS = 200
 # Stage-4 error filters.  Each isolates one source of uncertainty; they are
 # deliberately not combined.
 ERROR_FILTERS   = ('resample', 'source', 'institution', 'reference', 'year')
-PAPER_FILTERS   = ('resample', 'source', 'institution', 'reference')  # + year_v2
+PAPER_FILTERS   = ('resample', 'source', 'institution', 'reference')  # + year_swap
 
 # Institution weighting ω, as in params.csv: 0 = author-fractional (baseline,
 # paper eq. 1; edge-list column inst_weight), 1 = direct 1/N_inst (edge-list
@@ -1287,6 +1295,359 @@ def build_year_v2_rankings(paths, B: int = 1000, seed: int = 42) -> None:
     print(f'Output: {stage4_dir}', flush=True)
 
 
+# ── Year-swap model (misdating across the window edges) ───────────────────────
+#
+# A publication-year error is usually a one-year shift (online-first vs issue
+# year, or a working-paper date carried by a merged version).  It changes the
+# ranking only when it moves a work across an edge of the 2020-2024 window:
+#   2019 → 2020  into the window   (the work becomes a reference target, and
+#                                    its references to window works count)
+#   2020 → 2019  out of the window
+#   2024 → 2025  out of the window
+# Each work published in a boundary year is shifted with probability
+# P_ERROR_YEAR.  2025 → 2024 is not modelled: the frozen corpus ends in 2024.
+#
+# References are rebuilt from corpus_references exactly as build_edge_lists
+# would for the shifted years (both ends in the window and holding a retained
+# institution, citer ≠ cited, cited year ≤ citer year + 1); an edge also needs
+# both sources and an institution at each end to survive the edge list's
+# singleton/SCC pruning.  R_i counts every such reference of the citer, edge or
+# not, so with no shifts the replicate reproduces the baseline (checked before
+# the replicates run).  Unit sets and a_p stay at the baseline, as in the other
+# error studies.
+
+YEAR_SWAP = {YEAR_LO - 1: YEAR_LO, YEAR_LO: YEAR_LO - 1, YEAR_HI: YEAR_HI + 1}
+
+
+def _baseline_run() -> dict:
+    bl = next(r for r in load_runs() if r['label'] == 'baseline')
+    if (bl['tc0'], bl['tc1'], bl['tt0'], bl['tt1']) != (YEAR_LO, YEAR_HI, YEAR_LO, YEAR_HI):
+        raise ValueError('year-swap model assumes census = target = '
+                         f'[{YEAR_LO}, {YEAR_HI}]; baseline is {bl}')
+    if set(bl['fx']) != set('EBAX'):
+        raise ValueError(f"year-swap model assumes fx='EBAX', got {bl['fx']!r}")
+    return bl
+
+
+def build_year_swap_inputs(paths, omega: int = DEFAULT_OMEGA) -> None:
+    """
+    Stage 1 for the year-swap model (needs stage1_base_works).  Saves
+      stage1_year_swap_pool.parquet  reference-table works missing from
+                                     stage1_base_works (all those dated YEAR_LO-1,
+                                     and window works with no baseline edge), with
+                                     institution rows (same columns)
+      stage1_year_swap_refs.parquet  citer_work_idx, cited_work_idx, edge (bool):
+          every corpus reference between works dated YEAR_LO-1..YEAR_HI that
+          both hold a retained institution (citer ≠ cited); edge = both sources,
+          and an institution at each end, survive in the baseline edge list.
+          Retained sets follow build_edge_lists for the baseline.
+    """
+    import duckdb as _duckdb
+    bl = _baseline_run()
+    pq = paths.parquet
+    out_dir = paths.working / STAGE_DIR
+    lo, hi = YEAR_LO - 1, YEAR_HI
+    n_years = YEAR_HI - YEAR_LO + 1
+
+    print(f'Year-swap: building {lo}–{hi} reference table and work pool ...', flush=True)
+    # Edge-list units: the τ-retained sets after build_edge_lists' singleton/SCC
+    # pruning, which deletes edge rows but leaves R_i as counted before it.
+    run_code, fx = bl['run_code'], bl['fx']
+    el_table = f"el_{run_code}_{fx}_tauU{bl['tau_u']}_tauS{bl['tau_s']}_vartau"
+    db = _duckdb.connect(str(paths.working / 'edge_lists.duckdb'), read_only=True)
+    el_src = db.execute(f'SELECT citer_source_idx AS idx FROM {el_table} UNION '
+                        f'SELECT cited_source_idx FROM {el_table}').fetchdf()
+    el_inst = db.execute(f'SELECT citer_inst_idx AS idx FROM {el_table} UNION '
+                         f'SELECT cited_inst_idx FROM {el_table}').fetchdf()
+    db.close()
+
+    con = _duckdb.connect(':memory:')
+    con.register('el_src', el_src)
+    con.register('el_inst', el_inst)
+    refs = con.execute(f"""
+        WITH fw AS (
+            SELECT w.work_idx, w.source_idx, w.publication_year AS py
+            FROM '{pq}/corpus_works.parquet' w
+            JOIN '{pq}/source_master.parquet' sm ON w.source_idx = sm.source_idx
+            WHERE w.publication_year BETWEEN {lo} AND {hi}
+        ),
+        census AS (SELECT * FROM fw WHERE py BETWEEN {YEAR_LO} AND {YEAR_HI}),
+        auths AS (
+            SELECT DISTINCT work_idx, institution_idx
+            FROM '{pq}/corpus_authorships.parquet'
+            WHERE institution_idx IS NOT NULL
+              AND work_idx IN (SELECT work_idx FROM fw)
+        ),
+        retained_inst AS (
+            SELECT institution_idx FROM auths
+            WHERE work_idx IN (SELECT work_idx FROM census)
+              AND institution_idx IN (
+                  SELECT institution_idx FROM '{pq}/corpus_institutions.parquet')
+            GROUP BY institution_idx
+            HAVING COUNT(DISTINCT work_idx) / {n_years}.0 >= {bl['tau_u']}
+        ),
+        retained_source AS (
+            SELECT source_idx FROM census GROUP BY source_idx
+            HAVING COUNT(DISTINCT work_idx) / {n_years}.0 >= {bl['tau_s']}
+        ),
+        rw AS (
+            SELECT f.work_idx,
+                   ANY_VALUE(f.source_idx IN (SELECT source_idx FROM retained_source)
+                             AND f.source_idx IN (SELECT idx FROM el_src)) AS src_ok,
+                   BOOL_OR(a.institution_idx IN (SELECT idx FROM el_inst))  AS inst_ok
+            FROM auths a JOIN fw f ON a.work_idx = f.work_idx
+            WHERE a.institution_idx IN (SELECT institution_idx FROM retained_inst)
+            GROUP BY f.work_idx
+        )
+        SELECT r.citer_idx AS citer_work_idx, r.cited_idx AS cited_work_idx,
+               (c.src_ok AND d.src_ok AND c.inst_ok AND d.inst_ok) AS edge
+        FROM '{pq}/corpus_references.parquet' r
+        JOIN rw c ON r.citer_idx = c.work_idx
+        JOIN rw d ON r.cited_idx = d.work_idx
+        WHERE r.citer_idx != r.cited_idx
+        ORDER BY 1, 2
+    """).fetchdf()
+    con.close()
+    refs['citer_work_idx'] = refs['citer_work_idx'].astype(np.int64)
+    refs['cited_work_idx'] = refs['cited_work_idx'].astype(np.int64)
+    refs['edge'] = refs['edge'].astype(bool)
+    refs.to_parquet(str(out_dir / 'stage1_year_swap_refs.parquet'), index=False)
+    print(f'  References: {len(refs):,}  (edges {int(refs["edge"].sum()):,})', flush=True)
+
+    # Pool: every work in the reference table that stage1_base_works lacks — the
+    # 2019 works, and window works with no baseline edge (a shift can give them one).
+    base_ids = pd.read_parquet(str(out_dir / 'stage1_base_works.parquet'),
+                               columns=['work_idx'])['work_idx'].unique()
+    ref_ids = np.unique(np.concatenate([refs['citer_work_idx'].to_numpy(),
+                                        refs['cited_work_idx'].to_numpy()]))
+    works = pd.read_parquet(str(pq / 'corpus_works.parquet'),
+                            columns=['work_idx', 'publication_year', 'source_idx'])
+    works = works[works['work_idx'].isin(np.setdiff1d(ref_ids, base_ids))].rename(
+        columns={'publication_year': 'pub_year'})
+    works['pub_year']   = works['pub_year'].astype(np.int16)
+    works['source_idx'] = works['source_idx'].astype(np.int64)
+    pool = _attach_institutions(works, paths, omega)
+    pool.to_parquet(str(out_dir / 'stage1_year_swap_pool.parquet'), index=False)
+    _write_stage_meta(paths, 'stage1_year_swap', omega)
+    n_lo = works['pub_year'].eq(lo).sum()
+    print(f'  Pool: {len(works):,} works ({n_lo:,} dated {lo}, '
+          f'{len(works) - n_lo:,} window works without a baseline edge)', flush=True)
+
+
+def _draw_year_swaps(cand_ids: np.ndarray, cand_year: np.ndarray,
+                     rng: np.random.Generator, p: float = P_ERROR_YEAR):
+    """Select each boundary-year work with probability p; return (work_idx, new year)."""
+    sel = rng.random(len(cand_ids)) < p
+    new = np.array([YEAR_SWAP[int(y)] for y in cand_year[sel]], dtype=np.int16)
+    return cand_ids[sel], new
+
+
+def _year_swap_keep(ci: np.ndarray, cd: np.ndarray, year: np.ndarray) -> np.ndarray:
+    """
+    References the pipeline would count, given recorded years: both ends in the
+    window and the cited work dated no later than the citer's year + 1.
+    ci, cd index into year (positions of citer and cited works).
+    """
+    yc, yd = year[ci], year[cd]
+    return ((yc >= YEAR_LO) & (yc <= YEAR_HI) & (yd >= YEAR_LO) & (yd <= YEAR_HI)
+            & (yd <= yc + 1))
+
+
+def _year_swap_refs(W: np.ndarray, ci: np.ndarray, cd: np.ndarray, edge: np.ndarray,
+                    year: np.ndarray):
+    """
+    Edge references and the non-edge part of R_i for one set of recorded years.
+
+    Returns (refs_arr (N, 3) int64 [citer, cited, 0], r_extra Series indexed by
+    citer work_idx) in the form _build_matrices takes.
+    """
+    keep = _year_swap_keep(ci, cd, year)
+    ke = keep & edge
+    n_all  = np.bincount(ci[keep], minlength=len(W))
+    n_edge = np.bincount(ci[ke],   minlength=len(W))
+    extra = n_all - n_edge
+    pos = np.nonzero(extra > 0)[0]
+    r_extra = pd.Series(extra[pos].astype(np.int64), index=W[pos])
+    refs_arr = np.column_stack([W[ci[ke]], W[cd[ke]], np.zeros(int(ke.sum()), np.int64)])
+    return refs_arr, r_extra
+
+
+def _swap_works_yr(base_yr: pd.DataFrame, pool: pd.DataFrame,
+                   swap_ids: np.ndarray, new_year: np.ndarray) -> pd.DataFrame:
+    """Window works after the shifts: shifted-out works dropped, shifted-in added."""
+    in_ok  = (new_year >= YEAR_LO) & (new_year <= YEAR_HI)
+    out_ids = swap_ids[~in_ok]
+    ins_ids = swap_ids[in_ok]
+    works = base_yr[~base_yr['work_idx'].isin(out_ids)]
+    if len(ins_ids):
+        ins = pool[pool['work_idx'].isin(ins_ids)].copy()
+        ins['pub_year'] = np.int16(YEAR_LO)
+        works = pd.concat([works, ins], ignore_index=True)
+    return works
+
+
+def build_year_swap_replicates(paths, B: int = 1000, seed: int = 42) -> None:
+    """Stage 2: B sets of boundary shifts over all corpus works dated 2019, 2020
+    or 2024 → stage2_year_swap.parquet (replicate_id, work_idx, pub_year, new_year)."""
+    out_dir = paths.working / STAGE_DIR
+    cand = pd.read_parquet(str(paths.parquet / 'corpus_works.parquet'),
+                           columns=['work_idx', 'publication_year'])
+    cand = cand[cand['publication_year'].isin(list(YEAR_SWAP))].sort_values('work_idx')
+    cand_ids  = cand['work_idx'].to_numpy(np.int64)
+    cand_year = cand['publication_year'].to_numpy(np.int16)
+    print(f'Year-swap: {B} replicates over {len(cand_ids):,} boundary-year works '
+          f'({", ".join(f"{y}:{(cand_year == y).sum():,}" for y in YEAR_SWAP)}), '
+          f'rate {P_ERROR_YEAR:.1%}', flush=True)
+    parts = []
+    for b in range(B):
+        rng = np.random.default_rng(seed + 20_000 + b)
+        ids, new = _draw_year_swaps(cand_ids, cand_year, rng)
+        old = cand_year[np.searchsorted(cand_ids, ids)]
+        parts.append(pd.DataFrame({'replicate_id': np.int32(b), 'work_idx': ids,
+                                   'pub_year': old, 'new_year': new}))
+    df = pd.concat(parts, ignore_index=True)
+    df.to_parquet(str(out_dir / 'stage2_year_swap.parquet'), index=False)
+    print(f'  Saved stage2_year_swap.parquet ({len(df):,} rows, '
+          f'{len(df) / B:,.0f} per replicate)', flush=True)
+
+
+def build_year_swap_rankings(paths, B: int = 1000, seed: int = 42) -> None:
+    """Stage 4 for the year-swap model → stage4_year_swap/ (same layout as the others)."""
+    import duckdb
+
+    out_dir    = paths.working / STAGE_DIR
+    stage4_dir = out_dir / 'stage4_year_swap'
+    stage4_dir.mkdir(parents=True, exist_ok=True)
+
+    bl = _baseline_run()
+    run_code, tau_u, tau_s, fx = bl['run_code'], bl['tau_u'], bl['tau_s'], bl['fx']
+    el_table    = f'el_{run_code}_{fx}_tauU{tau_u}_tauS{tau_s}_vartau'
+    units_table = f'_units_{run_code}_{fx}_tauU{tau_u}_tauS{tau_s}_vartau_m0110'
+    db = duckdb.connect(str(paths.working / 'edge_lists.duckdb'), read_only=True)
+    units_df = db.execute(
+        f'SELECT unit_idx, unit_type, a_p FROM "{units_table}" ORDER BY unit_type, unit_idx'
+    ).fetchdf()
+    r_bar = db.execute(
+        f'SELECT AVG(rval) FROM '
+        f'(SELECT DISTINCT citer_work_idx, CAST(R_i AS DOUBLE) AS rval FROM {el_table})'
+    ).fetchone()[0]
+    db.close()
+
+    src_df  = units_df[units_df['unit_type'] == 'S'].reset_index(drop=True)
+    inst_df = units_df[units_df['unit_type'] == 'U'].reset_index(drop=True)
+    source_ids = src_df['unit_idx'].to_numpy(dtype=np.int64)
+    inst_ids   = inst_df['unit_idx'].to_numpy(dtype=np.int64)
+    a_s = src_df['a_p'].to_numpy(dtype=np.float64)
+    a_u = inst_df['a_p'].to_numpy(dtype=np.float64)
+    n_s, n_u = len(source_ids), len(inst_ids)
+    A_full = float(a_s.sum() + a_u.sum())
+    src_index, inst_index = pd.Index(source_ids), pd.Index(inst_ids)
+
+    base_works = pd.read_parquet(str(out_dir / 'stage1_base_works.parquet'))
+    pool = pd.read_parquet(str(out_dir / 'stage1_year_swap_pool.parquet'))
+    base_yr = pd.concat([base_works, pool], ignore_index=True)
+    base_yr = base_yr[base_yr['pub_year'].between(YEAR_LO, YEAR_HI)]
+    refs = pd.read_parquet(str(out_dir / 'stage1_year_swap_refs.parquet'))
+    swaps = pd.read_parquet(str(out_dir / 'stage2_year_swap.parquet'))
+    swaps_by_rep = {int(r): g for r, g in swaps.groupby('replicate_id')}
+
+    W = np.unique(np.concatenate([refs['citer_work_idx'].to_numpy(np.int64),
+                                  refs['cited_work_idx'].to_numpy(np.int64)]))
+    ci = np.searchsorted(W, refs['citer_work_idx'].to_numpy(np.int64))
+    cd = np.searchsorted(W, refs['cited_work_idx'].to_numpy(np.int64))
+    edge = refs['edge'].to_numpy(bool)
+    yr_ser = (pd.concat([base_works[['work_idx', 'pub_year']], pool[['work_idx', 'pub_year']]])
+                .drop_duplicates('work_idx').set_index('work_idx')['pub_year'])
+    year0 = yr_ser.reindex(W).to_numpy()
+    if np.isnan(year0.astype(float)).any():
+        raise ValueError('reference works missing from stage1 base works / pool')
+    year0 = year0.astype(np.int16)
+    print(f'Units: n_s={n_s}, n_u={n_u}, r_bar={r_bar:.4f};  '
+          f'references {len(refs):,} over {len(W):,} works', flush=True)
+
+    # Zero-shift identity: the rebuilt references must be the baseline's.
+    refs0, extra0 = _year_swap_refs(W, ci, cd, edge, year0)
+    base_refs_df = pd.read_parquet(str(out_dir / 'stage3_base_refs.parquet'))
+    bpairs = base_refs_df[['citer_work_idx', 'cited_work_idx']].to_numpy(np.int64)
+    p0 = refs0[:, :2]
+    same_edges = (len(p0) == len(bpairs) and
+                  (p0[np.lexsort((p0[:, 1], p0[:, 0]))] ==
+                   bpairs[np.lexsort((bpairs[:, 1], bpairs[:, 0]))]).all())
+    bx = _r_extra(base_refs_df)
+    # Citers with no edge carry no weight; the baseline lists extras for edge citers only.
+    extra0_e = extra0[extra0.index.isin(np.unique(p0[:, 0]))]
+    same_r = bx is not None and extra0_e.sort_index().equals(bx.astype(np.int64).sort_index())
+    print(f'  zero-shift check: edges {len(p0):,} vs baseline {len(bpairs):,} '
+          f'{"match" if same_edges else "DIFFER"};  R_i {"match" if same_r else "DIFFER"}',
+          flush=True)
+    if not (same_edges and same_r):
+        raise RuntimeError('year-swap references do not reproduce the baseline edge list')
+
+    v_s_boot = np.full((B, n_s), np.nan, dtype=np.float32)
+    v_u_boot = np.full((B, n_u), np.nan, dtype=np.float32)
+    lam_ratio_boot = np.full(B, np.nan, dtype=np.float32)
+    n_in = np.zeros(B, np.int32); n_out = np.zeros(B, np.int32)
+    d_edges = np.zeros(B, np.int64)
+    rep_times: list[float] = []
+    print(f'Stage 4 year-swap: running {B} replicates ...', flush=True)
+    t0 = time.perf_counter()
+    empty = pd.DataFrame({'work_idx': np.array([], np.int64),
+                          'new_year': np.array([], np.int16)})
+
+    for b in range(B):
+        t_rep = time.perf_counter()
+        sw = swaps_by_rep.get(b, empty)
+        ids = sw['work_idx'].to_numpy(np.int64)
+        new = sw['new_year'].to_numpy(np.int16)
+        year = year0.copy()
+        pos = np.searchsorted(W, ids)
+        hit = (pos < len(W)) & (W[np.minimum(pos, len(W) - 1)] == ids)
+        year[pos[hit]] = new[hit]
+        refs_b, extra_b = _year_swap_refs(W, ci, cd, edge, year)
+        works_yr = _swap_works_yr(base_yr, pool, ids, new)
+        in_ok = (new >= YEAR_LO) & (new <= YEAR_HI)
+        n_in[b], n_out[b] = int(in_ok.sum()), int((~in_ok).sum())
+        d_edges[b] = len(refs_b) - len(p0)
+
+        C_SI, C_IS = _build_matrices(refs_b, works_yr, src_index, inst_index,
+                                     r_bar, n_s, n_u, r_extra=extra_b)
+        if C_SI.nnz == 0 or C_IS.nnz == 0:
+            continue
+        v_s_b, v_u_b, lam1, lam2, n_sc, n_uc, _ = \
+            _rank_one(C_SI, C_IS, n_s, n_u, a_s, a_u, A_full)
+        v_s_boot[b], v_u_boot[b] = v_s_b, v_u_b
+        lam_ratio_boot[b] = float(lam2 / lam1) if lam1 > 0 else np.nan
+
+        elapsed = time.perf_counter() - t_rep
+        rep_times.append(elapsed)
+        if (b + 1) % 10 == 0 or b == 0:
+            eta = (B - b - 1) * np.mean(rep_times[-10:])
+            print(f'  rep {b+1:4d}/{B}  {elapsed:.2f}s  in={n_in[b]} out={n_out[b]} '
+                  f'Δedges={d_edges[b]:+d}  core=({n_sc},{n_uc})  ETA {eta/60:.1f}min',
+                  flush=True)
+
+    np.save(str(stage4_dir / 'v_s_boot.npy'), v_s_boot)
+    np.save(str(stage4_dir / 'v_u_boot.npy'), v_u_boot)
+    np.save(str(stage4_dir / 'lam_ratio_boot.npy'), lam_ratio_boot)
+    meta = dict(
+        n=B, seed=seed, error_filter='year_swap', n_s=n_s, n_u=n_u,
+        source_ids=source_ids.tolist(), inst_ids=inst_ids.tolist(),
+        run_code=run_code, units_table=units_table,
+        omega=_read_stage_meta(paths, 'stage1_year_swap')['omega'],
+        rate=P_ERROR_YEAR, swaps={str(k): v for k, v in YEAR_SWAP.items()},
+        mean_shifted_in=float(n_in.mean()), mean_shifted_out=float(n_out.mean()),
+        mean_edge_change=float(d_edges.mean()),
+        completed=B,
+    )
+    (stage4_dir / 'meta.json').write_text(json.dumps(meta, indent=2))
+    total = time.perf_counter() - t0
+    print(f'\nDone. {B} replicates  {total/60:.1f}min  '
+          f'avg={np.mean(rep_times) if rep_times else 0:.2f}s/rep  '
+          f'shifted in {n_in.mean():.0f}, out {n_out.mean():.0f}, '
+          f'Δedges {d_edges.mean():+.0f} per replicate', flush=True)
+    print(f'Output: {stage4_dir}', flush=True)
+
+
 # ── CLI ────────────────────────────────────────────────────────────────────────
 
 def main():
@@ -1294,7 +1655,7 @@ def main():
         description='4-stage metadata error bootstrap for the bipartite spectral ranking.'
     )
     parser.add_argument('--stage', required=True,
-                        help="Comma list of stages from {1,2,3,4,year_v2}")
+                        help="Comma list of stages from {1,2,3,4,year_v2,year_swap}")
     parser.add_argument('--filters', default=','.join(PAPER_FILTERS),
                         help=f'Stage-4 error filters, comma list from {ERROR_FILTERS} '
                              f'(default: {",".join(PAPER_FILTERS)})')
@@ -1311,7 +1672,7 @@ def main():
     B     = args.n
     seed  = args.seed
     run_stages = {x.strip() for x in args.stage.split(',') if x.strip()}
-    bad = run_stages - {'1', '2', '3', '4', 'year_v2'}
+    bad = run_stages - {'1', '2', '3', '4', 'year_v2', 'year_swap'}
     if bad:
         parser.error(f'unknown stage(s): {sorted(bad)}')
     filters = [f.strip() for f in args.filters.split(',') if f.strip()]
@@ -1351,6 +1712,11 @@ def main():
         pool = build_year_v2_pool(paths, omega=args.omega)
         build_year_v2_replicates(pool, paths, B=B, seed=seed)
         build_year_v2_rankings(paths, B=B, seed=seed)
+
+    if 'year_swap' in run_stages:
+        build_year_swap_inputs(paths, omega=args.omega)
+        build_year_swap_replicates(paths, B=B, seed=seed)
+        build_year_swap_rankings(paths, B=B, seed=seed)
 
 
 if __name__ == '__main__':
