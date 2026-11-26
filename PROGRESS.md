@@ -1,6 +1,19 @@
 # EconomicsBusiness — Project Progress
 
-_Last updated: 2026-04-22_
+_Last updated: 2026-11-26 (QSS revision status below; the sections after it are the April 2026 record)_
+
+## QSS revision status (2026-11-26)
+
+Branch `qss-revision`, corrected baseline `econ_bus_rev` (`ECONBUS_CONFIG=config.rev.yaml`); see CLAUDE.md and `qss_lock/README.md`.
+
+Done on the corrected baseline:
+- Error studies re-run with ω = 0 replicates (`run_error_studies.sh`): resample, source, institution, reference, and `year_swap` (one-year shifts across the window edges; replaces `year_v2`). No combined run.
+- Finance/accounting rule: E or A journals with ≥ 2 of 4 finance/accounting signals become B, four economics exceptions (`data/field_rule_exceptions.csv`). Journals 525 E / 876 B / 101 A / 62 X; EBAX unaffected. §3 and §4 text updated.
+- Separate E and B resample bootstraps (`--run-label F=E|F=B`) as an internal-structure probe; E+B combined stays the primary object.
+- MNCS comparison (`mncs_comparison.py`): combined v against field-normalised MNCS on paired bootstrap bands (in / near / far). Journals 488 / 600 / 476, corr 0.78; institutions 346 / 632 / 1,001, corr 0.51. Gaps track citer standing (corr 0.70 / 0.76). `--counting full` (FWCI-like) is slightly worse for institutions (332 / 544 / 1,103, corr 0.48); a strict FWCI window is impossible because the corpus ends in 2024.
+- AIS comparison (`benchmark_journals.py` → `data/benchmark_journals_ais.csv`): bipartite v vs JCR 2024 AIS corr 0.88, RMA slope 1.05, median offset −0.017 dex; 390 in / 412 near / 216 far of 1,018. MNCS vs AIS corr 0.77. Largest gaps are review/annual journals (AIS higher: 5-year window, citers outside the corpus) and health economics.
+
+Next: paper restructure (supplements, model in brief, data-quality paragraph, limitations, MNCS and AIS paragraphs, benchmark/survivorship/finance/split tables), computational-cost text, response letter, Zenodo deposit.
 
 ## What this project is
 
@@ -82,7 +95,7 @@ Sources carry `field_eb` ∈ {E, B, A, X} in `source_master.parquet/.csv`.  Inst
 ### Key analytical findings
 - **Spectral gaps**: g_SS=0.038, g_II=0.464, g_bip=0.660, g_J=0.347.  SS mode is highly compartmentalised; bipartite gap is 17× larger.
 - **Community structure**: A_SS has 8 communities (Q=0.21); A_bip has 3 (Q≈0).  Psychology cluster (94% X) consistently above-baseline in v_SS/v_bip.
-- **JCR validation**: AIS ∝ v^0.91 (R²=0.82); JIF ∝ v^0.55 (R²=0.52).  Eigenvector-based AIS aligns most closely.
+- **JCR validation** (April 2026, superseded by `data/benchmark_journals_ais.csv`): AIS ∝ v^0.91 (R²=0.82); JIF ∝ v^0.55 (R²=0.52).  Eigenvector-based AIS aligns most closely.
 - **Stability**: source persistence (v>1 in t1 still v>1 in t5) 83.4%; institution 93.5%.  Spearman ρ(v_t1, v_t5) ≈ 0.66 for both.  Monotone-rising institutions concentrated in Sciences Po, DIW, ECB, Singapore, Australian business schools.
 
 ## Paper status (`spectral_ranking_latex/`)
