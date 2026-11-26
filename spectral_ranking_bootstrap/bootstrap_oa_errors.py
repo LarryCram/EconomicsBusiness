@@ -1036,6 +1036,12 @@ def build_rankings(paths, error_filter: str, B: int = 1000, seed: int = 42) -> N
 #   Pre-window draw (2015-2019): INSERT it with pub_year reassigned to 2020,
 #                                keeping original source_idx, inst_idx, etc.
 # Saved to stage2_year_v2.parquet; rankings in stage4_year_v2/.
+#
+# NOTE: replicate references are the baseline's (stage3_base_refs), and no
+# inserted work appears in them (checked 2026-11-26: 0 of ~418k).  Inserted
+# works therefore add no edges, and the model is in effect a 2% deletion of
+# window works (~6,000 of 299,810 ranked-corpus works per replicate).  The paper
+# (§4.4, Table 3) describes it that way; misdating *into* the window is not modelled.
 
 
 def build_year_v2_pool(paths, omega: int = DEFAULT_OMEGA) -> pd.DataFrame:

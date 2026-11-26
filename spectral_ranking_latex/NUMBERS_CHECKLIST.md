@@ -124,7 +124,7 @@ Half-widths are of the 2.5–97.5% interval of (replicate − baseline) fraction
 - "Combining a random Stage 1 replicate … with a random Stage 2 replicate …" → each error type is propagated separately (the combined run was removed).
 - "To avoid the need to model author uncertainties, we adopt institutional fractionation …" → replicates use the baseline's author-fractional weights, so a zero-error replicate reproduces the baseline exactly.
 
-**Open (not changed):** the year-uncertainty text says works are drawn from 2018–2021 (drop 2020–21, insert 2018–19). The `year_v2` code draws 2% of a 2015–2024 pool, deletes in-window draws and inserts pre-window (2015–19) draws with year 2020. Text or code to be reconciled. The table caption window [2018–2021] has the same issue.
+**Resolved 2026-11-26 — year-uncertainty text.** The paper said 2% of works from 2018–2021 are dropped (2020–21) or inserted (2018–19). The `year_v2` code draws 2% of a 2015–2024 pool, deletes in-window draws and inserts pre-window draws as 2020 works; but the inserted works never appear in the replicate references (0 of ~418k), so the model is in effect a 2% deletion of window works (≈6,000 of 299,810 per replicate). §4.4 text and the Table 3 row now say exactly that, and that misdating into the window is not modelled.
 
 ## §4.5 Enclaves (l.263, `tab:enclaves`)
 
